@@ -6,17 +6,14 @@ import Testing
 actor FakePushServer {
     enum Call: Equatable {
         case register(String)
-        case unregister
     }
 
     private(set) var calls: [Call] = []
     private var failuresRemaining = 0
-    private var failUnregister = false
 
     struct Offline: Error {}
 
     func failNext(_ count: Int) { failuresRemaining = count }
-    func failUnregisters() { failUnregister = true }
 
     func register(_ token: String) throws {
         calls.append(.register(token))
@@ -25,11 +22,6 @@ actor FakePushServer {
             throw Offline()
         }
     }
-
-    func unregister() throws {
-        calls.append(.unregister)
-        if failUnregister { throw Offline() }
-    }
 }
 
 struct PushRegistrationCoordinatorTests {
@@ -37,10 +29,7 @@ struct PushRegistrationCoordinatorTests {
 
     private func makeCoordinator() -> PushRegistrationCoordinator {
         let server = server
-        return PushRegistrationCoordinator(
-            register: { try await server.register($0) },
-            unregister: { try await server.unregister() }
-        )
+        return PushRegistrationCoordinator(register: { try await server.register($0) })
     }
 
     private func signedInCoordinator(token: String = "t1") async -> PushRegistrationCoordinator {
@@ -91,31 +80,30 @@ struct PushRegistrationCoordinatorTests {
         #expect(await server.calls == [.register("t1")])
     }
 
-    @Test func signOutUnregistersBeforeTheSessionClears() async {
+    @Test func signOutSendsNothingAndStopsRegistering() async {
         let coordinator = await signedInCoordinator()
-        let succeeded = await coordinator.prepareForSignOut()
-        #expect(succeeded)
-        #expect(await server.calls == [.register("t1"), .unregister])
+        await coordinator.didSignOut()
         #expect(await coordinator.state == .idle)
-        // A token refresh after sign-out sends nothing.
+        // The session's sign-out unregisters; a token refresh while signed out sends nothing.
         await coordinator.tokenChanged("t2")
-        #expect(await server.calls == [.register("t1"), .unregister])
-    }
-
-    @Test func failedUnregisterStillSignsOut() async {
-        let coordinator = await signedInCoordinator()
-        await server.failUnregisters()
-        let succeeded = await coordinator.prepareForSignOut()
-        #expect(!succeeded)
-        await coordinator.tokenChanged("t2")
-        #expect(await server.calls == [.register("t1"), .unregister])
+        await coordinator.authorizationChanged(.provisional)
+        #expect(await server.calls == [.register("t1")])
     }
 
     @Test func accountSwitchRegistersUnderTheNewIdentity() async {
         let coordinator = await signedInCoordinator()
-        await coordinator.prepareForSignOut()
+        await coordinator.didSignOut()
         await coordinator.didSignIn()
-        #expect(await server.calls == [.register("t1"), .unregister, .register("t1")])
+        #expect(await server.calls == [.register("t1"), .register("t1")])
+    }
+
+    @Test func failedRegistrationIsNotRetriedAfterSignOut() async {
+        await server.failNext(1)
+        let coordinator = await signedInCoordinator()
+        await coordinator.didSignOut()
+        await coordinator.appBecameActive()
+        #expect(await coordinator.state == .idle)
+        #expect(await server.calls == [.register("t1")])
     }
 
     @Test func failedRegistrationRetriesOnForeground() async {
@@ -125,12 +113,6 @@ struct PushRegistrationCoordinatorTests {
         await coordinator.appBecameActive()
         #expect(await coordinator.state == .registered(token: "t1"))
         await coordinator.appBecameActive()
-        #expect(await server.calls == [.register("t1"), .register("t1")])
-    }
-
-    @Test func preferenceChangeReRegisters() async {
-        let coordinator = await signedInCoordinator()
-        await coordinator.preferencesChanged()
         #expect(await server.calls == [.register("t1"), .register("t1")])
     }
 }

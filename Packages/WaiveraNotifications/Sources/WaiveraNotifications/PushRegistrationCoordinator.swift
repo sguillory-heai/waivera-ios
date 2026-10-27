@@ -4,19 +4,18 @@ public protocol PushTokenSource: Sendable {
     func tokens() -> AsyncStream<String>
 }
 
-/// Keeps the server's push registration in step with the token, the session and the system
-/// permission (09-push §5, push.md §1):
-/// - registers once after sign-in (re-registering under the new identity on account switch);
-/// - re-registers when FCM rotates the token, without touching the hub;
-/// - unregisters before sign-out clears the session;
-/// - never registers while permission is denied or not yet asked;
-/// - retries a failed attempt the next time the app becomes active.
+/// Decides when the app hands its FCM token to the data layer (09-push §5, push.md §1):
+/// - after sign-in (again after an account switch);
+/// - when FCM rotates the token, without touching the hub;
+/// - never while permission is denied or not yet asked, and never while signed out;
+/// - again the next time the app becomes active when an attempt threw.
 ///
-/// Debouncing preference bursts and persisting the last-registered fingerprint belong to the
-/// `PushRegistrationRepository` behind `register` (data-layer agent).
+/// The `PushRegistrationRepository` behind `register` owns everything that talks to the server
+/// about this device: the debounce, the stored fingerprint, retries, re-registering when the
+/// notification switches change, and unregistering during sign-out. This type never
+/// unregisters, so sign-out sends exactly one unregister call.
 public actor PushRegistrationCoordinator {
     public typealias Register = @Sendable (_ token: String) async throws -> Void
-    public typealias Unregister = @Sendable () async throws -> Void
 
     public enum State: Equatable, Sendable {
         case idle
@@ -25,16 +24,14 @@ public actor PushRegistrationCoordinator {
     }
 
     private let register: Register
-    private let unregister: Unregister
 
     private var token: String?
     private var isSignedIn = false
     private var authorization: NotificationAuthorization = .notDetermined
     public private(set) var state: State = .idle
 
-    public init(register: @escaping Register, unregister: @escaping Unregister) {
+    public init(register: @escaping Register) {
         self.register = register
-        self.unregister = unregister
     }
 
     public func tokenChanged(_ newToken: String) async {
@@ -59,26 +56,11 @@ public actor PushRegistrationCoordinator {
         await registerIfNeeded(force: true)
     }
 
-    /// Call before the session is cleared. Returns `false` when the unregister call failed; sign-out
-    /// continues either way, and the server deactivates the row on the next token error.
-    @discardableResult
-    public func prepareForSignOut() async -> Bool {
-        defer {
-            isSignedIn = false
-            state = .idle
-        }
-        guard isSignedIn else { return true }
-        do {
-            try await unregister()
-            return true
-        } catch {
-            return false
-        }
-    }
-
-    /// Notification preferences changed; the repository debounces and sends one registration.
-    public func preferencesChanged() async {
-        await registerIfNeeded(force: true)
+    /// Call when the session leaves the signed-in state, for any reason. Nothing is sent: the
+    /// session's own sign-out unregisters this device while requests can still authenticate.
+    public func didSignOut() {
+        isSignedIn = false
+        state = .idle
     }
 
     /// The app came to the foreground: retry a registration that failed.

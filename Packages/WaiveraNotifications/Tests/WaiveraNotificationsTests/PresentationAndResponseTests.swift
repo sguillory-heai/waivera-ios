@@ -6,62 +6,41 @@ import WaiveraRouting
 struct ForegroundPresentationTests {
     private let chat42 = PushPayload.chat(ChatPush(conversationID: 42, messageID: 1))
 
-    private func context(connected: Bool, visible: Int?, banners: Bool = true, sound: Bool = true) -> ForegroundContext
-    {
-        ForegroundContext(
-            isHubConnected: connected,
-            visibleConversationID: visible,
-            inAppBannersEnabled: banners,
-            soundEnabled: sound
-        )
+    private func context(live: Bool, banners: Bool = true, sound: Bool = true) -> ForegroundContext {
+        ForegroundContext(isConversationLive: live, inAppBannersEnabled: banners, soundEnabled: sound)
     }
 
-    @Test func suppressedOnlyWhenConnectedAndThatConversationIsVisible() {
-        #expect(
-            ForegroundPresentationPolicy.decide(for: chat42, context: context(connected: true, visible: 42))
-                == .suppressed
-        )
+    @Test func chatPushIsHiddenWhenTheDataLayerSaysItsConversationIsLive() {
+        #expect(ForegroundPresentationPolicy.decide(for: chat42, context: context(live: true)) == .suppressed)
     }
 
-    @Test func disconnectedHubNeverHidesAChatPush() {
-        let decision = ForegroundPresentationPolicy.decide(for: chat42, context: context(connected: false, visible: 42))
+    @Test func chatPushIsShownWhenTheConversationIsNotLive() {
+        let decision = ForegroundPresentationPolicy.decide(for: chat42, context: context(live: false))
         #expect(decision == PresentationDecision(showBanner: true, showInList: true, playSound: true))
-    }
-
-    @Test func otherConversationIsShown() {
-        let decision = ForegroundPresentationPolicy.decide(for: chat42, context: context(connected: true, visible: 7))
-        #expect(decision.showBanner)
-    }
-
-    @Test func noConversationVisibleIsShown() {
-        #expect(
-            ForegroundPresentationPolicy.decide(for: chat42, context: context(connected: true, visible: nil)).showBanner
-        )
     }
 
     @Test func inAppBannersOffKeepsItInTheListOnly() {
         let decision = ForegroundPresentationPolicy.decide(
             for: .meeting(eventID: "evt_1"),
-            context: context(connected: true, visible: nil, banners: false)
+            context: context(live: false, banners: false)
         )
         #expect(decision == PresentationDecision(showBanner: false, showInList: true, playSound: false))
     }
 
     @Test func soundOffIsSilent() {
-        let decision = ForegroundPresentationPolicy.decide(
-            for: chat42,
-            context: context(connected: false, visible: nil, sound: false)
-        )
+        let decision = ForegroundPresentationPolicy.decide(for: chat42, context: context(live: false, sound: false))
         #expect(!decision.playSound)
         #expect(decision.showBanner)
     }
 
-    @Test func callPushForVisibleConversationIsStillShown() {
-        let decision = ForegroundPresentationPolicy.decide(
+    @Test func nonChatPushesAreNeverHidden() {
+        let call = ForegroundPresentationPolicy.decide(
             for: .call(conversationID: 42, roomID: "room_1"),
-            context: context(connected: true, visible: 42)
+            context: context(live: true)
         )
-        #expect(decision.showBanner)
+        #expect(call.showBanner)
+        let meeting = ForegroundPresentationPolicy.decide(for: .meeting(eventID: "evt_1"), context: context(live: true))
+        #expect(meeting.showBanner)
     }
 }
 

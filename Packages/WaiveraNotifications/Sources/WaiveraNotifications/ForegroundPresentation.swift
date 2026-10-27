@@ -1,16 +1,17 @@
 /// What the app knows when a push arrives while it is in the foreground.
 public struct ForegroundContext: Equatable, Sendable {
-    public var isHubConnected: Bool
-    /// The conversation on screen (router `visibleConversationID`), `nil` when none.
-    public var visibleConversationID: Int?
+    /// `true` when the data layer hides chat pushes for this payload's conversation
+    /// (`ChatAlertsRepository.shouldPresentForegroundPush` returned `false`): the hub is
+    /// connected and that conversation is on screen with the app active. The data layer owns
+    /// that rule; this type only turns its answer and the settings into presentation options.
+    public var isConversationLive: Bool
     /// Settings "In-app banners".
     public var inAppBannersEnabled: Bool
     /// Settings "Sound".
     public var soundEnabled: Bool
 
-    public init(isHubConnected: Bool, visibleConversationID: Int?, inAppBannersEnabled: Bool, soundEnabled: Bool) {
-        self.isHubConnected = isHubConnected
-        self.visibleConversationID = visibleConversationID
+    public init(isConversationLive: Bool, inAppBannersEnabled: Bool, soundEnabled: Bool) {
+        self.isConversationLive = isConversationLive
         self.inAppBannersEnabled = inAppBannersEnabled
         self.soundEnabled = soundEnabled
     }
@@ -31,14 +32,12 @@ public struct PresentationDecision: Equatable, Sendable {
     public static let suppressed = PresentationDecision(showBanner: false, showInList: false, playSound: false)
 }
 
-/// The foreground rule (PLAN.md parity fix, 09-push §2): a chat push is suppressed only when
-/// the hub is connected AND that conversation is on screen, so a disconnected hub never hides
-/// a message. The icon badge is never set by a push.
+/// Foreground presentation (PLAN.md parity fix, 09-push §2). Only chat pushes are ever hidden,
+/// and only when the data layer reports their conversation live on screen, so a disconnected hub
+/// never hides a message. The icon badge is never set by a push.
 public enum ForegroundPresentationPolicy {
     public static func decide(for payload: PushPayload, context: ForegroundContext) -> PresentationDecision {
-        if payload.isChat, context.isHubConnected, let conversationID = payload.conversationID,
-            conversationID == context.visibleConversationID
-        {
+        if payload.isChat, context.isConversationLive {
             return .suppressed
         }
         return PresentationDecision(
