@@ -46,6 +46,8 @@ let package = Package(
                 .product(name: "WaiveraData", package: "WaiveraData"),
             name: "ChatConversationTests",
                 .product(name: "WaiveraDesign", package: "WaiveraDesign"),
+            name: "ScheduleFeatureTests",
+                "ScheduleFeature",
                 .product(name: "WaiveraTestSupport", package: "WaiveraTestSupport"),
             ]
         )
