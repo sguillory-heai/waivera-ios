@@ -1,0 +1,16 @@
+"auth.signIn.title" = "Sign in";
+"auth.signOut" = "Sign out";
+"auth.passwordChange.title" = "Change your password";
+"auth.passwordChange.message" = "Your organization asks you to set a new password before using Waivera. Change it on the web, then sign in again.";
+"auth.onboarding.title" = "Finish setting up your account";
+"auth.onboarding.message" = "Your account is not ready yet. Complete onboarding on the web, then sign in again.";
+"auth.primer.title" = "Stay in the loop";
+"auth.primer.messages" = "Messages and mentions from your team, with quick reply.";
+"auth.primer.assignments" = "Assignments when someone needs your help.";
+"auth.primer.schedule" = "Reminders before your shifts and events, and changes to them.";
+"auth.primer.footnote" = "You choose which kinds of notifications you get in Settings.";
+"auth.primer.enable" = "Turn on notifications";
+"auth.primer.notNow" = "Not now";
+"auth.primer.sample.sender" = "Alex Rivera";
+"auth.primer.sample.body" = "Can you cover Friday's 2 PM visit?";
+"auth.primer.sample.accessibility" = "Example notification: Alex Rivera asks, can you cover Friday's 2 PM visit?";

@@ -1,0 +1,13 @@
+"settings.title" = "Settings";
+"settings.appearance.title" = "Appearance";
+"settings.notifications.title" = "Notifications";
+"settings.account.title" = "Security & sign out";
+"settings.notifications.status.notAsked" = "Notifications are not turned on yet.";
+"settings.notifications.status.quiet" = "Notifications arrive quietly in Notification Center, without alerts or sounds.";
+"settings.notifications.status.off" = "Notifications are off for Waivera in iOS Settings. You won't hear about new messages or schedule changes.";
+"settings.notifications.turnOn" = "Turn on";
+"settings.notifications.turnOnAlerts" = "Turn on alerts";
+"settings.notifications.openSettings" = "Open Settings";
+"settings.account.signOut" = "Sign out";
+"settings.account.signOut.confirmTitle" = "Sign out of Waivera?";
+"settings.account.signOut.confirmMessage" = "You'll stop getting notifications on this device until you sign in again.";

@@ -8,7 +8,7 @@
         private let message: String?
         private let actionTitle: String?
         private let action: (() -> Void)?
-        private let tint: Color
+        private var tint = Palette.accent
 
         public init(
             systemImage: String,
@@ -17,42 +17,24 @@
             actionTitle: String? = nil,
             action: (() -> Void)? = nil
         ) {
-            self.init(
-                systemImage: systemImage,
-                title: title,
-                message: message,
-                actionTitle: actionTitle,
-                action: action,
-                tint: Palette.accent
-            )
-        }
-
-        private init(
-            systemImage: String,
-            title: String,
-            message: String?,
-            actionTitle: String?,
-            action: (() -> Void)?,
-            tint: Color
-        ) {
             self.systemImage = systemImage
             self.title = title
             self.message = message
             self.actionTitle = actionTitle
             self.action = action
-            self.tint = tint
         }
 
         /// Error variant: a typed `WaiveraError` message (never raw server text) with Retry.
         public static func error(title: String, message: String, onRetry: (() -> Void)?) -> EmptyStateView {
-            EmptyStateView(
+            var view = EmptyStateView(
                 systemImage: "exclamationmark.triangle.fill",
                 title: title,
                 message: message,
                 actionTitle: onRetry == nil ? nil : DesignStrings.retry,
-                action: onRetry,
-                tint: Palette.danger
+                action: onRetry
             )
+            view.tint = Palette.danger
+            return view
         }
 
         public var body: some View {
