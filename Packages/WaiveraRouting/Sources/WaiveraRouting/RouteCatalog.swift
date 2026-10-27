@@ -4,6 +4,10 @@ import Foundation
 public enum GateScreen: String, CaseIterable, Sendable {
     case loading
     case signIn = "sign-in"
+    /// Firebase is signed in but the backend login failed; Retry or Sign out.
+    case bootstrapFailed = "bootstrap-failed"
+    /// The build has no API base URL or Firebase key (`Config/*.xcconfig`).
+    case configurationMissing = "configuration-missing"
     case passwordChange = "password-change"
     case onboardingRequired = "onboarding-required"
     case notificationPrimer = "notification-primer"

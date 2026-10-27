@@ -30,8 +30,8 @@ public struct NavigationState: Equatable, Sendable {
         path(for: selectedTab).last
     }
 
-    /// The conversation on screen, if any. With the hub connected, pushes for this
-    /// conversation are not shown (presentation rule in WaiveraNotifications).
+    /// The conversation on top of the selected tab, if any. Foreground push suppression does
+    /// not read this: the data layer's presence (`ChatAlertsRepository`) owns that rule.
     public var visibleConversationID: Int? {
         guard sheet == nil else { return nil }
         return visibleRoute?.conversationID

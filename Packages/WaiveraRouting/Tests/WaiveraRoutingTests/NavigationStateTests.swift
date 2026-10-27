@@ -130,6 +130,16 @@ struct RouteCatalogTests {
         #expect(RouteCatalog.gates.count == GateScreen.allCases.count)
     }
 
+    @Test func everyGateHasAStableLaunchName() {
+        #expect(
+            RouteCatalog.gates.map(\.name) == [
+                "loading", "sign-in", "bootstrap-failed", "configuration-missing", "password-change",
+                "onboarding-required", "notification-primer",
+            ]
+        )
+        #expect(RouteCatalog.entry(named: "bootstrap-failed")?.target == .gate(.bootstrapFailed))
+    }
+
     private func caseName(_ route: AppRoute) -> String {
         String(String(describing: route).prefix { $0 != "(" })
     }
