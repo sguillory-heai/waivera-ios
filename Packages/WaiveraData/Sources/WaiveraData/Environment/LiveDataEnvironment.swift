@@ -44,6 +44,7 @@ extension DataEnvironment {
         let auth = FirebaseTokenProvider(
             auth: FirebaseAuthREST(
                 apiKey: dependencies.configuration.firebaseAPIKey,
+                bundleIdentifier: dependencies.configuration.bundleIdentifier,
                 transport: dependencies.transport,
                 clock: clock
             ),

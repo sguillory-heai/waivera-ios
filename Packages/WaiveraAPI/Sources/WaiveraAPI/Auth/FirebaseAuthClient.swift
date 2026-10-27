@@ -62,18 +62,26 @@ public struct FirebaseAuthREST: FirebaseAuthenticating {
         }
     }
 
+    /// Google checks this header when the API key is restricted to iOS apps (IS-10).
+    static let bundleHeader = "X-Ios-Bundle-Identifier"
+
     private let apiKey: String
+    private let bundleIdentifier: String?
     private let transport: any HTTPTransport
     private let clock: any WaiveraClock
     private let endpoints: Endpoints
 
+    /// `bundleIdentifier` is the app's bundle id from configuration; it is sent on every call so
+    /// the Firebase key can be restricted to this app.
     public init(
         apiKey: String,
+        bundleIdentifier: String? = nil,
         transport: any HTTPTransport = URLSession.shared,
         clock: any WaiveraClock = SystemClock(),
         endpoints: Endpoints = .google
     ) {
         self.apiKey = apiKey
+        self.bundleIdentifier = bundleIdentifier.flatMap { $0.isEmpty ? nil : $0 }
         self.transport = transport
         self.clock = clock
         self.endpoints = endpoints
@@ -139,6 +147,8 @@ public struct FirebaseAuthREST: FirebaseAuthenticating {
     }
 
     private func perform<Response: Decodable>(_ request: URLRequest) async throws -> Response {
+        var request = request
+        if let bundleIdentifier { request.setValue(bundleIdentifier, forHTTPHeaderField: Self.bundleHeader) }
         let data: Data
         let response: HTTPURLResponse
         do {
@@ -176,7 +186,8 @@ public enum FirebaseAuthErrorMapper {
         case "TOO_MANY_ATTEMPTS_TRY_LATER": .tooManyAttempts
         case "WEAK_PASSWORD": .weakPassword
         case "CREDENTIAL_TOO_OLD_LOGIN_AGAIN": .requiresRecentLogin
-        case "TOKEN_EXPIRED", "INVALID_ID_TOKEN", "INVALID_REFRESH_TOKEN", "USER_NOT_FOUND", "MISSING_REFRESH_TOKEN":
+        case "TOKEN_EXPIRED", "INVALID_ID_TOKEN", "INVALID_REFRESH_TOKEN", "USER_NOT_FOUND", "MISSING_REFRESH_TOKEN",
+            "INVALID_GRANT_TYPE", "PROJECT_NUMBER_MISMATCH":
             .sessionExpired
         default: .unknown
         }

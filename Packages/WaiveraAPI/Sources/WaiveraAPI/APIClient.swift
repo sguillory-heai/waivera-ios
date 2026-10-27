@@ -45,18 +45,45 @@ public struct APIRequest: Sendable {
     }
 }
 
+/// Tells the session that the server rejected a freshly refreshed token, which means the
+/// account was revoked or disabled in sprout_api (IF-05, IS-06). Only that definitive case is
+/// sent: rate limits, 5xx and network failures never are.
+public final class SessionRejections: Sendable {
+    private let broadcaster = AsyncBroadcaster<Int>(replays: false)
+    private let count = LockedValue(0)
+
+    public init() {}
+
+    public func stream() -> AsyncStream<Int> { broadcaster.stream() }
+
+    func send() {
+        broadcaster.send(count.update { value -> Int in
+            value += 1
+            return value
+        })
+    }
+}
+
 /// Sends requests to sprout_api. Adds the Firebase ID token as a bearer token, retries
 /// exactly once with a force-refreshed token on 401, and maps every failure to a
-/// `WaiveraError` (all thrown errors are `WaiveraError`).
+/// `WaiveraError` (all thrown errors are `WaiveraError`). A 401 that survives the refresh is
+/// reported to `rejections`.
 public struct APIClient: Sendable {
     public let baseURL: URL
     private let transport: any HTTPTransport
     private let tokens: any AuthTokenProvider
+    public let rejections: SessionRejections
 
-    public init(baseURL: URL, transport: any HTTPTransport = URLSession.shared, tokens: any AuthTokenProvider) {
+    public init(
+        baseURL: URL,
+        transport: any HTTPTransport = URLSession.shared,
+        tokens: any AuthTokenProvider,
+        rejections: SessionRejections = SessionRejections()
+    ) {
         self.baseURL = baseURL
         self.transport = transport
         self.tokens = tokens
+        self.rejections = rejections
     }
 
     /// Absolute URL for an API path. Accepts the relative `attachmentUrl` form
@@ -93,6 +120,7 @@ public struct APIClient: Sendable {
                 throw WaiveraError.unauthorized
             }
             (data, response) = try await perform(urlRequest.withBearer(refreshed))
+            if response.statusCode == 401 { rejections.send() }
         }
         guard (200..<300).contains(response.statusCode) else {
             throw APIErrorMapper.map(statusCode: response.statusCode, body: data)

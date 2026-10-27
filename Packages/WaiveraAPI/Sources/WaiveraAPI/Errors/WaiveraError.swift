@@ -44,6 +44,16 @@ public enum WaiveraError: Error, Equatable, Hashable, Sendable, Codable {
         case requiresRecentLogin
         case sessionExpired
         case unknown
+
+        /// Whether a token refresh that failed this way means the session is over for good
+        /// (revoked or invalid refresh token, disabled or deleted user). Everything else, rate
+        /// limiting and unknown codes included, may succeed later (IS-02).
+        public var endsSession: Bool {
+            switch self {
+            case .sessionExpired, .userDisabled: true
+            default: false
+            }
+        }
     }
 
     /// Short, user-facing copy, from `Localizable.strings` in this package.

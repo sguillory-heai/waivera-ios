@@ -14,12 +14,18 @@ public struct WaiveraConfiguration: Sendable, Equatable {
     public var firebaseAPIKey: String
     /// Web app root for the video-call and meeting handoff (03 §19); optional.
     public var webBaseURL: URL?
+    /// The app's bundle id (`CFBundleIdentifier`), sent to Firebase Auth so its API key can be
+    /// restricted to this app (IS-10).
+    public var bundleIdentifier: String?
 
-    public init(apiBaseURL: URL, firebaseAPIKey: String, webBaseURL: URL? = nil) {
+    public init(apiBaseURL: URL, firebaseAPIKey: String, webBaseURL: URL? = nil, bundleIdentifier: String? = nil) {
         self.apiBaseURL = apiBaseURL
         self.firebaseAPIKey = firebaseAPIKey
         self.webBaseURL = webBaseURL
+        self.bundleIdentifier = bundleIdentifier
     }
+
+    static let bundleIdentifierKey = "CFBundleIdentifier"
 
     /// Reads the configuration from an Info.plist dictionary, or reports the missing keys.
     public static func load(from info: [String: Any]) -> Result<WaiveraConfiguration, MissingConfiguration> {
@@ -46,7 +52,10 @@ public struct WaiveraConfiguration: Sendable, Equatable {
             return .failure(MissingConfiguration(keys: missing))
         }
         let web = secureURL(.webBaseURL)
-        return .success(WaiveraConfiguration(apiBaseURL: base, firebaseAPIKey: apiKey, webBaseURL: web))
+        let bundle = (info[bundleIdentifierKey] as? String).flatMap { $0.isEmpty || $0.hasPrefix("$(") ? nil : $0 }
+        return .success(
+            WaiveraConfiguration(apiBaseURL: base, firebaseAPIKey: apiKey, webBaseURL: web, bundleIdentifier: bundle)
+        )
     }
 
     /// `{apiBase}/api/chatHub`; the `api/` segment is mandatory (hub.md §1).

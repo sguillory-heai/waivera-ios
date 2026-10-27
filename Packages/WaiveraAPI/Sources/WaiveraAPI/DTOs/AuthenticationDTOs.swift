@@ -1,7 +1,9 @@
 import Foundation
 
 /// Mirrors `UserLoginResponseDto` (`data` of `GET /api/Authentication/login`, gap G-02).
-/// Flags are decoded leniently (`true`, `"true"`, `1`) and `userId` may be a number.
+/// Flags are decoded leniently (`true`, `"true"`, `1`) and `userId` may be a number. `userId`
+/// is required: without it every "is this me" check would quietly fail (IF-08). A PascalCase
+/// `UserID`, which the decoder's key conversion turns into `userID`, is accepted too.
 public struct UserLoginResponseDto: Codable, Sendable, Equatable {
     public var requiresPasswordChange: Bool
     public var userId: String
@@ -17,11 +19,24 @@ public struct UserLoginResponseDto: Codable, Sendable, Equatable {
         case requiresPasswordChange, userId, requiresOnboarding
     }
 
+    private enum AliasKeys: String, CodingKey {
+        case userID
+    }
+
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         requiresPasswordChange = container.lenientBool(forKey: .requiresPasswordChange)
         requiresOnboarding = container.lenientBool(forKey: .requiresOnboarding)
-        userId = container.lenient(LenientID.self, forKey: .userId)?.value ?? ""
+        let alias = try decoder.container(keyedBy: AliasKeys.self)
+        let id = container.lenient(LenientID.self, forKey: .userId)?.value
+            ?? alias.lenient(LenientID.self, forKey: .userID)?.value
+        guard let id, !id.trimmingCharacters(in: .whitespaces).isEmpty else {
+            throw DecodingError.keyNotFound(
+                CodingKeys.userId,
+                DecodingError.Context(codingPath: container.codingPath, debugDescription: "userId is required")
+            )
+        }
+        userId = id
     }
 }
 

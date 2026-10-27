@@ -13,6 +13,8 @@ struct AppConfiguration: Sendable {
         case firebaseAppID = "WaiveraFirebaseAppID"
         case firebaseSenderID = "WaiveraFirebaseSenderID"
         case firebaseProjectID = "WaiveraFirebaseProjectID"
+        /// Sent to Firebase Auth so its API key can be restricted to this app (IS-10).
+        case bundleIdentifier = "CFBundleIdentifier"
     }
 
     /// Firebase Messaging options; `nil` when any value is missing, and then Firebase is not configured.

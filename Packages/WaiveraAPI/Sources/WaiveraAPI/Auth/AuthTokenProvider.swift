@@ -32,15 +32,50 @@ public actor FirebaseTokenProvider: AuthTokenProvider {
     private var session: FirebaseSession?
     private var refreshTask: Task<FirebaseSession, any Error>?
     private let identityBroadcaster: AsyncBroadcaster<FirebaseIdentity?>
+    /// The stored session could not be read because the device is still locked. Until it can,
+    /// the identity stream emits nothing, so the session stays loading and no sign-out cleanup
+    /// runs (IS-03).
+    private var isWaitingForUnlock: Bool
 
     public init(auth: any FirebaseAuthenticating, store: any TokenStore, clock: any WaiveraClock = SystemClock()) {
         self.auth = auth
         self.store = store
         self.clock = clock
-        let stored: FirebaseSession? = (try? store.load()) ?? nil
+        switch Self.read(store) {
+        case .locked:
+            session = nil
+            isWaitingForUnlock = true
+            identityBroadcaster = AsyncBroadcaster(replays: true)
+        case .stored(let stored):
+            session = stored
+            isWaitingForUnlock = false
+            identityBroadcaster = AsyncBroadcaster(initial: stored.map(Self.identity))
+        }
+    }
+
+    private enum StoredRead {
+        case stored(FirebaseSession?)
+        case locked
+    }
+
+    private static func read(_ store: any TokenStore) -> StoredRead {
+        do {
+            return .stored(try store.load())
+        } catch TokenStoreError.locked {
+            return .locked
+        } catch {
+            // An unreadable item (corrupt data) is no session.
+            return .stored(nil)
+        }
+    }
+
+    /// Reads the stored session again if it was locked at launch. Call when protected data
+    /// becomes available and when the app comes to the foreground.
+    public func reloadStoredSession() {
+        guard isWaitingForUnlock, case .stored(let stored) = Self.read(store) else { return }
+        isWaitingForUnlock = false
         session = stored
-        let identity: FirebaseIdentity? = stored.map(Self.identity)
-        identityBroadcaster = AsyncBroadcaster(initial: identity)
+        identityBroadcaster.send(stored.map(Self.identity))
     }
 
     /// Emits the current identity, then every identity change.
@@ -51,6 +86,9 @@ public actor FirebaseTokenProvider: AuthTokenProvider {
     public var currentIdentity: FirebaseIdentity? { session.map(Self.identity) }
 
     public func idToken(forceRefresh: Bool) async throws -> String? {
+        reloadStoredSession()
+        // Locked: the session exists but is unreadable for now, which is retryable, not signed out.
+        if isWaitingForUnlock { throw WaiveraError.offline }
         guard let current = session else { return nil }
         if !forceRefresh, current.expiresAt.timeIntervalSince(clock.now) > Self.refreshMargin {
             return current.idToken
@@ -91,6 +129,7 @@ public actor FirebaseTokenProvider: AuthTokenProvider {
     }
 
     public func signOut() {
+        isWaitingForUnlock = false
         refreshTask?.cancel()
         refreshTask = nil
         session = nil
@@ -111,18 +150,26 @@ public actor FirebaseTokenProvider: AuthTokenProvider {
             try? store.save(next)
             return next
         } catch {
-            let mapped = WaiveraError.from(error)
-            if case .auth = mapped {
-                // The refresh token is dead (revoked, disabled, deleted): the session is over.
-                signOut()
-                throw WaiveraError.unauthorized
-            }
-            throw mapped
+            throw Self.refreshFailure(WaiveraError.from(error), endSession: signOut)
         }
     }
 
+    /// Only a definitive answer ends the session: the refresh token was revoked or is invalid,
+    /// or the user was disabled or deleted. Rate limiting, an unknown code or an undecodable
+    /// body (a captive portal page) keeps the session and comes back as a transient server
+    /// error, so callers back off and try again (IS-02).
+    private static func refreshFailure(_ error: WaiveraError, endSession: () -> Void) -> WaiveraError {
+        guard case .auth(let failure) = error else { return error }
+        if failure.endsSession {
+            endSession()
+            return .unauthorized
+        }
+        return .server(statusCode: failure == .tooManyAttempts ? 429 : 503)
+    }
+
     private func install(_ newSession: FirebaseSession) {
-        let changed = session?.uid != newSession.uid
+        let changed = session?.uid != newSession.uid || isWaitingForUnlock
+        isWaitingForUnlock = false
         session = newSession
         try? store.save(newSession)
         if changed { identityBroadcaster.send(Self.identity(newSession)) }
