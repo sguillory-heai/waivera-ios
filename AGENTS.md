@@ -88,7 +88,7 @@ Run the narrowest test target that covers the change first, then the full scheme
 
 ## Git and delivery
 
-- Until the first production release, branch from and merge into `master`. After a live release, switch to the sprout_api convention (branch from `dev`) and update this line. Commit messages start with the ticket ID: `[WAIV-2527] Add schedule list skeleton`. Use the same prefix across repos for one ticket.
+- Until the first production release, work on `master`; pushing directly to `master` is allowed while there are no production users. After a live release, switch to the sprout_api convention (branch from `dev`, no direct pushes) and update this line. Commit messages start with the ticket ID: `[WAIV-2527] Add schedule list skeleton`. Use the same prefix across repos for one ticket.
 - Never credit an AI tool anywhere in the repo: no `Co-Authored-By` or session trailers in commits, no "Generated with" footers or AI links in PR descriptions, comments, or code. Commits and PRs are authored by the person who owns the work.
 - One logical change per PR. The PR description says what changed, how it was verified (commands, simulator, screenshots for UI), and any API dependency.
 - Ticket comments are for non-technical business partners: describe user-visible behavior and impact only, no PRs, branches, or code terms.
