@@ -1,0 +1,11 @@
+/* Full-screen loading while the session is restored. */
+"app.loading" = "Loading Waivera…";
+"app.tab.today" = "Today";
+"app.tab.chat" = "Chat";
+"app.tab.schedule" = "Schedule";
+/* VoiceOver label for the avatar button that opens the account menu. */
+"app.menu.account" = "Account menu";
+"app.menu.profile" = "Profile";
+"app.menu.people" = "People";
+"app.menu.bookmarks" = "Bookmarks";
+"app.menu.settings" = "Settings";

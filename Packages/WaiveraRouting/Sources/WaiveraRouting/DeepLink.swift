@@ -48,8 +48,8 @@ public enum DeepLink {
     }
 
     // One case per URL shape keeps the grammar readable next to the doc comment.
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     // `URLComponents.path` is already percent-decoded; segments are never decoded twice.
+    // swiftlint:disable:next cyclomatic_complexity function_body_length
     private static func destination(segments: [String], query: [String: String]) -> Destination? {
         let messageID = query["messageId"].flatMap(Identifier.positiveInt)
         switch segments.first?.lowercased() {
