@@ -33,9 +33,42 @@ struct NavigationStateTests {
     @Test func pushForTheVisibleChatDoesNothing() {
         var state = NavigationState()
         state.open(.conversation(42))
-        let changed = state.open(.conversation(42, targetMessageID: 9312))
+        let changed = state.open(.conversation(42))
         #expect(!changed)
         #expect(state.path(for: .chat) == [.conversation(conversationID: 42, targetMessageID: nil)])
+    }
+
+    /// As on Android (NAV-01): a push for a new message in the open conversation moves the
+    /// highlight in place instead of stacking a second copy or ignoring the message.
+    @Test func aNewHighlightOnTheVisibleChatIsReplacedInPlace() {
+        var state = NavigationState()
+        state.open(.conversation(42))
+        let changed = state.open(.conversation(42, targetMessageID: 9312))
+        #expect(changed)
+        #expect(state.path(for: .chat) == [.conversation(conversationID: 42, targetMessageID: 9312)])
+    }
+
+    @Test("IF-12: a link to the conversation on top of Today changes nothing")
+    func theConversationOnTopOfAnotherTabIsNotDuplicated() {
+        var state = NavigationState()
+        state.push(.conversation(conversationID: 42, targetMessageID: nil))
+        let before = state
+        let changed = state.open(.conversation(42))
+        #expect(!changed)
+        #expect(state == before)
+        #expect(state.selectedTab == .today)
+        #expect(state.path(for: .chat).isEmpty)
+    }
+
+    @Test("IF-12: a thread on top of Today is not opened again on Chat")
+    func theThreadOnTopOfAnotherTabIsNotDuplicated() {
+        var state = NavigationState()
+        state.push(.conversation(conversationID: 7, targetMessageID: nil))
+        state.push(.thread(rootMessageID: 9330, conversationID: 7, targetMessageID: nil))
+        let changed = state.open(.thread(rootMessageID: 9330, conversationID: 7))
+        #expect(!changed)
+        #expect(state.selectedTab == .today)
+        #expect(state.path(for: .chat).isEmpty)
     }
 
     @Test func sameChatOnAnotherTabIsNotTreatedAsVisible() {
