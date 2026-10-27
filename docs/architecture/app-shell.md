@@ -164,6 +164,14 @@ the primer store.
 
 All are ignored in Release builds.
 
+## Tests
+
+- `WaiveraRouting`, `WaiveraNotifications` and `WaiveraDesignTokens` tests run on Linux
+  (`swift test --package-path Packages/<Name>`).
+- `WaiveraTests` (hosted in the app) tests `AppModel` with in-memory gateways: the gate for each
+  session state, the primer, registration after sign-in, denied permission, unregister before
+  sign-out, held taps, Reply / Mark read, the foreground rule, launch routes and the debounce.
+
 ## Screenshots and snapshots
 
 - `WaiveraUITests/ScreenshotTour.swift` visits every `RouteCatalog` entry in light, dark and
