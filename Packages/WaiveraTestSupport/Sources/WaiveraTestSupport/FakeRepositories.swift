@@ -263,16 +263,26 @@ public final class FakeRealtimeStatusRepository: RealtimeStatusRepository {
 
 public final class FakeChatAlertsRepository: ChatAlertsRepository {
     private let broadcaster = AsyncBroadcaster<ChatAlert>(replays: false)
-    /// Conversations the fake treats as on screen with a live hub.
+    private let presence: ChatPresence
+    private let realtime: (any RealtimeClient)?
+    /// Conversations the fake treats as on screen with a live hub, whatever the presence says.
     public let activeConversationIds = LockedValue<Set<Int>>([])
 
-    public init() {}
+    /// Applies the live rule over `presence` (fed by the fake chat's `open`/`close` and the
+    /// environment's foreground switch) and `realtime`'s connection. Without a `realtime`, the
+    /// hub counts as connected.
+    public init(presence: ChatPresence = ChatPresence(), realtime: (any RealtimeClient)? = nil) {
+        self.presence = presence
+        self.realtime = realtime
+    }
 
     public func alerts() -> AsyncStream<ChatAlert> { broadcaster.stream() }
 
     public func shouldPresentForegroundPush(conversationId: Int?) -> Bool {
         guard let conversationId else { return true }
-        return !activeConversationIds.get().contains(conversationId)
+        if activeConversationIds.get().contains(conversationId) { return false }
+        guard realtime?.currentStatus.isConnected ?? true else { return true }
+        return !presence.isActive(conversationId)
     }
 
     /// Shows an in-app banner, as `ReceiveChatAttention` would.

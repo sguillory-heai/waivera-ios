@@ -10,11 +10,13 @@ extension FakeChatRepository: MessagesRepository {
 
     public func open(conversationId: Int) async {
         calls.record("open:\(conversationId)")
+        presence.setVisible(conversationId, true)
         await refresh(conversationId: conversationId)
     }
 
     public func close(conversationId: Int) async {
         calls.record("close:\(conversationId)")
+        presence.setVisible(conversationId, false)
     }
 
     public func refresh(conversationId: Int) async {
@@ -181,11 +183,13 @@ extension FakeChatRepository: ThreadsRepository {
 
     public func open(rootMessageId: Int, conversationId: Int) async {
         calls.record("openThread:\(rootMessageId)")
+        presence.setVisible(conversationId, true)
         await refresh(rootMessageId: rootMessageId, conversationId: conversationId)
     }
 
     public func close(rootMessageId: Int, conversationId: Int) async {
         calls.record("closeThread:\(rootMessageId)")
+        presence.setVisible(conversationId, false)
     }
 
     public func refresh(rootMessageId: Int, conversationId: Int) async {

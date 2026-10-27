@@ -46,6 +46,29 @@ struct FakeEnvironmentTests {
         #expect(await latest(environment.conversations.totalUnread()) ?? 0 > 0)
     }
 
+    @Test func foregroundPushIsHiddenOnlyForTheOpenConversationWithALiveHub() async {
+        let fakes = FakeDataEnvironment.make(clock: ManualClock())
+        let environment = fakes.environment
+        await environment.launch()
+        #expect(environment.alerts.shouldPresentForegroundPush(conversationId: 7))
+        await environment.messages.open(conversationId: 7)
+        #expect(!environment.alerts.shouldPresentForegroundPush(conversationId: 7))
+        #expect(environment.alerts.shouldPresentForegroundPush(conversationId: 8))
+        #expect(environment.alerts.shouldPresentForegroundPush(conversationId: nil))
+        fakes.realtime.drop()
+        #expect(environment.alerts.shouldPresentForegroundPush(conversationId: 7))
+        fakes.realtime.connect()
+        await environment.setForeground(false)
+        #expect(environment.alerts.shouldPresentForegroundPush(conversationId: 7))
+        await environment.setForeground(true)
+        await environment.threads.open(rootMessageId: 9330, conversationId: 7)
+        await environment.messages.close(conversationId: 7)
+        // The thread keeps its conversation on screen.
+        #expect(!environment.alerts.shouldPresentForegroundPush(conversationId: 7))
+        await environment.threads.close(rootMessageId: 9330, conversationId: 7)
+        #expect(environment.alerts.shouldPresentForegroundPush(conversationId: 7))
+    }
+
     @Test func failingScenarioShowsErrorsEverywhere() async {
         let environment = FakeDataEnvironment.make(.failing, clock: ManualClock()).environment
         await environment.launch()

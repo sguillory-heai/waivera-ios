@@ -65,6 +65,7 @@ public struct FakeDataEnvironment: Sendable {
     ) -> FakeDataEnvironment {
         let data = scenario == .empty ? DemoData.empty : DemoData.make()
         let realtime = FakeRealtimeClient(clock: clock, connectsOnStart: connectsRealtimeOnStart)
+        let presence = ChatPresence()
         let push = FakePushRegistrationRepository()
         let session = FakeSessionRepository(
             user: data.user,
@@ -80,7 +81,7 @@ public struct FakeDataEnvironment: Sendable {
             clock: clock,
             realtime: realtime,
             session: session,
-            chat: FakeChatRepository(data: data, clock: clock),
+            chat: FakeChatRepository(data: data, clock: clock, presence: presence),
             attachments: FakeAttachmentsRepository(),
             bookmarks: FakeBookmarksRepository(data.bookmarks, clock: clock),
             activity: FakeActivityRepository(data.activity, clock: clock),
@@ -90,7 +91,7 @@ public struct FakeDataEnvironment: Sendable {
             settings: FakeSettingsRepository(),
             push: push,
             realtimeStatus: FakeRealtimeStatusRepository(realtime: realtime),
-            alerts: FakeChatAlertsRepository(),
+            alerts: FakeChatAlertsRepository(presence: presence, realtime: realtime),
             webBaseURL: webBaseURL
         )
         switch scenario {
@@ -167,7 +168,10 @@ public struct FakeDataEnvironment: Sendable {
                 guard let webBaseURL else { throw WaiveraError.configurationMissing }
                 return webBaseURL.appending(path: "lobby").appending(path: "demo-\(conversation.id)")
             },
-            foreground: { await realtime.setForeground($0) },
+            foreground: { [presence = chat.presence] isForeground in
+                presence.setForeground(isForeground)
+                await realtime.setForeground(isForeground)
+            },
             start: {
                 await session.start()
                 await realtime.start()

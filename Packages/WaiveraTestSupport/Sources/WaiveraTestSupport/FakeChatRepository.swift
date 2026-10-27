@@ -21,6 +21,8 @@ public actor FakeChatRepository {
     nonisolated let timelineCells = CellRegistry<Int, Resource<MessageTimeline>>(initial: Resource())
     nonisolated let threadCells = CellRegistry<Int, Resource<ThreadTimeline>>(initial: Resource())
     public nonisolated let calls = CallLog()
+    /// On-screen conversations, as the live engine tracks them for unread counts and alerts.
+    public nonisolated let presence: ChatPresence
 
     let viewer: CurrentUser
     let clock: any WaiveraClock
@@ -36,9 +38,10 @@ public actor FakeChatRepository {
     var nextClientId = 0
     var nextConversationId = 5_000
 
-    public init(data: DemoData, clock: any WaiveraClock) {
+    public init(data: DemoData, clock: any WaiveraClock, presence: ChatPresence = ChatPresence()) {
         viewer = data.user
         self.clock = clock
+        self.presence = presence
         inbox = FakeResource(data.conversations, clock: clock)
         messages = data.messages
         threadsById = data.threads
