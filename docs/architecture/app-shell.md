@@ -44,8 +44,9 @@ While the session re-runs the bootstrap from `bootstrapFailed`, `onboardingRequi
 (`AppModel.gateHeld(whileRebootstrappingFrom:)`), so Try again, Check again and the forced
 password change keep their busy state instead of flashing the loader or sign-in.
 
-While signed in and the scene is not active, `RootView` covers the content with `PrivacyCover`
-so the app switcher snapshot shows no messages. On sign-out the app removes every delivered
+While signed in and a scene is not active, `PrivacyCoverController` (owned by `AppDelegate`)
+shows `PrivacyCover` in its own window at `.alert + 1`, above sheets, full-screen covers, the
+share sheet and Safari, so the app switcher snapshot shows no messages. On sign-out the app removes every delivered
 notification and the attachment files saved for sharing.
 
 The primer shows once per install (`PrimerSeenStore`). "Turn on notifications" requests full
