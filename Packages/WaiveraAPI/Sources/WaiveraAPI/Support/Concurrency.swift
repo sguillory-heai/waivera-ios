@@ -49,23 +49,30 @@ public final class AsyncBroadcaster<Value: Sendable>: @unchecked Sendable {
 
     private let state: LockedValue<State>
     private let replays: Bool
+    private let keepsEveryValue: Bool
 
     /// Starts with `initial` as the current value (which may itself be `nil` for optional values).
-    public init(initial: Value, replays: Bool = true) {
+    /// A slow subscriber sees only the newest 64 values unless `keepsEveryValue` is set, which
+    /// event streams (every hub event matters, IF-11) use; state streams only need the latest.
+    public init(initial: Value, replays: Bool = true, keepsEveryValue: Bool = false) {
         state = LockedValue(State(current: .some(initial)))
         self.replays = replays
+        self.keepsEveryValue = keepsEveryValue
     }
 
     /// Starts with no current value; subscribers wait for the first `send`.
-    public init(replays: Bool = true) {
+    public init(replays: Bool = true, keepsEveryValue: Bool = false) {
         state = LockedValue(State(current: nil))
         self.replays = replays
+        self.keepsEveryValue = keepsEveryValue
     }
 
     public var current: Value? { state.get().current }
 
     public func stream() -> AsyncStream<Value> {
-        let (stream, continuation) = AsyncStream<Value>.makeStream(bufferingPolicy: .bufferingNewest(64))
+        let (stream, continuation) = AsyncStream<Value>.makeStream(
+            bufferingPolicy: keepsEveryValue ? .unbounded : .bufferingNewest(64)
+        )
         let id = UUID()
         let replay: Value? = state.update { state in
             state.continuations[id] = continuation

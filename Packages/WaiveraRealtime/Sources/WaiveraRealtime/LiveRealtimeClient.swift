@@ -7,8 +7,10 @@ import WaiveraAPI
 ///   the Expo four-attempt cap, 11 §2.11); `retryNow()` skips the wait.
 /// - Rejoins every desired conversation group on each connect and bumps `epoch` so
 ///   repositories resync over REST (05 §2).
-/// - The first attempt after a long background and every retry after a failure use a
-///   force-refreshed token.
+/// - The first attempt after a long background, and the first retry after the hub rejected the
+///   token, use a force-refreshed token. Other failures (a hub outage, the network) reuse the
+///   current token, which the provider still refreshes near expiry, so an outage never turns
+///   into a stream of forced refreshes that Firebase rate-limits (IS-02).
 public actor LiveRealtimeClient: RealtimeClient {
     /// A background longer than this forces a token refresh on the next connect.
     public static let staleTokenInterval: TimeInterval = 300
@@ -20,7 +22,7 @@ public actor LiveRealtimeClient: RealtimeClient {
     private let clock: any WaiveraClock
 
     private let statusBroadcaster = AsyncBroadcaster(initial: RealtimeStatus.initial)
-    private let eventBroadcaster = AsyncBroadcaster<ChatHubEvent>(replays: false)
+    private let eventBroadcaster = AsyncBroadcaster<ChatHubEvent>(replays: false, keepsEveryValue: true)
     private let status = LockedValue(RealtimeStatus.initial)
 
     private var isStarted = false
@@ -154,7 +156,9 @@ public actor LiveRealtimeClient: RealtimeClient {
             try await candidate.start()
         } catch {
             pump.cancel()
-            forceTokenRefresh = true
+            // Only a rejected token is worth a forced refresh, and only once in a row: if the hub
+            // still says no with a fresh token, the API side ends the session (IF-05).
+            forceTokenRefresh = WaiveraError.from(error) == .unauthorized && !refresh
             return false
         }
         guard generation == current, shouldRun else {
@@ -170,7 +174,6 @@ public actor LiveRealtimeClient: RealtimeClient {
         pump.cancel()
         if generation == current {
             connection = nil
-            forceTokenRefresh = true
         }
         return true
     }

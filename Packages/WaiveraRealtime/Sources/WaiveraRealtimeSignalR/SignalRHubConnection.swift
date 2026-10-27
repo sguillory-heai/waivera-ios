@@ -49,7 +49,9 @@ final class SignalRHubConnection: WaiveraRealtime.HubConnection {
     init(connection: SignalRClient.HubConnection, eventSignatures: [String: [HubArgumentKind]]) {
         self.connection = connection
         self.eventSignatures = eventSignatures
-        (invocations, continuation) = AsyncStream.makeStream(bufferingPolicy: .bufferingNewest(256))
+        // Unbounded: the network bounds the producer, and a dropped message, reaction or
+        // receipt would stay missing until the next REST refresh (IF-11).
+        (invocations, continuation) = AsyncStream.makeStream(bufferingPolicy: .unbounded)
     }
 
     func start() async throws {
@@ -69,7 +71,7 @@ final class SignalRHubConnection: WaiveraRealtime.HubConnection {
         } catch {
             continuation.finish()
             closed.close(error)
-            throw WaiveraError.realtimeUnavailable
+            throw Self.startFailure(error)
         }
     }
 
@@ -101,6 +103,13 @@ final class SignalRHubConnection: WaiveraRealtime.HubConnection {
 
     func waitUntilClosed() async -> (any Error)? {
         await closed.wait()
+    }
+
+    /// The client reports a rejected negotiate only as text ("Unexpected status code returned
+    /// from negotiate '401'"). That one case is told apart so the token is refreshed once; every
+    /// other start failure is a plain outage.
+    static func startFailure(_ error: any Error) -> WaiveraError {
+        String(describing: error).contains("'401'") ? .unauthorized : .realtimeUnavailable
     }
 
     private static func map(_ error: SignalRError) -> any Error {

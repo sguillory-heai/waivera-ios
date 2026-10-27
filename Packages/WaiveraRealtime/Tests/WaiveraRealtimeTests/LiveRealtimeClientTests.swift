@@ -69,8 +69,9 @@ struct LiveRealtimeClientTests {
         #expect(states.contains(.reconnecting(attempt: 1, delay: .zero)))
         #expect(factory.calls(to: "JoinConversation").count == 2)
         #expect(factory.connections.count == 2)
-        // The token may have expired with the connection, so the reconnect forces a refresh.
-        #expect(tokens.forced.last == true)
+        // A dropped connection is not a rejected token: the provider refreshes a near-expiry
+        // token by itself, so the reconnect does not force one (IS-02).
+        #expect(tokens.forced == [false, false])
     }
 
     @Test func neverGivesUpAndCapsBackoff() async {
@@ -80,7 +81,8 @@ struct LiveRealtimeClientTests {
         #expect(test.factory.starts == 16)
         #expect(test.clock.sleeps.count == 15)
         #expect(test.clock.sleeps.allSatisfy { $0 <= ReconnectPolicy.defaultMaxDelay })
-        #expect(test.tokens.forced.dropFirst().allSatisfy { $0 })
+        // An outage never forces a token refresh (IS-02).
+        #expect(test.tokens.forced.allSatisfy { !$0 })
     }
 
     @Test func retryNowSkipsTheBackoffWait() async {
@@ -227,5 +229,41 @@ struct LiveRealtimeClientTests {
         #expect(await eventually { clock.sleeps.count >= 3 })
         #expect(!client.currentStatus.isConnected)
         await client.stop()
+    }
+
+    @Test("IS-02: five connects failing in a hub outage force no token refresh")
+    func outageNeverForcesARefresh() async {
+        let test = LiveRealtimeClientTests(script: Array(repeating: .fail, count: 5))
+        await test.client.start()
+        #expect(await test.connected(epoch: 1))
+        #expect(test.tokens.forced == Array(repeating: false, count: 6))
+    }
+
+    @Test("IS-02: a rejected token is force-refreshed once, not on every retry")
+    func aRejectedTokenIsRefreshedOnce() async {
+        let test = LiveRealtimeClientTests(script: [.unauthorized, .unauthorized, .unauthorized])
+        await test.client.start()
+        #expect(await test.connected(epoch: 1))
+        #expect(test.tokens.forced == [false, true, false, true])
+    }
+
+    @Test("IF-11: a burst of hub events reaches a subscriber that has not started reading")
+    func aBurstIsNeverDropped() async {
+        await client.start()
+        #expect(await connected(epoch: 1))
+        let events = client.events()
+        let connection = factory.latest
+        for id in 1...300 {
+            let message: JSONValue = .object(["id": .number(Double(id)), "conversationId": 7, "messageContent": "hi"])
+            connection?.emit(HubInvocation(target: "ReceiveMessage", arguments: [message]))
+        }
+        connection?.emit(HubInvocation(target: "ReceiveTypingStatusForUser", arguments: [7, "u", true]))
+        try? await Task.sleep(for: .milliseconds(50))
+        var received = 0
+        for await event in events {
+            if case .typing = event { break }
+            received += 1
+        }
+        #expect(received == 300)
     }
 }

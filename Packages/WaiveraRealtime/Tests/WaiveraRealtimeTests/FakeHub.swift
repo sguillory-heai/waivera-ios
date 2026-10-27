@@ -8,6 +8,8 @@ import WaiveraAPI
 final class FakeHubFactory: HubConnectionFactory, @unchecked Sendable {
     enum Outcome: Sendable {
         case fail
+        /// The negotiate answered 401: the hub rejected the token.
+        case unauthorized
         case connect
     }
 
@@ -90,9 +92,15 @@ final class FakeHubConnection: HubConnection, @unchecked Sendable {
     func start() async throws {
         let value = try await accessToken()
         token.update { $0 = value }
-        if factory.nextOutcome() == .fail {
+        switch factory.nextOutcome() {
+        case .fail:
             close()
             throw WaiveraError.realtimeUnavailable
+        case .unauthorized:
+            close()
+            throw WaiveraError.unauthorized
+        case .connect:
+            break
         }
     }
 
