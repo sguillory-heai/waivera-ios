@@ -21,14 +21,19 @@ enum DataLayerBridge {
             // The cache only speeds up the first frame; the app works without it.
             localStore = InMemoryLocalStore()
         }
+        let tokenStore = KeychainTokenStore()
+        let keyValueStore = UserDefaultsKeyValueStore()
+        // Before anything reads the session: a reinstall never signs the previous person in (IS-01).
+        FirstLaunchGuard.run(defaults: keyValueStore, tokenStore: tokenStore)
         return DataEnvironment.live(
             LiveDependencies(
                 configuration: apiConfiguration,
-                tokenStore: KeychainTokenStore(),
+                tokenStore: tokenStore,
                 hubFactory: SignalRHubConnectionFactory(),
                 localStore: localStore,
-                keyValueStore: UserDefaultsKeyValueStore(),
-                connectivity: NetworkPathConnectivity()
+                keyValueStore: keyValueStore,
+                connectivity: NetworkPathConnectivity(),
+                deviceIdentifiers: KeychainDeviceIdentifierStore()
             )
         )
     }

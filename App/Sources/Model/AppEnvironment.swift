@@ -22,7 +22,9 @@ struct AppEnvironment {
 }
 
 /// Emits no token: simulators without push, unconfigured Firebase, the fake server.
-struct SilentTokenSource: PushTokenSource {
+/// `nonisolated` because the app target defaults to the main actor and `PushTokenSource` is a
+/// nonisolated `Sendable` protocol.
+nonisolated struct SilentTokenSource: PushTokenSource {
     func tokens() -> AsyncStream<String> {
         AsyncStream { _ in }
     }
