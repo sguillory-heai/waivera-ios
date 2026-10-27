@@ -6,10 +6,10 @@ let package = Package(
     defaultLocalization: "en",
     platforms: [.iOS(.v17), .macOS(.v14)],
     products: [
-        .library(name: "WaiveraAPI", targets: ["WaiveraAPI"]),
+        .library(name: "WaiveraAPI", targets: ["WaiveraAPI"])
     ],
     dependencies: [
-        .package(path: "../WaiveraFixtures"),
+        .package(path: "../WaiveraFixtures")
     ],
     targets: [
         .target(name: "WaiveraAPI", resources: [.process("Resources")]),

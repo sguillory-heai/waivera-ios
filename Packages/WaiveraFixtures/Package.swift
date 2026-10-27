@@ -7,9 +7,9 @@ let package = Package(
     name: "WaiveraFixtures",
     platforms: [.iOS(.v17), .macOS(.v14)],
     products: [
-        .library(name: "WaiveraFixtures", targets: ["WaiveraFixtures"]),
+        .library(name: "WaiveraFixtures", targets: ["WaiveraFixtures"])
     ],
     targets: [
-        .target(name: "WaiveraFixtures", resources: [.copy("Fixtures")]),
+        .target(name: "WaiveraFixtures", resources: [.copy("Fixtures")])
     ]
 )

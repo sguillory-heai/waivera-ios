@@ -10,7 +10,7 @@ let package = Package(
     name: "WaiveraTestSupport",
     platforms: [.iOS(.v17), .macOS(.v14)],
     products: [
-        .library(name: "WaiveraTestSupport", targets: ["WaiveraTestSupport"]),
+        .library(name: "WaiveraTestSupport", targets: ["WaiveraTestSupport"])
     ],
     dependencies: [
         .package(path: "../WaiveraAPI"),

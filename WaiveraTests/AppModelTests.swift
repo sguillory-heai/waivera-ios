@@ -271,7 +271,12 @@ struct AppModelPushTests {
         await harness.startSignedIn()
         let push = PushPayload.chat(ChatPush(conversationID: 7, messageID: 9312))
         await harness.model.handle(
-            NotificationResponseEvent(key: "a", actionIdentifier: NotificationActionID.reply, payload: push, userText: "on it")
+            NotificationResponseEvent(
+                key: "a",
+                actionIdentifier: NotificationActionID.reply,
+                payload: push,
+                userText: "on it"
+            )
         )
         let threadReply = PushPayload.chat(ChatPush(conversationID: 7, messageID: 9331, threadRootMessageID: 9330))
         await harness.model.handle(
@@ -283,7 +288,12 @@ struct AppModelPushTests {
             )
         )
         await harness.model.handle(
-            NotificationResponseEvent(key: "c", actionIdentifier: NotificationActionID.markRead, payload: push, userText: nil)
+            NotificationResponseEvent(
+                key: "c",
+                actionIdentifier: NotificationActionID.markRead,
+                payload: push,
+                userText: nil
+            )
         )
         // A thread reply also goes through the fake's outbox, which records `send:`.
         let calls = harness.fakes.chat.calls.all.filter { $0.hasPrefix("send:") || $0.hasPrefix("reply:") }
@@ -297,7 +307,12 @@ struct AppModelPushTests {
         await harness.settle()
         let push = PushPayload.chat(ChatPush(conversationID: 7, messageID: 9312))
         await harness.model.handle(
-            NotificationResponseEvent(key: "a", actionIdentifier: NotificationActionID.reply, payload: push, userText: "hi")
+            NotificationResponseEvent(
+                key: "a",
+                actionIdentifier: NotificationActionID.reply,
+                payload: push,
+                userText: "hi"
+            )
         )
         #expect(harness.fakes.chat.calls.count("send:") == 0)
     }
