@@ -175,6 +175,8 @@ targets:
     dependencies:
       - package: WaiveraDesign
         product: WaiveraDesign
+      - package: Features
+        product: TodayFeature
       - package: SnapshotTesting
         product: SnapshotTesting
     settings:
