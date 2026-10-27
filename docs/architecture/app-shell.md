@@ -131,9 +131,12 @@ Payload → route (`PushPayloadParser`, `PushPayload.destination`):
 - **Actions**: Reply sends through the outbox (`MessagesRepository.send`, or `ThreadsRepository.reply`
   when the push names a thread root); Mark as read calls `MessagesRepository.markRead` and clears
   the conversation's delivered notifications. Both are dropped unless the session is signed in.
-- **Firebase**: only `FirebaseMessaging`, only in the app target (`App/Sources/Push`), configured
-  from `.xcconfig` values; skipped entirely when they are empty. Swizzling is off; the app passes
-  the APNs token to FCM itself.
+- **Firebase**: only `FirebaseMessaging` (and `FirebaseCore` to configure it), only in the app
+  target (`App/Sources/Push`), configured from `.xcconfig` values; skipped entirely when they are
+  empty. Swizzling is off; the app passes the APNs token to FCM itself. Firebase 13 deprecates
+  `messaging(_:didReceiveRegistrationToken:)` in favour of installation-ID registration
+  (`FirebaseMessagingInstallationIdEnabled`), which sprout_api cannot target yet: it sends to FCM
+  registration tokens. The app stays on token registration until the API moves.
 - **Entitlement**: push delivery needs the `aps-environment` entitlement, which is not added yet
   (pending Apple Developer account access and approval). Until then `registerForRemoteNotifications`
   fails quietly and the simulator payloads below are the way to test.

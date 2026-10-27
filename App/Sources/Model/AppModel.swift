@@ -58,22 +58,31 @@ final class AppModel {
         if case .gate(let forced) = launch.route?.target {
             return forced
         }
+        return Self.sessionGate(for: session, hasShownSignIn: hasShownSignIn) ?? primerGate
+    }
+
+    /// The gate for every state but `signedIn`.
+    static func sessionGate(for session: SessionState, hasShownSignIn: Bool) -> GateScreen? {
         switch session {
-        case .loading: return .loading
-        case .bootstrapping: return hasShownSignIn ? .signIn : .loading
-        case .signedOut: return .signIn
-        case .bootstrapFailed: return .bootstrapFailed
-        case .configurationMissing: return .configurationMissing
-        case .passwordChangeRequired: return .passwordChange
-        case .onboardingRequired: return .onboardingRequired
-        case .signedIn:
-            guard let authorization else { return nil }
-            let showsPrimer = NotificationPermissionPolicy.shouldShowPrimer(
-                authorization: authorization,
-                hasSeenPrimer: hasSeenPrimer
-            )
-            return showsPrimer ? .notificationPrimer : nil
+        case .loading: .loading
+        case .bootstrapping: hasShownSignIn ? .signIn : .loading
+        case .signedOut: .signIn
+        case .bootstrapFailed: .bootstrapFailed
+        case .configurationMissing: .configurationMissing
+        case .passwordChangeRequired: .passwordChange
+        case .onboardingRequired: .onboardingRequired
+        case .signedIn: nil
         }
+    }
+
+    /// Signed in: the primer once, after the system has answered and before it was ever asked.
+    private var primerGate: GateScreen? {
+        guard let authorization else { return nil }
+        let showsPrimer = NotificationPermissionPolicy.shouldShowPrimer(
+            authorization: authorization,
+            hasSeenPrimer: hasSeenPrimer
+        )
+        return showsPrimer ? .notificationPrimer : nil
     }
 
     /// Client-owned copy for the bootstrap-failed gate; never server text.
@@ -204,9 +213,11 @@ final class AppModel {
         authorization = status
         await pushCoordinator.authorizationChanged(status)
     }
+}
 
-    // MARK: Banners
+// MARK: Banners
 
+extension AppModel {
     private func alertArrived(_ alert: ChatAlert) {
         // The data layer already applied the in-app banner switch and presence (G-09).
         guard gate == nil else { return }
@@ -238,9 +249,11 @@ final class AppModel {
             .thread(rootMessageID: rootMessageId, conversationID: conversationId, targetMessageID: targetMessageId)
         }
     }
+}
 
-    // MARK: Navigation
+// MARK: Navigation
 
+extension AppModel {
     func push(_ route: AppRoute) {
         navigation.push(route)
     }
@@ -271,9 +284,11 @@ final class AppModel {
             navigation.open(now)
         }
     }
+}
 
-    // MARK: Notifications
+// MARK: Notifications
 
+extension AppModel {
     /// Foreground presentation for a push (called by `NotificationCenterDelegate`). Whether a
     /// chat push is hidden is the data layer's call (`shouldPresentForegroundPush`).
     func presentationDecision(for payload: PushPayload) -> PresentationDecision {
@@ -347,9 +362,11 @@ final class AppModel {
         guard let url = URL(string: UIApplication.openNotificationSettingsURLString) else { return }
         UIApplication.shared.open(url)
     }
+}
 
-    // MARK: Session
+// MARK: Session
 
+extension AppModel {
     /// The session's single sign-out path: it unregisters push and stops realtime while
     /// requests still authenticate, then clears Firebase and the caches (01 §6, 08 §9).
     func signOut() {
