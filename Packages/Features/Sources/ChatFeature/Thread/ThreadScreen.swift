@@ -53,17 +53,17 @@
                     onRetry: { Task { await model.retryLoad() } }
                 )
             case .ready:
-                TimelineView(.periodic(from: .now, by: ChatMetrics.timeTick)) { tick in
+                TimelineView(.periodic(from: .now, by: ChatMetrics.timeTick)) { _ in
                     TimelineList(
                         items: state.replies,
-                        context: rowContext(now: tick.date),
+                        context: rowContext(now: model.clock.now),
                         actions: rowActions,
                         hasOlder: false,
                         isLoadingOlder: false,
                         scrollCommand: state.scrollCommand,
                         accessibilityLabelKey: "thread.list"
                     ) {
-                        rootHeader(now: tick.date)
+                        rootHeader(now: model.clock.now)
                     }
                 }
             }
@@ -183,4 +183,29 @@
             )
         }
     }
+
+    #if DEBUG
+        #Preview("Replies, light") {
+            NavigationStack { ThreadScreen(model: ChatPreviewData.threadModel(.replies)) }
+        }
+
+        #Preview("Replies, dark") {
+            NavigationStack { ThreadScreen(model: ChatPreviewData.threadModel(.replies)) }
+                .preferredColorScheme(.dark)
+        }
+
+        #Preview("Replies, AX5") {
+            NavigationStack { ThreadScreen(model: ChatPreviewData.threadModel(.replies)) }
+                .dynamicTypeSize(.accessibility5)
+        }
+
+        #Preview("Every state") {
+            TabView {
+                ForEach(ThreadPreviewVariant.allCases, id: \.self) { variant in
+                    NavigationStack { ThreadScreen(model: ChatPreviewData.threadModel(variant)) }
+                        .tabItem { Text(verbatim: variant.rawValue) }
+                }
+            }
+        }
+    #endif
 #endif

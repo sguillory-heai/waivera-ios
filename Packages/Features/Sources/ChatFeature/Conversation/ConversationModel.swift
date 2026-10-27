@@ -68,8 +68,8 @@ final class ConversationModel {
     }
 
     /// A model that only displays `state`, for previews and snapshot tests.
-    convenience init(preview: ConversationState, draft: String = "") {
-        self.init(conversationID: 7, targetMessageID: nil, data: nil)
+    convenience init(preview: ConversationState, draft: String = "", clock: ChatClock = ChatClock()) {
+        self.init(conversationID: 7, targetMessageID: nil, data: nil, clock: clock)
         state = preview
         self.draft = draft
     }

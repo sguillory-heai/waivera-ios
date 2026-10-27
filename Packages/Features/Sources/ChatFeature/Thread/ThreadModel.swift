@@ -65,8 +65,8 @@ final class ThreadModel {
     }
 
     /// A model that only displays `state`, for previews and snapshot tests.
-    convenience init(preview: ThreadState, draft: String = "") {
-        self.init(rootMessageID: 9330, conversationID: 7, targetMessageID: nil, data: nil)
+    convenience init(preview: ThreadState, draft: String = "", clock: ChatClock = ChatClock()) {
+        self.init(rootMessageID: 9330, conversationID: 7, targetMessageID: nil, data: nil, clock: clock)
         state = preview
         self.draft = draft
     }

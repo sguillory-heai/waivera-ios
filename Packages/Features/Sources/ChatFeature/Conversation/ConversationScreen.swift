@@ -59,10 +59,10 @@
                     message: ConversationStrings.text("messages.empty")
                 )
             case .messages:
-                TimelineView(.periodic(from: .now, by: ChatMetrics.timeTick)) { tick in
+                TimelineView(.periodic(from: .now, by: ChatMetrics.timeTick)) { _ in
                     TimelineList(
                         items: state.items,
-                        context: rowContext(now: tick.date),
+                        context: rowContext(now: model.clock.now),
                         actions: rowActions,
                         hasOlder: state.hasOlder,
                         isLoadingOlder: state.isLoadingOlder,
@@ -220,4 +220,37 @@
             return row.reactions
         }
     }
+
+    #if DEBUG
+        #Preview("Messages, light") {
+            NavigationStack {
+                ConversationScreen(model: ChatPreviewData.conversationModel(.messages))
+            }
+        }
+
+        #Preview("Messages, dark") {
+            NavigationStack {
+                ConversationScreen(model: ChatPreviewData.conversationModel(.messages))
+            }
+            .preferredColorScheme(.dark)
+        }
+
+        #Preview("Messages, AX5") {
+            NavigationStack {
+                ConversationScreen(model: ChatPreviewData.conversationModel(.messages))
+            }
+            .dynamicTypeSize(.accessibility5)
+        }
+
+        #Preview("Every state") {
+            TabView {
+                ForEach(ConversationPreviewVariant.allCases, id: \.self) { variant in
+                    NavigationStack {
+                        ConversationScreen(model: ChatPreviewData.conversationModel(variant))
+                    }
+                    .tabItem { Text(verbatim: variant.rawValue) }
+                }
+            }
+        }
+    #endif
 #endif
