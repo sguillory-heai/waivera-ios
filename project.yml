@@ -70,8 +70,9 @@ targets:
       - package: WaiveraData
         product: WaiveraDataPersistence
       # Fake server, fixtures and the scripted hub for -WaiveraFakeServer. Every import of it is
-      # inside `#if DEBUG`; SwiftPM cannot link per configuration, so Release links it unused and
-      # dead-code stripping removes it (docs/architecture/data-layer.md).
+      # inside `#if DEBUG`; SwiftPM cannot link per configuration, so Release links it unused,
+      # dead-code stripping removes its code and the "Remove test fixtures" phase below removes
+      # its fixture bundle (IS-09, docs/architecture/data-layer.md).
       - package: WaiveraTestSupport
       - package: WaiveraDesign
         product: WaiveraDesign
@@ -96,6 +97,24 @@ targets:
         product: FirebaseCore
       - package: Firebase
         product: FirebaseMessaging
+    postBuildScripts:
+      # Runs before code signing. Release never reads the fixture bundle (sample names and
+      # messages for previews and the fake server), so it is not shipped (IS-09).
+      # The bundle is declared as input and output so the script sandbox lets it be removed.
+      - name: Remove test fixtures from Release
+        basedOnDependencyAnalysis: false
+        inputFiles:
+          - $(TARGET_BUILD_DIR)/$(WRAPPER_NAME)/WaiveraFixtures_WaiveraFixtures.bundle
+        outputFiles:
+          - $(TARGET_BUILD_DIR)/$(WRAPPER_NAME)/WaiveraFixtures_WaiveraFixtures.bundle
+        script: |
+          if [ "${CONFIGURATION}" != "Release" ]; then exit 0; fi
+          fixtures="${TARGET_BUILD_DIR}/${WRAPPER_NAME}/WaiveraFixtures_WaiveraFixtures.bundle"
+          rm -rf "${fixtures}"
+          if [ -e "${fixtures}" ]; then
+            echo "error: test fixtures are still in the Release app"
+            exit 1
+          fi
     info:
       path: App/Info.plist
       properties:
