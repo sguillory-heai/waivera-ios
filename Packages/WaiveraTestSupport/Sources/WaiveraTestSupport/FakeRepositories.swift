@@ -14,6 +14,10 @@ public final class FakeSessionRepository: SessionRepository {
     /// What the next backend bootstrap returns; `nil` signs in.
     public let bootstrapFailure = LockedValue<WaiveraError?>(nil)
     public let requiresPasswordChange = LockedValue(false)
+    /// What `sendPasswordReset` throws; `nil` succeeds.
+    public let passwordResetFailure = LockedValue<WaiveraError?>(nil)
+    /// What `changePassword` throws after the current password checks out; `nil` succeeds.
+    public let changePasswordFailure = LockedValue<WaiveraError?>(nil)
     private let onSignOut: @Sendable () async -> Void
 
     public init(
@@ -40,11 +44,19 @@ public final class FakeSessionRepository: SessionRepository {
         bootstrap()
     }
 
+    public func sendPasswordReset(email: String) async throws {
+        calls.record("sendPasswordReset")
+        if let failure = passwordResetFailure.get() { throw failure }
+    }
+
+    /// Like the live session: the forced gate re-runs the bootstrap, a voluntary change from
+    /// Settings stays signed in.
     public func changePassword(current: String, new: String) async throws {
         calls.record("changePassword")
         guard current == Self.password else { throw WaiveraError.auth(.invalidCredentials) }
+        if let failure = changePasswordFailure.get() { throw failure }
         requiresPasswordChange.update { $0 = false }
-        bootstrap()
+        if case .passwordChangeRequired = cell.current { bootstrap() }
     }
 
     public func retryBootstrap() async {
@@ -136,13 +148,40 @@ public final class FakeActivityRepository: ActivityRepository {
     public let calls = CallLog()
     public let actionFailure = LockedValue<WaiveraError?>(nil)
 
-    public init(_ items: [ActivityItem], clock: any WaiveraClock) {
-        resource = FakeResource(ActivityFeed(items: items), clock: clock)
+    public init(_ items: [ActivityItem], extraPages: [[ActivityItem]] = [], clock: any WaiveraClock) {
+        resource = FakeResource(ActivityFeed(items: items, hasMore: !extraPages.isEmpty), clock: clock)
+        self.extraPages = LockedValue(extraPages)
     }
 
+    /// Pages `loadMore` appends, oldest last; `hasMore` stays true while any remain.
+    private let extraPages: LockedValue<[[ActivityItem]]>
+    /// What the next `loadMore` throws (shown as `loadMoreError`); `nil` adds the next page.
+    public let loadMoreFailure = LockedValue<WaiveraError?>(nil)
+
     public func feed() -> AsyncStream<Resource<ActivityFeed>> { resource.stream() }
-    public func refresh() async { await resource.refresh() }
-    public func loadMore() async { calls.record("loadMore") }
+
+    public func refresh() async {
+        await resource.refresh()
+        let hasMore = !extraPages.get().isEmpty
+        resource.mutate { $0.hasMore = hasMore }
+    }
+
+    public func loadMore() async {
+        calls.record("loadMore")
+        if let failure = loadMoreFailure.get() {
+            resource.mutate { $0.loadMoreError = failure }
+            return
+        }
+        let (page, remaining) = extraPages.update { pages -> ([ActivityItem], Bool) in
+            guard !pages.isEmpty else { return ([], false) }
+            return (pages.removeFirst(), !pages.isEmpty)
+        }
+        resource.mutate { feed in
+            feed.items += page.filter { item in !feed.items.contains { $0.id == item.id } }
+            feed.hasMore = remaining
+            feed.loadMoreError = nil
+        }
+    }
 
     public func markRead(activityId: Int64) async throws {
         calls.record("markRead:\(activityId)")
@@ -187,8 +226,25 @@ public final class FakeProfileRepository: ProfileRepository {
         resource = FakeResource(profile, clock: clock)
     }
 
+    public let calls = CallLog()
+    /// What a single card's reload fails with; `nil` loads it.
+    public let sectionFailure = LockedValue<WaiveraError?>(nil)
+
     public func profile() -> AsyncStream<Resource<OwnProfile>> { resource.stream() }
     public func refresh() async { await resource.refresh() }
+
+    /// Reloads one card and leaves the rest as it is.
+    public func refresh(section: ProfileSection) async {
+        calls.record("refreshSection:\(section)")
+        let failure = sectionFailure.get()
+        resource.mutate { profile in
+            let phase: ResourcePhase = failure.map(ResourcePhase.failed) ?? .loaded
+            switch section {
+            case .timeOff: profile.sections.timeOff = phase
+            case .files: profile.sections.files = phase
+            }
+        }
+    }
 }
 
 public final class FakeSettingsRepository: SettingsRepository {

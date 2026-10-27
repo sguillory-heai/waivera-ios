@@ -164,6 +164,7 @@ public struct FakeDataEnvironment: Sendable {
             push: push,
             realtimeStatus: realtimeStatus,
             alerts: alerts,
+            clock: clock,
             callURL: { conversation in
                 guard let webBaseURL else { throw WaiveraError.configurationMissing }
                 return webBaseURL.appending(path: "lobby").appending(path: "demo-\(conversation.id)")

@@ -42,7 +42,8 @@ public actor LiveProfileRepository: ProfileRepository {
         await writes.drain()
     }
 
-    /// Sections load independently; the screen fails only when the main record fails.
+    /// Sections load independently (08 §2-4): the screen fails only when the main record does;
+    /// time off and files carry their own phase, so a failed card shows its own Retry.
     public func refresh() async {
         guard let user = context.currentUser else {
             phase = .failed(.signedOut)
@@ -51,40 +52,106 @@ public actor LiveProfileRepository: ProfileRepository {
         }
         let current = generation
         phase = .loading
+        value?.sections = OwnProfile.SectionPhases(timeOff: .loading, files: .loading)
         publish()
         let api = api
         async let details = api.employeeProfile(employeeId: user.id)
-        async let timeOff = api.timeOffForProfile(userId: user.id)
-        async let files = api.employeeFiles(userId: user.id)
-        async let organizations = api.organizationDetails()
+        async let timeOff = Self.result { try await api.timeOffForProfile(userId: user.id) }
+        async let files = Self.result { try await api.employeeFiles(userId: user.id) }
+        async let organizations = try? api.organizationDetails()
         do {
-            let profile = ProfileMapper.profile(try await details)
+            var profile = ProfileMapper.profile(try await details)
+            profile.scId = user.scId
             var next = OwnProfile(profile: profile)
-            next.timeOff = (try? await timeOff).map(ProfileMapper.timeOff)
-            next.files = Array(
-                ((try? await files) ?? []).map(ProfileMapper.file)
-                    .sorted { ($0.addedAt ?? .distantPast) > ($1.addedAt ?? .distantPast) }
-                    .prefix(Self.visibleFiles)
-            )
-            next.organization = Self.organization(user.organization, in: (try? await organizations) ?? [])
+            apply(await timeOff, to: &next)
+            apply(await files, to: &next)
+            next.organization = Self.organization(user.organization, in: await organizations ?? [])
             guard generation == current else { return }
             value = next
             phase = .loaded
             updatedAt = clock.now
-            let store = store
-            let cached = CachedProfile(profile: next)
-            writes.enqueue { await store.save(cached, for: .profile) }
+            save(next)
         } catch {
             guard generation == current else { return }
             phase = .failed(WaiveraError.from(error))
+            value?.sections = OwnProfile.SectionPhases(timeOff: .idle, files: .idle)
         }
         publish()
     }
 
-    /// Matched by id only; a name match could pick another tenant (08 §5).
+    /// One card's Retry: reloads it alone and leaves the rest of the screen as it is.
+    public func refresh(section: ProfileSection) async {
+        guard let user = context.currentUser, var next = value else { return }
+        let current = generation
+        switch section {
+        case .timeOff: next.sections.timeOff = .loading
+        case .files: next.sections.files = .loading
+        }
+        value = next
+        publish()
+        let api = api
+        switch section {
+        case .timeOff: apply(await Self.result { try await api.timeOffForProfile(userId: user.id) }, to: &next)
+        case .files: apply(await Self.result { try await api.employeeFiles(userId: user.id) }, to: &next)
+        }
+        guard generation == current, var latest = value else { return }
+        switch section {
+        case .timeOff:
+            latest.timeOff = next.timeOff
+            latest.sections.timeOff = next.sections.timeOff
+        case .files:
+            latest.files = next.files
+            latest.sections.files = next.sections.files
+        }
+        value = latest
+        save(latest)
+        publish()
+    }
+
+    private func apply(_ result: Result<[TimeOffProfileItemDto], WaiveraError>, to profile: inout OwnProfile) {
+        switch result {
+        case .success(let rows):
+            profile.timeOff = ProfileMapper.timeOff(rows)
+            profile.sections.timeOff = .loaded
+        case .failure(let error):
+            profile.timeOff = value?.timeOff
+            profile.sections.timeOff = .failed(error)
+        }
+    }
+
+    private func apply(_ result: Result<[EmployeeFileDto], WaiveraError>, to profile: inout OwnProfile) {
+        switch result {
+        case .success(let rows):
+            profile.files = Array(
+                rows.map(ProfileMapper.file)
+                    .sorted { ($0.addedAt ?? .distantPast) > ($1.addedAt ?? .distantPast) }
+                    .prefix(Self.visibleFiles)
+            )
+            profile.sections.files = .loaded
+        case .failure(let error):
+            profile.files = value?.files ?? []
+            profile.sections.files = .failed(error)
+        }
+    }
+
+    private static func result<T: Sendable>(_ work: @Sendable () async throws -> T) async -> Result<T, WaiveraError> {
+        do {
+            return .success(try await work())
+        } catch {
+            return .failure(WaiveraError.from(error))
+        }
+    }
+
+    private func save(_ profile: OwnProfile) {
+        let store = store
+        let cached = CachedProfile(profile: profile)
+        writes.enqueue { await store.save(cached, for: .profile) }
+    }
+
+    /// Matched by id only: a name match could pick another tenant, and a miss is "details
+    /// unavailable", never the session's copy (08 §5).
     static func organization(_ session: Organization?, in list: [OrganizationDto]) -> Organization? {
-        guard let session else { return nil }
-        guard let match = list.first(where: { $0.id == session.id }) else { return session }
+        guard let session, let match = list.first(where: { $0.id == session.id }) else { return nil }
         var organization = session
         organization.name = match.name?.nilIfBlank ?? session.name
         organization.address = match.address?.nilIfBlank

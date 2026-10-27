@@ -87,7 +87,9 @@ struct MessagesTests {
         await harness.transport.enqueue(pageRoute, page(51...100), .status(503))
         await harness.engine.open(conversationId: 7)
         await harness.engine.loadOlder(conversationId: 7)
-        #expect(timeline(harness).error == .server(statusCode: 503))
+        // The newest page is still good: the failure is reported on its own.
+        #expect(timeline(harness).error == nil)
+        #expect(timeline(harness).value?.olderPageError == .server(statusCode: 503))
         #expect(timeline(harness).value?.messages.count == 50)
         #expect(timeline(harness).value?.isLoadingOlder == false)
     }
@@ -145,25 +147,25 @@ struct MessagesTests {
         #expect(deleted?.bodyText == nil)
     }
 
-    @Test func markReadUsesTheHubThenReadsThroughOnce() async {
+    @Test func markReadUsesTheHubThenReadsThroughOnce() async throws {
         let harness = await prepared()
         await harness.transport.set(pageRoute, page(1...3))
         await harness.engine.open(conversationId: 7)
         harness.realtime.connect()
         let readStates = harness.engine.readStates()
-        await harness.engine.markRead(conversationId: 7)
-        await harness.engine.markRead(conversationId: 7)
+        try await harness.engine.markRead(conversationId: 7)
+        try await harness.engine.markRead(conversationId: 7)
         #expect(harness.realtime.log.markAsRead == [7, 7])
         #expect(await harness.transport.count("POST api/chat/7/mark-as-read") == 0)
         #expect(await harness.transport.count("PUT api/chat/7/read-through") == 1)
         #expect(await latest(readStates) != nil)
     }
 
-    @Test func markReadFallsBackToRestWhenDisconnected() async {
+    @Test func markReadFallsBackToRestWhenDisconnected() async throws {
         let harness = await prepared()
         await harness.transport.set(pageRoute, page(1...3))
         await harness.engine.open(conversationId: 7)
-        await harness.engine.markRead(conversationId: 7)
+        try await harness.engine.markRead(conversationId: 7)
         #expect(await harness.transport.count("POST api/chat/7/mark-as-read") == 1)
     }
 }

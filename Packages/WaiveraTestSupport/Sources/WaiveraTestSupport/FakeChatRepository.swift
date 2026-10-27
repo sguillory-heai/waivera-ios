@@ -34,6 +34,7 @@ public actor FakeChatRepository {
     nonisolated let timelineControls = LockedValue(FakeControls())
     var sendOutcome = SendOutcome.deliver
     var reactionsAvailable = true
+    var markReadFailure: WaiveraError?
     var nextMessageId = 20_000
     var nextClientId = 0
     var nextConversationId = 5_000
@@ -56,6 +57,8 @@ public actor FakeChatRepository {
     public nonisolated func setInboxControls(_ controls: FakeControls) { inbox.setControls(controls) }
     /// Reactions are hub-only; `false` behaves like a disconnected hub (gap G-01).
     public func setReactionsAvailable(_ available: Bool) { reactionsAvailable = available }
+    /// `markRead` restores the unread count and throws this, as a failed server call would.
+    public func setMarkReadFailure(_ failure: WaiveraError?) { markReadFailure = failure }
 
     public nonisolated func setTyping(_ userIds: [String], in conversationId: Int) {
         typingCell.update { $0[conversationId] = userIds.isEmpty ? nil : userIds }

@@ -35,14 +35,29 @@ extension FakeChatRepository: MessagesRepository {
         calls.record("loadOlder:\(conversationId)")
     }
 
+    /// Every demo message is already loaded, so the target is either there or unknown.
+    @discardableResult
+    public func loadAround(conversationId: Int, messageId: Int) async throws -> Bool {
+        calls.record("loadAround:\(conversationId):\(messageId)")
+        if let failure = timelineControls.get().failure { throw failure }
+        return messages[conversationId]?.contains { $0.id == messageId } ?? false
+    }
+
     @discardableResult
     public func send(text: String, attachment: Attachment?, conversationId: Int) async -> OutgoingMessage? {
         enqueue(text: text, attachment: attachment, conversationId: conversationId, parentMessageId: nil)
     }
 
-    public func markRead(conversationId: Int) async {
+    /// Optimistic like the live engine: clears at once, restores and throws when
+    /// `setMarkReadFailure` is set.
+    public func markRead(conversationId: Int) async throws {
         calls.record("markRead:\(conversationId)")
+        let previous = inbox.value?.first { $0.id == conversationId }?.unreadCount ?? 0
         updateConversation(conversationId) { $0.unreadCount = 0 }
+        if let markReadFailure {
+            updateConversation(conversationId) { $0.unreadCount = previous }
+            throw markReadFailure
+        }
     }
 
     public func composerChanged(conversationId: Int, text: String) async {
@@ -119,7 +134,8 @@ extension FakeChatRepository: MessagesRepository {
             text: trimmed,
             doc: nil,
             attachment: attachment,
-            createdAt: clock.now
+            createdAt: clock.now,
+            authorId: viewer.id
         )
         pending[entry.clientMessageId] = entry
         calls.record("send:\(conversationId)")

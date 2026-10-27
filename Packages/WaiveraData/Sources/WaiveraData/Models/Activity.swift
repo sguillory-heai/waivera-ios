@@ -1,4 +1,5 @@
 import Foundation
+import WaiveraAPI
 
 /// A mention, thread reply or reaction in the activity feed (06 §A).
 public struct ActivityItem: Codable, Sendable, Hashable, Identifiable {
@@ -40,11 +41,20 @@ public struct ActivityFeed: Sendable, Hashable {
     public var items: [ActivityItem]
     public var hasMore: Bool
     public var isLoadingMore: Bool
+    /// The last `loadMore` failed. The loaded pages stay as they are (the feed's phase is not
+    /// touched) and the next `loadMore` retries just that page; cleared when a page arrives.
+    public var loadMoreError: WaiveraError?
 
-    public init(items: [ActivityItem] = [], hasMore: Bool = false, isLoadingMore: Bool = false) {
+    public init(
+        items: [ActivityItem] = [],
+        hasMore: Bool = false,
+        isLoadingMore: Bool = false,
+        loadMoreError: WaiveraError? = nil
+    ) {
         self.items = items
         self.hasMore = hasMore
         self.isLoadingMore = isLoadingMore
+        self.loadMoreError = loadMoreError
     }
 
     public var unreadCount: Int { items.filter { !$0.isRead }.count }

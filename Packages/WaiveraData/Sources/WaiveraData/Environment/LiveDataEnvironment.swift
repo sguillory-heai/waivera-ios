@@ -111,7 +111,13 @@ extension DataEnvironment {
         let push = LivePushRegistrationRepository(api: api, store: keyValueStore, clock: clock)
         let attachments = LiveAttachmentsRepository(api: api)
         let avatars = LiveAvatarRepository(api: api, clock: clock)
-        let ingestor = RealtimeIngestor(realtime: realtime, chat: chat, activity: activity, bookmarks: bookmarks)
+        let ingestor = RealtimeIngestor(
+            realtime: realtime,
+            chat: chat,
+            activity: activity,
+            bookmarks: bookmarks,
+            calendar: calendar
+        )
         let session = LiveSessionRepository(auth: auth, api: api, context: context)
         let coordinator = SessionCoordinator(
             chat: chat,
@@ -126,6 +132,7 @@ extension DataEnvironment {
             attachments: attachments,
             avatars: avatars,
             localStore: localStore,
+            keyValueStore: keyValueStore,
             connectivity: connectivity,
             settings: settings
         )
@@ -145,6 +152,7 @@ extension DataEnvironment {
             push: push,
             realtimeStatus: LiveRealtimeStatusRepository(realtime: realtime, connectivity: connectivity),
             alerts: LiveChatAlertsRepository(chat: chat, presence: presence, realtime: realtime),
+            clock: clock,
             callURL: { try await handoff.url(for: $0) },
             foreground: { isForeground in
                 presence.setForeground(isForeground)
@@ -174,6 +182,7 @@ actor SessionCoordinator: SessionLifecycleParticipant {
     let attachments: LiveAttachmentsRepository
     let avatars: LiveAvatarRepository
     let localStore: any LocalStore
+    let keyValueStore: any KeyValueStore
     let connectivity: any ConnectivityMonitor
     let settings: LiveSettingsRepository
     private var deviceTasks: [Task<Void, Never>] = []
@@ -191,6 +200,7 @@ actor SessionCoordinator: SessionLifecycleParticipant {
         attachments: LiveAttachmentsRepository,
         avatars: LiveAvatarRepository,
         localStore: any LocalStore,
+        keyValueStore: any KeyValueStore,
         connectivity: any ConnectivityMonitor,
         settings: LiveSettingsRepository
     ) {
@@ -206,6 +216,7 @@ actor SessionCoordinator: SessionLifecycleParticipant {
         self.attachments = attachments
         self.avatars = avatars
         self.localStore = localStore
+        self.keyValueStore = keyValueStore
         self.connectivity = connectivity
         self.settings = settings
     }
@@ -230,6 +241,10 @@ actor SessionCoordinator: SessionLifecycleParticipant {
     }
 
     func sessionDidStart(_ user: CurrentUser) async {
+        // Belt and braces for AF-04 / AS-01: a cache written for anyone else is never shown.
+        let owner = keyValueStore.value(String.self, forKey: StorageKey.cacheOwner)
+        if let owner, owner != user.id { await localStore.removeAll() }
+        keyValueStore.setValue(user.id, forKey: StorageKey.cacheOwner)
         await chat.begin(user: user)
         await activity.begin()
         await people.begin()
@@ -261,5 +276,6 @@ actor SessionCoordinator: SessionLifecycleParticipant {
         await attachments.clear()
         await avatars.clear()
         await localStore.removeAll()
+        keyValueStore.set(nil, forKey: StorageKey.cacheOwner)
     }
 }

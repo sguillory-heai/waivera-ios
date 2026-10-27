@@ -12,7 +12,13 @@ public protocol SessionRepository: Sendable {
     /// Reads the stored Firebase session and bootstraps once per identity.
     func start() async
     func signIn(email: String, password: String) async throws
-    /// Firebase password update, then the backend confirmation; clears the gate on success.
+    /// Firebase's reset email. An unknown address throws `.auth(.invalidCredentials)`; screens
+    /// show the same "sent" copy for it so they never reveal whether an account exists.
+    func sendPasswordReset(email: String) async throws
+    /// Firebase password update, then the backend confirmation. From the forced gate it re-runs
+    /// the bootstrap; signed in (Settings) the session stays `.signedIn` throughout. If Firebase
+    /// took the new password but the confirmation failed, a retry with the same new password
+    /// only repeats the confirmation.
     func changePassword(current: String, new: String) async throws
     /// Retries the backend login after a failure without signing out.
     func retryBootstrap() async
@@ -55,11 +61,17 @@ public protocol MessagesRepository: MessageActions {
     func close(conversationId: Int) async
     func refresh(conversationId: Int) async
     func loadOlder(conversationId: Int) async
+    /// Brings `messageId` into the loaded timeline through the message-context endpoint, with
+    /// no gap between it and the newest message (03 §9). Returns whether it is there now.
+    @discardableResult
+    func loadAround(conversationId: Int, messageId: Int) async throws -> Bool
     /// Enqueues an optimistic send; `nil` when there is nothing to send.
     @discardableResult
     func send(text: String, attachment: Attachment?, conversationId: Int) async -> OutgoingMessage?
-    /// Mark-as-read plus read-through of the newest root message (03 §12).
-    func markRead(conversationId: Int) async
+    /// Mark-as-read plus read-through of the newest root message (03 §12). Optimistic: the
+    /// unread count clears at once and is restored, with the error thrown, when the server call
+    /// fails, so the screen can offer Retry.
+    func markRead(conversationId: Int) async throws
     /// Composer text changed; throttles typing to one event per 3 s.
     func composerChanged(conversationId: Int, text: String) async
 }
@@ -116,13 +128,18 @@ public protocol PeopleRepository: Sendable {
 
 /// Calendar, milestones and invitations (07). Every date is in the employee's saved zone.
 public protocol CalendarRepository: Sendable {
-    /// The zone schedules render in, and whether it fell back to the device zone.
-    func scheduleTimeZone() -> (zone: TimeZone, isDeviceFallback: Bool)
+    /// The zone schedules render in, and whether it fell back to America/Chicago (dates.md §2).
+    func scheduleTimeZone() -> (zone: TimeZone, isFallback: Bool)
     /// Today's date in the schedule zone.
     func today() -> CalendarDate
     func feed(period: CalendarPeriod, containing date: CalendarDate) -> AsyncStream<Resource<CalendarFeed>>
     func refresh(period: CalendarPeriod, containing date: CalendarDate) async
     func respond(toEventId eventId: String, accept: Bool) async throws
+    /// One event by id (a push, a deep link, Today). Replays the copy from any loaded feed at
+    /// once; `refreshEvent` asks the server. `.notFound` when the server has no such event for
+    /// this person (deleted, or another organization).
+    func event(id: String) -> AsyncStream<Resource<EventLookup>>
+    func refreshEvent(id: String) async
     func milestones() -> AsyncStream<Resource<MilestoneIndex>>
     func refreshMilestones() async
     /// The web lobby URL for a Waivera ("Sprout") meeting (07 §7).
@@ -131,29 +148,51 @@ public protocol CalendarRepository: Sendable {
 
 /// The own profile screen (08 §1-5).
 public struct OwnProfile: Sendable, Hashable {
+    /// Time off and files load and fail on their own (08 §2-4); the screen fails only when
+    /// the main record does.
+    public struct SectionPhases: Sendable, Hashable {
+        public var timeOff: ResourcePhase
+        public var files: ResourcePhase
+
+        public init(timeOff: ResourcePhase = .idle, files: ResourcePhase = .idle) {
+            self.timeOff = timeOff
+            self.files = files
+        }
+    }
+
     public var profile: EmployeeProfile?
     public var timeOff: TimeOffOverview?
     /// At most five, newest first.
     public var files: [EmployeeFile]
     /// Matched to the session's organization by id only (08 §5).
     public var organization: Organization?
+    public var sections: SectionPhases
 
     public init(
         profile: EmployeeProfile? = nil,
         timeOff: TimeOffOverview? = nil,
         files: [EmployeeFile] = [],
-        organization: Organization? = nil
+        organization: Organization? = nil,
+        sections: SectionPhases = SectionPhases(timeOff: .loaded, files: .loaded)
     ) {
         self.profile = profile
         self.timeOff = timeOff
         self.files = files
         self.organization = organization
+        self.sections = sections
     }
+}
+
+/// A profile card that reloads on its own (its Retry).
+public enum ProfileSection: Sendable, Hashable {
+    case timeOff, files
 }
 
 public protocol ProfileRepository: Sendable {
     func profile() -> AsyncStream<Resource<OwnProfile>>
     func refresh() async
+    /// Reloads one card without touching the others.
+    func refresh(section: ProfileSection) async
 }
 
 /// Device-stored settings (08 §7-8).

@@ -3,12 +3,13 @@ import WaiveraAPI
 import WaiveraRealtime
 
 /// Routes hub events to the repositories that own them, and turns every new connection
-/// epoch into a resync (05 §2).
+/// epoch into a resync (05 §2): chats, the activity feed and every observed calendar feed.
 public actor RealtimeIngestor {
     private let realtime: any RealtimeClient
     private let chat: ChatEngine
     private let activity: LiveActivityRepository
     private let bookmarks: LiveBookmarksRepository
+    private let calendar: LiveCalendarRepository?
     private var tasks: [Task<Void, Never>] = []
     private var lastEpoch = 0
 
@@ -16,12 +17,14 @@ public actor RealtimeIngestor {
         realtime: any RealtimeClient,
         chat: ChatEngine,
         activity: LiveActivityRepository,
-        bookmarks: LiveBookmarksRepository
+        bookmarks: LiveBookmarksRepository,
+        calendar: LiveCalendarRepository? = nil
     ) {
         self.realtime = realtime
         self.chat = chat
         self.activity = activity
         self.bookmarks = bookmarks
+        self.calendar = calendar
     }
 
     public func start() {
@@ -65,5 +68,6 @@ public actor RealtimeIngestor {
         lastEpoch = epoch
         await chat.resync()
         await activity.refresh()
+        await calendar?.refreshObserved()
     }
 }

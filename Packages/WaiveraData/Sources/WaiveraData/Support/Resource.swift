@@ -1,7 +1,7 @@
 import Foundation
 import WaiveraAPI
 
-public enum ResourcePhase: Sendable, Equatable {
+public enum ResourcePhase: Sendable, Hashable {
     /// Nothing requested yet.
     case idle
     /// A request is in flight. With a cached `value`, this is a background refresh.

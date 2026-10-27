@@ -66,7 +66,7 @@ extension ChatEngine {
             Task { await self.refresh() }
         }
         if isActive, !message.isMine {
-            await markRead(conversationId: conversationId)
+            try? await markRead(conversationId: conversationId)
         }
     }
 

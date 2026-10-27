@@ -16,6 +16,12 @@ extension APIClient {
         return try await envelopedIfPresent(request) ?? CalendarFeedResponseDto(events: [], timeOff: [], holidays: [])
     }
 
+    /// One event (`GetEventbyId/{id}`, enveloped). Series ids only: a recurring occurrence's
+    /// composite id is not found. 404 when deleted or outside the caller's organization.
+    public func calendarEvent(id: String) async throws -> CalendarEventResponseDto {
+        try await enveloped(APIRequest(.get, "api/CalendarEvent/GetEventbyId/\(escape(id))"))
+    }
+
     public func milestones() async throws -> [CalendarEmployeeMilestoneResponseDto] {
         let rows: LossyArray<CalendarEmployeeMilestoneResponseDto>? = try await envelopedIfPresent(
             APIRequest(.get, "api/CalendarEvent/milestones")

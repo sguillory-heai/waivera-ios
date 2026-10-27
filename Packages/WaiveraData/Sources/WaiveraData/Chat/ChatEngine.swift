@@ -14,6 +14,8 @@ public actor ChatEngine {
         var hasOlder = false
         var isLoaded = false
         var isLoadingOlder = false
+        /// The last older page failed; `phase` keeps describing the newest page.
+        var olderPageError: WaiveraError?
         var phase: ResourcePhase = .idle
         var updatedAt: Date?
         /// Hub messages that arrived before the first page (05 §5: never synthesize a page).
@@ -34,6 +36,10 @@ public actor ChatEngine {
     /// Text-match window for servers that do not echo the client id (03 §11).
     static let reconcileWindow: TimeInterval = 60
     static let hydrationBatchSize = 6
+    /// Message-context window around a deep-link target, and forward pages to the loaded rows.
+    static let contextBefore = 30
+    static let contextAfter = 75
+    static let maxForwardPages = 20
 
     let api: APIClient
     let realtime: any RealtimeClient
@@ -108,7 +114,11 @@ public actor ChatEngine {
             publishConversations()
         }
         if let pending = await store.load([OutgoingMessage].self, for: .outbox), generation == current {
-            for message in pending { outbox[message.clientMessageId] = message }
+            // Only what this person queued: a queue left by another account is never sent with
+            // this account's token (AS-03). Entries without an author predate the field.
+            let mine = pending.filter { $0.authorId == user.id }
+            for message in mine { outbox[message.clientMessageId] = message }
+            if mine.count != pending.count { persistOutbox() }
             resumeOutbox()
         }
     }
@@ -177,7 +187,8 @@ public actor ChatEngine {
                 messages: state.messages.values.sorted(by: Self.messageOrder),
                 pending: pending,
                 hasOlder: state.hasOlder,
-                isLoadingOlder: state.isLoadingOlder
+                isLoadingOlder: state.isLoadingOlder,
+                olderPageError: state.olderPageError
             ) : nil
         timelineCells.cell(conversationId).set(Resource(value: value, phase: state.phase, updatedAt: state.updatedAt))
     }

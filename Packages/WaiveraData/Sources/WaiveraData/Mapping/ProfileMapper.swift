@@ -18,7 +18,8 @@ public enum ProfileMapper {
             avatarURL: details?.avatarURL?.nilIfBlank,
             timeZoneIdentifier: details?.timezone?.nilIfBlank,
             organization: organization,
-            roles: details?.roles ?? []
+            roles: details?.roles ?? [],
+            scId: details?.scId?.nilIfBlank
         )
     }
 
@@ -63,6 +64,8 @@ public enum ProfileMapper {
         profile.regions = (dto.regions ?? []).compactMap { $0.name?.nilIfBlank }
         profile.managers = (dto.reporters ?? []).compactMap { $0.name?.nilIfBlank }
         profile.timeZoneIdentifier = dto.timezone?.nilIfBlank
+        profile.agencies = (dto.agencyNames ?? []).compactMap(\.nilIfBlank)
+        profile.waiverFamilies = (dto.waiverFamilies ?? []).compactMap(\.nilIfBlank)
         return profile
     }
 

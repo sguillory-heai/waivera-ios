@@ -70,6 +70,27 @@ struct FirebaseAuthRESTTests {
     }
 }
 
+extension FirebaseAuthRESTTests {
+    @Test func passwordResetPostsAnOobCodeRequest() async throws {
+        let transport = StubTransport([.json(#"{"email":"alex@example.com"}"#)])
+        let auth = FirebaseAuthREST(apiKey: "key", transport: transport)
+        try await auth.sendPasswordReset(email: " alex@example.com ")
+        let request = try #require(await transport.requests.first)
+        #expect(request.url?.absoluteString == "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=key")
+        let body = try JSONSerialization.jsonObject(with: request.httpBody ?? Data()) as? [String: Any]
+        #expect(body?["requestType"] as? String == "PASSWORD_RESET")
+        #expect(body?["email"] as? String == "alex@example.com")
+    }
+
+    @Test func passwordResetForAnUnknownEmailIsInvalidCredentials() async throws {
+        let body = #"{"error":{"code":400,"message":"EMAIL_NOT_FOUND"}}"#
+        let auth = FirebaseAuthREST(apiKey: "key", transport: StubTransport([.json(body, status: 400)]))
+        await #expect(throws: WaiveraError.auth(.invalidCredentials)) {
+            try await auth.sendPasswordReset(email: "nobody@example.com")
+        }
+    }
+}
+
 struct FirebaseTokenProviderTests {
     @Test func returnsTheCachedTokenUntilNearExpiryThenRefreshesOnce() async throws {
         let clock = ManualClock()
@@ -178,4 +199,6 @@ final class FakeFirebaseAuth: FirebaseAuthenticating, @unchecked Sendable {
     }
 
     func updatePassword(_ newPassword: String, session: FirebaseSession) async throws -> FirebaseSession { session }
+
+    func sendPasswordReset(email: String) async throws {}
 }

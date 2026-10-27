@@ -245,3 +245,27 @@ public enum CalendarPeriod: String, Codable, Sendable, Hashable, CaseIterable {
         }
     }
 }
+
+/// The answer to a single-event lookup (`CalendarRepository.event(id:)`).
+public enum EventLookup: Sendable, Hashable {
+    case found(CalendarEvent)
+    /// The server has no such event for this person: deleted, or another organization.
+    case notFound
+
+    public var event: CalendarEvent? {
+        if case .found(let event) = self { return event }
+        return nil
+    }
+}
+
+extension CalendarEvent {
+    /// Recurring occurrences carry a composite id, `<36-character series id>-<occurrence
+    /// instant>` (sprout_api `CalendarEventController.UpdateEvent`). `GetEventbyId` only knows
+    /// the series id, so an occurrence is found through the feed of its own date instead.
+    public static func occurrenceInstant(fromId id: String) -> Date? {
+        guard id.count > 37 else { return nil }
+        let separator = id.index(id.startIndex, offsetBy: 36)
+        guard id[separator] == "-" else { return nil }
+        return WaiveraInstant.parse(String(id[id.index(after: separator)...]))
+    }
+}

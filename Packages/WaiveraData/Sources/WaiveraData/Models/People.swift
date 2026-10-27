@@ -63,12 +63,47 @@ public struct EmployeeProfile: Codable, Sendable, Hashable {
     public var regions: [String]
     public var managers: [String]
     public var timeZoneIdentifier: String?
+    /// Professional details (08 §3). `scId` comes from the session's user record; the profile
+    /// endpoint does not carry it.
+    public var scId: String?
+    public var waiverFamilies: [String]
+    public var agencies: [String]
 
     public init(employeeId: String) {
         self.employeeId = employeeId
         positions = []
         regions = []
         managers = []
+        waiverFamilies = []
+        agencies = []
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case employeeId, firstName, lastName, displayName, email, avatarURL, phoneNumber, address, hireDate
+        case joinDate, birthday, positions, regions, managers, timeZoneIdentifier, scId, waiverFamilies, agencies
+    }
+
+    /// Cached profiles written before the professional fields existed still decode.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        employeeId = try container.decode(String.self, forKey: .employeeId)
+        firstName = try container.decodeIfPresent(String.self, forKey: .firstName)
+        lastName = try container.decodeIfPresent(String.self, forKey: .lastName)
+        displayName = try container.decodeIfPresent(String.self, forKey: .displayName)
+        email = try container.decodeIfPresent(String.self, forKey: .email)
+        avatarURL = try container.decodeIfPresent(String.self, forKey: .avatarURL)
+        phoneNumber = try container.decodeIfPresent(String.self, forKey: .phoneNumber)
+        address = try container.decodeIfPresent(String.self, forKey: .address)
+        hireDate = try container.decodeIfPresent(CalendarDate.self, forKey: .hireDate)
+        joinDate = try container.decodeIfPresent(CalendarDate.self, forKey: .joinDate)
+        birthday = try container.decodeIfPresent(CalendarDate.self, forKey: .birthday)
+        positions = try container.decodeIfPresent([String].self, forKey: .positions) ?? []
+        regions = try container.decodeIfPresent([String].self, forKey: .regions) ?? []
+        managers = try container.decodeIfPresent([String].self, forKey: .managers) ?? []
+        timeZoneIdentifier = try container.decodeIfPresent(String.self, forKey: .timeZoneIdentifier)
+        scId = try container.decodeIfPresent(String.self, forKey: .scId)
+        waiverFamilies = try container.decodeIfPresent([String].self, forKey: .waiverFamilies) ?? []
+        agencies = try container.decodeIfPresent([String].self, forKey: .agencies) ?? []
     }
 }
 

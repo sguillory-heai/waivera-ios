@@ -14,6 +14,8 @@ public struct OutgoingMessage: Codable, Sendable, Hashable, Identifiable {
     /// Client-generated UUID; the idempotency key on both send paths (rest.md, hub.md).
     public var clientMessageId: String
     public var conversationId: Int
+    /// The backend id of the person who queued it; the outbox only sends its own (AS-03).
+    public var authorId: String?
     /// Thread root for replies.
     public var parentMessageId: Int?
     public var text: String
@@ -34,10 +36,12 @@ public struct OutgoingMessage: Codable, Sendable, Hashable, Identifiable {
         attachment: Attachment? = nil,
         createdAt: Date,
         state: State = .sending,
-        attempts: Int = 0
+        attempts: Int = 0,
+        authorId: String? = nil
     ) {
         self.clientMessageId = clientMessageId
         self.conversationId = conversationId
+        self.authorId = authorId
         self.parentMessageId = parentMessageId
         self.text = text
         self.doc = doc
@@ -51,6 +55,12 @@ public struct OutgoingMessage: Codable, Sendable, Hashable, Identifiable {
         if case .failed = state { return true }
         return false
     }
+
+    /// Why the send failed, for the row's Retry copy; `nil` while it is still being sent.
+    public var sendError: WaiveraError? {
+        if case .failed(let error) = state { return error }
+        return nil
+    }
 }
 
 /// A conversation's messages, oldest first, plus unconfirmed sends.
@@ -60,19 +70,24 @@ public struct MessageTimeline: Sendable, Hashable {
     public var pending: [OutgoingMessage]
     public var hasOlder: Bool
     public var isLoadingOlder: Bool
+    /// The last older page failed. The resource's phase still describes the newest page, so a
+    /// failed older page never marks the rows on screen as stale; cleared by the next page.
+    public var olderPageError: WaiveraError?
 
     public init(
         conversationId: Int,
         messages: [ChatMessage] = [],
         pending: [OutgoingMessage] = [],
         hasOlder: Bool = false,
-        isLoadingOlder: Bool = false
+        isLoadingOlder: Bool = false,
+        olderPageError: WaiveraError? = nil
     ) {
         self.conversationId = conversationId
         self.messages = messages
         self.pending = pending
         self.hasOlder = hasOlder
         self.isLoadingOlder = isLoadingOlder
+        self.olderPageError = olderPageError
     }
 
     public var isEmpty: Bool { messages.isEmpty && pending.isEmpty }

@@ -15,6 +15,9 @@ public actor LiveActivityRepository: ActivityRepository {
     private var nextPage = 1
     private var hasMore = false
     private var isLoadingMore = false
+    private var loadMoreError: WaiveraError?
+    /// Bumped by every page-1 load, so an older page that lands afterwards is dropped.
+    private var pageEpoch = 0
     private var phase: ResourcePhase = .idle
     private var updatedAt: Date?
     private var generation = 0
@@ -42,6 +45,7 @@ public actor LiveActivityRepository: ActivityRepository {
         nextPage = 1
         hasMore = false
         isLoadingMore = false
+        loadMoreError = nil
         phase = .idle
         updatedAt = nil
         cell.set(Resource())
@@ -50,51 +54,62 @@ public actor LiveActivityRepository: ActivityRepository {
 
     public func refresh() async {
         let current = generation
+        pageEpoch += 1
+        let epoch = pageEpoch
         phase = .loading
         publish()
         do {
             let rows = try await api.recentActivity(page: 1, pageSize: Self.pageSize)
-            guard generation == current else { return }
+            guard generation == current, pageEpoch == epoch else { return }
             items = Dictionary(rows.compactMap(mapper.activity).map { ($0.id, $0) }, uniquingKeysWith: { $1 })
             nextPage = 2
             hasMore = rows.count >= Self.pageSize
+            isLoadingMore = false
+            loadMoreError = nil
             phase = .loaded
             updatedAt = clock.now
             persist()
         } catch {
-            guard generation == current else { return }
+            guard generation == current, pageEpoch == epoch else { return }
             phase = .failed(WaiveraError.from(error))
         }
         publish()
     }
 
+    /// One page at a time: a call while a page is in flight returns at once. A failure keeps
+    /// the loaded pages and phase, sets `loadMoreError`, and the next call retries that page.
     public func loadMore() async {
-        guard hasMore, !isLoadingMore, phase == .loaded else { return }
+        guard hasMore, !isLoadingMore, updatedAt != nil else { return }
         let current = generation
+        let epoch = pageEpoch
+        let page = nextPage
         isLoadingMore = true
+        loadMoreError = nil
         publish()
         do {
-            let rows = try await api.recentActivity(page: nextPage, pageSize: Self.pageSize)
-            guard generation == current else { return }
+            let rows = try await api.recentActivity(page: page, pageSize: Self.pageSize)
+            guard generation == current, pageEpoch == epoch else { return }
             for item in rows.compactMap(mapper.activity) { items[item.id] = item }
-            nextPage += 1
+            nextPage = page + 1
             hasMore = rows.count >= Self.pageSize
+            persist()
         } catch {
-            guard generation == current else { return }
-            phase = .failed(WaiveraError.from(error))
+            guard generation == current, pageEpoch == epoch else { return }
+            loadMoreError = WaiveraError.from(error)
         }
         isLoadingMore = false
         publish()
     }
 
     public func markRead(activityId: Int64) async throws {
-        guard let item = items[activityId], !item.isRead else { return }
+        guard items[activityId]?.isRead == false else { return }
         setRead(true, where: { $0.id == activityId })
         do {
             try await api.markActivityRead(activityId: activityId)
         } catch {
-            items[activityId] = item
+            items[activityId]?.isRead = false
             publish()
+            persist()
             throw WaiveraError.from(error)
         }
     }
@@ -105,8 +120,9 @@ public actor LiveActivityRepository: ActivityRepository {
         do {
             try await api.markAllActivityRead()
         } catch {
-            items = snapshot
+            for (id, item) in snapshot where !item.isRead { items[id]?.isRead = false }
             publish()
+            persist()
             throw WaiveraError.from(error)
         }
     }
@@ -164,7 +180,13 @@ public actor LiveActivityRepository: ActivityRepository {
         }
         let value: ActivityFeed? =
             phase == .idle && sorted.isEmpty
-            ? nil : ActivityFeed(items: sorted, hasMore: hasMore, isLoadingMore: isLoadingMore)
+            ? nil
+            : ActivityFeed(
+                items: sorted,
+                hasMore: hasMore,
+                isLoadingMore: isLoadingMore,
+                loadMoreError: loadMoreError
+            )
         cell.set(Resource(value: value, phase: phase, updatedAt: updatedAt))
     }
 

@@ -50,6 +50,25 @@ extension APIClient {
         return try await decode(request, as: LossyArray<MessageSendResponse>.self).elements
     }
 
+    /// The messages around `messageId`, oldest first, the target included (bare list).
+    /// `before` and `after` are clamped to 0...75 by the server.
+    public func messageContext(
+        conversationId: Int,
+        messageId: Int,
+        before: Int,
+        after: Int
+    ) async throws -> [MessageSendResponse] {
+        let request = APIRequest(
+            .get,
+            "api/chat/\(conversationId)/messages/context/\(messageId)",
+            query: [
+                URLQueryItem(name: "before", value: String(before)),
+                URLQueryItem(name: "after", value: String(after)),
+            ]
+        )
+        return try await decode(request, as: LossyArray<MessageSendResponse>.self).elements
+    }
+
     /// Ascending, including the root message itself.
     public func thread(rootMessageId: Int) async throws -> [MessageSendResponse] {
         try await decode(APIRequest(.get, "api/chat/thread/\(rootMessageId)"), as: LossyArray<MessageSendResponse>.self)

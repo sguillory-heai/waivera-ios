@@ -14,6 +14,14 @@ public actor LiveSessionRepository: SessionRepository {
     private var identity: FirebaseIdentity?
     private var startedUserId: String?
     private var generation = 0
+    /// Firebase took a new password for this uid but the backend confirmation has not landed.
+    /// In memory only, and only a per-process hash of the new password, never the password.
+    private var pendingConfirmation: PendingConfirmation?
+
+    private struct PendingConfirmation: Equatable {
+        var uid: String
+        var passwordHash: Int
+    }
 
     /// `api` is `nil` when the build has no configuration; the state is then
     /// `.configurationMissing` and nothing else runs.
@@ -47,6 +55,7 @@ public actor LiveSessionRepository: SessionRepository {
     private func identityChanged(_ newIdentity: FirebaseIdentity?) async {
         guard newIdentity?.uid != identity?.uid || cell.current == .loading else { return }
         identity = newIdentity
+        if pendingConfirmation?.uid != newIdentity?.uid { pendingConfirmation = nil }
         bootstrapTask?.cancel()
         generation += 1
         if newIdentity == nil {
@@ -124,16 +133,43 @@ public actor LiveSessionRepository: SessionRepository {
         }
     }
 
+    public func sendPasswordReset(email: String) async throws {
+        guard api != nil else { throw WaiveraError.configurationMissing }
+        do {
+            try await auth.sendPasswordReset(email: email.trimmed)
+        } catch {
+            throw WaiveraError.from(error)
+        }
+    }
+
+    /// Firebase first, then `confirm-password-change` (which stamps the change date). When
+    /// Firebase took the password but the confirmation failed (offline), a retry with the same
+    /// new password skips Firebase, which would now reject the old one, and only confirms.
+    /// Only the forced gate re-runs the bootstrap; a voluntary change keeps `.signedIn`, so the
+    /// tabs and their navigation stay where they are.
     public func changePassword(current: String, new: String) async throws {
         guard let api else { throw WaiveraError.configurationMissing }
+        guard let uid = identity?.uid else { throw WaiveraError.signedOut }
+        let pending = PendingConfirmation(uid: uid, passwordHash: Self.hash(new))
         do {
-            try await auth.changePassword(current: current, new: new)
+            if pendingConfirmation != pending {
+                try await auth.changePassword(current: current, new: new)
+                pendingConfirmation = pending
+            }
             try await api.confirmPasswordChange()
         } catch {
             throw WaiveraError.from(error)
         }
+        pendingConfirmation = nil
+        guard case .passwordChangeRequired = cell.current else { return }
         generation += 1
         bootstrap()
+    }
+
+    private static func hash(_ password: String) -> Int {
+        var hasher = Hasher()
+        hasher.combine(password)
+        return hasher.finalize()
     }
 
     public func retryBootstrap() async {
@@ -154,13 +190,13 @@ public actor LiveSessionRepository: SessionRepository {
         cell.set(.signedOut(nil))
     }
 
+    /// Every way into signed out ends here (AF-04): a started session is torn down in order, and
+    /// one that never started still has its caches, outbox and files wiped.
     private func endParticipants(alreadyEnding: Bool = false) async {
-        if startedUserId != nil {
-            if !alreadyEnding {
-                for participant in participants { await participant.sessionWillEnd() }
-            }
-            for participant in participants { await participant.sessionDidEnd() }
+        if startedUserId != nil, !alreadyEnding {
+            for participant in participants { await participant.sessionWillEnd() }
         }
+        for participant in participants { await participant.sessionDidEnd() }
         startedUserId = nil
         context.set(nil)
     }

@@ -195,7 +195,7 @@ struct CalendarRepositoryTests {
     @Test func todayIsInTheEmployeeZone() {
         let (repository, _) = repository(clock: TestClock(utc(2026, 11, 1, 4, 30)))
         #expect(repository.today() == date(2026, 10, 31))
-        #expect(repository.scheduleTimeZone().isDeviceFallback == false)
+        #expect(repository.scheduleTimeZone().isFallback == false)
     }
 
     @Test func respondingUpdatesEveryLoadedRange() async throws {

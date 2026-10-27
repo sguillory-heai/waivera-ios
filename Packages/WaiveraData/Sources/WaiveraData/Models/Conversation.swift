@@ -60,8 +60,10 @@ public struct Conversation: Codable, Sendable, Hashable, Identifiable {
 
     public var preview: ConversationPreview { ConversationPreview(lastMessage) }
 
-    /// Sort key for the inbox, newest first.
-    public var activityDate: Date? { lastMessage?.createdAt ?? lastReadAt }
+    /// Sort key for the inbox, newest first: the last message, then a live call or meeting's
+    /// start, then the read marker. Spec 02's modified and created dates are not in the API's
+    /// conversation shapes yet (docs/requests/sprout-api.md).
+    public var activityDate: Date? { lastMessage?.createdAt ?? activeCall?.startedAt ?? lastReadAt }
 
     /// Applies a newer copy (detail fetch, list refresh) without losing what only the older
     /// copy knew: attachment fields on the preview (G-05) and the live unread count (G-14).

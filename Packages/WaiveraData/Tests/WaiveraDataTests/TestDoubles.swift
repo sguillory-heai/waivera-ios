@@ -93,8 +93,17 @@ final class FakeAuth: AuthSession, @unchecked Sendable {
         return identity
     }
 
+    /// What the Firebase password step throws next; `nil` succeeds.
+    let changePasswordFailure = LockedValue<WaiveraError?>(nil)
+
     func changePassword(current: String, new: String) async throws {
         log.update { $0.append("changePassword") }
+        if let failure = changePasswordFailure.get() { throw failure }
+    }
+
+    func sendPasswordReset(email: String) async throws {
+        log.update { $0.append("sendPasswordReset:\(email)") }
+        if email.hasPrefix("unknown") { throw WaiveraError.auth(.invalidCredentials) }
     }
 
     func signOut() async {

@@ -81,6 +81,15 @@ public actor FirebaseTokenProvider: AuthTokenProvider {
         }
     }
 
+    /// Firebase's reset email; works signed out (01 §3, "Forgot password?").
+    public func sendPasswordReset(email: String) async throws {
+        do {
+            try await auth.sendPasswordReset(email: email)
+        } catch {
+            throw WaiveraError.from(error)
+        }
+    }
+
     public func signOut() {
         refreshTask?.cancel()
         refreshTask = nil

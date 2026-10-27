@@ -9,7 +9,7 @@ extension ChatEngine {
     func enqueue(text: String, attachment: Attachment?, conversationId: Int, parentMessageId: Int?)
         -> OutgoingMessage?
     {
-        guard viewer != nil else { return nil }
+        guard let viewer else { return nil }
         let outgoing = RichText.outgoingDocument(for: text)
         guard outgoing != nil || attachment != nil else { return nil }
         let entry = OutgoingMessage(
@@ -19,7 +19,8 @@ extension ChatEngine {
             text: outgoing?.text ?? "",
             doc: outgoing?.doc,
             attachment: attachment,
-            createdAt: clock.now
+            createdAt: clock.now,
+            authorId: viewer.id
         )
         outbox[entry.clientMessageId] = entry
         publishPending(entry)
@@ -135,11 +136,14 @@ extension ChatEngine {
     }
 
     /// Drops the pending row a server message confirms: by client id when echoed, else by
-    /// author, conversation, thread, text and a 60 s window (PLAN parity fix).
+    /// author, conversation, thread, text and a 60 s window (PLAN parity fix). The text match
+    /// runs only for a message without a client id: one that has an id no longer queued was
+    /// already confirmed (a second delivery of a send response, hub echo or refresh), and
+    /// matching it by text would drop a different queued message with the same words (AF-02).
     func reconcilePending(with message: ChatMessage) {
         guard message.isMine, !outbox.isEmpty else { return }
-        if let clientId = message.clientMessageId, let entry = outbox[clientId] {
-            removePending(entry)
+        if let clientId = message.clientMessageId {
+            if let entry = outbox[clientId] { removePending(entry) }
             return
         }
         let text = message.bodyText?.trimmed ?? ""

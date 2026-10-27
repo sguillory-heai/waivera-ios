@@ -106,15 +106,84 @@ extension ChatEngine: MessagesRepository {
                 state.messages[message.id] = state.messages[message.id]?.merging(message) ?? message
             }
             state.isLoadingOlder = false
-            state.phase = .loaded
+            state.olderPageError = nil
             timelines[conversationId] = state
             for message in messages where message.isThreadReply { storeThreadReply(message, countIfNew: false) }
         } catch {
             guard generation == current else { return }
+            // Reported on its own: the rows on screen are not stale because one older page failed.
             timelines[conversationId]?.isLoadingOlder = false
-            timelines[conversationId]?.phase = .failed(WaiveraError.from(error))
+            timelines[conversationId]?.olderPageError = WaiveraError.from(error)
         }
         publishTimeline(conversationId)
+    }
+
+    /// Brings `messageId` into the timeline for a deep link, push or bookmark (03 §9) through the
+    /// message-context endpoint. The window is merged only once it joins the loaded history:
+    /// newer messages are fetched forward from the window until they reach the loaded rows or the
+    /// end of the conversation, so scrolling from the target to the newest message never crosses
+    /// a hole (AF-03). Returns whether the target is in the timeline afterwards.
+    @discardableResult
+    public func loadAround(conversationId: Int, messageId: Int) async throws -> Bool {
+        guard let mapper else { throw WaiveraError.signedOut }
+        guard let loaded = timelines[conversationId], loaded.isLoaded else { return false }
+        if loaded.messages[messageId] != nil { return true }
+        let current = generation
+        let window: [ChatMessage]?
+        do {
+            window = try await contextWindow(conversationId: conversationId, messageId: messageId, mapper: mapper)
+        } catch {
+            throw WaiveraError.from(error)
+        }
+        guard generation == current, let window, var state = timelines[conversationId] else { return false }
+        let oldestBefore = state.messages.keys.min()
+        for message in window where !message.isThreadReply {
+            state.messages[message.id] = state.messages[message.id]?.merging(message) ?? message
+        }
+        if let oldestBefore, let newOldest = state.messages.keys.min(), newOldest < oldestBefore {
+            state.hasOlder = window.filter { $0.id < messageId }.count >= Self.contextBefore
+        }
+        timelines[conversationId] = state
+        for message in window where message.isThreadReply { storeThreadReply(message, countIfNew: false) }
+        publishTimeline(conversationId)
+        return state.messages[messageId] != nil
+    }
+
+    /// The context window plus forward pages until it joins the loaded rows or reaches the
+    /// newest message; `nil` when the target is gone or the gap is too long to close.
+    private func contextWindow(conversationId: Int, messageId: Int, mapper: ChatMapper) async throws
+        -> [ChatMessage]?
+    {
+        let page = try await api.messageContext(
+            conversationId: conversationId,
+            messageId: messageId,
+            before: Self.contextBefore,
+            after: Self.contextAfter
+        )
+        var messages = page.compactMap { mapper.message($0, conversationId: conversationId) }
+        guard messages.contains(where: { $0.id == messageId }) else { return nil }
+        var reachedEnd = messages.filter { $0.id > messageId }.count < Self.contextAfter
+        for _ in 0..<Self.maxForwardPages {
+            guard let newest = messages.map(\.id).max() else { return nil }
+            if reachedEnd || Self.joins(newest, loaded: timelines[conversationId]) { return messages }
+            let next = try await api.messageContext(
+                conversationId: conversationId,
+                messageId: newest,
+                before: 0,
+                after: Self.contextAfter
+            )
+            let newer = next.compactMap { mapper.message($0, conversationId: conversationId) }.filter { $0.id > newest }
+            messages += newer
+            reachedEnd = newer.count < Self.contextAfter
+        }
+        guard let newest = messages.map(\.id).max() else { return nil }
+        return reachedEnd || Self.joins(newest, loaded: timelines[conversationId]) ? messages : nil
+    }
+
+    /// Whether a window ending at `newest` touches the loaded rows (by id, which rises with time).
+    static func joins(_ newest: Int, loaded state: TimelineState?) -> Bool {
+        guard let oldest = state?.messages.keys.min() else { return true }
+        return newest >= oldest
     }
 
     @discardableResult
@@ -130,9 +199,22 @@ extension ChatEngine: MessagesRepository {
 
     /// `MarkAsRead` over the hub (REST when disconnected), then read-through of the newest root
     /// message, once per message id (03 §12).
-    public func markRead(conversationId: Int) async {
+    public func markRead(conversationId: Int) async throws {
+        let previous = conversationsById[conversationId].map { (unread: $0.unreadCount, readAt: $0.lastReadAt) }
         clearUnread(conversationId)
-        await sendMarkAsRead(conversationId)
+        do {
+            try await sendMarkAsRead(conversationId)
+        } catch {
+            // Restore only if nothing newer changed the row meanwhile (AF-08).
+            if let previous, previous.unread > 0, var row = conversationsById[conversationId], row.unreadCount == 0 {
+                row.unreadCount = previous.unread
+                row.lastReadAt = previous.readAt
+                conversationsById[conversationId] = row
+                publishConversations()
+                persistConversations()
+            }
+            throw WaiveraError.from(error)
+        }
         guard
             let newest = timelines[conversationId].flatMap({ state in
                 state.messages.values.filter { !$0.isThreadReply }.map(\.id).max()
@@ -141,11 +223,11 @@ extension ChatEngine: MessagesRepository {
         await readThrough(conversationId: conversationId, messageId: newest, threadRootMessageId: nil)
     }
 
-    func sendMarkAsRead(_ conversationId: Int) async {
+    func sendMarkAsRead(_ conversationId: Int) async throws {
         if realtime.currentStatus.isConnected, (try? await realtime.markAsRead(conversationId: conversationId)) != nil {
             return
         }
-        try? await api.markAsRead(conversationId: conversationId)
+        try await api.markAsRead(conversationId: conversationId)
     }
 
     func readThrough(conversationId: Int, messageId: Int, threadRootMessageId: Int?) async {

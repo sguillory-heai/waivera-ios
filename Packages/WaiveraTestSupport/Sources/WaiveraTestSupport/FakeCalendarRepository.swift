@@ -10,6 +10,7 @@ public final class FakeCalendarRepository: CalendarRepository {
     private let clock: any WaiveraClock
     private let feedValue: LockedValue<CalendarFeed>
     private let cells = CellRegistry<DateInterval, Resource<CalendarFeed>>(initial: Resource())
+    private let eventCells = CellRegistry<String, Resource<EventLookup>>(initial: Resource())
     public let milestoneResource: FakeResource<MilestoneIndex>
     public let controls = LockedValue(FakeControls())
     public let calls = CallLog()
@@ -25,7 +26,7 @@ public final class FakeCalendarRepository: CalendarRepository {
         self.lobbyBase = lobbyBase
     }
 
-    public func scheduleTimeZone() -> (zone: TimeZone, isDeviceFallback: Bool) { (zone, false) }
+    public func scheduleTimeZone() -> (zone: TimeZone, isFallback: Bool) { (zone, false) }
     public func today() -> CalendarDate { todayDate }
 
     public func feed(period: CalendarPeriod, containing date: CalendarDate) -> AsyncStream<Resource<CalendarFeed>> {
@@ -68,6 +69,28 @@ public final class FakeCalendarRepository: CalendarRepository {
             guard cell.current.value != nil else { return }
             cell.update { $0.value = Self.slice(updated, to: interval, in: self.zone) }
         }
+        if let event = updated.events.first(where: { $0.id == eventId }) {
+            eventCells.cell(eventId).update { resource in
+                if resource.value != nil { resource.value = .found(event) }
+            }
+        }
+    }
+
+    public func event(id: String) -> AsyncStream<Resource<EventLookup>> { eventCells.cell(id).stream() }
+
+    /// Looks the id up in the whole demo calendar, with the same controls as the feeds.
+    public func refreshEvent(id: String) async {
+        calls.record("refreshEvent:\(id)")
+        let cell = eventCells.cell(id)
+        cell.update { $0.phase = .loading }
+        let controls = controls.get()
+        if controls.latency > .zero { try? await clock.sleep(for: controls.latency) }
+        if let failure = controls.failure {
+            cell.update { $0.phase = .failed(failure) }
+            return
+        }
+        let lookup = feedValue.get().events.first { $0.id == id }.map(EventLookup.found) ?? .notFound
+        cell.set(Resource(value: lookup, phase: .loaded, updatedAt: clock.now))
     }
 
     public func milestones() -> AsyncStream<Resource<MilestoneIndex>> { milestoneResource.stream() }

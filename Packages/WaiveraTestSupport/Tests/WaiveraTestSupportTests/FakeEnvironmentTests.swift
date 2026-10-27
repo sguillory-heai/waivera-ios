@@ -172,7 +172,7 @@ struct FakeChatTests {
         }
     }
 
-    @Test func incomingMessagesCountUnreadUnlessOpen() async {
+    @Test func incomingMessagesCountUnreadUnlessOpen() async throws {
         await fakes.chat.refresh()
         let start = await latest(fakes.chat.totalUnread()) ?? 0
         var incoming = ChatMessage(id: 99_001, conversationId: 41, createdAt: DemoData.now)
@@ -180,8 +180,43 @@ struct FakeChatTests {
         await fakes.chat.receive(incoming)
         #expect(await latest(fakes.chat.totalUnread()) == start + 1)
         #expect(await latest(fakes.chat.conversations())?.value?.first?.id == 41)
-        await fakes.chat.markRead(conversationId: 41)
+        await fakes.chat.setMarkReadFailure(.offline)
+        await #expect(throws: WaiveraError.offline) { try await fakes.chat.markRead(conversationId: 41) }
+        #expect(await latest(fakes.chat.conversations())?.value?.first?.unreadCount ?? 0 > 0)
+        await fakes.chat.setMarkReadFailure(nil)
+        try await fakes.chat.markRead(conversationId: 41)
         #expect(await latest(fakes.chat.conversations())?.value?.first?.unreadCount == 0)
+    }
+
+    @Test func singleEventLookupAndPaging() async {
+        await fakes.calendar.refreshEvent(id: "evt_demo_invite")
+        #expect(await latest(fakes.calendar.event(id: "evt_demo_invite"))?.value?.event?.id == "evt_demo_invite")
+        await fakes.calendar.refreshEvent(id: "nope")
+        #expect(await latest(fakes.calendar.event(id: "nope"))?.value == .notFound)
+
+        let clock = ManualClock()
+        let extra = ActivityItem(id: 9_999, kind: .mention, conversationId: 7, messageId: 1)
+        let activity = FakeActivityRepository([], extraPages: [[extra]], clock: clock)
+        await activity.refresh()
+        #expect(await latest(activity.feed())?.value?.hasMore == true)
+        activity.loadMoreFailure.update { $0 = .offline }
+        await activity.loadMore()
+        #expect(await latest(activity.feed())?.value?.loadMoreError == .offline)
+        activity.loadMoreFailure.update { $0 = nil }
+        await activity.loadMore()
+        let feed = await latest(activity.feed())?.value
+        #expect(feed?.items.map(\.id) == [9_999])
+        #expect(feed?.hasMore == false)
+        #expect(feed?.loadMoreError == nil)
+    }
+
+    @Test func voluntaryPasswordChangeStaysSignedIn() async throws {
+        await fakes.environment.launch()
+        #expect(await eventually { fakes.session.currentState.isSignedIn })
+        try await fakes.session.changePassword(current: FakeSessionRepository.password, new: "a-new-password")
+        #expect(fakes.session.currentState.isSignedIn)
+        try await fakes.session.sendPasswordReset(email: "a@b.c")
+        #expect(fakes.session.calls.count("sendPasswordReset") == 1)
     }
 
     @Test func typingAndScriptedHub() async {

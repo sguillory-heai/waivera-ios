@@ -15,6 +15,8 @@ public struct CurrentUser: Codable, Sendable, Hashable {
     public var timeZoneIdentifier: String?
     public var organization: Organization?
     public var roles: [String]
+    /// The state client id shown on the profile (`UserWithRoleDto.ScId`); `nil` when unset.
+    public var scId: String?
 
     public init(
         id: String,
@@ -26,7 +28,8 @@ public struct CurrentUser: Codable, Sendable, Hashable {
         avatarURL: String? = nil,
         timeZoneIdentifier: String? = nil,
         organization: Organization? = nil,
-        roles: [String] = []
+        roles: [String] = [],
+        scId: String? = nil
     ) {
         self.id = id
         self.firebaseUid = firebaseUid
@@ -38,6 +41,7 @@ public struct CurrentUser: Codable, Sendable, Hashable {
         self.timeZoneIdentifier = timeZoneIdentifier
         self.organization = organization
         self.roles = roles
+        self.scId = scId
     }
 
     public func isMe(_ userId: String?) -> Bool {
@@ -56,15 +60,14 @@ public struct CurrentUser: Codable, Sendable, Hashable {
         )
     }
 
-    /// The zone schedules render in (07 §6). Falls back to the device zone only when the saved
-    /// one is absent or unrecognised; `isUsingDeviceTimeZone` tells the UI to say so.
-    public var scheduleTimeZone: TimeZone {
-        timeZoneIdentifier.flatMap(TimeZone.init(identifier:)) ?? .current
-    }
+    /// The zone schedules render in (dates.md §2): the saved named zone, else America/Chicago.
+    /// Fixed offsets are not named zones and fall back too.
+    public var scheduleZone: ScheduleZone { ScheduleZone.resolve(savedIdentifier: timeZoneIdentifier) }
 
-    public var isUsingDeviceTimeZone: Bool {
-        timeZoneIdentifier.flatMap(TimeZone.init(identifier:)) == nil
-    }
+    public var scheduleTimeZone: TimeZone { scheduleZone.timeZone }
+
+    /// The saved zone was missing or unusable; the UI says the fallback is in effect.
+    public var isUsingFallbackTimeZone: Bool { scheduleZone.isFallback }
 }
 
 public struct Organization: Codable, Sendable, Hashable {

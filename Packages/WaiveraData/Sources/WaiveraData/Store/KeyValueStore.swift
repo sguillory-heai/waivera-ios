@@ -24,6 +24,8 @@ public enum StorageKey {
     /// The push `deviceId`; survives sign-out, regenerated on reinstall (09 §3).
     public static let pushInstallationId = "waivera-push-installation-id"
     public static let pushFingerprint = "waivera.push.fingerprint"
+    /// The backend id the offline cache was written for; a different person starts empty.
+    public static let cacheOwner = "waivera.cache.owner"
 }
 
 public final class InMemoryKeyValueStore: KeyValueStore {

@@ -30,6 +30,7 @@ public protocol AuthSession: AuthTokenProvider {
     func identities() -> AsyncStream<FirebaseIdentity?>
     func signIn(email: String, password: String) async throws -> FirebaseIdentity
     func changePassword(current: String, new: String) async throws
+    func sendPasswordReset(email: String) async throws
     func signOut() async
 }
 
@@ -42,6 +43,8 @@ public protocol SessionLifecycleParticipant: Sendable {
     func sessionDidStart(_ user: CurrentUser) async
     /// Before Firebase is cleared, while requests can still authenticate (push unregister).
     func sessionWillEnd() async
-    /// After Firebase is cleared: drop caches.
+    /// After Firebase is cleared: drop caches, the outbox and files. Runs on every transition
+    /// to signed out, also when the session never fully started (a rejected bootstrap, a revoked
+    /// Firebase user on a cold start), so nothing a previous person left on the device survives.
     func sessionDidEnd() async
 }

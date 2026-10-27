@@ -36,6 +36,9 @@ public protocol FirebaseAuthenticating: Sendable {
     func signIn(email: String, password: String) async throws -> FirebaseSession
     func refresh(_ session: FirebaseSession) async throws -> FirebaseSession
     func updatePassword(_ newPassword: String, session: FirebaseSession) async throws -> FirebaseSession
+    /// Sends Firebase's password reset email. `EMAIL_NOT_FOUND` maps to `.auth(.invalidCredentials)`,
+    /// so a caller can show the same "sent" copy and never reveal whether an account exists.
+    func sendPasswordReset(email: String) async throws
 }
 
 /// The Firebase Auth REST API over URLSession (identitytoolkit + securetoken), so sign-in is
@@ -113,6 +116,14 @@ public struct FirebaseAuthREST: FirebaseAuthenticating {
         return updated
     }
 
+    public func sendPasswordReset(email: String) async throws {
+        let body = PasswordResetBody(email: email.trimmingCharacters(in: .whitespacesAndNewlines))
+        let _: PasswordResetResponse = try await post(
+            url: APIClient.join(endpoints.identityToolkit, "accounts:sendOobCode"),
+            json: body
+        )
+    }
+
     private func keyed(_ url: URL) -> URL {
         var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
         components?.queryItems = [URLQueryItem(name: "key", value: apiKey)]
@@ -187,6 +198,15 @@ private struct UpdatePasswordBody: Encodable {
     var idToken: String
     var password: String
     var returnSecureToken = true
+}
+
+private struct PasswordResetBody: Encodable {
+    var requestType = "PASSWORD_RESET"
+    var email: String
+}
+
+private struct PasswordResetResponse: Decodable {
+    var email: String?
 }
 
 private struct IdentityToolkitResponse: Decodable {
