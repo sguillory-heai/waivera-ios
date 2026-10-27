@@ -17,6 +17,8 @@ final class FakeHubFactory: HubConnectionFactory, @unchecked Sendable {
     }
 
     private let state = LockedValue(State())
+    /// Runs inside the next `invoke` of a method, before it answers (then is cleared).
+    let interleave = LockedValue<[String: @Sendable () async -> Void]>([:])
 
     private struct State {
         var script: [Outcome] = []
@@ -97,7 +99,9 @@ final class FakeHubConnection: HubConnection, @unchecked Sendable {
     func stop() async { close() }
 
     func invoke(_ method: String, arguments: [JSONValue]) async throws -> JSONValue {
-        try factory.record(.init(method: method, arguments: arguments)).get()
+        let hook = factory.interleave.update { $0.removeValue(forKey: method) }
+        if let hook { await hook() }
+        return try factory.record(.init(method: method, arguments: arguments)).get()
     }
 
     func send(_ method: String, arguments: [JSONValue]) async throws {

@@ -175,8 +175,13 @@ public actor LiveRealtimeClient: RealtimeClient {
         return true
     }
 
+    /// Joins every group, including ones a screen opened while an earlier join was in flight:
+    /// `join` skips the hub until the state is connected, so the loop re-reads `groups` after
+    /// each call, and nothing suspends between the last check and publishing `.connected`.
     private func rejoinGroups(on connection: any HubConnection) async {
-        for conversationId in groups.keys.sorted() {
+        var joined = Set<Int>()
+        while let conversationId = groups.keys.sorted().first(where: { !joined.contains($0) }) {
+            joined.insert(conversationId)
             // A failed join is retried on the next connect; the screen still resyncs over REST.
             _ = try? await connection.invoke(
                 ChatHubContract.Method.joinConversation,

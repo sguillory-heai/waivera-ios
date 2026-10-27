@@ -42,6 +42,16 @@ struct LiveRealtimeClientTests {
         #expect(tokens.forced == [false])
     }
 
+    /// AF-11: a screen opened while the reconnect was still rejoining is joined too.
+    @Test func aGroupOpenedDuringTheRejoinIsJoined() async {
+        await client.join(conversationId: 7)
+        let client = client
+        factory.interleave.update { $0["JoinConversation"] = { await client.join(conversationId: 9) } }
+        await client.start()
+        #expect(await connected(epoch: 1))
+        #expect(factory.calls(to: "JoinConversation").map(\.arguments) == [[7], [9]])
+    }
+
     @Test func reconnectRejoinsGroupsAndBumpsEpoch() async {
         await client.start()
         #expect(await connected(epoch: 1))
