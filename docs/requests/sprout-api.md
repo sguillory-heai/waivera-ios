@@ -177,6 +177,14 @@ From the critic carry-over AF-05 and AS-02.
 - **Ask.** None beyond keeping `"fcm"` accepted. The iOS client sends `provider: "fcm"` and
   `platform: "ios"` (`MobilePushDTOs.swift`).
 
+## 12. Recipient user id in chat push data (iOS addition)
+
+Chat pushes carry no recipient user id. On a shared device a notification delivered to a previous
+account can still be tapped or replied to after the next person signs in. The app currently drops
+responses to notifications delivered before the current sign-in, which is a time-based guess. Ask:
+add `recipientUserId` (backend user id) to the chat push `data` so the app can drop any response
+whose recipient is not the signed-in user.
+
 ## Checked and not a gap
 
 `MeetingHandoff` `relatedChatConversationId`:
