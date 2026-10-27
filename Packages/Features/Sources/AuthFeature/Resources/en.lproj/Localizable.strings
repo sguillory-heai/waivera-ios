@@ -1,19 +1,82 @@
-"auth.signIn.title" = "Sign in";
+/* Sign in */
+"auth.brand" = "Waivera";
+"auth.signIn.title" = "Welcome back.";
+"auth.signIn.subtitle" = "Stay connected to the people, conversations and work that move your organization forward.";
+"auth.signIn.card.title" = "Sign in to your account";
+"auth.signIn.card.subtitle" = "Use the same email and password you use for Waivera on the web.";
+"auth.field.email" = "Email";
+"auth.field.email.placeholder" = "you@organization.com";
+"auth.field.password" = "Password";
+"auth.signIn.button" = "Sign in";
+/* Shown on the button while the backend login runs after Firebase accepted the password (01 §3). */
+"auth.signIn.connecting" = "Connecting to Waivera…";
+/* Announced while Firebase checks the email and password. */
+"auth.signIn.signingIn" = "Signing in…";
+"auth.signIn.forgotPassword" = "Forgot password?";
+"auth.signIn.footer" = "Protected by Waivera sign-in and your organization's access policies.";
+/* %@ is the email address the person typed. Worded so it never reveals whether the account exists. */
+"auth.signIn.resetSent.message" = "If %@ has a Waivera account, we've sent it a link to reset the password.";
+/* The build has no server settings, so sign-in is turned off. */
+"auth.configuration.title" = "This build isn't set up yet";
+"auth.configuration.message" = "This copy of the app is missing its server settings, so sign-in is turned off. Ask your administrator for a supported version of Waivera.";
+/* Debug builds only. %@ is a comma-separated list of setting names, never values. */
+"auth.configuration.details" = "Missing settings: %@";
+
+/* Validation */
+"auth.issue.emailRequired" = "Enter your email.";
+"auth.issue.emailInvalid" = "Enter an email address like name@organization.com.";
+"auth.issue.passwordRequired" = "Enter your password.";
+"auth.issue.currentRequired" = "Enter your current password.";
+"auth.issue.currentWrong" = "That isn't your current password. Try again.";
+/* %lld is the minimum number of characters. */
+"auth.issue.newTooShort" = "Use at least %lld characters.";
+"auth.issue.newSame" = "Choose a password that's different from your current one.";
+"auth.issue.newWeak" = "Choose a stronger password. A longer phrase works well.";
+"auth.issue.confirmMismatch" = "These passwords don't match.";
+
+/* Password change */
+"auth.passwordChange.title" = "Change password";
+"auth.passwordChange.required.title" = "Set a new password";
+"auth.passwordChange.required.message" = "To keep your account secure, Waivera asks for a new password the first time you sign in and every six months after that.";
+"auth.passwordChange.voluntary.message" = "Enter your current password, then choose a new one. You'll stay signed in on this device.";
+"auth.field.currentPassword" = "Current password";
+"auth.field.newPassword" = "New password";
+/* %lld is the minimum number of characters. */
+"auth.field.newPassword.hint" = "At least %lld characters. A short phrase is easier to remember.";
+"auth.field.confirmPassword" = "Confirm new password";
+"auth.passwordChange.save" = "Update password";
+"auth.passwordChange.saving" = "Updating your password…";
+"auth.passwordChange.failed.title" = "Password not updated";
+"auth.passwordChange.done.message" = "Password updated. Use your new password the next time you sign in.";
 "auth.signOut" = "Sign out";
-/* The backend login failed after Firebase sign-in; the screen offers Retry. */
-"auth.bootstrapFailed.title" = "Couldn't connect to Waivera";
-/* Developer-facing: the build is missing its .xcconfig values. */
-"auth.configurationMissing.title" = "Configuration required";
-"auth.configurationMissing.message" = "This build has no server configuration. Add the API and Firebase values to Config/Local.Debug.xcconfig, then build again.";
-"auth.passwordChange.title" = "Change your password";
-"auth.passwordChange.message" = "Your organization asks you to set a new password before using Waivera. Change it on the web, then sign in again.";
+
+/* Onboarding required */
 "auth.onboarding.title" = "Finish setting up your account";
-"auth.onboarding.message" = "Your account is not ready yet. Complete onboarding on the web, then sign in again.";
+"auth.onboarding.message" = "Your Waivera account isn't fully set up yet. Complete the setup from the invitation your organization sent you, then come back here.";
+"auth.onboarding.help" = "If you can't find the invitation, ask your administrator to send it again.";
+"auth.onboarding.check" = "I've finished, check again";
+"auth.onboarding.stillPending" = "Your account still needs setup. It can take a few minutes after you finish.";
+
+/* Bootstrap failed: Firebase is signed in, the backend login failed (01 §2). */
+"auth.bootstrapFailed.title" = "We couldn't reach Waivera";
+"auth.bootstrapFailed.offline.title" = "You're offline";
+"auth.bootstrapFailed.help" = "You're signed in. We just need to finish loading your account.";
+"auth.tryAgain" = "Try again";
+
+/* Notification primer */
 "auth.primer.title" = "Stay in the loop";
-"auth.primer.messages" = "Messages and mentions from your team, with quick reply.";
-"auth.primer.assignments" = "Assignments when someone needs your help.";
-"auth.primer.schedule" = "Reminders before your shifts and events, and changes to them.";
-"auth.primer.footnote" = "You choose which kinds of notifications you get in Settings.";
+"auth.primer.message" = "Turn on notifications so you know when something needs you. Here's what each kind is for.";
+"auth.primer.messages.title" = "Direct messages and mentions";
+"auth.primer.messages.body" = "When someone messages you or mentions you. These can make a sound.";
+"auth.primer.group.title" = "Group chat activity";
+"auth.primer.group.body" = "New messages in your group chats and channels.";
+"auth.primer.reminders.title" = "Schedule reminders";
+"auth.primer.reminders.body" = "Shifts and events that are about to start. These can make a sound.";
+"auth.primer.changes.title" = "Schedule changes";
+"auth.primer.changes.body" = "Events that were added, moved or cancelled.";
+"auth.primer.digest.title" = "Digest and announcements";
+"auth.primer.digest.body" = "Milestones and other low-priority updates, delivered quietly.";
+"auth.primer.footnote" = "You can turn each kind on or off at any time in Settings.";
 "auth.primer.enable" = "Turn on notifications";
 "auth.primer.notNow" = "Not now";
 "auth.primer.sample.sender" = "Alex Rivera";
