@@ -1,0 +1,26 @@
+{
+  "data": {
+    "id": 7,
+    "isBotDirect": false,
+    "participants": [
+      {
+        "id": "usr_alex_rivera",
+        "firstName": "Alex",
+        "lastName": "Rivera",
+        "email": "alex.rivera@example.com",
+        "displayName": "Alex Rivera"
+      },
+      {
+        "id": "usr_priya_raman",
+        "firstName": "Priya",
+        "lastName": "Raman",
+        "email": "priya.raman@example.com",
+        "displayName": "Priya Raman"
+      }
+    ],
+    "unreadCount": 0
+  },
+  "statusCode": 200,
+  "message": "Conversation already exists.",
+  "success": true
+}

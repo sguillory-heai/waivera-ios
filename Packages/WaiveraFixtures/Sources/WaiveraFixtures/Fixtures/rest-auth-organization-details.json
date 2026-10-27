@@ -1,0 +1,13 @@
+{
+  "data": [
+    {
+      "id": 12,
+      "name": "Northside Supports",
+      "address": "900 Example Ave, Springfield",
+      "contactNumber": "+1-555-0190"
+    }
+  ],
+  "statusCode": 200,
+  "message": "OK",
+  "success": true
+}

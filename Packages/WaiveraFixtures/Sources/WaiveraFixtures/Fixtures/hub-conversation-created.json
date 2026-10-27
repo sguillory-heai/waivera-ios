@@ -1,0 +1,31 @@
+{
+  "target": "ConversationCreated",
+  "arguments": [
+    {
+      "id": 97,
+      "isBotDirect": false,
+      "participants": [
+        {
+          "id": "usr_alex_rivera",
+          "firstName": "Alex",
+          "lastName": "Rivera",
+          "email": "alex.rivera@example.com",
+          "displayName": "Alex Rivera"
+        },
+        {
+          "id": "usr_jordan_lee",
+          "firstName": "Jordan",
+          "lastName": "Lee",
+          "email": "jordan.lee@example.com",
+          "displayName": "Jordan Lee"
+        }
+      ],
+      "lastMessage": null,
+      "lastReadAt": null,
+      "unreadCount": 0,
+      "channel": null,
+      "activeMeeting": null,
+      "ongoingCall": null
+    }
+  ]
+}

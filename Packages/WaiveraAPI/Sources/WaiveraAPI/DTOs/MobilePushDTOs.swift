@@ -1,5 +1,5 @@
 /// Mirrors sprout_api `dto/Request/MobilePushRegistrationRequest`. Native apps always register FCM tokens.
-public struct MobilePushRegistration: Encodable, Equatable, Sendable {
+public struct MobilePushRegistrationRequest: Codable, Equatable, Hashable, Sendable {
     public var deviceID: String
     public var pushToken: String
     public var platform = "ios"
@@ -45,7 +45,7 @@ public struct MobilePushRegistration: Encodable, Equatable, Sendable {
 }
 
 /// Mirrors sprout_api `MobilePushUnregisterRequest`.
-public struct MobilePushUnregistration: Encodable, Equatable, Sendable {
+public struct MobilePushUnregisterRequest: Codable, Equatable, Sendable {
     public var deviceID: String
 
     public init(deviceID: String) {
@@ -54,16 +54,5 @@ public struct MobilePushUnregistration: Encodable, Equatable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case deviceID = "deviceId"
-    }
-}
-
-/// `MobilePushController` routes (`api/mobile-push`).
-public extension APIClient {
-    func registerForPush(_ registration: MobilePushRegistration) async throws {
-        try await post("api/mobile-push/register", body: registration)
-    }
-
-    func unregisterFromPush(deviceID: String) async throws {
-        try await post("api/mobile-push/unregister", body: MobilePushUnregistration(deviceID: deviceID))
     }
 }

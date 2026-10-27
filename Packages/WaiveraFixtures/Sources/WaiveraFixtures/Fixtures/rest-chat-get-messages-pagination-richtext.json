@@ -1,0 +1,47 @@
+[
+  {
+    "id": 9350,
+    "clientMessageId": "6f1d4c8a-7b2e-4a1f-9c33-2f7b6d5e4a01",
+    "author": {
+      "id": "usr_alex_rivera",
+      "firstName": "Alex",
+      "lastName": "Rivera",
+      "email": "alex.rivera@example.com",
+      "displayName": "Alex Rivera"
+    },
+    "conversationId": 7,
+    "messageContent": "@Priya Raman can you confirm?",
+    "createDate": "2026-10-20T18:00:00.000000",
+    "attachmentScanStatus": "legacy",
+    "messageType": "USER",
+    "reactions": [],
+    "isBot": false,
+    "isEdited": false,
+    "isDeleted": false,
+    "isBookmarked": false,
+    "contentFormat": 1,
+    "messagePlaintext": "@Priya Raman can you confirm?",
+    "threadReplyCount": 0,
+    "messageDoc": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "mention",
+              "attrs": {
+                "id": "usr_priya_raman",
+                "label": "Priya Raman"
+              }
+            },
+            {
+              "type": "text",
+              "text": " can you confirm?"
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

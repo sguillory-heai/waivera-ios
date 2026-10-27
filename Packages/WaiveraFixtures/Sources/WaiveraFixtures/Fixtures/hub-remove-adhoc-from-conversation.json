@@ -1,0 +1,9 @@
+{
+  "target": "RemoveAdHocFromConversation",
+  "arguments": [
+    {
+      "conversationId": 7,
+      "roomId": "room_7f3c91"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "target": "ReceiveNotification",
+  "arguments": [
+    {
+      "id": 55121,
+      "type": "survey",
+      "status": "info",
+      "title": "Weekly survey",
+      "message": "A survey is waiting for you.",
+      "notifies": {
+        "id": "4471",
+        "firstName": "R.",
+        "lastName": "Okonkwo",
+        "email": "participant@example.com",
+        "displayName": "R. Okonkwo",
+        "organization": {
+          "id": 12,
+          "name": "Northside Supports",
+          "abbreviation": "NSS"
+        }
+      },
+      "allowApproval": null,
+      "createdAt": "2026-10-20T08:00:00.000000",
+      "read": false,
+      "createdByUser": null,
+      "notificationResources": []
+    }
+  ]
+}

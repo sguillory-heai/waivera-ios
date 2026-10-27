@@ -1,0 +1,100 @@
+{
+  "data": {
+    "events": [
+      {
+        "cancelledAllDayDates": [],
+        "id": "evt_8f2b19c4",
+        "title": "North team check-in",
+        "startTime": "2026-10-20T15:00:00",
+        "endTime": "2026-10-20T15:30:00",
+        "description": "Weekly coordination",
+        "ownerUserID": "usr_priya_raman",
+        "ownerName": "Priya Raman",
+        "location": "Room 2 / online",
+        "createdby": "usr_priya_raman",
+        "attendees": [
+          {
+            "attendeeId": "att_1",
+            "type": "EMPLOYEE",
+            "ref": "usr_alex_rivera",
+            "email": "alex.rivera@example.com",
+            "displayName": "Alex Rivera",
+            "inviteStatus": "ACCEPTED",
+            "respondedAt": "2026-10-18T09:12:00"
+          },
+          {
+            "attendeeId": "att_2",
+            "type": "EMPLOYEE",
+            "ref": "usr_jordan_lee",
+            "email": "jordan.lee@example.com",
+            "displayName": "Jordan Lee",
+            "inviteStatus": "INVITED"
+          },
+          {
+            "attendeeId": "att_3",
+            "type": "EXTERNAL",
+            "email": "contractor@example.com",
+            "displayName": "contractor@example.com",
+            "inviteStatus": "TENTATIVE"
+          }
+        ],
+        "ownerColor": "#7E57C2",
+        "online": true,
+        "isSprout": true,
+        "recurrenceRule": "FREQ=WEEKLY;BYDAY=TU",
+        "timeZoneId": "America/Chicago",
+        "isInvitationAccept": true,
+        "holidays": [],
+        "meetingType": "ONLINE",
+        "crossesMidnight": false,
+        "formattedDateRange": "Tue, Oct 20 · 10:00–10:30 AM CDT"
+      },
+      {
+        "cancelledAllDayDates": [
+          "2026-11-26"
+        ],
+        "id": "evt_allday_31",
+        "title": "Agency training day",
+        "startTime": "2026-11-05T00:00:00",
+        "endTime": "2026-11-06T00:00:00",
+        "ownerUserID": "usr_priya_raman",
+        "createdby": "usr_priya_raman",
+        "attendees": [],
+        "online": false,
+        "isSprout": false,
+        "allDayStart": "2026-11-05",
+        "allDayEndExclusive": "2026-11-06",
+        "holidays": [],
+        "meetingType": "IN_PERSON",
+        "crossesMidnight": true
+      }
+    ],
+    "timeOff": [
+      {
+        "id": 812,
+        "userId": "usr_alex_rivera",
+        "startTime": "2026-10-23T05:00:00Z",
+        "endTime": "2026-10-24T05:00:00Z",
+        "leaveType": "Paid time off",
+        "requestType": "FULL_DAY",
+        "durationMinutes": 480,
+        "comment": "family visit",
+        "status": "APPROVED",
+        "isCancellationPending": false,
+        "canDelete": true
+      }
+    ],
+    "holidays": [
+      {
+        "id": 9,
+        "title": "Thanksgiving",
+        "description": "Office closed",
+        "startDate": "2026-11-26T00:00:00",
+        "endDate": "2026-11-27T00:00:00"
+      }
+    ]
+  },
+  "statusCode": 200,
+  "message": "Calendar data fetched successfully.",
+  "success": true
+}

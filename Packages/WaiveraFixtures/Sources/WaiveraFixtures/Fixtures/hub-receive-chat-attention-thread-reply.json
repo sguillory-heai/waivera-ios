@@ -1,0 +1,32 @@
+{
+  "target": "ReceiveChatAttention",
+  "arguments": [
+    {
+      "id": 9331,
+      "clientMessageId": "6f1d4c8a-7b2e-4a1f-9c33-2f7b6d5e4a01",
+      "author": {
+        "id": "usr_alex_rivera",
+        "firstName": "Alex",
+        "lastName": "Rivera",
+        "email": "alex.rivera@example.com",
+        "displayName": "Alex Rivera"
+      },
+      "conversationId": 7,
+      "messageContent": "I can take Saturday",
+      "createDate": "2026-10-20T16:02:10.551200",
+      "attachmentScanStatus": "legacy",
+      "messageType": "USER",
+      "reactions": [],
+      "isBot": false,
+      "isEdited": false,
+      "isDeleted": false,
+      "isBookmarked": false,
+      "contentFormat": 0,
+      "messagePlaintext": "I can take Saturday",
+      "threadReplyCount": 0,
+      "parentMessageId": 9330,
+      "threadRootMessageId": 9330
+    },
+    "thread_reply"
+  ]
+}

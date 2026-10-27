@@ -1,0 +1,23 @@
+{
+  "data": {
+    "items": [
+      {
+        "id": "file_7721",
+        "fileName": "cpr-certificate.pdf",
+        "documentCategoryName": "Certifications",
+        "dateAdded": "2026-09-30T18:02:11",
+        "fileUrl": "employee/usr_alex_rivera/cpr.pdf",
+        "mimeType": "application/pdf",
+        "size": 90112,
+        "userId": "usr_alex_rivera",
+        "uploadedByName": "Priya Raman"
+      }
+    ],
+    "totalRecords": 1,
+    "pageNumber": 1,
+    "pageSize": 10
+  },
+  "statusCode": 200,
+  "message": "OK",
+  "success": true
+}

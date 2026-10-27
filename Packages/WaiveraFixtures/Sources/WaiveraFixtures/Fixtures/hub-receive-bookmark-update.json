@@ -1,0 +1,9 @@
+{
+  "target": "ReceiveBookmarkUpdate",
+  "arguments": [
+    {
+      "messageId": 9330,
+      "isBookmarked": true
+    }
+  ]
+}

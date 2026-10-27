@@ -1,0 +1,44 @@
+/* Shown when a request fails because the device is offline or the connection dropped. */
+"error.offline" = "You appear to be offline. Check your connection and try again.";
+/* Shown when the session has ended or the account was signed out. */
+"error.unauthorized" = "Your session has ended. Please sign in again.";
+/* Shown when the user has no access to the requested item. */
+"error.forbidden" = "You don't have access to this.";
+/* Shown when the requested item no longer exists. */
+"error.notFound" = "This item is no longer available.";
+/* Shown when someone else changed the same item at the same time. */
+"error.conflict" = "This was changed by someone else. Refresh and try again.";
+/* Shown when the server rejected a request as invalid. */
+"error.invalidRequest" = "That couldn't be completed. Please check and try again.";
+/* Generic fallback for server failures. */
+"error.generic" = "Something went wrong. Please try again.";
+/* Shown in development builds when required configuration is missing. */
+"error.configurationMissing" = "This build is missing its server configuration.";
+/* Shown when sending to an archived channel. */
+"error.channelArchived" = "This conversation is archived, so new messages can't be sent.";
+/* Shown when the user cannot post in a channel. */
+"error.channelReadOnly" = "You don't have permission to post in this conversation.";
+/* Shown when an action needs the live chat connection. */
+"error.realtimeUnavailable" = "Reconnect to chat to do this.";
+/* Shown when an attachment was blocked by security scanning. */
+"error.attachmentBlocked" = "This attachment was blocked by security scanning.";
+/* Shown while an attachment is still being scanned. */
+"error.attachmentPending" = "This attachment is still being checked. Try again in a moment.";
+/* Shown when an attachment upload fails. */
+"error.attachmentUploadFailed" = "The attachment couldn't be uploaded. Please try again.";
+/* Sign-in: wrong email or password. */
+"error.auth.invalidCredentials" = "That email and password don't match. Please try again.";
+/* Sign-in: the email address is not valid. */
+"error.auth.invalidEmail" = "Enter a valid email address.";
+/* Sign-in: the account has been disabled. */
+"error.auth.userDisabled" = "This account has been disabled. Contact your administrator.";
+/* Sign-in: too many failed attempts. */
+"error.auth.tooManyAttempts" = "Too many attempts. Wait a few minutes and try again.";
+/* Password change: the new password is too weak. */
+"error.auth.weakPassword" = "Choose a stronger password with at least 6 characters.";
+/* Password change: the user must sign in again first. */
+"error.auth.requiresRecentLogin" = "For your security, sign in again before changing your password.";
+/* The saved session has expired. */
+"error.auth.sessionExpired" = "Your session has ended. Please sign in again.";
+/* Unknown sign-in failure. */
+"error.auth.unknown" = "We couldn't sign you in. Please try again.";

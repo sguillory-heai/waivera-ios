@@ -1,0 +1,15 @@
+{
+  "target": "ReceiveMessageUpdate",
+  "arguments": [
+    {
+      "messageId": 9312,
+      "conversationId": 7,
+      "newContent": "can you cover Saturday?",
+      "isEdited": true,
+      "updateDate": "2026-10-20T14:45:00.221004",
+      "contentFormat": 0,
+      "messageDoc": null,
+      "messagePlaintext": "can you cover Saturday?"
+    }
+  ]
+}

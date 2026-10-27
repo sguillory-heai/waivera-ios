@@ -1,0 +1,14 @@
+{
+  "deviceId": "dev_a1b2c3d4e5f60718",
+  "pushToken": "fcm-example-registration-token-android-0001",
+  "platform": "android",
+  "provider": "fcm",
+  "pushEnabled": true,
+  "chatMessagesEnabled": true,
+  "mentionsEnabled": true,
+  "reactionsEnabled": true,
+  "activeCallsEnabled": true,
+  "soundEnabled": true,
+  "vibrationEnabled": true,
+  "previewContentEnabled": true
+}

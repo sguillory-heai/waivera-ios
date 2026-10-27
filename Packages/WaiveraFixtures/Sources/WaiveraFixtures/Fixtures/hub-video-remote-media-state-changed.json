@@ -1,0 +1,11 @@
+{
+  "target": "RemoteMediaStateChanged",
+  "arguments": [
+    {
+      "feedId": "feed_8821",
+      "isMuted": true,
+      "isCameraOn": false,
+      "mediaRevision": 4
+    }
+  ]
+}

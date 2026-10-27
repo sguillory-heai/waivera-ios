@@ -1,0 +1,39 @@
+[
+  {
+    "id": 9340,
+    "clientMessageId": "6f1d4c8a-7b2e-4a1f-9c33-2f7b6d5e4a01",
+    "author": {
+      "id": "usr_priya_raman",
+      "firstName": "Priya",
+      "lastName": "Raman",
+      "email": "priya.raman@example.com",
+      "displayName": "Priya Raman"
+    },
+    "conversationId": 7,
+    "messageContent": "schedule published",
+    "createDate": "2026-10-20T17:00:00.123456",
+    "attachmentScanStatus": "legacy",
+    "messageType": "USER",
+    "reactions": [
+      {
+        "id": 551,
+        "userId": "usr_alex_rivera",
+        "fullName": "Alex Rivera",
+        "reactionType": "👍"
+      },
+      {
+        "id": 552,
+        "userId": "usr_jordan_lee",
+        "fullName": "Jordan Lee",
+        "reactionType": "🎉"
+      }
+    ],
+    "isBot": false,
+    "isEdited": false,
+    "isDeleted": false,
+    "isBookmarked": false,
+    "contentFormat": 0,
+    "messagePlaintext": "schedule published",
+    "threadReplyCount": 0
+  }
+]

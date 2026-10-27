@@ -1,0 +1,37 @@
+[
+  {
+    "id": 4411,
+    "activityType": "chat.mention",
+    "actorUserId": "usr_priya_raman",
+    "actorDisplayName": "Priya Raman",
+    "conversationId": 7,
+    "messageId": 9310,
+    "summary": "Priya Raman mentioned you: \"morning - schedule is up\"",
+    "createdAt": "2026-10-20T13:02:44.120055",
+    "read": false
+  },
+  {
+    "id": 4412,
+    "activityType": "chat.thread_reply",
+    "actorUserId": "usr_jordan_lee",
+    "actorDisplayName": "Jordan Lee",
+    "conversationId": 7,
+    "messageId": 9332,
+    "threadRootMessageId": 9330,
+    "summary": "Jordan Lee replied in a thread: \"Sunday is mine\"",
+    "createdAt": "2026-10-20T16:03:44.009000",
+    "read": false
+  },
+  {
+    "id": 4410,
+    "activityType": "chat.reaction",
+    "actorUserId": "usr_jordan_lee",
+    "actorDisplayName": "Jordan Lee",
+    "conversationId": 7,
+    "messageId": 9312,
+    "reactionType": "👍",
+    "summary": "Jordan Lee reacted 👍 to one of your messages.",
+    "createdAt": "2026-10-20T14:35:10.441000",
+    "read": true
+  }
+]

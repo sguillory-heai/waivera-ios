@@ -1,0 +1,12 @@
+{
+  "target": "NewPublisher",
+  "arguments": [
+    {
+      "userId": "usr_priya_raman",
+      "feedId": "feed_8821",
+      "displayName": "Priya Raman",
+      "isMuted": false,
+      "isCameraOn": true
+    }
+  ]
+}

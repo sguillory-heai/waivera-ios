@@ -1,0 +1,52 @@
+{
+  "id": 7,
+  "isBotDirect": false,
+  "participants": [
+    {
+      "id": "usr_alex_rivera",
+      "firstName": "Alex",
+      "lastName": "Rivera",
+      "email": "alex.rivera@example.com",
+      "displayName": "Alex Rivera"
+    },
+    {
+      "id": "usr_priya_raman",
+      "firstName": "Priya",
+      "lastName": "Raman",
+      "email": "priya.raman@example.com",
+      "displayName": "Priya Raman"
+    }
+  ],
+  "lastMessage": {
+    "id": 9312,
+    "author": {
+      "id": "usr_alex_rivera",
+      "firstName": "Alex",
+      "lastName": "Rivera",
+      "email": "alex.rivera@example.com",
+      "displayName": "Alex Rivera",
+      "deactivated": false,
+      "joinDate": "0001-01-01T00:00:00",
+      "organizationId": 0,
+      "caseloadCapacity": 32,
+      "createdDate": "0001-01-01T00:00:00",
+      "isActive": false,
+      "isDeleted": false,
+      "preferredTimeZone": "America/Chicago",
+      "isWaiverRestricted": false,
+      "isGhostUser": false
+    },
+    "conversationId": 7,
+    "messageContent": "can you cover Friday?",
+    "createDate": "2026-10-20T14:32:11.482913",
+    "reactions": [],
+    "isEdited": false,
+    "isDeleted": false,
+    "isBookmarked": false,
+    "contentFormat": 0,
+    "messagePlaintext": "can you cover Friday?",
+    "threadReplyCount": 0
+  },
+  "lastReadAt": "2026-10-20T14:30:00.000000",
+  "unreadCount": 0
+}

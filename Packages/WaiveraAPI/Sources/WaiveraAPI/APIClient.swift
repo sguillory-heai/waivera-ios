@@ -1,13 +1,55 @@
 import Foundation
+
 #if canImport(FoundationNetworking)
-import FoundationNetworking
+    import FoundationNetworking
 #endif
 
-/// Sends authenticated requests to sprout_api. Adds the Firebase ID token as a
-/// bearer token and retries once with a refreshed token on 401, matching the
-/// Expo app's API client.
+public enum HTTPMethod: String, Sendable {
+    case get = "GET"
+    case post = "POST"
+    case put = "PUT"
+    case delete = "DELETE"
+}
+
+/// One sprout_api call, before auth is attached.
+public struct APIRequest: Sendable {
+    public var method: HTTPMethod
+    public var path: String
+    public var query: [URLQueryItem]
+    public var body: Data?
+    /// Only set for bodies; multipart uploads carry their own boundary (01 §4).
+    public var contentType: String?
+    public var accept: String
+    public var requiresAuth: Bool
+
+    public init(
+        _ method: HTTPMethod,
+        _ path: String,
+        query: [URLQueryItem] = [],
+        body: Data? = nil,
+        contentType: String? = nil,
+        accept: String = "application/json",
+        requiresAuth: Bool = true
+    ) {
+        self.method = method
+        self.path = path
+        self.query = query
+        self.body = body
+        self.contentType = contentType
+        self.accept = accept
+        self.requiresAuth = requiresAuth
+    }
+
+    public static func json(_ method: HTTPMethod, _ path: String, body: some Encodable) throws -> APIRequest {
+        APIRequest(method, path, body: try WaiveraJSON.encoder().encode(body), contentType: "application/json")
+    }
+}
+
+/// Sends requests to sprout_api. Adds the Firebase ID token as a bearer token, retries
+/// exactly once with a force-refreshed token on 401, and maps every failure to a
+/// `WaiveraError` (all thrown errors are `WaiveraError`).
 public struct APIClient: Sendable {
-    private let baseURL: URL
+    public let baseURL: URL
     private let transport: any HTTPTransport
     private let tokens: any AuthTokenProvider
 
@@ -17,37 +59,121 @@ public struct APIClient: Sendable {
         self.tokens = tokens
     }
 
-    /// Posts `body` as JSON to `path` and ignores the response body.
-    public func post(_ path: String, body: some Encodable & Sendable) async throws {
-        var request = URLRequest(url: baseURL.appending(path: path))
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.httpBody = try WaiveraJSON.encoder().encode(body)
-        _ = try await send(request)
+    /// Absolute URL for an API path. Accepts the relative `attachmentUrl` form
+    /// (`/api/chat/message/9320/attachment`) as well as `api/...`.
+    public func url(for path: String, query: [URLQueryItem] = []) -> URL {
+        let trimmed = String(path.drop { $0 == "/" })
+        let base = baseURL.absoluteString.hasSuffix("/") ? baseURL.absoluteString : baseURL.absoluteString + "/"
+        let joined = URL(string: base + trimmed) ?? baseURL
+        guard !query.isEmpty, var components = URLComponents(url: joined, resolvingAgainstBaseURL: false) else {
+            return joined
+        }
+        components.queryItems = (components.queryItems ?? []) + query
+        components.percentEncodedQuery = components.percentEncodedQuery?
+            .replacingOccurrences(of: "+", with: "%2B")
+        return components.url ?? joined
     }
 
-    func send(_ request: URLRequest) async throws -> Data {
-        let token = try await tokens.idToken(forceRefresh: false)
-        var (data, response) = try await transport.send(request.withBearer(token))
+    /// Sends `request` and returns the body of a 2xx response.
+    @discardableResult
+    public func send(_ request: APIRequest) async throws -> Data {
+        try await sendWithResponse(request).0
+    }
 
-        if response.statusCode == 401, token != nil,
-           let refreshed = try await tokens.idToken(forceRefresh: true) {
-            (data, response) = try await transport.send(request.withBearer(refreshed))
+    public func sendWithResponse(_ request: APIRequest) async throws -> (Data, HTTPURLResponse) {
+        let urlRequest = makeURLRequest(request)
+        var token: String?
+        if request.requiresAuth {
+            token = try await currentToken(forceRefresh: false)
+            guard token != nil else { throw WaiveraError.signedOut }
         }
+        var (data, response) = try await perform(urlRequest.withBearer(token))
+        if response.statusCode == 401, request.requiresAuth {
+            guard let refreshed = try await currentToken(forceRefresh: true) else {
+                throw WaiveraError.unauthorized
+            }
+            (data, response) = try await perform(urlRequest.withBearer(refreshed))
+        }
+        guard (200..<300).contains(response.statusCode) else {
+            throw APIErrorMapper.map(statusCode: response.statusCode, body: data)
+        }
+        return (data, response)
+    }
 
-        switch response.statusCode {
-        case 200..<300:
-            return data
-        case 401:
-            throw WaiveraError.unauthorized
-        default:
-            throw WaiveraError.server(statusCode: response.statusCode)
+    /// Decodes a bare (non-enveloped) body.
+    public func decode<T: Decodable>(_ request: APIRequest, as type: T.Type = T.self) async throws -> T {
+        let data = try await send(request)
+        return try Self.decodeBody(type, from: data)
+    }
+
+    /// Decodes `ApiResponse<T>` and returns `data`, treating `data == nil` (including the
+    /// `statusCode: 200, data: null` failure of `/privatechats`, gap G-12) as `.invalidResponse`.
+    public func enveloped<T: Decodable & Sendable>(_ request: APIRequest, as type: T.Type = T.self) async throws -> T {
+        guard let value = try await envelopedIfPresent(request, as: type) else {
+            throw WaiveraError.invalidResponse
+        }
+        return value
+    }
+
+    /// Like `enveloped` but returns `nil` for an absent `data` (204 lists, empty bodies).
+    public func envelopedIfPresent<T: Decodable & Sendable>(
+        _ request: APIRequest,
+        as type: T.Type = T.self
+    ) async throws -> T? {
+        let (data, response) = try await sendWithResponse(request)
+        if response.statusCode == 204 || data.isEmpty { return nil }
+        let envelope = try Self.decodeBody(ApiResponse<T>.self, from: data)
+        if envelope.success == false { throw APIErrorMapper.map(statusCode: envelope.statusCode ?? 500, body: data) }
+        return envelope.data
+    }
+
+    /// Builds an authorised `URLRequest` for loaders that fetch bytes themselves
+    /// (attachment images, gap G-15). The caller owns the 401 retry by calling again with
+    /// `forceRefresh: true`.
+    public func authorizedURLRequest(for path: String, forceRefresh: Bool = false) async throws -> URLRequest {
+        guard let token = try await currentToken(forceRefresh: forceRefresh) else { throw WaiveraError.signedOut }
+        var request = URLRequest(url: url(for: path))
+        request.httpMethod = HTTPMethod.get.rawValue
+        return request.withBearer(token)
+    }
+
+    static func decodeBody<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
+        do {
+            return try WaiveraJSON.decoder().decode(type, from: data)
+        } catch {
+            throw WaiveraError.invalidResponse
+        }
+    }
+
+    private func makeURLRequest(_ request: APIRequest) -> URLRequest {
+        var urlRequest = URLRequest(url: url(for: request.path, query: request.query))
+        urlRequest.httpMethod = request.method.rawValue
+        urlRequest.setValue(request.accept, forHTTPHeaderField: "Accept")
+        if let contentType = request.contentType {
+            urlRequest.setValue(contentType, forHTTPHeaderField: "Content-Type")
+        }
+        urlRequest.httpBody = request.body
+        return urlRequest
+    }
+
+    private func currentToken(forceRefresh: Bool) async throws -> String? {
+        do {
+            return try await tokens.idToken(forceRefresh: forceRefresh)
+        } catch {
+            throw WaiveraError.from(error)
+        }
+    }
+
+    private func perform(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+        do {
+            return try await transport.send(request)
+        } catch {
+            throw WaiveraError.from(error)
         }
     }
 }
 
-private extension URLRequest {
+extension URLRequest {
     func withBearer(_ token: String?) -> URLRequest {
         guard let token else { return self }
         var copy = self

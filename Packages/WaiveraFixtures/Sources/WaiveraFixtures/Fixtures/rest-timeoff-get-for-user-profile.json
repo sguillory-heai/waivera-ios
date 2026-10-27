@@ -1,0 +1,28 @@
+{
+  "data": [
+    {
+      "id": 812,
+      "timeOffStartDate": "2026-10-23T00:00:00",
+      "timeOffEndDate": "2026-10-24T00:00:00",
+      "typeOfLeave": "Paid time off",
+      "comment": "family visit",
+      "isApproved": true,
+      "isRejected": false,
+      "isCancellationPending": false,
+      "requestType": "FULL_DAY",
+      "pendingTimeOffCount": 1,
+      "approvedLeaveCount": 4,
+      "allocatedLeaveCount": 15,
+      "remainingLeaveCount": 11,
+      "remainingLeaveDays": 11,
+      "remainingLeaveHours": 88,
+      "usedLeaveDays": 4,
+      "usedLeaveHours": 32,
+      "usedLeavePercentage": 26.67,
+      "remainingLeavePercentage": 73.33
+    }
+  ],
+  "statusCode": 200,
+  "message": "OK",
+  "success": true
+}

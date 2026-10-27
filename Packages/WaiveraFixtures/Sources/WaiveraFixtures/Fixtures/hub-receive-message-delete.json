@@ -1,0 +1,11 @@
+{
+  "target": "ReceiveMessageDelete",
+  "arguments": [
+    {
+      "messageId": 9312,
+      "conversationId": 7,
+      "deletedAt": "2026-10-20T14:50:00.0000000Z",
+      "isDeleted": true
+    }
+  ]
+}

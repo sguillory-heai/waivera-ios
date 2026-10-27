@@ -1,0 +1,13 @@
+{
+  "data": {
+    "message": "Meeting room ready.",
+    "roomId": "room_7f3c91",
+    "meetingRoomId": "41",
+    "conversationId": 7,
+    "reused": false,
+    "isPublisher": true
+  },
+  "statusCode": 200,
+  "message": "OK",
+  "success": true
+}

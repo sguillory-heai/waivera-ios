@@ -1,0 +1,19 @@
+{
+  "data": {
+    "id": 9312,
+    "conversationId": 7,
+    "messageContent": "can you cover Saturday?",
+    "createDate": "2026-10-20T14:32:11.482913",
+    "updateDate": "2026-10-20T14:45:00.221004",
+    "reactions": [],
+    "isEdited": true,
+    "isDeleted": false,
+    "isBookmarked": false,
+    "contentFormat": 0,
+    "messagePlaintext": "can you cover Saturday?",
+    "threadReplyCount": 0
+  },
+  "statusCode": 200,
+  "message": "OK",
+  "success": true
+}

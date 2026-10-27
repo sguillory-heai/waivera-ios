@@ -1,0 +1,26 @@
+{
+  "target": "receivenotification_web",
+  "arguments": [
+    {
+      "id": 55120,
+      "type": "meeting",
+      "status": "info",
+      "title": "North team check-in",
+      "message": "Priya Raman invited you to a meeting.",
+      "notifies": {
+        "id": "usr_alex_rivera",
+        "firstName": "Alex",
+        "lastName": "Rivera",
+        "email": "alex.rivera@example.com",
+        "displayName": "Alex Rivera"
+      },
+      "allowApproval": true,
+      "actionLabel": "Awaiting response",
+      "actionUrl": "/calendar?eventId=evt_8f2b19c4",
+      "createdAt": "2026-10-18T09:00:00.000000",
+      "read": false,
+      "createdByUser": null,
+      "notificationResources": []
+    }
+  ]
+}

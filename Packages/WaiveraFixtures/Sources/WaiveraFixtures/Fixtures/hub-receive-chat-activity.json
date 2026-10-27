@@ -1,0 +1,18 @@
+{
+  "target": "ReceiveChatActivity",
+  "arguments": [
+    {
+      "id": 4411,
+      "activityType": "chat.mention",
+      "actorUserId": "usr_priya_raman",
+      "actorDisplayName": "Priya Raman",
+      "conversationId": 7,
+      "messageId": 9310,
+      "threadRootMessageId": null,
+      "reactionType": null,
+      "summary": "Priya Raman mentioned you: \"morning - schedule is up\"",
+      "createdAt": "2026-10-20T13:02:44.120055",
+      "read": false
+    }
+  ]
+}

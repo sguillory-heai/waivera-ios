@@ -1,0 +1,6 @@
+{
+  "statusCode": 401,
+  "message": "User context is missing.",
+  "errorCode": "USER_CONTEXT_MISSING",
+  "success": false
+}

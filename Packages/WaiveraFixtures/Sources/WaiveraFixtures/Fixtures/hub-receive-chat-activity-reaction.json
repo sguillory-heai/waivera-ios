@@ -1,0 +1,18 @@
+{
+  "target": "ReceiveChatActivity",
+  "arguments": [
+    {
+      "id": 4410,
+      "activityType": "chat.reaction",
+      "actorUserId": "usr_jordan_lee",
+      "actorDisplayName": "Jordan Lee",
+      "conversationId": 7,
+      "messageId": 9312,
+      "threadRootMessageId": null,
+      "reactionType": "👍",
+      "summary": "Jordan Lee reacted 👍 to one of your messages.",
+      "createdAt": "2026-10-20T14:35:10.441000",
+      "read": false
+    }
+  ]
+}

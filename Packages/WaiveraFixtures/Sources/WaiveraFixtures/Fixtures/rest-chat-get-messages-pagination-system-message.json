@@ -1,0 +1,31 @@
+[
+  {
+    "id": 9360,
+    "author": {
+      "id": "bot:3",
+      "firstName": "Waivera Assistant",
+      "lastName": "",
+      "displayName": "Waivera Assistant",
+      "email": "system@waivera.com",
+      "avatarUrl": "avatars/bot-3.png"
+    },
+    "conversationId": 7,
+    "messageContent": "Jordan Lee joined the channel",
+    "createDate": "2026-10-20T12:00:00.000000",
+    "attachmentScanStatus": "legacy",
+    "messageType": "CHANNEL_EVENT",
+    "reactions": [],
+    "isBot": true,
+    "isEdited": false,
+    "isDeleted": false,
+    "isBookmarked": false,
+    "contentFormat": 0,
+    "messagePlaintext": "Jordan Lee joined the channel",
+    "threadReplyCount": 0,
+    "systemEventType": "channel.member_joined",
+    "systemEventData": {
+      "userId": "usr_jordan_lee",
+      "channelId": "41"
+    }
+  }
+]

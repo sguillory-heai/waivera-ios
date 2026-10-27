@@ -1,0 +1,11 @@
+{
+  "target": "ConversationCallStateChanged",
+  "arguments": [
+    {
+      "conversationId": 7,
+      "roomId": "room_7f3c91",
+      "status": "End",
+      "startTime": "2026-10-20T14:28:00.000000"
+    }
+  ]
+}

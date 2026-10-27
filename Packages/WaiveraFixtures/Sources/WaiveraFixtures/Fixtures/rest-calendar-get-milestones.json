@@ -1,0 +1,29 @@
+{
+  "data": [
+    {
+      "type": "BIRTHDAY",
+      "userId": "usr_priya_raman",
+      "displayName": "Priya Raman",
+      "avatarUrl": "avatars/usr_priya_raman.png",
+      "roles": [
+        "SUPERVISOR"
+      ],
+      "month": 11,
+      "day": 2
+    },
+    {
+      "type": "WORK_ANNIVERSARY",
+      "userId": "usr_alex_rivera",
+      "displayName": "Alex Rivera",
+      "roles": [
+        "SUPPORT COORDINATOR"
+      ],
+      "month": 3,
+      "day": 4,
+      "startYear": 2024
+    }
+  ],
+  "statusCode": 200,
+  "message": "Organization employee milestones fetched successfully.",
+  "success": true
+}

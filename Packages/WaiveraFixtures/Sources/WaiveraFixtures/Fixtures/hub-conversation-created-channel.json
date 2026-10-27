@@ -1,0 +1,41 @@
+{
+  "target": "ConversationCreated",
+  "arguments": [
+    {
+      "id": 41,
+      "isBotDirect": false,
+      "participants": [
+        {
+          "id": "usr_alex_rivera",
+          "firstName": "Alex",
+          "lastName": "Rivera",
+          "email": "alex.rivera@example.com",
+          "displayName": "Alex Rivera"
+        },
+        {
+          "id": "usr_priya_raman",
+          "firstName": "Priya",
+          "lastName": "Raman",
+          "email": "priya.raman@example.com",
+          "displayName": "Priya Raman"
+        }
+      ],
+      "lastMessage": null,
+      "lastReadAt": null,
+      "unreadCount": 0,
+      "channel": {
+        "channelId": "41",
+        "conversationId": 41,
+        "name": "north-team",
+        "topic": "North region coordination",
+        "channelType": 1,
+        "associatedEntityId": null,
+        "ownerId": "usr_priya_raman",
+        "isArchived": false,
+        "canWrite": true
+      },
+      "activeMeeting": null,
+      "ongoingCall": null
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "message": {
+    "token": "participant-device-token-example-0003",
+    "notification": {
+      "title": "Incoming Video Call",
+      "body": "Priya Raman is calling you."
+    },
+    "data": {
+      "CalenderEventId": "",
+      "ParticipantId": "4471",
+      "ParticipantFirebaseId": "fb_participant_example_0003",
+      "Endtime": "10/20/2026 2:28:00 PM",
+      "Starttime": "10/20/2026 2:28:00 PM",
+      "EmployeeId": "usr_priya_raman",
+      "EmployeeDisplayName": "Priya Raman",
+      "MainTitle": "Incoming Video Call",
+      "InstanceId": "room_7f3c91",
+      "NotificationType": "call",
+      "currentUserId": "usr_priya_raman",
+      "callerDisplayName": "Priya Raman",
+      "roomId": "room_7f3c91",
+      "callerId": "usr_priya_raman",
+      "conversationId": "7"
+    }
+  }
+}

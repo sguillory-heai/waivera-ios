@@ -1,0 +1,16 @@
+{
+  "target": "ReceiveChatReadState",
+  "arguments": [
+    {
+      "conversationId": 0,
+      "lastVisibleMessageId": 0,
+      "threadRootMessageId": null,
+      "readActivityIds": [
+        4410,
+        4411,
+        4412
+      ],
+      "readAt": "2026-10-20T19:00:00.000000Z"
+    }
+  ]
+}

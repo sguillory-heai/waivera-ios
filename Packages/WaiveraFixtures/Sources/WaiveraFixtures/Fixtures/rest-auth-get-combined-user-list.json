@@ -1,0 +1,17 @@
+{
+  "data": [
+    {
+      "userId": "usr_alex_rivera",
+      "userName": "Alex Rivera",
+      "type": "EMPLOYEE"
+    },
+    {
+      "userId": "4471",
+      "userName": "R. Okonkwo",
+      "type": "PARTICIPANT"
+    }
+  ],
+  "statusCode": 200,
+  "message": "OK",
+  "success": true
+}

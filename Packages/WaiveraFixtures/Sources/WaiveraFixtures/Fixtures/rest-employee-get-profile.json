@@ -1,0 +1,44 @@
+{
+  "data": {
+    "employeeId": "usr_alex_rivera",
+    "firstName": "Alex",
+    "lastName": "Rivera",
+    "email": "alex.rivera@example.com",
+    "displayName": "Alex Rivera",
+    "avatarURL": "avatars/usr_alex_rivera.png",
+    "phoneNumber": "+1-555-0100",
+    "joinDate": "2024-03-04T00:00:00",
+    "hireDate": "2024-03-04T00:00:00",
+    "address": "22 Example Street, Springfield",
+    "positions": [
+      "Support Coordinator"
+    ],
+    "reporters": [
+      {
+        "employeeId": "usr_jordan_lee",
+        "name": "Jordan Lee",
+        "avatar": "avatars/usr_jordan_lee.png"
+      }
+    ],
+    "regions": [
+      {
+        "regionId": 3,
+        "name": "North"
+      }
+    ],
+    "agencyNames": [
+      "Northside Supports"
+    ],
+    "waiverFamilyIds": [
+      2
+    ],
+    "waiverFamilies": [
+      "CAC"
+    ],
+    "birthday": "1991-06-14T00:00:00",
+    "timezone": "America/Chicago"
+  },
+  "statusCode": 200,
+  "message": "OK",
+  "success": true
+}

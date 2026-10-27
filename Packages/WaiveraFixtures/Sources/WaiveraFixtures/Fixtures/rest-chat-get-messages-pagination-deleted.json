@@ -1,0 +1,27 @@
+[
+  {
+    "id": 9321,
+    "clientMessageId": "6f1d4c8a-7b2e-4a1f-9c33-2f7b6d5e4a01",
+    "author": {
+      "id": "usr_priya_raman",
+      "firstName": "Priya",
+      "lastName": "Raman",
+      "email": "priya.raman@example.com",
+      "displayName": "Priya Raman"
+    },
+    "conversationId": 7,
+    "messageContent": "This message was deleted.",
+    "createDate": "2026-10-20T15:20:31.775000",
+    "attachmentScanStatus": "legacy",
+    "messageType": "USER",
+    "reactions": [],
+    "isBot": false,
+    "isEdited": false,
+    "isDeleted": true,
+    "isBookmarked": false,
+    "contentFormat": 0,
+    "messagePlaintext": "wrong channel, sorry",
+    "threadReplyCount": 0,
+    "deletedAt": "2026-10-20T15:21:02.118374Z"
+  }
+]

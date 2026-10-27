@@ -1,0 +1,29 @@
+{
+  "data": [
+    {
+      "id": 9330,
+      "author": {
+        "id": "usr_priya_raman",
+        "firstName": "Priya",
+        "lastName": "Raman",
+        "email": "priya.raman@example.com",
+        "displayName": "Priya Raman"
+      },
+      "conversationId": 7,
+      "messageContent": "who is on call this weekend?",
+      "createDate": "2026-10-20T16:00:00.000000",
+      "reactions": [],
+      "isEdited": false,
+      "isDeleted": false,
+      "isBookmarked": true,
+      "contentFormat": 0,
+      "messagePlaintext": "who is on call this weekend?",
+      "threadReplyCount": 2,
+      "attachmentType": "other",
+      "attachmentScanStatus": "legacy"
+    }
+  ],
+  "statusCode": 200,
+  "message": "OK",
+  "success": true
+}

@@ -1,0 +1,4 @@
+{
+  "success": false,
+  "message": "FCM registrations require an FCM registration token."
+}

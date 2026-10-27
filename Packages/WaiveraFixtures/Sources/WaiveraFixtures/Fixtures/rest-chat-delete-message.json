@@ -1,0 +1,18 @@
+{
+  "data": {
+    "id": 9312,
+    "conversationId": 7,
+    "messageContent": "This message was deleted.",
+    "createDate": "2026-10-20T14:32:11.482913",
+    "reactions": [],
+    "isEdited": false,
+    "isDeleted": true,
+    "deletedAt": "2026-10-20T14:50:00.000000Z",
+    "isBookmarked": false,
+    "contentFormat": 0,
+    "threadReplyCount": 0
+  },
+  "statusCode": 200,
+  "message": "OK",
+  "success": true
+}

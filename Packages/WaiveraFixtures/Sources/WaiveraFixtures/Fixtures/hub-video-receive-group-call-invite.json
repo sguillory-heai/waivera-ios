@@ -1,0 +1,13 @@
+{
+  "target": "ReceiveGroupCallInvite",
+  "arguments": [
+    {
+      "currentUserId": "usr_priya_raman",
+      "callerDisplayName": "Priya Raman",
+      "roomId": "room_7f3c91",
+      "calenderEventId": null,
+      "conversationId": 7,
+      "callerId": "usr_priya_raman"
+    }
+  ]
+}

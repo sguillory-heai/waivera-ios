@@ -1,0 +1,14 @@
+{
+  "deviceId": "dev_9f8e7d6c5b4a3210",
+  "pushToken": "fcm-example-registration-token-ios-0002",
+  "platform": "ios",
+  "provider": "fcm",
+  "pushEnabled": true,
+  "chatMessagesEnabled": true,
+  "mentionsEnabled": true,
+  "reactionsEnabled": true,
+  "activeCallsEnabled": true,
+  "soundEnabled": false,
+  "vibrationEnabled": true,
+  "previewContentEnabled": false
+}

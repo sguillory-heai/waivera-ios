@@ -1,0 +1,19 @@
+{
+  "data": [
+    {
+      "userId": "usr_alex_rivera",
+      "userName": "Alex Rivera"
+    },
+    {
+      "userId": "usr_priya_raman",
+      "userName": "Priya Raman"
+    },
+    {
+      "userId": "usr_jordan_lee",
+      "userName": "Jordan Lee"
+    }
+  ],
+  "statusCode": 200,
+  "message": "OK",
+  "success": true
+}
