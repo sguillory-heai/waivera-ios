@@ -1,6 +1,7 @@
 # 0002: Local packages, XcodeGen and a local source of truth
 
-Status: Accepted (2026-10-27)
+Status: Accepted (2026-10-27). The SwiftData source-of-truth line is superseded by
+[ADR 0005](0005-in-memory-actors-and-document-cache.md).
 
 ## Context
 

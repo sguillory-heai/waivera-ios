@@ -17,17 +17,24 @@ This file is the single source of truth for every coding agent (Claude Code, Cod
 ## Layout
 
 ```
-App/                 app target: entry point, DI container, scene setup
+App/                     app target: composition root, auth gate, tab shell, banners, Firebase Messaging
 Packages/
-  WaiveraAPI/        DTOs, endpoints, API client, error mapping (mirrors sprout_api)
-  WaiveraRealtime/   SignalR connection, reconnect/backoff, event streams
-  WaiveraDesign/     tokens, typography, haptics, motion, shared components
-  Features/          Chat, Calendar, Profile, Settings (one module each)
-  TestSupport/       fixtures, fake API, fake hub, snapshot helpers
-WaiveraUITests/      XCUITest end-to-end flows against the fake server
+  WaiveraAPI/            DTOs, endpoints, API client, Firebase Auth REST, error mapping (mirrors sprout_api)
+  WaiveraRealtime/       hub client, reconnect/backoff, typed events; WaiveraRealtimeSignalR transport
+  WaiveraData/           repositories, ChatEngine, outbox, offline cache; WaiveraDataPersistence (SwiftData)
+  WaiveraDesign/         WaiveraDesignTokens (Linux-tested) and the SwiftUI design system
+  WaiveraRouting/        tabs, typed routes, deep links, navigation reducer, route catalog
+  WaiveraNotifications/  push payloads, categories, presentation, registration; WaiveraNotificationsLive
+  Features/              Auth, Today, Chat, Schedule, Profile, Settings (one module each)
+  WaiveraFixtures/       shared sprout_api sample payloads (JSON, index in FIXTURES.md)
+  WaiveraTestSupport/    fakes for every repository, scripted hub, demo data, preview modifier
+TestSupport/Push/        simulator push payloads (`.apns`)
+WaiveraTests/            app shell model tests (hosted in the app)
+WaiveraUITests/          XCUITest flows and the screenshot tour against the fake server
+WaiveraSnapshotTests/    design-system component snapshots
 ```
 
-Features depend on `WaiveraAPI`, `WaiveraRealtime`, `WaiveraDesign`; never on each other. Cross-feature navigation goes through the app's router.
+Features depend on `WaiveraData`, `WaiveraAPI` and `WaiveraDesign`, and read repositories from `@Environment(\.dataEnvironment)`; never on each other. `WaiveraTestSupport` is for previews and tests and is imported only inside `#if DEBUG`. Cross-feature navigation goes through the app's router. Data flow: `docs/architecture/data-layer.md`; shell: `docs/architecture/app-shell.md`.
 
 ## Commands
 
@@ -35,7 +42,7 @@ Features depend on `WaiveraAPI`, `WaiveraRealtime`, `WaiveraDesign`; never on ea
 # Build and test (pick an installed simulator with: xcrun simctl list devices available)
 xcodebuild -scheme Waivera -destination 'platform=iOS Simulator,name=iPhone 17' build
 xcodebuild -scheme Waivera -destination 'platform=iOS Simulator,name=iPhone 17' test
-swift test --package-path Packages/WaiveraAPI          # fast package tests, no simulator
+swift test --package-path Packages/WaiveraData         # fast package tests, no simulator (Linux too)
 swiftlint --strict && swift-format lint -r App Packages
 # Simulate a push without App Store access
 xcrun simctl push booted com.waivera.waivera TestSupport/Push/chat-message.apns
@@ -81,7 +88,7 @@ Run the narrowest test target that covers the change first, then the full scheme
 ## Testing
 
 - Swift Testing (`@Test`, `#expect`) for unit tests; XCTest only for UI tests and performance tests.
-- Every feature model has tests for loading, empty, error, and reconnect states using `TestSupport` fakes.
+- Every feature model has tests for loading, empty, error, and reconnect states using `WaiveraTestSupport` fakes.
 - Snapshot tests (swift-snapshot-testing) for shared components and key screens in light/dark and large type.
 - UI tests run against the fake server, never against shared dev data.
 - Never skip, disable, or loosen a test to get green. Fix the code or explain why the test is wrong.

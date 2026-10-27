@@ -21,8 +21,8 @@ xcodegen generate && open Waivera.xcodeproj
 ## Configuration
 
 Environment values live in `Config/Debug.xcconfig` and `Config/Release.xcconfig`. They are
-**empty in git**: a fresh clone builds and runs unconfigured (sign-in screen, no network, no
-Firebase, no push). For real values create the git-ignored `Config/Local.Debug.xcconfig` (and
+**empty in git**: a fresh clone builds and runs unconfigured (a configuration-required screen,
+no network, no Firebase, no push; the fake server below still works in DEBUG). For real values create the git-ignored `Config/Local.Debug.xcconfig` (and
 `Config/Local.Release.xcconfig`); CI writes them from repository secrets.
 
 | Setting | Info.plist key | Used for |
@@ -43,6 +43,8 @@ Firebase, no push). For real values create the git-ignored `Config/Local.Debug.x
 ```bash
 swift test --package-path Packages/WaiveraAPI           # fast package tests (also run on Linux)
 swift test --package-path Packages/WaiveraRealtime
+swift test --package-path Packages/WaiveraData          # repositories, outbox, cache, session
+swift test --package-path Packages/WaiveraTestSupport   # fakes and demo data
 swift test --package-path Packages/WaiveraDesign        # design tokens, motion and haptic rules
 swift test --package-path Packages/WaiveraRouting       # routes, deep links, navigation rules
 swift test --package-path Packages/WaiveraNotifications # push payloads, presentation, registration
@@ -54,7 +56,8 @@ xcrun simctl openurl booted 'waivera://chats/7?messageId=9312'
 ```
 
 Run against the fake server and open any screen directly (DEBUG builds only):
-launch arguments `-WaiveraFakeServer -WaiveraRoute conversation`. The full list is in
+launch arguments `-WaiveraFakeServer -WaiveraRoute conversation`; add
+`-WaiveraFakeScenario empty|failing|slow|signedOut|passwordChange` for other states. The full list is in
 [app-shell.md](docs/architecture/app-shell.md#debug-launch-arguments).
 
 ## Screenshots

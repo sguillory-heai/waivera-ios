@@ -6,7 +6,7 @@ description: Verify a new or changed SwiftUI screen on the simulator before call
 Verify the changed UI as a user would, then record evidence.
 
 1. List the affected screens and the states that apply: loading, empty, populated, long content, error, offline/reconnecting, disabled, selected.
-2. Build and launch on the simulator with XcodeBuildMCP, pointed at the fake server in `TestSupport` (never shared dev data).
+2. Build and launch on the simulator with XcodeBuildMCP, launched with `-WaiveraFakeServer` (optionally `-WaiveraFakeScenario empty|failing|slow|signedOut|passwordChange`), which runs the `WaiveraTestSupport` fakes (never shared dev data).
 3. For each screen and state, capture settled screenshots (wait for animations to finish) in:
    - light and dark mode
    - iPhone SE size and a current Pro Max size

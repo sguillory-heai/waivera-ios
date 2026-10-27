@@ -13,10 +13,10 @@ Feature models ──▶ DataEnvironment (protocols only)
    APIClient  RealtimeClient  LocalStore      DemoData (fixtures through the mappers)
 ```
 
-## Relation to ADR 0002
+## Source of truth (ADR 0005)
 
-ADR 0002 says SwiftData is the source of truth for anything a screen lists. This layer does
-not use SwiftData that way:
+[ADR 0005](../adr/0005-in-memory-actors-and-document-cache.md) records this design and
+supersedes the SwiftData-as-source-of-truth line of ADR 0002:
 
 - The source of truth for a signed-in session is a set of in-memory actors. `ChatEngine` owns
   the inbox, the timelines, the threads and the outbox.
@@ -29,8 +29,6 @@ The reasons:
   actor makes that hold.
 - JSON documents never need a schema migration.
 - The whole layer stays testable on Linux.
-
-If the team keeps this design, record it in a new ADR.
 
 ## Rules every repository follows
 
@@ -192,6 +190,10 @@ has three members:
 **Foreground push**
 - `shouldPresentForegroundPush` returns false only when two things are both true: the hub
   is connected, and that conversation is on screen with the app active.
+- It is the app's only suppression rule. `AppModel.presentationDecision` asks it for chat
+  pushes and hands the answer to `ForegroundPresentationPolicy` (WaiveraNotifications), which
+  only adds the In-app banners and Sound switches. The fake applies the same rule over the
+  fake chat's `open`/`close` and the fake hub's state.
 
 **Ticket cards**
 - `ChatMessage.ticket` parses a bot's `ticket.update` payload. It unwraps up to three layers
@@ -230,75 +232,70 @@ are cached are also `Codable`.
 - `ChatMapper`, `CalendarMapper` and `ProfileMapper` are the only way DTOs become models.
   `DemoData` uses them too, so fakes and live code render the same shapes.
 
-## Live composition (what the app target must do)
+## Live composition (what the app target does)
 
-Build the environment once, in `WaiveraApp`:
+`App/Sources/Composition/DataLayerBridge.swift` builds the environment once, from
+`CompositionRoot`:
 
 ```swift
-import WaiveraAPI
-import WaiveraData
-import WaiveraDataPersistence      // SwiftDataLocalStore
-import WaiveraRealtimeSignalR      // SignalRHubConnectionFactory
-
-let environment: DataEnvironment
-switch WaiveraConfiguration.load(from: Bundle.main.infoDictionary ?? [:]) {
-case .success(let configuration):
-    environment = .live(LiveDependencies(
-        configuration: configuration,
+guard case .success(let apiConfiguration) = WaiveraConfiguration.load(from: configuration.infoDictionary)
+else { return nil }  // the configuration-missing gate
+let localStore: any LocalStore
+if let store = try? SwiftDataLocalStore.make() {
+    localStore = store
+} else {
+    localStore = InMemoryLocalStore()
+}
+return DataEnvironment.live(
+    LiveDependencies(
+        configuration: apiConfiguration,
         tokenStore: KeychainTokenStore(),
         hubFactory: SignalRHubConnectionFactory(),
-        localStore: (try? SwiftDataLocalStore.make()) ?? InMemoryLocalStore(),
+        localStore: localStore,
         keyValueStore: UserDefaultsKeyValueStore(),
         connectivity: NetworkPathConnectivity()
-    ))
-case .failure:
-    // Show the configuration-missing screen. In DEBUG, the fake environment below also works.
-}
+    )
+)
 ```
 
-Then the app target must do the following:
+The app target then (all in `AppModel`, `RootView` and `ShellBanners`; app-shell.md has the
+details):
 
-1. **Launch.** Call `await environment.launch()` once, from a `.task` on the root view.
-2. **Route on the session.** Observe `environment.session.states()` and show the matching
-   screen: loading, login, bootstrap error with Retry, password change, onboarding notice,
-   main tabs, or configuration missing.
-3. **Scene phase.** Call `await environment.setForeground(phase == .active)` on every change.
-   Realtime runs in the foreground only and reconnects on return.
-4. **Push token.**
-   - Call `await environment.push.register(token:preferences:)` with the FCM token and
-     `environment.settings.currentSettings.notifications`.
-   - Do it whenever the session becomes `.signedIn`, and from
-     `messaging(_:didReceiveRegistrationToken:)`.
-   - Calling it again with the same token and preferences does nothing.
-   - Preference changes made through `SettingsRepository` re-register on their own.
-   - Sign-out unregisters on its own.
-5. **Foreground pushes.** In `userNotificationCenter(_:willPresent:)`, present the push only
-   when `environment.alerts.shouldPresentForegroundPush(conversationId:)` returns true.
-6. **In-app banners.** Show in-app banners from `environment.alerts.alerts()`.
-7. **Connection banner.** Show the quiet banner from `environment.realtimeStatus.banner()`.
-   Its Retry calls `retryNow()`.
-8. **Fake environment (DEBUG only).**
-   - Check for it like this:
+1. **Launch.** `AppModel.start()`, called once from `didFinishLaunching`, subscribes to the
+   streams below and calls `await environment.launch()`.
+2. **Route on the session.** `environment.session.states()` drives the gate: loading, sign-in,
+   bootstrap error with Retry (`retryBootstrap()`), configuration missing, password change,
+   onboarding notice, primer, main tabs.
+3. **Scene phase.** `await environment.setForeground(phase != .background)` on every change,
+   including the initial phase. `.inactive` (Control Center, the app switcher) keeps realtime up.
+4. **Push token.** `PushRegistrationCoordinator` calls
+   `environment.push.register(token:preferences:)` with the FCM token and
+   `environment.settings.currentSettings.notifications` when the session becomes `.signedIn`
+   (and after an account switch) and on every token from `messaging(_:didReceiveRegistrationToken:)`,
+   but never while signed out or while notification permission is denied or not yet asked.
+   Preference changes re-register inside the data layer; sign-out unregisters inside the data
+   layer. The app never calls `unregister()` itself.
+5. **Foreground pushes.** `userNotificationCenter(_:willPresent:)` hides a chat push only when
+   `environment.alerts.shouldPresentForegroundPush(conversationId:)` returns false.
+6. **In-app banners** from `environment.alerts.alerts()`, on the tabs only.
+7. **Connection banner** from `environment.realtimeStatus.banner()`. Its Retry calls `retryNow()`.
+8. **Notification actions.** Reply goes through `messages.send` (or `threads.reply` for a thread
+   root), Mark as read through `messages.markRead`; both only while signed in.
+9. **Feature screens** read the environment with `@Environment(\.dataEnvironment)` (defined in
+   this package behind `#if canImport(SwiftUI)`); `RootView` injects it. Previews use
+   `.fakeDataEnvironment()` from WaiveraTestSupport.
+10. **Fake environment (DEBUG only).** `LaunchOptions` reads
+    `FakeDataEnvironment.scenario(fromArguments:)`, the only parser of `-WaiveraFakeServer` and
+    `-WaiveraFakeScenario` (`demo` by default, `empty`, `failing`, `slow`, `signedOut` or
+    `passwordChange`), and `CompositionRoot` then uses
+    `FakeDataEnvironment.make(scenario, webBaseURL:).environment`. UI tests pass these launch
+    arguments. `WaiveraTestSupport` is linked into the app target and every
+    `import WaiveraTestSupport` is inside `#if DEBUG`. SwiftPM cannot link a package for one
+    configuration only, so the code is still linked into Release builds, where nothing
+    references it and dead-code stripping removes it.
 
-     ```swift
-     #if DEBUG
-     if let scenario = FakeDataEnvironment.scenario(fromArguments: ProcessInfo.processInfo.arguments) {
-         environment = FakeDataEnvironment.make(scenario, webBaseURL: configuration?.webBaseURL).environment
-     }
-     #endif
-     ```
-
-   - The launch argument is `-WaiveraFakeServer`.
-   - An optional `-WaiveraFakeScenario` takes one of: `demo` (the default), `empty`,
-     `failing`, `slow`, `signedOut` or `passwordChange`.
-   - UI tests pass these launch arguments.
-   - Link `WaiveraTestSupport` into the app target, and put every `import WaiveraTestSupport`
-     inside `#if DEBUG`. SwiftPM cannot link a package for one configuration only, so the
-     code is still linked into Release builds, where nothing references it and dead-code
-     stripping removes it.
-
-`project.yml` already lists the packages. The shell agent adds the target dependencies
-`WaiveraData`, `WaiveraDataPersistence`, `WaiveraRealtimeSignalR` and `WaiveraTestSupport`.
+`project.yml` lists `WaiveraData`, `WaiveraDataPersistence`, `WaiveraRealtimeSignalR` and
+`WaiveraTestSupport` as app target dependencies.
 
 ## Fake composition
 
@@ -324,6 +321,9 @@ Then the app target must do the following:
     do. `.hold` keeps them pending until `confirmPending()`.
   - `receive(_:)` delivers an incoming message, `setTyping` sets typing indicators, and
     `setReactionsAvailable(false)` makes reactions unavailable.
+  - `FakeChatAlertsRepository.emit(_:)` shows an in-app banner. Its
+    `shouldPresentForegroundPush` follows the live rule over the fake chat's presence and the
+    fake hub; `activeConversationIds` forces a conversation to count as live.
   - Every fake records its calls in `calls` (a `CallLog`).
 - **`FakeRealtimeClient`** is a scripted hub:
   - `connect()` and `drop(attempt:)` change the connection state.
@@ -359,6 +359,9 @@ Then the app target must do the following:
   render them.
 - `GET /api/chat/conversation/{id}/bookmarks` is not used. The global list and its fallback
   cover the bookmarks screen.
+- Mark as read from a notification action, for a conversation whose timeline was never loaded,
+  sends `MarkAsRead` but no read-through: `markRead(conversationId:)` takes no message id, although
+  the push carries one. A `markRead(conversationId:throughMessageId:)` would close this.
 - Call log grouping by `callRecordId` (03 §16) is left to the chat feature. The data layer
   exposes `isCallLog` and `callRecordId`.
 
@@ -369,6 +372,7 @@ The following compile only on Apple platforms, so the Linux test run skips them:
 - `KeychainTokenStore` (Security)
 - `SwiftDataLocalStore` (SwiftData)
 - `NetworkPathConnectivity` (Network)
+- `EnvironmentValues.dataEnvironment` and WaiveraTestSupport's `View.fakeDataEnvironment` (SwiftUI)
 
 `WaiveraRealtimeSignalR` compiles on Linux but has not run against a live hub. Everything else
 runs on Linux with `swift test`:
@@ -376,4 +380,4 @@ runs on Linux with `swift test`:
 - `WaiveraAPI`: 61 tests
 - `WaiveraRealtime`: 35 tests
 - `WaiveraData`: 127 tests
-- `WaiveraTestSupport`: 20 tests
+- `WaiveraTestSupport`: 21 tests

@@ -9,6 +9,7 @@ Format: `NNNN-title.md` with Status, Context, Decision, Consequences.
 | ADR | Decision | Status |
 | --- | --- | --- |
 | [0001](0001-native-rebuild.md) | Rebuild natively instead of staying cross-platform | Accepted |
-| [0002](0002-app-architecture.md) | Local packages, XcodeGen and a local source of truth | Accepted |
+| [0002](0002-app-architecture.md) | Local packages, XcodeGen and a local source of truth | Accepted; local store line superseded by 0005 |
 | [0003](0003-push-through-fcm.md) | Deliver pushes through FCM over APNs as grouped alerts | Accepted |
 | [0004](0004-today-first-tabs-and-typed-routes.md) | Today-first tabs, typed routes and a Foundation routing package | Accepted |
+| [0005](0005-in-memory-actors-and-document-cache.md) | In-memory actors own session state; SwiftData is a document cache | Accepted |
