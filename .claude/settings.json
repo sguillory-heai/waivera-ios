@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
+  "includeCoAuthoredBy": false,
+  "permissions": {
+    "allow": [
+      "Bash(xcodebuild *)",
+      "Bash(xcrun simctl *)",
+      "Bash(swift test *)",
+      "Bash(swift build *)",
+      "Bash(swiftlint *)",
+      "Bash(swift-format *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)"
+    ],
+    "deny": [
+      "Read(./**/*.p12)",
+      "Read(./**/*.mobileprovision)",
+      "Read(./**/AuthKey_*.p8)",
+      "Bash(xcrun altool *)",
+      "Bash(fastlane *upload*)",
+      "Bash(fastlane *pilot*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v jq >/dev/null && command -v swiftlint >/dev/null || exit 0; f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *.swift) swift-format format -i \"$f\" && swiftlint lint --quiet --fix \"$f\" >/dev/null; swiftlint lint --quiet --strict \"$f\" >&2 || exit 2;; esac"
+          }
+        ]
+      }
+    ]
+  }
+}
