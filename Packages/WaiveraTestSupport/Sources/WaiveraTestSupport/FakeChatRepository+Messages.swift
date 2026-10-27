@@ -215,6 +215,7 @@ extension FakeChatRepository: ThreadsRepository {
     public func reply(text: String, attachment: Attachment?, rootMessageId: Int, conversationId: Int) async
         -> OutgoingMessage?
     {
+        calls.record("reply:\(rootMessageId)")
         if threadsById[rootMessageId] == nil {
             threadsById[rootMessageId] = ThreadTimeline(rootMessageId: rootMessageId, conversationId: conversationId)
         }

@@ -6,9 +6,9 @@
         /// For previews: injects a launched fake data environment for `scenario`, so a screen
         /// renders demo, empty, failing or slow data without a network. Call it inside `#if DEBUG`.
         public func fakeDataEnvironment(_ scenario: FakeDataEnvironment.Scenario = .demo) -> some View {
-            let environment = FakeDataEnvironment.make(scenario).environment
-            return self.environment(\.dataEnvironment, environment)
-                .task { await environment.launch() }
+            let fake = FakeDataEnvironment.make(scenario).environment
+            return environment(\.dataEnvironment, fake)
+                .task { await fake.launch() }
         }
     }
 #endif
