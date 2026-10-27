@@ -1,0 +1,26 @@
+{
+  "message": {
+    "token": "participant-device-token-example-0003",
+    "notification": {
+      "title": "New survey assigned",
+      "body": "A survey is waiting for you."
+    },
+    "data": {
+      "CalenderEventId": "",
+      "ParticipantId": "4471",
+      "ParticipantFirebaseId": "fb_participant_example_0003",
+      "Endtime": "10/20/2026 8:00:00 AM",
+      "Starttime": "10/20/2026 8:00:00 AM",
+      "EmployeeId": "4471",
+      "EmployeeDisplayName": "R. Okonkwo",
+      "MainTitle": "New survey assigned",
+      "InstanceId": "svy_inst_9931",
+      "NotificationType": "Survey",
+      "currentUserId": "4471",
+      "callerDisplayName": "R. Okonkwo",
+      "roomId": "",
+      "callerId": "4471",
+      "conversationId": ""
+    }
+  }
+}

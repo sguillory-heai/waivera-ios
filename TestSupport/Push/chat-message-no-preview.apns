@@ -1,0 +1,16 @@
+{
+  "Simulator Target Bundle": "com.waivera.waivera",
+  "aps": {
+    "alert": {
+      "title": "Alex Rivera",
+      "body": "New message"
+    },
+    "thread-id": "chat-7",
+    "category": "CHAT_MESSAGE",
+    "mutable-content": 1
+  },
+  "type": "chat",
+  "conversationId": "7",
+  "messageId": "9312",
+  "url": "/chats/7"
+}

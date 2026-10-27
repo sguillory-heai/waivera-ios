@@ -1,0 +1,17 @@
+{
+  "message": {
+    "token": "fcm-example-registration-token-android-0001",
+    "data": {
+      "type": "chat",
+      "conversationId": "7",
+      "messageId": "9320",
+      "url": "/chats/7",
+      "title": "Alex Rivera",
+      "body": "Sent an attachment",
+      "channelId": "chat-messages"
+    },
+    "android": {
+      "priority": "HIGH"
+    }
+  }
+}

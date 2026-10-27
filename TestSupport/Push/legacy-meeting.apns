@@ -1,0 +1,25 @@
+{
+  "Simulator Target Bundle": "com.waivera.waivera",
+  "aps": {
+    "alert": {
+      "title": "Meeting scheduled",
+      "body": "Priya Raman scheduled North team check-in."
+    },
+    "sound": "default"
+  },
+  "CalenderEventId": "evt_8f2b19c4",
+  "ParticipantId": "4471",
+  "ParticipantFirebaseId": "fb_participant_example_0003",
+  "Endtime": "10/20/2026 3:30:00 PM",
+  "Starttime": "10/20/2026 3:00:00 PM",
+  "EmployeeId": "",
+  "EmployeeDisplayName": "Priya Raman",
+  "MainTitle": "Meeting scheduled",
+  "InstanceId": "",
+  "NotificationType": "meeting",
+  "currentUserId": "",
+  "callerDisplayName": "",
+  "roomId": "",
+  "callerId": "",
+  "conversationId": ""
+}
