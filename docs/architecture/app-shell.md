@@ -39,6 +39,15 @@ from `didFinishLaunching`) subscribes to the data layer's streams and calls
 | `signedIn`, permission not asked, primer not seen | notification primer | `NotificationPrimerView(onEnable:onNotNow:)` (AuthFeature) |
 | `signedIn` | tabs | `MainTabView` (App) |
 
+While the session re-runs the bootstrap from `bootstrapFailed`, `onboardingRequired` or
+`passwordChangeRequired`, the gate stays on that screen until the next state arrives
+(`AppModel.gateHeld(whileRebootstrappingFrom:)`), so Try again, Check again and the forced
+password change keep their busy state instead of flashing the loader or sign-in.
+
+While signed in and the scene is not active, `RootView` covers the content with `PrivacyCover`
+so the app switcher snapshot shows no messages. On sign-out the app removes every delivered
+notification and the attachment files saved for sharing.
+
 The primer shows once per install (`PrimerSeenStore`). "Turn on notifications" requests full
 authorization (system prompt); "Not now" requests provisional (quiet) delivery, so no prompt
 appears and nothing is lost. Settings → Notifications shows the system status
@@ -65,7 +74,7 @@ validated (`Identifier.positiveInt`, `Identifier.opaque`).
 | --- | --- | --- | --- | --- |
 | Today root | — | `waivera://today` | `TodayView(onOpenConversation: (conversationID, targetMessageID?), onOpenThread: (rootMessageID, conversationID?, targetMessageID?), onOpenEvent: (eventID), onOpenSchedule: (), onOpenActivity: ())` | TodayFeature |
 | `.activity` | — | `waivera://activity` | `ActivityView(onOpenConversation:onOpenThread:)` (same closure shapes as Today) | TodayFeature |
-| Chat root | — | `waivera://chats` | `ConversationListView(onOpenConversation: (conversationID), onNewChat: ())` | ChatFeature |
+| Chat root | — | `waivera://chats` | `ConversationListView(onOpenConversation: (conversationID), onOpenPerson: (userID), onNewChat: ())` | ChatFeature |
 | sheet `.newChat` | — | `waivera://chats/new` | `NewChatView(onOpenConversation: (conversationID), onDismiss: ())` | ChatFeature |
 | `.conversation` | `conversationID: Int`, `targetMessageID: Int?` | `waivera://chats/{id}[?messageId=]` | `ConversationView(conversationID:targetMessageID:onOpenThread: (rootMessageID, targetMessageID?), onOpenPerson: (userID))` | ChatFeature |
 | `.thread` | `rootMessageID: Int`, `conversationID: Int?`, `targetMessageID: Int?` | `waivera://chats/thread/{rootId}[?conversationId=&messageId=]` or `waivera://chats/{id}/thread/{rootId}[?messageId=]` | `ThreadView(rootMessageID:conversationID:targetMessageID:onOpenPerson:)` | ChatFeature |
@@ -79,10 +88,17 @@ validated (`Identifier.positiveInt`, `Identifier.opaque`).
 | `.settings` | — | `waivera://settings` | `SettingsView(onOpenNotifications:onOpenAppearance:onOpenAccount:)` | SettingsFeature |
 | `.notificationSettings` | — | `waivera://settings/notifications` | `NotificationSettingsView(systemStatus: SystemNotificationStatus, onRequestPermission: (), onOpenSystemSettings: ())` | SettingsFeature |
 | `.appearanceSettings` | — | `waivera://settings/appearance` | `AppearanceSettingsView()` | SettingsFeature |
-| `.accountSettings` | — | `waivera://settings/account` | `AccountSettingsView(onSignOut: ())` — shows the shared confirmation sheet before calling `onSignOut` | SettingsFeature |
+| `.accountSettings` | — | `waivera://settings/account` | `AccountSettingsView(onChangePassword: ()?, onSignOut: ())` — shows the shared confirmation sheet before calling `onSignOut`; without `onChangePassword` the row opens the feature's own sheet | SettingsFeature |
+| `.changePassword` | — | `waivera://settings/account/password` | `PasswordChangeView(onDone: ())` — the voluntary change; `onDone` runs after the saved confirmation | AuthFeature |
 
 `waivera://` links for profile, people, bookmarks and settings open on the selected tab. Anything
 unrecognised or invalid is ignored (`DeepLink.destination` returns `nil`).
+
+Links opened from inside the app (message text, attachments, event details) go through
+`RootView`'s `OpenURLAction`, which asks `LinkPolicy.decide(_:)`: a `waivera://` link for a
+known route navigates (an unknown path is blocked), an `http` or `https` link with a host opens in
+the browser, and every other scheme (`javascript:`, `file:`, `tel:` and so on) is blocked. Chat's own open-in-app and
+open-externally actions check `SafeLinks.isAllowed` too.
 
 Entry views are placeholders (`FeaturePlaceholder`) until each feature lands; keep the initializer
 signatures, or update this table and the app router in the same change. Data comes from the data
@@ -204,7 +220,9 @@ All are ignored in Release builds.
 ## Screenshots and snapshots
 
 - `WaiveraUITests/ScreenshotTour.swift` visits every `RouteCatalog` entry in light, dark and
-  accessibility XXXL. Attachments are named `<route>__<device>-<variant>` and kept on success.
+  accessibility XXXL. State entries (`<route>-empty`, `<route>-failing`, `<route>-slow`,
+  from `RouteCatalog.stateScenarios` over `stateRoutes`) relaunch with that fake scenario, so the
+  tour also shows each screen's empty, error and slow-loading state. Attachments are named `<route>__<device>-<variant>` and kept on success.
   Each screen gets `performAccessibilityAudit()`; every issue is attached as
   `<route>__<device>-<variant>__accessibility` and recorded as a failure without stopping the tour.
 - `WaiveraSnapshotTests` snapshots the shared components at iPhone SE width in light, dark and

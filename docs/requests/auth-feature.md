@@ -92,3 +92,16 @@ swift test --package-path Packages/Features --skip-build
 
 It keeps working as long as every feature target with a test target wraps its SwiftUI files in
 `#if canImport(UIKit)`, as AuthFeature does.
+
+## Status
+
+Recorded by the iOS platform owner after the requests were worked through.
+
+| # | Status | Reason |
+| --- | --- | --- |
+| 1 | Done | `SessionRepository.sendPasswordReset(email:)` and the fake exist; `PasswordResetSending` and its adapter were removed, and the sign-in screen offers the link whenever a session repository is present. |
+| 2 | Done | `AppModel.gateHeld(whileRebootstrappingFrom:)` keeps the bootstrap-failed, onboarding and forced password change gates while `.bootstrapping` follows them (`AppModelCarryoverTests`). |
+| 3 | Done | `changePassword` re-runs the bootstrap only from `.passwordChangeRequired` and remembers per uid that Firebase took the new password, so a retry only confirms. |
+| 4 | Done | `AppRoute.changePassword`, `waivera://settings/account/password`, the `settings-change-password` catalog entry, the `RouteDestinationView` mapping and the "Change password" row (`AccountSettingsView(onChangePassword:onSignOut:)`). |
+| 5 | Done | `WaiveraTextField` stacks both fields and keeps focus on reveal, and takes `focus:field:` and `accessibilityIdentifier:`; the auth screens use it. Compiles on macOS only. |
+| 6 | Done | The snapshot target links AuthFeature, the scheme runs AuthFeatureTests, and CI has a Linux "Test Features" step. |

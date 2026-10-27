@@ -88,3 +88,18 @@ feature modules import SwiftUI unguarded.
 
 - Search lives on the Activity screen only. Today shows the type chips and the Unread toggle but no
   search field, to keep the first screen short.
+
+## Status
+
+Recorded by the iOS platform owner after the requests were worked through.
+
+| # | Status | Reason |
+| --- | --- | --- |
+| 1 | Done | `DataEnvironment.clock`; `TodayClock` was deleted. |
+| 2 | Done | `RealtimeIngestor` refreshes every observed calendar feed on reconnect; the `TodayModel` refetch was removed. |
+| 3 | Moved | To `sprout-api.md` §1; the 5-page pager stays until the count exists. |
+| 4 | Done | `ActivityFeed.loadMoreError` keeps the loaded phase; the footer's Retry fetches just that page. |
+| 5 | Moved | To `sprout-api.md` §2; the two week feeds stay. |
+| 6 | Done | `today` and `activity` have `-empty`, `-failing` and `-slow` tour entries. |
+| 7 | Done | `FakeActivityRepository` takes extra pages. `TodayFeatureTests` keeps its own `PagedActivityRepository`, because it is a test double that also scripts page sizes. |
+| 8 | Done | The scheme runs `Features/TodayFeatureTests` and the Linux CI step runs the whole package. |

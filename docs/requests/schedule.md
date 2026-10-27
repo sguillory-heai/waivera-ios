@@ -75,3 +75,19 @@ a stand-in is a small change inside `ScheduleFeature/Model`.
 9. **Fallback zone conflict.** 07 §6 says to fall back to the device zone; `dates.md` says
    America/Chicago. The feature follows `dates.md` and shows a notice when the fallback is in
    effect. 07 §6 should be updated to match.
+
+## Status
+
+Recorded by the iOS platform owner after the requests were worked through.
+
+| # | Status | Reason |
+| --- | --- | --- |
+| 1 | Done | `CalendarRepository.event(id:)` and `refreshEvent(id:)`; `EventRangeMemory` was deleted and a cold id is fetched once through the single-event endpoint. |
+| 2 | Done | `ScheduleZone` lives in `WaiveraData`, falls back to America/Chicago (fixed offsets too), and the repository computes fetch intervals in that zone. |
+| 3 | Done | `DataEnvironment.clock`; `RepositoryAlignedClock` was deleted. |
+| 4 | Moved | To the spec owner, unchanged: the screen keeps "Message organizer". |
+| 5 | Declined for now | The metrics are schedule-only values. The milestone badge would be shared, but moving it is a design-system change with no visible effect; left for a design-system pass. |
+| 6 | Done | The scheme runs `Features/ScheduleFeatureTests`. |
+| 7 | Done | `WaiveraSnapshotTests/ScheduleSnapshotTests.swift` covers every schedule and event preview state. References still need recording on macOS. |
+| 8 | Done | `schedule` and `calendar-event` have state entries, and `calendar-event-invite` and `calendar-event-checkin` are in the catalog. |
+| 9 | Moved | To the spec owner: the feature follows `dates.md`. |

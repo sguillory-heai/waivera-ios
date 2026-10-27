@@ -58,8 +58,8 @@ The reasons:
 - **Timestamps.** Every timestamp is a UTC `Date`, parsed by `WaiveraInstant`. A timestamp
   without a zone suffix is read as UTC.
 - **Dates.** Date-only values are `CalendarDate`. They are shown in the employee's saved
-  zone (`CurrentUser.scheduleTimeZone`). The device zone is used only when no zone is
-  saved, and then `isDeviceFallback` is true.
+  zone (`CurrentUser.scheduleTimeZone`). When no named zone is saved (or it is a fixed
+  offset), `America/Chicago` is used and `isUsingFallbackTimeZone` is true (`ScheduleZone`).
 - **Concurrency.**
   - Live repositories are actors, or `Sendable` classes over a lock.
   - A sign-out bumps a `generation` counter. Any task still running from before the
@@ -72,25 +72,27 @@ has a live type and a fake type.
 
 | Protocol | Streams | Actions | Live / fake |
 | --- | --- | --- | --- |
-| `SessionRepository` | `states()` → `SessionState`, `currentState` | `start`, `signIn`, `changePassword`, `retryBootstrap`, `signOut` | `LiveSessionRepository` / `FakeSessionRepository` |
+| `SessionRepository` | `states()` → `SessionState`, `currentState` | `start`, `signIn`, `sendPasswordReset(email:)`, `changePassword`, `retryBootstrap`, `signOut` | `LiveSessionRepository` / `FakeSessionRepository` |
 | `ConversationsRepository` | `conversations()` → `Resource<[Conversation]>`, `typing()` → `[conversationId: [userId]]`, `totalUnread()` → `Int` | `refresh`, `conversation(id:)`, `openDirectConversation(with:)`, `createConversation`, `leave` | `ChatEngine` / `FakeChatRepository` |
-| `MessagesRepository` (adds `MessageActions`) | `timeline(conversationId:)` → `Resource<MessageTimeline>` | `open`, `close`, `refresh`, `loadOlder`, `send`, `markRead`, `composerChanged` | `ChatEngine` / `FakeChatRepository` |
+| `MessagesRepository` (adds `MessageActions`) | `timeline(conversationId:)` → `Resource<MessageTimeline>` | `open`, `close`, `refresh`, `loadOlder`, `loadAround(conversationId:messageId:)` → `Bool`, `send`, `markRead` (throws), `composerChanged` | `ChatEngine` / `FakeChatRepository` |
 | `ThreadsRepository` (adds `MessageActions`) | `thread(rootMessageId:conversationId:)` → `Resource<ThreadTimeline>` | `open`, `close`, `refresh`, `reply`, `markRead` | `ChatEngine` / `FakeChatRepository` |
 | `MessageActions` | none | `retry(clientMessageId:)`, `discard`, `edit`, `delete`, `toggleReaction` | shared by both |
 | `AttachmentsRepository` | none | `upload`, `data(forMessageId:)` | `LiveAttachmentsRepository` / `FakeAttachmentsRepository` |
 | `AvatarRepository` | none | `avatar(userId:)` → `Data?` | `LiveAvatarRepository` / `FakeAvatarRepository` |
 | `BookmarksRepository` | `bookmarks()` → `Resource<BookmarkList>` | `refresh`, `toggle` | `LiveBookmarksRepository` / `FakeBookmarksRepository` |
-| `ActivityRepository` | `feed()` → `Resource<ActivityFeed>` | `refresh`, `loadMore`, `markRead`, `markAllRead` | `LiveActivityRepository` / `FakeActivityRepository` |
+| `ActivityRepository` | `feed()` → `Resource<ActivityFeed>` (a failed page sets `loadMoreError` and keeps `phase`) | `refresh`, `loadMore`, `markRead`, `markAllRead` | `LiveActivityRepository` / `FakeActivityRepository` |
 | `PeopleRepository` | `directory()` → `Resource<[DirectoryPerson]>` | `refresh`, `person(id:)` | `LivePeopleRepository` / `FakePeopleRepository` |
-| `CalendarRepository` | `feed(period:containing:)` → `Resource<CalendarFeed>`, `milestones()` → `Resource<MilestoneIndex>` | `scheduleTimeZone`, `today`, `refresh`, `respond`, `refreshMilestones`, `meetingURL` | `LiveCalendarRepository` / `FakeCalendarRepository` |
-| `ProfileRepository` | `profile()` → `Resource<OwnProfile>` | `refresh` | `LiveProfileRepository` / `FakeProfileRepository` |
+| `CalendarRepository` | `feed(period:containing:)` → `Resource<CalendarFeed>`, `milestones()` → `Resource<MilestoneIndex>`, `event(id:)` → `Resource<EventLookup>` | `scheduleTimeZone`, `today`, `refresh`, `refreshEvent(id:)`, `respond`, `refreshMilestones`, `meetingURL` | `LiveCalendarRepository` / `FakeCalendarRepository` |
+| `ProfileRepository` | `profile()` → `Resource<OwnProfile>` (with `sections: SectionPhases` for time off and files) | `refresh` | `LiveProfileRepository` / `FakeProfileRepository` |
 | `SettingsRepository` | `settings()` → `AppSettings`, `currentSettings` | `update` | `LiveSettingsRepository` / `FakeSettingsRepository` |
 | `PushRegistrationRepository` | none | `register(token:preferences:)`, `unregister()` | `LivePushRegistrationRepository` / `FakePushRegistrationRepository` |
 | `RealtimeStatusRepository` | `banner()` → `ConnectionBanner`, `statuses()` → `RealtimeStatus` | `retryNow` | `LiveRealtimeStatusRepository` / `FakeRealtimeStatusRepository` |
 | `ChatAlertsRepository` | `alerts()` → `ChatAlert` (not replayed) | `shouldPresentForegroundPush(conversationId:)` | `LiveChatAlertsRepository` / `FakeChatAlertsRepository` |
 
-`DataEnvironment` is a struct that holds one of each repository as an existential. It also
-has three members:
+`DataEnvironment` is a struct that holds one of each repository as an existential, plus
+`clock: any WaiveraClock`, the clock the repositories stamp `updatedAt` with (features measure
+relative times against it, so the fake environment's demo day reads correctly). It also has
+three members:
 
 - `callURL(conversation)`: the web lobby link for a conversation's call.
 - `launch()`: starts the session.
@@ -129,8 +131,11 @@ has three members:
   rather than leaving a gap.
 - Hub messages that arrive before the first page are buffered and merged into it.
 - Thread replies never appear in the timeline.
-- `loadOlder` stops when a page is short or the cursor stops moving.
-- `markRead`:
+- `loadOlder` stops when a page is short or the cursor stops moving. A failed older page
+  keeps `phase` and sets `MessageTimeline.olderPageError` instead, cleared by the next page.
+- `loadAround` loads the page around a message through the context endpoint and returns
+  whether the message is now in the timeline.
+- `markRead` (throws, so the list can roll back its optimistic read and offer Retry):
   - Sends `MarkAsRead` over the hub, or over REST when the hub is disconnected.
   - Then calls read-through once per newest root message id.
   - The resulting `ChatReadState` also updates the activity feed.
@@ -274,7 +279,10 @@ details):
    (and after an account switch) and on every token from `messaging(_:didReceiveRegistrationToken:)`,
    but never while signed out or while notification permission is denied or not yet asked.
    Preference changes re-register inside the data layer; sign-out unregisters inside the data
-   layer. The app never calls `unregister()` itself.
+   layer. The app never calls `unregister()` itself. On sign-out the coordinator also asks
+   `PushTokenSource.invalidate()` to delete the FCM token, and keeps a pending flag
+   (`PendingInvalidationDefaults`) so a failed deletion is retried at launch and on becoming
+   active, until the next sign-in clears it.
 5. **Foreground pushes.** `userNotificationCenter(_:willPresent:)` hides a chat push only when
    `environment.alerts.shouldPresentForegroundPush(conversationId:)` returns false.
 6. **In-app banners** from `environment.alerts.alerts()`, on the tabs only.

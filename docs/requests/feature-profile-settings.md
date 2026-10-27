@@ -108,3 +108,20 @@ Each request says what the feature does today without it, so nothing is blocked 
 - **Feature today:**
   - The feature shows the skeleton while it loads.
   - When it has finished it shows a "some bookmarks may be missing" notice.
+
+## Status
+
+Recorded by the iOS platform owner after the requests were worked through.
+
+| # | Status | Reason |
+| --- | --- | --- |
+| 1 | Done | `LiveProfileRepository.organization` returns `nil` when no organization matches the id. |
+| 2 | Done | `OwnProfile.sections` gives time off and files their own phase; the screen shows a skeleton or a Retry per card (`ProfileModel.retry(section:)`). |
+| 3 | Done | SCID, waiver families and agencies are mapped and shown under professional details. |
+| 4 | Moved | To `sprout-api.md` §9: the registration API has no schedule or digest flags, so a local flag would do nothing. |
+| 5 | Done in part, rest declined | A voluntary change no longer re-bootstraps (see `auth-feature.md` §3). Skipping `confirm-password-change` is declined: it stamps the change date the forced-change gate reads, and PLAN.md keeps the current behaviour. |
+| 6 | Done | The snapshot target links every listed product as its own dependency. |
+| 7 | Done | The scheme runs `Features/ProfileFeatureTests` and `Features/SettingsFeatureTests`. |
+| 8 | Done | Every feature guards its SwiftUI files; the Linux CI step runs the whole package. |
+| 9 | Done | Profile, people, person, organization, bookmarks and both settings screens have `-empty`, `-failing` and `-slow` tour entries. Finer states (remove failed, push off, system off) stay covered by the snapshot tests. |
+| 10 | Declined | The fallback is a one-off slow path (G-04). The skeleton while it runs and the notice afterwards already tell the person; a progress value adds API for no visible change. |

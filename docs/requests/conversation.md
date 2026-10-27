@@ -68,3 +68,15 @@ conversation 7 and thread 9330. The read-only bot conversation is not in the tou
   check is no longer required.
 - **Strings.** All copy is in the feature's own `Conversation.strings` table. The shared
   `Localizable.strings` was not changed.
+
+## Status
+
+Recorded by the iOS platform owner after the requests were worked through.
+
+| # | Status | Reason |
+| --- | --- | --- |
+| 1 | Done | `sprout_api` already serves `messages/context/{messageId}`; `MessagesRepository.loadAround` uses it, and `highlightTargetIfNeeded` tries it first, keeping the older-page walk only as a fallback. |
+| 2 | Done | `MessageTimeline.olderPageError` keeps `phase`; the screen shows an older-page Retry banner instead of the stale banner. |
+| 3 | Done | The snapshot target links ChatFeature and WaiveraTestSupport, and the scheme runs `Features/ChatConversationTests`. The 45 references still need recording on macOS. |
+| 4 | Done | `conversation-bot` (`waivera://chats/90`) is in `RouteCatalog`. |
+| 5 | No change requested | The Linux note is out of date: the whole Features package now builds and tests on Linux. |

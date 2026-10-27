@@ -42,3 +42,19 @@ these areas. Each item says what is needed and why.
    "operations.tea…", but the Expo code it cites cuts the local part (to 15 characters plus "…")
    only when it is longer than 16. The list follows the code, as Android does
    (`operations.team & 1 other`). Update the spec example or confirm the intended rule.
+
+## Status
+
+Recorded by the iOS platform owner after the requests were worked through.
+
+| # | Status | Reason |
+| --- | --- | --- |
+| 1 | Done | The scheme lists `Features/ChatListTests`; the Linux CI step runs it too. |
+| 2 | Done | `WaiveraSnapshotTests` links ChatFeature. |
+| 3 | Done | `RouteCatalog.states` adds `chat-empty`, `chat-failing` and `chat-slow`; the tour relaunches with that scenario. |
+| 4 | Done | `ConversationListView(onOpenConversation:onNewChat:onOpenPerson:)`; the `openURL` workaround is gone and `TabRootView` pushes the person route. |
+| 5 | Done | `DataEnvironment.clock`; the list's convenience init uses it. |
+| 6 | Moved | To `sprout-api.md` §3: the conversation DTOs carry no modified or created date. |
+| 7 | Done | `markRead` throws; a failure clears the optimistic read and shows a Retry notice (`ChatListMarkReadTests`). |
+| 8 | Done | `WaiveraData` re-exports `ConnectionState` and `RealtimeStatus`. The list still reads only `isConnected` and `epoch`, which is all the pill needs. |
+| 9 | Moved | To the spec owner: the list follows the Expo code, as Android does. |
