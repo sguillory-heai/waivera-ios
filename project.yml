@@ -128,6 +128,23 @@ targets:
         TEST_TARGET_NAME: Waivera
         CODE_SIGN_STYLE: Automatic
 
+  # Shell model tests (AppModel: gate, sign-out order, push taps, presentation, registration).
+  # Hosted in the app; packages are reached through the host, not linked twice.
+  WaiveraTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - WaiveraTests
+    dependencies:
+      - target: Waivera
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.waivera.waivera.tests
+        GENERATE_INFOPLIST_FILE: YES
+        # Same default isolation as the app so test doubles conform to its main-actor protocols.
+        SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+        CODE_SIGN_STYLE: Automatic
+
   # Design-system component snapshots (light, dark, accessibility XXXL). Not hosted in the app,
   # so no app launch, network or push setup runs during these tests.
   WaiveraSnapshotTests:
@@ -151,11 +168,13 @@ schemes:
     build:
       targets:
         Waivera: all
+        WaiveraTests: [test]
         WaiveraUITests: [test]
         WaiveraSnapshotTests: [test]
     test:
       gatherCoverageData: true
       targets:
+        - WaiveraTests
         - WaiveraUITests
         - WaiveraSnapshotTests
         - package: WaiveraAPI/WaiveraAPITests

@@ -48,7 +48,7 @@ swift test --package-path Packages/WaiveraRouting       # routes, deep links, na
 swift test --package-path Packages/WaiveraNotifications # push payloads, presentation, registration
 xcodebuild -project Waivera.xcodeproj -scheme Waivera \
   -destination 'platform=iOS Simulator,name=iPhone 17' test
-swiftlint --strict && xcrun swift-format lint -r App Packages WaiveraUITests WaiveraSnapshotTests
+swiftlint --strict && xcrun swift-format lint -r App Packages WaiveraTests WaiveraUITests WaiveraSnapshotTests
 xcrun simctl push booted com.waivera.waivera TestSupport/Push/chat-message.apns
 xcrun simctl openurl booted 'waivera://chats/7?messageId=9312'
 ```

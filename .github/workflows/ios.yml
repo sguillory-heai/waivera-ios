@@ -73,11 +73,16 @@ jobs:
       - name: SwiftLint
         id: swiftlint
         continue-on-error: true
-        run: swiftlint --strict --reporter github-actions-logging 2>&1 | tee swiftlint.log
+        run: |
+          set -o pipefail
+          swiftlint --strict --reporter github-actions-logging 2>&1 | tee swiftlint.log
       - name: swift-format
         id: swiftformat
         continue-on-error: true
-        run: xcrun swift-format lint --strict -r App Packages WaiveraUITests WaiveraSnapshotTests 2>&1 | tee swift-format.log
+        run: |
+          set -o pipefail
+          xcrun swift-format lint --strict -r App Packages WaiveraTests WaiveraUITests WaiveraSnapshotTests 2>&1 \
+            | tee swift-format.log
       - name: Generate project
         id: xcodegen
         continue-on-error: true
@@ -124,7 +129,7 @@ jobs:
           tail -30 build.log
           exit $status
       # Package tests already ran on Linux; macOS runs only what needs a simulator.
-      - name: UI tests, screenshot tour and component snapshots (SE + Pro Max)
+      - name: Shell tests, UI tests, screenshot tour and component snapshots (SE + Pro Max)
         id: test
         if: steps.build.outcome == 'success'
         continue-on-error: true
@@ -136,7 +141,7 @@ jobs:
             -destination "id=${{ steps.sim.outputs.small }}" \
             -destination "id=${{ steps.sim.outputs.large }}" \
             -derivedDataPath "$DERIVED" \
-            -only-testing:WaiveraUITests -only-testing:WaiveraSnapshotTests \
+            -only-testing:WaiveraTests -only-testing:WaiveraUITests -only-testing:WaiveraSnapshotTests \
             -parallel-testing-enabled YES \
             -resultBundlePath "$RESULT" \
             CODE_SIGNING_ALLOWED=NO > test.log 2>&1 || status=$?

@@ -3,6 +3,7 @@ included:
   - Packages
   - WaiveraUITests
   - WaiveraSnapshotTests
+  - WaiveraTests
 excluded:
   - Packages/*/.build
   - Packages/*/Package.swift
