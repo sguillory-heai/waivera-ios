@@ -33,6 +33,12 @@ extension FakeChatRepository: MessagesRepository {
 
     public func loadOlder(conversationId: Int) async {
         calls.record("loadOlder:\(conversationId)")
+        if olderPageFailure != nil {
+            olderPageFailed.insert(conversationId)
+        } else {
+            olderPageFailed.remove(conversationId)
+        }
+        publishTimeline(conversationId)
     }
 
     /// Every demo message is already loaded, so the target is either there or unknown.

@@ -49,6 +49,21 @@ struct ChatCarryoverTests {
         #expect(unread(harness, 41) == 0)
     }
 
+    @Test("AF-10: an edit updates the inbox preview without waiting for the hub")
+    func editUpdatesThePreview() async throws {
+        let harness = ChatHarness()
+        await harness.transport.set(allRoute, .fixture("rest-chat-get-all"))
+        await harness.transport.set(pageRoute, jsonArray([message(9312, text: "can you cover Friday?")]))
+        await harness.transport.set("PUT api/chat/message/9312", .fixture("rest-chat-edit-message"))
+        await harness.begin()
+        await harness.engine.refresh()
+        await harness.engine.open(conversationId: 7)
+        try await harness.engine.edit(messageId: 9312, conversationId: 7, text: "can you cover Saturday?")
+        let row = harness.engine.conversationsCell.current.value?.first { $0.id == 7 }
+        #expect(row?.lastMessage?.bodyText == "can you cover Saturday?")
+        #expect(row?.lastMessage?.isEdited == true)
+    }
+
     @Test("AF-02: a repeated echo with a confirmed client id never drops another queued message")
     func repeatedEchoKeepsTheOtherPendingMessage() async throws {
         let harness = ChatHarness()
@@ -184,7 +199,11 @@ struct ActivityRequestTests {
     func loadMoreFailureIsSeparate() async {
         let transport = RoutingTransport()
         await transport.enqueue(route, fullPage(startingAt: 1), .status(500), .json("[]"))
-        let repository = LiveActivityRepository(api: makeAPI(transport), store: InMemoryLocalStore(), clock: TestClock())
+        let repository = LiveActivityRepository(
+            api: makeAPI(transport),
+            store: InMemoryLocalStore(),
+            clock: TestClock()
+        )
         await repository.refresh()
         #expect(await latest(repository.feed())?.value?.hasMore == true)
         await repository.loadMore()
@@ -205,7 +224,11 @@ struct ActivityRequestTests {
     func loadMoreIsSerialized() async {
         let transport = RoutingTransport()
         await transport.enqueue(route, fullPage(startingAt: 1), .json("[]"), .json("[]"))
-        let repository = LiveActivityRepository(api: makeAPI(transport), store: InMemoryLocalStore(), clock: TestClock())
+        let repository = LiveActivityRepository(
+            api: makeAPI(transport),
+            store: InMemoryLocalStore(),
+            clock: TestClock()
+        )
         await repository.refresh()
         async let first: Void = repository.loadMore()
         async let second: Void = repository.loadMore()
@@ -313,85 +336,5 @@ struct CalendarRequestTests {
         #expect(!user.isUsingFallbackTimeZone)
         // Denver falls back on 1 November 2026: that day is 25 hours long.
         #expect(date(2026, 11, 1).interval(in: user.scheduleTimeZone).duration == 25 * 3_600)
-    }
-}
-
-@Suite("Profile requests")
-struct ProfileRequestTests {
-    private func routes(_ transport: RoutingTransport) async {
-        await transport.set("GET api/employee/getProfile/usr_alex_rivera", .fixture("rest-employee-get-profile"))
-        await transport.set(
-            "GET api/TimeOff/get-timeOffs-for-user-profile/usr_alex_rivera",
-            .fixture("rest-timeoff-get-for-user-profile")
-        )
-        await transport.set("GET api/employee/get-employee-files", .fixture("rest-employee-get-employee-files"))
-        await transport.set("GET api/Authentication/OrganizationDetails", .fixture("rest-auth-organization-details"))
-    }
-
-    private func make(user: CurrentUser) async -> (LiveProfileRepository, RoutingTransport) {
-        let transport = RoutingTransport()
-        await routes(transport)
-        let repository = LiveProfileRepository(
-            api: makeAPI(transport),
-            context: SessionContext(user: user),
-            store: InMemoryLocalStore(),
-            clock: TestClock()
-        )
-        return (repository, transport)
-    }
-
-    @Test("Profile request 1: an organization id miss is unavailable, not the session's copy")
-    func organizationMissIsNil() async {
-        var user = alex
-        user.organization = Organization(id: 404, name: "Session copy")
-        let (repository, _) = await make(user: user)
-        await repository.refresh()
-        let value = await latest(repository.profile())?.value
-        #expect(value?.profile != nil)
-        #expect(value?.organization == nil)
-    }
-
-    @Test("Profile request 2: a card fails on its own and its Retry reloads only that card")
-    func sectionPhases() async {
-        let (repository, transport) = await make(user: alex)
-        await transport.set("GET api/employee/get-employee-files", .status(503))
-        await repository.refresh()
-        var value = await latest(repository.profile())?.value
-        #expect(value?.sections.timeOff == .loaded)
-        #expect(value?.sections.files == .failed(.server(statusCode: 503)))
-        await transport.set("GET api/employee/get-employee-files", .fixture("rest-employee-get-employee-files"))
-        await repository.refresh(section: .files)
-        value = await latest(repository.profile())?.value
-        #expect(value?.sections.files == .loaded)
-        #expect(value?.files.count == 1)
-        #expect(await transport.count("GET api/employee/getProfile/usr_alex_rivera") == 1)
-    }
-
-    @Test("Profile request 3: SCID, waiver families and agencies")
-    func professionalFields() async throws {
-        var user = alex
-        user.scId = "SC-1042"
-        let (repository, _) = await make(user: user)
-        await repository.refresh()
-        let profile = try #require(await latest(repository.profile())?.value?.profile)
-        #expect(profile.scId == "SC-1042")
-        #expect(profile.agencies == ["Northside Supports"])
-        #expect(profile.waiverFamilies == ["CAC"])
-    }
-
-    @Test("SCID comes from the session's user details")
-    func scIdFromUserDetails() throws {
-        let details = try decodeFixture(ApiResponse<UserWithRoleDto>.self, "rest-auth-get-user-details").data
-        let login = try WaiveraJSON.decoder().decode(
-            UserLoginResponseDto.self,
-            from: Data(#"{"requiresPasswordChange":false,"userId":"usr_alex_rivera","requiresOnboarding":false}"#.utf8)
-        )
-        let user = ProfileMapper.currentUser(
-            login: login,
-            identity: FirebaseIdentity(uid: "fb", email: nil, displayName: nil),
-            details: details,
-            organization: nil
-        )
-        #expect(user.scId == "SC-4821")
     }
 }

@@ -18,6 +18,8 @@ public final class FakeSessionRepository: SessionRepository {
     public let passwordResetFailure = LockedValue<WaiveraError?>(nil)
     /// What `changePassword` throws after the current password checks out; `nil` succeeds.
     public let changePasswordFailure = LockedValue<WaiveraError?>(nil)
+    /// While `true`, a bootstrap stops at `.bootstrapping` until `releaseBootstrap()`.
+    public let holdsBootstrap = LockedValue(false)
     private let onSignOut: @Sendable () async -> Void
 
     public init(
@@ -70,7 +72,21 @@ public final class FakeSessionRepository: SessionRepository {
         cell.set(.signedOut(nil))
     }
 
+    /// Finishes a bootstrap held by `holdsBootstrap`.
+    public func releaseBootstrap() {
+        holdsBootstrap.update { $0 = false }
+        finishBootstrap()
+    }
+
     private func bootstrap() {
+        if holdsBootstrap.get() {
+            cell.set(.bootstrapping)
+            return
+        }
+        finishBootstrap()
+    }
+
+    private func finishBootstrap() {
         if let failure = bootstrapFailure.get() {
             cell.set(failure == .unauthorized ? .signedOut(.unauthorized) : .bootstrapFailed(failure))
         } else if requiresPasswordChange.get() {

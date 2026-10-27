@@ -35,6 +35,9 @@ public actor FakeChatRepository {
     var sendOutcome = SendOutcome.deliver
     var reactionsAvailable = true
     var markReadFailure: WaiveraError?
+    /// While set, timelines report an older page and `loadOlder` fails with this error.
+    var olderPageFailure: WaiveraError?
+    var olderPageFailed: Set<Int> = []
     var nextMessageId = 20_000
     var nextClientId = 0
     var nextConversationId = 5_000
@@ -59,6 +62,11 @@ public actor FakeChatRepository {
     public func setReactionsAvailable(_ available: Bool) { reactionsAvailable = available }
     /// `markRead` restores the unread count and throws this, as a failed server call would.
     public func setMarkReadFailure(_ failure: WaiveraError?) { markReadFailure = failure }
+
+    public func setOlderPageFailure(_ failure: WaiveraError?) {
+        olderPageFailure = failure
+        for id in loadedTimelines { publishTimeline(id) }
+    }
 
     public nonisolated func setTyping(_ userIds: [String], in conversationId: Int) {
         typingCell.update { $0[conversationId] = userIds.isEmpty ? nil : userIds }
@@ -93,7 +101,13 @@ public actor FakeChatRepository {
         let cell = timelineCells.cell(conversationId)
         let value =
             isLoaded
-            ? MessageTimeline(conversationId: conversationId, messages: messages[conversationId] ?? [], pending: rows)
+            ? MessageTimeline(
+                conversationId: conversationId,
+                messages: messages[conversationId] ?? [],
+                pending: rows,
+                hasOlder: olderPageFailure != nil,
+                olderPageError: olderPageFailed.contains(conversationId) ? olderPageFailure : nil
+            )
             : cell.current.value
         cell.set(Resource(value: value, phase: phase ?? cell.current.phase, updatedAt: isLoaded ? clock.now : nil))
     }

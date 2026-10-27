@@ -29,15 +29,23 @@ public struct WaiveraConfiguration: Sendable, Equatable {
             // An unexpanded `$(VAR)` means the xcconfig did not define it.
             return trimmed.isEmpty || trimmed.hasPrefix("$(") ? nil : trimmed
         }
+        // HTTPS only: ATS would refuse cleartext anyway, and tokens must never travel in clear
+        // (AS-05). An `http://` value is treated as missing, so the app shows its gate.
+        func secureURL(_ key: Key) -> URL? {
+            guard let url = value(key).flatMap(URL.init(string:)), url.scheme?.lowercased() == "https",
+                url.host?.isEmpty == false
+            else { return nil }
+            return url
+        }
         var missing: [Key] = []
-        let base = value(.apiBaseURL).flatMap(URL.init(string:))
+        let base = secureURL(.apiBaseURL)
         if base == nil { missing.append(.apiBaseURL) }
         let apiKey = value(.firebaseAPIKey)
         if apiKey == nil { missing.append(.firebaseAPIKey) }
         guard let base, let apiKey, missing.isEmpty else {
             return .failure(MissingConfiguration(keys: missing))
         }
-        let web = value(.webBaseURL).flatMap(URL.init(string:))
+        let web = secureURL(.webBaseURL)
         return .success(WaiveraConfiguration(apiBaseURL: base, firebaseAPIKey: apiKey, webBaseURL: web))
     }
 

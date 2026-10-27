@@ -257,6 +257,13 @@ extension ChatEngine: MessagesRepository {
         )
         guard let message = mapper.message(response, conversationId: conversationId) else { return }
         upsert(message, fromRealtime: false)
+        // The inbox preview shows the edit at once, not only when the hub echoes it (AF-10).
+        if var row = conversationsById[conversationId], let last = row.lastMessage, last.id == message.id {
+            row.lastMessage = last.merging(message)
+            conversationsById[conversationId] = row
+            publishConversations()
+            persistConversations()
+        }
     }
 
     public func delete(messageId: Int, conversationId: Int) async throws {
