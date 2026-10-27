@@ -17,8 +17,9 @@ public enum HapticEvent: String, CaseIterable, Sendable {
     case warning
     /// A long press opens a menu.
     case longPress
-    /// A message arrives while its conversation is on screen. Mapped to nothing: the UX
-    /// research says incoming messages never buzz while the person is in the app.
+    /// Someone else's message arrives live while its conversation or thread is on screen.
+    /// AGENTS.md lists "receive while visible" as a haptic moment and Android plays one (AF-13),
+    /// so both platforms give the lightest tick; bursts are throttled by `HapticGate` (IF-09).
     case messageReceivedWhileVisible
 }
 
@@ -35,13 +36,12 @@ public enum HapticPattern: Equatable, Sendable {
 public enum HapticMap {
     public static func pattern(for event: HapticEvent) -> HapticPattern? {
         switch event {
-        case .toggle, .selection: .selection
+        case .toggle, .selection, .messageReceivedWhileVisible: .selection
         case .swipeThreshold, .messageSent: .impactLight
         case .success: .success
         case .failure: .error
         case .warning: .warning
         case .longPress: .impactMedium
-        case .messageReceivedWhileVisible: nil
         }
     }
 }

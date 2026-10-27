@@ -63,10 +63,11 @@ struct FakeEnvironmentTests {
         await environment.setForeground(true)
         await environment.threads.open(rootMessageId: 9330, conversationId: 7)
         await environment.messages.close(conversationId: 7)
-        // The thread keeps its conversation on screen.
-        #expect(!environment.alerts.shouldPresentForegroundPush(conversationId: 7))
-        await environment.threads.close(rootMessageId: 9330, conversationId: 7)
+        // Only the thread is on screen: its replies are hidden, the timeline's messages are not (IF-02).
         #expect(environment.alerts.shouldPresentForegroundPush(conversationId: 7))
+        #expect(!environment.alerts.shouldPresentForegroundPush(conversationId: 7, threadRootMessageId: 9330))
+        await environment.threads.close(rootMessageId: 9330, conversationId: 7)
+        #expect(environment.alerts.shouldPresentForegroundPush(conversationId: 7, threadRootMessageId: 9330))
     }
 
     @Test func failingScenarioShowsErrorsEverywhere() async {

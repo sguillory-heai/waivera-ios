@@ -170,9 +170,14 @@ final class ThreadModel {
     }
 
     private func trackArrivals(replies: [ChatMessage], pending: [OutgoingMessage]) {
-        let arrivals = arrivalTracker.update(ArrivalTracker.entries(messages: replies, pending: pending))
+        let entries = ArrivalTracker.entries(messages: replies, pending: pending)
+        let arrivals = arrivalTracker.update(entries)
         guard !arrivals.isEmpty else { return }
         liveArrivals.formUnion(arrivals)
+        // Someone else's reply landing in the open thread plays the same cue as the timeline.
+        if isVisible, zip(replies, entries).contains(where: { !$0.0.isMine && arrivals.contains($0.1.key) }) {
+            platform.haptic(.messageReceivedWhileVisible)
+        }
         let clock = clock
         Task { [weak self] in
             try? await clock.sleep(seconds: ConversationModel.arrivalWindow)

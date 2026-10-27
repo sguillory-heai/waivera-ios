@@ -14,8 +14,12 @@ struct HapticsTests {
         #expect(HapticMap.pattern(for: .messageSent) == .impactLight)
     }
 
-    @Test func incomingMessagesNeverBuzz() {
-        #expect(HapticMap.pattern(for: .messageReceivedWhileVisible) == nil)
+    /// IF-09: AGENTS.md and Android (AF-13) both play a receive cue; it is the lightest one.
+    @Test func aMessageArrivingOnScreenTicksLightly() {
+        #expect(HapticMap.pattern(for: .messageReceivedWhileVisible) == .selection)
+        var gate = HapticGate()
+        #expect(gate.pattern(for: .messageReceivedWhileVisible, now: 0) == .selection)
+        #expect(gate.pattern(for: .messageReceivedWhileVisible, now: 0.1) == nil)
     }
 
     @Test func settingsSwitchSilencesEverything() {
