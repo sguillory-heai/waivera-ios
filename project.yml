@@ -175,6 +175,8 @@ targets:
     dependencies:
       - package: WaiveraDesign
         product: WaiveraDesign
+      - package: Features
+        product: AuthFeature
       - package: SnapshotTesting
         product: SnapshotTesting
     settings:
@@ -204,3 +206,4 @@ schemes:
         - package: WaiveraDesign/WaiveraDesignTokensTests
         - package: WaiveraRouting/WaiveraRoutingTests
         - package: WaiveraNotifications/WaiveraNotificationsTests
+        - package: Features/AuthFeatureTests
