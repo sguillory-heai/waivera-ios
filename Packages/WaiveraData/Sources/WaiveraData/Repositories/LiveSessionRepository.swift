@@ -158,6 +158,11 @@ public actor LiveSessionRepository: SessionRepository {
             cell.set(.bootstrapFailed(error))
         case .success(let (login, user)):
             context.set(user)
+            if login.requiresPasswordChange || login.requiresOnboarding {
+                // An offline launch must not open the app past a gate from a stale bootstrap
+                // (Android AF-06).
+                if let localStore { await localStore.remove(.bootstrap) }
+            }
             if login.requiresPasswordChange {
                 cell.set(.passwordChangeRequired(user))
             } else if login.requiresOnboarding {

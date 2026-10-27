@@ -123,6 +123,31 @@ struct CriticFixSessionTests {
         #expect(relaunched.state.isSignedIn)
     }
 
+    @Test("AF-06: a password change the server asked for is not skipped by a later offline launch")
+    func offlineLaunchKeepsThePasswordGate() async {
+        let store = InMemoryLocalStore()
+        let keyValues = InMemoryKeyValueStore()
+        _ = await signedInRig(store: store, keyValues: keyValues)
+        #expect(await eventually { await store.data(for: .bootstrap) != nil })
+
+        // The next launch learns a password change is required.
+        let gated = RoutingTransport()
+        await Self.routes(gated)
+        await gated.set("GET api/Authentication/login", .fixture("rest-auth-login-requires-password-change"))
+        let second = Rig(store: store, keyValues: keyValues, transport: gated, clock: TestClock())
+        await second.environment.launch()
+        #expect(await eventually { if case .passwordChangeRequired = second.state { true } else { false } })
+        #expect(await store.data(for: .bootstrap) == nil)
+
+        // Offline after that: the gate is not bypassed with the earlier cached bootstrap.
+        let offline = RoutingTransport()
+        await Self.routes(offline)
+        await offline.setOffline(true)
+        let third = Rig(store: store, keyValues: keyValues, transport: offline, clock: TestClock())
+        await third.environment.launch()
+        #expect(await eventually { third.state == .bootstrapFailed(.offline) })
+    }
+
     @Test("IF-10: offline at a cold start with nothing cached shows the bootstrap failure")
     func offlineColdStartWithoutACache() async {
         let transport = RoutingTransport()
