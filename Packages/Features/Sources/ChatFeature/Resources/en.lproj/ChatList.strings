@@ -1,0 +1,81 @@
+/* Chat list, new chat and people picker copy. Kept apart from Localizable.strings, which the conversation screens own. */
+
+/* Navigation title of the Chat tab. */
+"chat.list.title" = "Chats";
+/* VoiceOver label of the + button. */
+"chat.list.newChat" = "Start a new chat";
+
+"chat.list.status.online" = "Online";
+"chat.list.status.connecting" = "Connecting";
+"chat.list.status.reconnecting" = "Reconnecting";
+"chat.list.status.offline" = "Offline";
+/* VoiceOver label of the connection pill. %@ is the status, e.g. Online. */
+"chat.list.status.description" = "Chat status: %@";
+
+"chat.list.search.prompt" = "Search conversations";
+"chat.list.filter.all" = "All";
+"chat.list.filter.unread" = "Unread";
+"chat.list.filter.channels" = "Channels";
+
+"chat.list.empty.search.title" = "No matches";
+"chat.list.empty.search" = "No conversations match your search.";
+"chat.list.empty.unread.title" = "All caught up";
+"chat.list.empty.unread" = "You're all caught up.";
+"chat.list.empty.channels.title" = "No channels";
+"chat.list.empty.channels" = "No channels found.";
+"chat.list.empty.title" = "No conversations yet";
+"chat.list.empty" = "No conversations yet.";
+"chat.list.empty.action" = "Start a chat";
+"chat.list.error.title" = "Unable to load conversations.";
+/* Banner when a refresh failed but saved rows are shown. %@ is the reason. */
+"chat.list.refreshFailed" = "Showing saved conversations. %@";
+"chat.list.retry" = "Retry";
+/* Pill shown while scrolled down when newer activity is waiting. */
+"chat.list.newActivity" = "New activity";
+"chat.list.newActivity.hint" = "Scrolls to the top and shows the newest conversations.";
+
+"chat.list.preview.none" = "No messages yet";
+"chat.list.preview.photo" = "Photo";
+"chat.list.preview.file" = "File attachment";
+"chat.list.preview.update" = "Conversation update";
+"chat.list.preview.deleted" = "Message deleted";
+/* Sender and preview, e.g. "Jordan: running late". */
+"chat.list.preview.sender" = "%1$@: %2$@";
+/* The sender prefix alone, shown in bold before the preview. */
+"chat.list.preview.senderPrefix" = "%@:";
+"chat.list.sender.you" = "You";
+"chat.list.title.channel" = "Channel";
+"chat.list.title.conversation" = "Conversation";
+"chat.list.title.bot" = "Waivera";
+"chat.list.unknownPerson" = "Unknown";
+"chat.list.typing.one" = "%@ is typing…";
+"chat.list.typing.someone" = "Someone";
+"chat.list.typing.several" = "Several people are typing…";
+"chat.list.call.join" = "Call in progress · Join";
+"chat.list.call.joinAction" = "Join call";
+"chat.list.call.opening" = "Opening call";
+"chat.list.call.failed" = "Unable to open the video call. Try again.";
+
+"chat.list.time.now" = "Now";
+"chat.list.time.yesterday" = "Yesterday";
+
+"chat.list.icon.bot" = "Automated Waivera notifications";
+"chat.list.icon.channel" = "Channel";
+"chat.list.icon.archived" = "Archived channel";
+"chat.list.icon.group" = "Group conversation";
+"chat.list.readOnly" = "Read only";
+"chat.list.attachment" = "Attachment";
+"chat.list.action.open" = "Open conversation";
+"chat.list.action.markRead" = "Mark as read";
+"chat.list.action.profile" = "View profile";
+"chat.list.dismiss" = "Dismiss";
+
+"chat.new.title" = "New chat";
+"chat.new.subtitle" = "Select one person for a direct message or several for a group.";
+"chat.new.search.prompt" = "Search staff";
+"chat.new.empty.title" = "No one found";
+"chat.new.empty" = "No staff members match.";
+"chat.new.error.title" = "Couldn't load staff";
+"chat.new.open" = "Open chat";
+"chat.new.createGroup" = "Create group chat";
+"chat.new.close" = "Close";
