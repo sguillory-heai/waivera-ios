@@ -195,3 +195,24 @@ struct ChangePasswordModelTests {
         #expect(fake.session.calls.count("changePassword") == 1)
     }
 }
+
+@MainActor
+struct SwitchBindingTests {
+    @Test func bindingChangesApplyInOrder() async {
+        let settings = FakeSettingsRepository()
+        let notifications = NotificationSettingsModel(settings: settings)
+        notifications.apply(.meaning(.groupActivity, false))
+        notifications.apply(.push(false))
+        notifications.apply(.previews(false))
+        await notifications.waitForWrites()
+        #expect(!settings.currentSettings.notifications.reactions)
+        #expect(!settings.currentSettings.notifications.pushEnabled)
+        #expect(settings.currentSettings.notifications.previewContent, "ignored while push is off")
+        let appearance = AppearanceModel(settings: settings)
+        appearance.choose(.light)
+        appearance.toggleHaptics(false)
+        await appearance.waitForWrites()
+        #expect(settings.currentSettings.appearance == .light)
+        #expect(!settings.currentSettings.hapticsEnabled)
+    }
+}

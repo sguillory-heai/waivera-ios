@@ -31,7 +31,11 @@ public enum NotificationSwitches {
     }
 
     /// Writes one meaning. Unsupported meanings leave the preferences unchanged.
-    public static func set(_ meaning: NotificationMeaning, to isOn: Bool, in preferences: inout NotificationPreferences) {
+    public static func set(
+        _ meaning: NotificationMeaning,
+        to isOn: Bool,
+        in preferences: inout NotificationPreferences
+    ) {
         switch meaning {
         case .messages:
             preferences.mentions = isOn

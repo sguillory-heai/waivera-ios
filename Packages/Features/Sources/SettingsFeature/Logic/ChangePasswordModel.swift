@@ -40,6 +40,8 @@ public final class ChangePasswordModel {
     public private(set) var failure: WaiveraError?
     public private(set) var isSubmitting = false
     public private(set) var didSucceed = false
+    /// Counts rejected submits (validation or server), so the screen can play the failure haptic.
+    public private(set) var submitFailures = 0
 
     @ObservationIgnored private let session: any SessionRepository
 
@@ -69,7 +71,11 @@ public final class ChangePasswordModel {
 
     /// Returns `true` when the password changed. Double submits are ignored.
     public func submit() async -> Bool {
-        guard !isSubmitting, !didSucceed, validate() else { return false }
+        guard !isSubmitting, !didSucceed else { return false }
+        guard validate() else {
+            submitFailures += 1
+            return false
+        }
         isSubmitting = true
         failure = nil
         defer { isSubmitting = false }
@@ -87,6 +93,7 @@ public final class ChangePasswordModel {
             case .auth(.weakPassword): newError = .tooShort(minimum: Self.minimumLength)
             default: failure = mapped
             }
+            submitFailures += 1
             return false
         }
     }

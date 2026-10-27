@@ -18,11 +18,41 @@ public final class NotificationSettingsModel {
     public private(set) var preferences: NotificationPreferences
     public private(set) var isLoaded = false
 
+    /// One switch change, for bindings that cannot await.
+    public enum Change: Equatable, Sendable {
+        case push(Bool)
+        case meaning(NotificationMeaning, Bool)
+        case previews(Bool)
+        case inAppBanners(Bool)
+        case inAppSound(Bool)
+    }
+
     @ObservationIgnored private let settings: any SettingsRepository
+    @ObservationIgnored private let writes = WriteQueue()
 
     public init(settings: any SettingsRepository) {
         self.settings = settings
         preferences = settings.currentSettings.notifications
+    }
+
+    /// Applies a change from a switch binding. Writes run in order; the switch flips at once.
+    public func apply(_ change: Change) {
+        writes.enqueue { await self.perform(change) }
+    }
+
+    /// Waits for every change applied so far to reach the settings store.
+    public func waitForWrites() async {
+        await writes.drain()
+    }
+
+    private func perform(_ change: Change) async {
+        switch change {
+        case .push(let isOn): await setPushEnabled(isOn)
+        case .meaning(let meaning, let isOn): await set(meaning, isOn: isOn)
+        case .previews(let isOn): await setPreviewContent(isOn)
+        case .inAppBanners(let isOn): await setInAppBanners(isOn)
+        case .inAppSound(let isOn): await setInAppSound(isOn)
+        }
     }
 
     public convenience init(environment: DataEnvironment) {
@@ -83,11 +113,25 @@ public final class AppearanceModel {
     public private(set) var hapticsEnabled: Bool
 
     @ObservationIgnored private let settings: any SettingsRepository
+    @ObservationIgnored private let writes = WriteQueue()
 
     public init(settings: any SettingsRepository) {
         self.settings = settings
         appearance = settings.currentSettings.appearance
         hapticsEnabled = settings.currentSettings.hapticsEnabled
+    }
+
+    /// For taps and switch bindings that cannot await. Writes run in order.
+    public func choose(_ preference: AppearancePreference) {
+        writes.enqueue { await self.select(preference) }
+    }
+
+    public func toggleHaptics(_ isOn: Bool) {
+        writes.enqueue { await self.setHapticsEnabled(isOn) }
+    }
+
+    public func waitForWrites() async {
+        await writes.drain()
     }
 
     public convenience init(environment: DataEnvironment) {
@@ -169,6 +213,25 @@ public final class AccountModel {
         isSigningOut = true
         isConfirmingSignOut = false
         return true
+    }
+}
+
+/// Runs settings writes one after another. The model owns the chain; a write is short and must
+/// finish even when the screen goes away, so nothing cancels it.
+@MainActor
+final class WriteQueue {
+    private var tail: Task<Void, Never>?
+
+    func enqueue(_ work: @escaping @MainActor () async -> Void) {
+        let previous = tail
+        tail = Task { @MainActor in
+            await previous?.value
+            await work()
+        }
+    }
+
+    func drain() async {
+        await tail?.value
     }
 }
 
