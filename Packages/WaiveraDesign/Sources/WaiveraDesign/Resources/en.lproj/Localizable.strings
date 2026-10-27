@@ -1,0 +1,17 @@
+/* Retry a failed load or connection. */
+"design.retry" = "Retry";
+/* Shown under a message or status change that failed to send. */
+"design.sync.failed" = "Not sent. Tap to retry";
+/* Shown under a message that is still sending. */
+"design.sync.pending" = "Sending…";
+"design.undo" = "Undo";
+"design.dismiss" = "Dismiss";
+"design.cancel" = "Cancel";
+"design.loading" = "Loading";
+"design.banner.offline" = "You're offline. Changes will send when you reconnect.";
+"design.banner.reconnecting" = "Reconnecting…";
+"design.field.showPassword" = "Show password";
+"design.field.hidePassword" = "Hide password";
+"design.selected" = "Selected";
+/* VoiceOver label for an unread count badge. */
+"design.badge.unread %lld" = "%lld unread";
