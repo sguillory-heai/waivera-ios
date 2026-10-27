@@ -24,10 +24,14 @@ public struct RouteCatalogEntry: Equatable, Sendable {
 
     public let name: String
     public let target: Target
+    /// The fake server scenario this entry needs (a `FakeDataEnvironment.Scenario` raw value,
+    /// passed as `-WaiveraFakeScenario`); `nil` is the demo data.
+    public let scenario: String?
 
-    public init(name: String, target: Target) {
+    public init(name: String, target: Target, scenario: String? = nil) {
         self.name = name
         self.target = target
+        self.scenario = scenario
     }
 
     /// The destination for `.link` entries.
@@ -38,7 +42,7 @@ public struct RouteCatalogEntry: Equatable, Sendable {
 }
 
 public enum RouteCatalog {
-    public static let all: [RouteCatalogEntry] = gates + links
+    public static let all: [RouteCatalogEntry] = gates + links + states
 
     public static let gates: [RouteCatalogEntry] = GateScreen.allCases.map {
         RouteCatalogEntry(name: $0.rawValue, target: .gate($0))
@@ -63,7 +67,30 @@ public enum RouteCatalog {
         ("settings-notifications", "waivera://settings/notifications"),
         ("settings-appearance", "waivera://settings/appearance"),
         ("settings-account", "waivera://settings/account"),
+        ("settings-change-password", "waivera://settings/account/password"),
+        ("conversation-bot", "waivera://chats/90"),
+        ("calendar-event-invite", "waivera://calendar/evt_demo_invite"),
+        ("calendar-event-checkin", "waivera://calendar/evt_demo_checkin"),
     ].map { RouteCatalogEntry(name: $0.0, target: .link($0.1)) }
+
+    /// Fake server scenarios the state variants run under, with the name suffix each adds.
+    public static let stateScenarios = ["empty", "failing", "slow"]
+
+    /// Screens whose content depends on loaded data, shown once per state scenario:
+    /// empty lists, failed loads and the skeletons of a slow server.
+    public static let stateRoutes = [
+        "today", "activity", "chat", "conversation", "thread", "schedule", "calendar-event", "profile",
+        "organization", "people", "person", "bookmarks", "settings-notifications", "settings-account",
+    ]
+
+    /// Named state variants: `<route>-<scenario>`, for example `today-empty`. Each opens its
+    /// route's link against that scenario (docs/requests: per-route states for the tour).
+    public static let states: [RouteCatalogEntry] = stateScenarios.flatMap { scenario in
+        stateRoutes.compactMap { name -> RouteCatalogEntry? in
+            guard let base = links.first(where: { $0.name == name }) else { return nil }
+            return RouteCatalogEntry(name: "\(name)-\(scenario)", target: base.target, scenario: scenario)
+        }
+    }
 
     public static func entry(named name: String) -> RouteCatalogEntry? {
         all.first { $0.name == name }

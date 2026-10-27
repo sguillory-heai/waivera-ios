@@ -26,6 +26,8 @@ public enum AppRoute: Codable, Hashable, Sendable {
     case notificationSettings
     case appearanceSettings
     case accountSettings
+    /// The voluntary password change, pushed from Settings → Account.
+    case changePassword
 
     /// The conversation this screen shows, used by the foreground presentation rule.
     public var conversationID: Int? {

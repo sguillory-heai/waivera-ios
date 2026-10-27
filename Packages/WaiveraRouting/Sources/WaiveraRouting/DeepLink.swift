@@ -13,6 +13,7 @@ import Foundation
 /// waivera://schedule | calendar | calendar/{eventId} | calendar?eventId=
 /// waivera://profile | profile/organization | people | people/{userId} | bookmarks
 /// waivera://settings | settings/notifications | settings/appearance | settings/account
+/// waivera://settings/account/password
 /// ```
 public enum DeepLink {
     public static let scheme = "waivera"
@@ -82,6 +83,9 @@ public enum DeepLink {
             return segments.count == 1 ? Destination(tab: nil, path: [.bookmarks]) : nil
         case "settings":
             if segments.count == 1 { return Destination(tab: nil, path: [.settings]) }
+            if segments.count == 3, segments[1].lowercased() == "account", segments[2].lowercased() == "password" {
+                return Destination(tab: nil, path: [.settings, .accountSettings, .changePassword])
+            }
             guard segments.count == 2 else { return nil }
             let leaf: AppRoute
             switch segments[1].lowercased() {

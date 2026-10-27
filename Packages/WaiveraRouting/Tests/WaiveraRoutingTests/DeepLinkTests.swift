@@ -72,6 +72,12 @@ struct DeepLinkTests {
             parse("waivera://settings/appearance") == Destination(tab: nil, path: [.settings, .appearanceSettings])
         )
         #expect(parse("waivera://settings/account") == Destination(tab: nil, path: [.settings, .accountSettings]))
+        #expect(
+            parse("waivera://settings/account/password")
+                == Destination(tab: nil, path: [.settings, .accountSettings, .changePassword])
+        )
+        #expect(parse("waivera://settings/account/billing") == nil)
+        #expect(parse("waivera://settings/notifications/password") == nil)
     }
 
     @Test func pathOnlyFallbackFromPushURL() {

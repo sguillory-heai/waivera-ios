@@ -125,9 +125,33 @@ struct RouteCatalogTests {
         let expected: Set<String> = [
             "activity", "conversation", "thread", "calendarEvent", "profile", "organization", "people", "person",
             "bookmarks", "settings", "notificationSettings", "appearanceSettings", "accountSettings",
+            "changePassword",
         ]
         #expect(covered == expected)
         #expect(RouteCatalog.gates.count == GateScreen.allCases.count)
+    }
+
+    @Test func everyStateVariantOpensItsRouteUnderAScenario() {
+        #expect(RouteCatalog.states.count == RouteCatalog.stateRoutes.count * RouteCatalog.stateScenarios.count)
+        for entry in RouteCatalog.states {
+            guard let scenario = entry.scenario else {
+                Issue.record("\(entry.name) has no scenario")
+                continue
+            }
+            #expect(RouteCatalog.stateScenarios.contains(scenario))
+            let base = String(entry.name.dropLast(scenario.count + 1))
+            #expect(RouteCatalog.entry(named: base)?.target == entry.target, "\(entry.name)")
+            #expect(entry.destination != nil)
+        }
+        #expect(RouteCatalog.entry(named: "today-empty")?.scenario == "empty")
+        #expect(RouteCatalog.entry(named: "calendar-event-failing")?.target == .link("waivera://calendar/evt_8f2b19c4"))
+        #expect(RouteCatalog.links.allSatisfy { $0.scenario == nil })
+    }
+
+    @Test func botConversationAndEventScreensAreInTheTour() {
+        #expect(RouteCatalog.entry(named: "conversation-bot")?.destination == .conversation(90))
+        #expect(RouteCatalog.entry(named: "calendar-event-invite")?.destination == .calendarEvent("evt_demo_invite"))
+        #expect(RouteCatalog.entry(named: "calendar-event-checkin")?.destination == .calendarEvent("evt_demo_checkin"))
     }
 
     @Test func everyGateHasAStableLaunchName() {
