@@ -1,2 +1,144 @@
+/* Screen titles */
 "today.title" = "Today";
 "activity.title" = "Activity";
+"today.loading" = "Loading today";
+"today.error.title" = "Today couldn't load";
+"today.retry" = "Retry";
+"today.dismiss" = "Dismiss";
+"today.separator" = "%1$@ · %2$@";
+
+/* Quiet line: shown only when the data on screen is out of date or the device is offline. */
+"today.quiet.stale" = "Updated %@";
+"today.quiet.offline" = "You're offline. Showing saved updates.";
+"today.quiet.offlineSince" = "You're offline · updated %@";
+"today.since.justNow" = "just now";
+"today.since.minutes" = "%ld min ago";
+"today.since.at" = "at %@";
+"today.since.yesterday" = "yesterday";
+"today.since.on" = "on %@";
+
+/* Section headers */
+"today.section.needsYou" = "Needs you";
+"today.section.nextUp" = "Next up";
+"today.section.celebrations" = "Celebrations";
+"today.section.activity" = "Activity";
+"today.seeSchedule" = "See schedule";
+"today.seeSchedule.hint" = "Opens the full schedule";
+"today.seeAllActivity" = "See all";
+"today.seeAllActivity.hint" = "Opens all activity with search";
+
+/* Needs you */
+"today.needsYou.showMore" = "Show %ld more";
+"today.needsYou.showLess" = "Show less";
+"today.needsYou.failed" = "Messages couldn't load.";
+"today.dm.fallbackName" = "Direct message";
+"today.kind.mention" = "Mention";
+"today.kind.reply" = "Thread reply";
+"today.kind.reaction" = "Reaction";
+"today.kind.update" = "Update";
+"today.ticket.title" = "Ticket update";
+"today.ticket.numbered" = "Ticket #%@";
+"today.invitation.label" = "Invitation";
+"today.invitation.untitled" = "Untitled event";
+"today.invitation.from" = "From %@";
+"today.invitation.accept" = "Accept";
+"today.invitation.decline" = "Decline";
+"today.invitation.accept.label" = "Accept invitation to %@";
+"today.invitation.decline.label" = "Decline invitation to %@";
+"today.hint.openConversation" = "Opens the conversation";
+"today.hint.openMessage" = "Opens the message";
+"today.hint.openEvent" = "Opens the event";
+"today.hint.openSchedule" = "Opens the schedule";
+"today.unreadMessages.one" = "%ld unread message";
+"today.unreadMessages.other" = "%ld unread messages";
+
+/* Message snippets */
+"today.snippet.photo" = "Photo";
+"today.snippet.file" = "File attachment";
+"today.snippet.system" = "Update";
+"today.snippet.deleted" = "Message deleted";
+"today.snippet.none" = "New message";
+
+/* Upcoming times, in the employee's saved time zone */
+"today.upcoming.now" = "Now";
+"today.upcoming.nowUntil" = "Now · until %@";
+"today.upcoming.startingNow" = "Starting now";
+"today.upcoming.inMinutes" = "in %ld min";
+"today.upcoming.inHours" = "in %ld hr";
+"today.upcoming.inHoursMinutes" = "in %1$ld hr %2$ld min";
+"today.upcoming.todayAt" = "Today · %@";
+"today.upcoming.tomorrowAt" = "Tomorrow · %@";
+"today.upcoming.dayAt" = "%1$@ · %2$@";
+"today.upcoming.allDayToday" = "All day today";
+"today.upcoming.allDayTomorrow" = "Tomorrow · All day";
+"today.upcoming.allDayOn" = "%@ · All day";
+"today.range" = "%1$@ – %2$@";
+"today.range.nextDay" = "%1$@ – %2$@ next day";
+"today.online" = "Online";
+
+/* Past times */
+"today.past.now" = "Now";
+"today.past.minutes" = "%ldm";
+"today.past.minutesSpoken.one" = "%ld minute ago";
+"today.past.minutesSpoken.other" = "%ld minutes ago";
+"today.past.yesterday" = "Yesterday";
+
+/* Next up */
+"today.nextUp.empty" = "Nothing else on your schedule for the next two weeks.";
+"today.nextUp.failed" = "Your schedule couldn't load.";
+"today.nextUp.happeningNow" = "Happening now";
+"today.nextUp.deviceZone" = "Times are in this device's time zone (%@) because your profile has no saved time zone.";
+
+/* Celebrations */
+"today.celebration.nameFallback" = "This employee";
+"today.celebration.birthday" = "It's %@'s birthday today!";
+"today.celebration.anniversary" = "Celebrating %1$@'s %2$ld-year work anniversary!";
+"today.celebration.both" = "It's %1$@'s birthday and %2$ld-year work anniversary!";
+"today.celebration.failed" = "Celebrations couldn't load.";
+
+/* All caught up: the one celebrated empty state */
+"today.caughtUp.title" = "You're all caught up";
+"today.caughtUp.message" = "New messages, mentions and invitations will show up here.";
+
+/* Activity */
+"today.filter.all" = "All";
+"today.filter.mentions" = "Mentions";
+"today.filter.replies" = "Replies";
+"today.filter.reactions" = "Reactions";
+"today.filter.unread" = "Unread";
+"today.filter.label" = "Activity filters";
+"today.activity.markAllRead" = "Mark all read";
+"today.activity.markRead" = "Mark read";
+"today.activity.lowerBound" = "%ld+";
+"today.unreadUpdates.one" = "%ld unread update";
+"today.unreadUpdates.other" = "%ld unread updates";
+"today.unreadUpdates.lowerBound" = "%ld or more unread updates";
+"today.activity.unreadPrefix" = "Unread. %@";
+"today.activity.unread" = "Unread";
+"today.activity.someone" = "Someone";
+"today.activity.reacted" = "%@ reacted to one of your messages.";
+"today.activity.reactedWith" = "%1$@ reacted %2$@ to one of your messages.";
+"today.activity.fallback" = "New chat activity";
+"today.activity.empty.title" = "No activity yet";
+"today.activity.empty.message" = "New mentions, reactions, and thread replies will appear here.";
+"today.activity.caughtUp.title" = "You're all caught up";
+"today.activity.filtered.title" = "No activity matches";
+"today.activity.filtered.message" = "Try another filter.";
+"today.activity.filtered.searchMessage" = "Try another filter or search term.";
+"today.activity.clearFilters" = "Clear filters";
+"today.activity.failed" = "Activity couldn't load.";
+"today.activity.error.title" = "Activity couldn't load";
+"today.activity.moreFailed" = "More activity couldn't load.";
+"today.activity.loadingMore" = "Loading more activity";
+"today.activity.loading" = "Loading activity";
+"today.activity.search" = "Filter activity";
+"today.activity.shown.one" = "%ld update shown";
+"today.activity.shown.other" = "%ld updates shown";
+
+/* Toasts */
+"today.toast.refreshFailed" = "Couldn't refresh. Showing saved updates.";
+"today.toast.markReadFailed" = "Couldn't mark that as read.";
+"today.toast.markAllFailed" = "Couldn't mark everything as read.";
+"today.toast.accepted" = "Invitation accepted";
+"today.toast.declined" = "Invitation declined";
+"today.toast.invitationFailed" = "Your response wasn't saved.";
