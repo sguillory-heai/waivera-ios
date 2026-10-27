@@ -44,8 +44,14 @@ extension ChatEngine {
             )
         case .adHocRemoved(let removal):
             setCall(nil, on: removal.conversationId)
-        case .readReceipt, .readState, .activity, .activityRemoved, .bookmark(nil), .notification, .taskComment:
-            // Read receipts are not rendered (03 §12); the rest belong to other repositories.
+        case .readReceipt(let receipt):
+            // Other people's receipts are not rendered (03 §12). The viewer's own, from another
+            // device, clears this conversation's delivered notifications (IF-07).
+            if receipt.userId == viewer.id { conversationReadBroadcaster.send(receipt.conversationId) }
+        case .readState(let state):
+            if state.threadRootMessageId == nil { conversationReadBroadcaster.send(state.conversationId) }
+        case .activity, .activityRemoved, .bookmark(nil), .notification, .taskComment:
+            // These belong to other repositories.
             break
         }
     }
@@ -57,7 +63,13 @@ extension ChatEngine {
         reconcilePending(with: message)
         await typingTracker.messageArrived(conversationId: conversationId, authorId: message.authorId)
         upsert(message, fromRealtime: true)
-        guard !message.isThreadReply else { return }
+        if let rootId = message.threadRootId, message.isThreadReply {
+            // Read where it is seen: in its thread, never because the conversation is open (IF-02).
+            if presence.isThreadActive(rootId), !message.isMine {
+                await markRead(rootMessageId: rootId, conversationId: conversationId)
+            }
+            return
+        }
         let isActive = presence.isActive(conversationId)
         if message.hasRenderableContent {
             applyToPreview(message, incrementUnread: !message.isMine && !isActive)
@@ -107,7 +119,7 @@ extension ChatEngine {
     /// who should be alerted (gap G-09).
     private func alert(for dto: MessageSendResponse, reason: AttentionReason) {
         guard let message = mapper?.message(dto), !message.isMine, presence.isForeground,
-            !presence.isActive(message.conversationId)
+            !presence.isActive(conversationId: message.conversationId, threadRootMessageId: message.threadRootId)
         else { return }
         let preferences = alertPreferences()
         guard preferences.inAppBanners else { return }
@@ -133,6 +145,11 @@ extension ChatEngine {
     /// thread's newest page merged, queued sends resumed (05 §2, PLAN parity fix).
     public func resync() async {
         await typingTracker.clearAll()
+        // Closed conversations may have missed messages while the hub was down: their cache is
+        // not trusted (or added to) until the next open refetches it (IF-01).
+        for (conversationId, state) in timelines where state.isLoaded && openConversations[conversationId] == nil {
+            timelines[conversationId]?.isStale = true
+        }
         resumeOutbox()
         await refresh()
         for conversationId in openConversations.keys.sorted() {
@@ -144,6 +161,18 @@ extension ChatEngine {
         }
     }
 
+    /// The app came to the foreground or left it. Conversations on screen count as read again,
+    /// and queued sends get another try (IF-04, IF-07).
+    public func foregroundChanged(_ isForeground: Bool) {
+        presence.setForeground(isForeground)
+        guard isForeground, viewer != nil else { return }
+        for conversationId in presence.visibleConversationIds.sorted() {
+            conversationReadBroadcaster.send(conversationId)
+        }
+        resumeOutbox()
+    }
+
+    public nonisolated func conversationsRead() -> AsyncStream<Int> { conversationReadBroadcaster.stream() }
     public nonisolated func alerts() -> AsyncStream<ChatAlert> { alertBroadcaster.stream() }
     public nonisolated func readStates() -> AsyncStream<ChatReadState> { readStateBroadcaster.stream() }
 }

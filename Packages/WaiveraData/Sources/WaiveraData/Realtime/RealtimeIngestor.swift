@@ -53,8 +53,11 @@ public actor RealtimeIngestor {
 
     func route(_ event: ChatHubEvent) async {
         switch event {
-        case .activity, .activityRemoved, .readState:
+        case .activity, .activityRemoved:
             await activity.handle(event)
+        case .readState:
+            await activity.handle(event)
+            await chat.handle(event)
         case .bookmark(let update):
             await chat.handle(event)
             await bookmarks.handle(update)

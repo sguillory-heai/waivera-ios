@@ -156,7 +156,7 @@ extension DataEnvironment {
             clock: clock,
             callURL: { try await handoff.url(for: $0) },
             foreground: { isForeground in
-                presence.setForeground(isForeground)
+                await chat.foregroundChanged(isForeground)
                 await realtime.setForeground(isForeground)
             },
             start: {

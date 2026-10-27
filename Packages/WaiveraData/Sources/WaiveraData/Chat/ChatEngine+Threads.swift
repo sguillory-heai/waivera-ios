@@ -8,10 +8,11 @@ extension ChatEngine: ThreadsRepository {
     }
 
     /// Threads join the conversation's hub group too, so live replies arrive even when opened
-    /// straight from a push (04 §4 fix). Joins are reference counted with the conversation.
+    /// straight from a push (04 §4 fix). Joins are reference counted with the conversation;
+    /// presence is not: only the thread counts as on screen (IF-02).
     public func open(rootMessageId: Int, conversationId: Int) async {
         openThreads[rootMessageId, default: 0] += 1
-        presence.setVisible(conversationId, true)
+        presence.setThreadVisible(rootMessageId, true)
         if threads[rootMessageId] == nil {
             var state = ThreadState(conversationId: conversationId)
             state.root = timelines[conversationId]?.messages[rootMessageId]
@@ -24,7 +25,7 @@ extension ChatEngine: ThreadsRepository {
     public func close(rootMessageId: Int, conversationId: Int) async {
         guard let count = openThreads[rootMessageId] else { return }
         openThreads[rootMessageId] = count > 1 ? count - 1 : nil
-        presence.setVisible(conversationId, false)
+        presence.setThreadVisible(rootMessageId, false)
         await realtime.leave(conversationId: conversationId)
         await throttle.stop(conversationId: conversationId)
     }
@@ -62,7 +63,7 @@ extension ChatEngine: ThreadsRepository {
         -> OutgoingMessage?
     {
         await throttle.stop(conversationId: conversationId)
-        return enqueue(
+        return await enqueue(
             text: text,
             attachment: attachment,
             conversationId: conversationId,

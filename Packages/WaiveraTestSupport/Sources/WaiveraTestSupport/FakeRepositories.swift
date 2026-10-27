@@ -350,11 +350,11 @@ public final class FakeChatAlertsRepository: ChatAlertsRepository {
 
     public func alerts() -> AsyncStream<ChatAlert> { broadcaster.stream() }
 
-    public func shouldPresentForegroundPush(conversationId: Int?) -> Bool {
+    public func shouldPresentForegroundPush(conversationId: Int?, threadRootMessageId: Int?) -> Bool {
         guard let conversationId else { return true }
-        if activeConversationIds.get().contains(conversationId) { return false }
+        if threadRootMessageId == nil, activeConversationIds.get().contains(conversationId) { return false }
         guard realtime?.currentStatus.isConnected ?? true else { return true }
-        return !presence.isActive(conversationId)
+        return !presence.isActive(conversationId: conversationId, threadRootMessageId: threadRootMessageId)
     }
 
     /// Shows an in-app banner, as `ReceiveChatAttention` would.

@@ -10,6 +10,7 @@ extension ChatEngine: MessagesRepository {
     public func open(conversationId: Int) async {
         openConversations[conversationId, default: 0] += 1
         presence.setVisible(conversationId, true)
+        if presence.isForeground { conversationReadBroadcaster.send(conversationId) }
         await realtime.join(conversationId: conversationId)
         if timelines[conversationId]?.isLoaded != true, timelines[conversationId]?.messages.isEmpty ?? true {
             await showCachedPage(conversationId)
@@ -32,13 +33,17 @@ extension ChatEngine: MessagesRepository {
         else { return }
         var state = timelines[conversationId] ?? TimelineState()
         for message in cached where state.messages[message.id] == nil { state.messages[message.id] = message }
+        // The disk cache holds only synced rows, so its newest row is where the gap check starts.
+        if state.syncedThroughId == nil { state.syncedThroughId = cached.map(\.id).max() }
         state.phase = .loading
         timelines[conversationId] = state
         publishTimeline(conversationId)
     }
 
     /// Fetches the newest page and merges it by id. Used on open, pull-to-refresh and after
-    /// every reconnect (05 §2).
+    /// every reconnect (05 §2). When the page does not reach the last synced message, older
+    /// pages are fetched until it does; if that takes more than `maxGapPages`, the timeline
+    /// restarts from what was fetched with `hasOlder` set, so it never shows a hole (IF-01).
     public func refresh(conversationId: Int) async {
         guard let mapper else { return }
         let current = generation
@@ -47,11 +52,24 @@ extension ChatEngine: MessagesRepository {
         do {
             let page = try await api.messagesPage(conversationId: conversationId)
             guard generation == current else { return }
-            applyNewestPage(
-                page.compactMap { mapper.message($0, conversationId: conversationId) },
-                to: conversationId,
-                rawCount: page.count
-            )
+            var fetched = page.compactMap { mapper.message($0, conversationId: conversationId) }
+            var reachedStart = page.count < APIClient.messagePageSize
+            let synced = timelines[conversationId]?.syncedThroughId
+            var joins = reachedStart || synced == nil || Self.reaches(fetched, back: synced)
+            var olderPages = 0
+            while !joins, olderPages < Self.maxGapPages, let oldest = fetched.map(\.id).min() {
+                olderPages += 1
+                // A failed backfill page ends the attempt: the restart below still leaves no hole.
+                guard let older = try? await api.messagesPage(conversationId: conversationId, beforeMessageId: oldest)
+                else { break }
+                guard generation == current else { return }
+                let mapped = older.compactMap { mapper.message($0, conversationId: conversationId) }
+                    .filter { $0.id < oldest }
+                fetched += mapped
+                reachedStart = older.count < APIClient.messagePageSize || mapped.isEmpty
+                joins = reachedStart || Self.reaches(mapped, back: synced)
+            }
+            applyNewestPage(fetched, to: conversationId, joinsCache: joins, reachedStart: reachedStart)
         } catch {
             guard generation == current else { return }
             timelines[conversationId, default: TimelineState()].phase = .failed(WaiveraError.from(error))
@@ -59,16 +77,25 @@ extension ChatEngine: MessagesRepository {
         }
     }
 
-    func applyNewestPage(_ messages: [ChatMessage], to conversationId: Int, rawCount: Int) {
+    /// Whether `messages` reach back to the synced id, so nothing between them is missing.
+    static func reaches(_ messages: [ChatMessage], back synced: Int?) -> Bool {
+        guard let synced else { return true }
+        guard let oldest = messages.map(\.id).min() else { return false }
+        return oldest <= synced
+    }
+
+    /// Merges the newest page (and any backfill pages) into the timeline. When they do not
+    /// join the cached rows, the cached rows are dropped, apart from live messages newer than
+    /// the fetch, and `hasOlder` lets the user page back into what was skipped.
+    func applyNewestPage(_ messages: [ChatMessage], to conversationId: Int, joinsCache: Bool, reachedStart: Bool) {
         var state = timelines[conversationId] ?? TimelineState()
         let roots = messages.filter { !$0.isThreadReply }
-        let overlaps = roots.contains { state.messages[$0.id] != nil }
-        if state.isLoaded, !overlaps, rawCount >= APIClient.messagePageSize {
-            // More than a page arrived while away: restart from this page rather than leave a gap.
-            state.messages.removeAll()
+        let newestFetched = messages.map(\.id).max()
+        if !joinsCache {
+            state.messages = state.messages.filter { $0.key > (newestFetched ?? .max) }
             state.hasOlder = true
-        } else if !state.isLoaded {
-            state.hasOlder = rawCount >= APIClient.messagePageSize
+        } else if !state.isLoaded || reachedStart {
+            state.hasOlder = !reachedStart
         }
         for message in roots { state.messages[message.id] = state.messages[message.id]?.merging(message) ?? message }
         if !state.isLoaded {
@@ -77,7 +104,11 @@ extension ChatEngine: MessagesRepository {
             }
             state.buffered.removeAll()
         }
+        if let newestFetched {
+            state.syncedThroughId = joinsCache ? max(state.syncedThroughId ?? newestFetched, newestFetched) : newestFetched
+        }
         state.isLoaded = true
+        state.isStale = false
         state.phase = .loaded
         state.updatedAt = clock.now
         timelines[conversationId] = state
@@ -189,7 +220,7 @@ extension ChatEngine: MessagesRepository {
     @discardableResult
     public func send(text: String, attachment: Attachment?, conversationId: Int) async -> OutgoingMessage? {
         await throttle.stop(conversationId: conversationId)
-        return enqueue(text: text, attachment: attachment, conversationId: conversationId, parentMessageId: nil)
+        return await enqueue(text: text, attachment: attachment, conversationId: conversationId, parentMessageId: nil)
     }
 
     public func composerChanged(conversationId: Int, text: String) async {
@@ -215,6 +246,7 @@ extension ChatEngine: MessagesRepository {
             }
             throw WaiveraError.from(error)
         }
+        conversationReadBroadcaster.send(conversationId)
         guard
             let newest = timelines[conversationId].flatMap({ state in
                 state.messages.values.filter { !$0.isThreadReply }.map(\.id).max()
@@ -337,8 +369,8 @@ extension ChatEngine: MessagesRepository {
         }
         let conversationId = message.conversationId
         var state = timelines[conversationId] ?? TimelineState()
-        if !state.isLoaded, fromRealtime, openConversations[conversationId] == nil, state.messages.isEmpty {
-            // Nobody is looking and nothing is loaded: the next open fetches it.
+        if fromRealtime, openConversations[conversationId] == nil, state.isStale || (!state.isLoaded && state.messages.isEmpty) {
+            // Nobody is looking and the cache is behind or empty: the next open fetches it.
             return
         }
         if !state.isLoaded, state.phase == .loading, fromRealtime {

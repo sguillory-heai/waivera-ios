@@ -54,6 +54,22 @@ extension FakeChatRepository: MessagesRepository {
         enqueue(text: text, attachment: attachment, conversationId: conversationId, parentMessageId: nil)
     }
 
+    /// The fake sends at once, so the wait ends with the send's state.
+    public func sendAndWait(text: String, conversationId: Int, threadRootMessageId: Int?, timeout: Duration) async
+        -> OutboxOutcome
+    {
+        let entry: OutgoingMessage?
+        if let threadRootMessageId {
+            entry = await reply(text: text, attachment: nil, rootMessageId: threadRootMessageId, conversationId: conversationId)
+        } else {
+            entry = await send(text: text, attachment: nil, conversationId: conversationId)
+        }
+        guard let entry else { return .dropped }
+        guard let current = pending[entry.clientMessageId] else { return .sent }
+        if case .failed(let error) = current.state { return .failed(error) }
+        return .queued
+    }
+
     /// Optimistic like the live engine: clears at once, restores and throws when
     /// `setMarkReadFailure` is set.
     public func markRead(conversationId: Int) async throws {
@@ -205,13 +221,13 @@ extension FakeChatRepository: ThreadsRepository {
 
     public func open(rootMessageId: Int, conversationId: Int) async {
         calls.record("openThread:\(rootMessageId)")
-        presence.setVisible(conversationId, true)
+        presence.setThreadVisible(rootMessageId, true)
         await refresh(rootMessageId: rootMessageId, conversationId: conversationId)
     }
 
     public func close(rootMessageId: Int, conversationId: Int) async {
         calls.record("closeThread:\(rootMessageId)")
-        presence.setVisible(conversationId, false)
+        presence.setThreadVisible(rootMessageId, false)
     }
 
     public func refresh(rootMessageId: Int, conversationId: Int) async {

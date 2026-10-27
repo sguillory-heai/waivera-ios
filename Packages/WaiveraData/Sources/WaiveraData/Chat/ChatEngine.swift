@@ -20,6 +20,14 @@ public actor ChatEngine {
         var updatedAt: Date?
         /// Hub messages that arrived before the first page (05 §5: never synthesize a page).
         var buffered: [ChatMessage] = []
+        /// The newest message id a REST page confirmed, with nothing missing between it and
+        /// the older cached rows. Hub messages never move it, because the hub says nothing
+        /// about what was missed while it was down (IF-01). A newest page must reach back to
+        /// it, or the gap is paged through, before the page is merged.
+        var syncedThroughId: Int?
+        /// A reconnect happened while this conversation was closed, so live messages may have
+        /// been missed. Hub messages are not merged into it until the next open refetches.
+        var isStale = false
     }
 
     struct ThreadState {
@@ -36,6 +44,9 @@ public actor ChatEngine {
     /// Text-match window for servers that do not echo the client id (03 §11).
     static let reconcileWindow: TimeInterval = 60
     static let hydrationBatchSize = 6
+    /// Older pages fetched after a reconnect to reach the last synced message before giving up
+    /// and restarting the timeline from the newest page (IF-01).
+    static let maxGapPages = 5
     /// Message-context window around a deep-link target, and forward pages to the loaded rows.
     static let contextBefore = 30
     static let contextAfter = 75
@@ -70,11 +81,20 @@ public actor ChatEngine {
 
     var outbox: [String: OutgoingMessage] = [:]
     var outboxTasks: [String: Task<Void, Never>] = [:]
+    /// Tries that failed only because the device was offline; they never spend the automatic
+    /// budget (IF-04). In memory: a relaunch starts counting again.
+    var offlineTries: [String: Int] = [:]
+    /// `sendAndWait` callers, by client id and waiter (IF-03).
+    var outboxWaiters: [String: [UUID: CheckedContinuation<OutboxOutcome, Never>]] = [:]
+    var cancelledWaiters: Set<UUID> = []
+    var confirmedClientIds: Set<String> = []
     var lastReadThrough: [String: Int] = [:]
     /// Cache writes run one after another so an older snapshot never lands last.
     var persistence: Task<Void, Never>?
 
     nonisolated let alertBroadcaster = AsyncBroadcaster<ChatAlert>(replays: false)
+    /// Conversations read on screen, by Mark read or on another device (IF-07).
+    nonisolated let conversationReadBroadcaster = AsyncBroadcaster<Int>(replays: false, keepsEveryValue: true)
     /// Read-state changes for the activity feed (03 §12).
     nonisolated let readStateBroadcaster = AsyncBroadcaster<ChatReadState>(replays: false)
     lazy var throttle = TypingThrottle(clock: clock) { [realtime] conversationId, isTyping in
@@ -131,6 +151,8 @@ public actor ChatEngine {
         conversationsLoad = nil
         for task in outboxTasks.values { task.cancel() }
         outboxTasks.removeAll()
+        offlineTries.removeAll()
+        settleAllWaiters()
         conversationsById.removeAll()
         conversationsPhase = .idle
         conversationsUpdatedAt = nil
@@ -224,10 +246,15 @@ public actor ChatEngine {
         enqueuePersist { await store.save(rows, for: .conversations) }
     }
 
-    /// Keeps the newest page of each timeline on disk for an instant first frame.
+    /// Keeps the newest synced page of each timeline on disk for an instant first frame. Only
+    /// rows a REST page confirmed are written, so the cache never holds a hidden gap and its
+    /// newest row is a valid sync point at the next launch (IF-01).
     func persistTimeline(_ conversationId: Int) {
-        guard let state = timelines[conversationId], state.isLoaded else { return }
-        let newest = Array(state.messages.values.sorted(by: Self.messageOrder).suffix(APIClient.messagePageSize))
+        guard let state = timelines[conversationId], state.isLoaded, let synced = state.syncedThroughId else { return }
+        let newest = Array(
+            state.messages.values.filter { $0.id <= synced }.sorted(by: Self.messageOrder)
+                .suffix(APIClient.messagePageSize)
+        )
         let store = store
         enqueuePersist { await store.save(newest, for: .messages(conversationId)) }
     }

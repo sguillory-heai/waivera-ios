@@ -180,7 +180,9 @@ struct ThreadTests {
         let harness = await harness()
         await harness.engine.open(rootMessageId: 9330, conversationId: 7)
         #expect(harness.realtime.log.joins == [7])
-        #expect(harness.presence.isActive(7))
+        // Only the thread is on screen, not the conversation's timeline (IF-02).
+        #expect(harness.presence.isThreadActive(9330))
+        #expect(!harness.presence.isActive(7))
         let thread = harness.engine.threadCells.cell(9330).current
         #expect(thread.phase == .loaded)
         #expect(thread.value?.root?.id == 9330)

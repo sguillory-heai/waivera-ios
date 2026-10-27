@@ -68,6 +68,11 @@ public protocol MessagesRepository: MessageActions {
     /// Enqueues an optimistic send; `nil` when there is nothing to send.
     @discardableResult
     func send(text: String, attachment: Attachment?, conversationId: Int) async -> OutgoingMessage?
+    /// Notification replies (IF-03): queues the message (in its thread when
+    /// `threadRootMessageId` is set), returns only after the queue is on disk, then waits up to
+    /// `timeout` for the first send. Whatever the outcome, a queued message survives relaunch.
+    func sendAndWait(text: String, conversationId: Int, threadRootMessageId: Int?, timeout: Duration) async
+        -> OutboxOutcome
     /// Mark-as-read plus read-through of the newest root message (03 §12). Optimistic: the
     /// unread count clears at once and is restored, with the error thrown, when the server call
     /// fails, so the screen can offer Retry.
@@ -259,7 +264,20 @@ public struct ChatAlert: Sendable, Hashable {
 
 public protocol ChatAlertsRepository: Sendable {
     func alerts() -> AsyncStream<ChatAlert>
-    /// Foreground push suppression: only when the hub is connected and that conversation is
-    /// on screen (PLAN parity fix, 09 §2).
-    func shouldPresentForegroundPush(conversationId: Int?) -> Bool
+    /// Foreground push suppression: only when the hub is connected and the message's surface
+    /// is on screen, the timeline for a root message and the thread for a reply (PLAN parity
+    /// fix, 09 §2, IF-02).
+    func shouldPresentForegroundPush(conversationId: Int?, threadRootMessageId: Int?) -> Bool
+    /// Conversations read anywhere: opened on screen, marked read, or read on another device.
+    /// The app clears their delivered notifications (09 §6, IF-07).
+    func conversationsRead() -> AsyncStream<Int>
+}
+
+extension ChatAlertsRepository {
+    /// A root message (or a push without a thread root).
+    public func shouldPresentForegroundPush(conversationId: Int?) -> Bool {
+        shouldPresentForegroundPush(conversationId: conversationId, threadRootMessageId: nil)
+    }
+
+    public func conversationsRead() -> AsyncStream<Int> { AsyncStream { $0.finish() } }
 }

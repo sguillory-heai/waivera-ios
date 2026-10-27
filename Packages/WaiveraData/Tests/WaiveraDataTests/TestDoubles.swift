@@ -33,6 +33,10 @@ actor RoutingTransport: HTTPTransport {
     private(set) var requests: [URLRequest] = []
     var isOffline = false
 
+    /// Runs before each reply, after the request is recorded.
+    private var beforeReply: (@Sendable (URLRequest) async -> Void)?
+
+    func setBeforeReply(_ hook: @escaping @Sendable (URLRequest) async -> Void) { beforeReply = hook }
     func set(_ route: String, _ reply: Reply) { standing[route] = reply }
     func enqueue(_ route: String, _ replies: Reply...) { queued[route, default: []] += replies }
     func setOffline(_ offline: Bool) { isOffline = offline }
@@ -45,6 +49,7 @@ actor RoutingTransport: HTTPTransport {
 
     func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
         requests.append(request)
+        if let beforeReply { await beforeReply(request) }
         if isOffline { throw URLError(.notConnectedToInternet) }
         let route = Self.route(of: request)
         let reply: Reply

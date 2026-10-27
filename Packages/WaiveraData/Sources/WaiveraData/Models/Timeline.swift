@@ -63,6 +63,18 @@ public struct OutgoingMessage: Codable, Sendable, Hashable, Identifiable {
     }
 }
 
+/// How a send waited on with `sendAndWait` ended (IF-03).
+public enum OutboxOutcome: Sendable, Hashable {
+    /// The server confirmed it.
+    case sent
+    /// Still in the outbox when the wait ended; it is on disk and goes out later.
+    case queued
+    /// It needs the user: shown with Retry in the conversation or thread.
+    case failed(WaiveraError)
+    /// Nothing to send, or discarded, or the session ended.
+    case dropped
+}
+
 /// A conversation's messages, oldest first, plus unconfirmed sends.
 public struct MessageTimeline: Sendable, Hashable {
     public var conversationId: Int
