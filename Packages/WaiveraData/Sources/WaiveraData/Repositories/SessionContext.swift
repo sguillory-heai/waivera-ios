@@ -42,6 +42,12 @@ public protocol AuthSession: AuthTokenProvider {
     func changePassword(current: String, new: String) async throws
     func sendPasswordReset(email: String) async throws
     func signOut() async
+    /// Reads the stored session again when it was unreadable at launch (a locked device, IS-03).
+    func reloadStoredSession() async
+}
+
+extension AuthSession {
+    public func reloadStoredSession() async {}
 }
 
 extension FirebaseTokenProvider: AuthSession {}

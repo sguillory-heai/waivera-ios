@@ -28,6 +28,7 @@ public struct DataEnvironment: Sendable {
     public let callURL: @Sendable (Conversation) async throws -> URL
     private let foreground: @Sendable (Bool) async -> Void
     private let start: @Sendable () async -> Void
+    private let protectedData: @Sendable () async -> Void
 
     public init(
         session: any SessionRepository,
@@ -48,7 +49,8 @@ public struct DataEnvironment: Sendable {
         clock: any WaiveraClock = SystemClock(),
         callURL: @escaping @Sendable (Conversation) async throws -> URL,
         foreground: @escaping @Sendable (Bool) async -> Void,
-        start: @escaping @Sendable () async -> Void
+        start: @escaping @Sendable () async -> Void,
+        protectedDataAvailable: @escaping @Sendable () async -> Void = {}
     ) {
         self.session = session
         self.conversations = conversations
@@ -69,6 +71,7 @@ public struct DataEnvironment: Sendable {
         self.callURL = callURL
         self.foreground = foreground
         self.start = start
+        protectedData = protectedDataAvailable
     }
 
     /// Call once at launch: reads the stored session and bootstraps.
@@ -76,4 +79,7 @@ public struct DataEnvironment: Sendable {
 
     /// Scene phase: realtime is foreground-only (05 §2).
     public func setForeground(_ isForeground: Bool) async { await foreground(isForeground) }
+
+    /// The device was unlocked: a session the locked Keychain hid at launch can load now (IS-03).
+    public func protectedDataDidBecomeAvailable() async { await protectedData() }
 }

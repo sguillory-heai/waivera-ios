@@ -147,6 +147,45 @@ struct CriticFixSessionTests {
         #expect(keyValues.data(forKey: StorageKey.accountSince) == nil)
     }
 
+    // MARK: IS-03
+
+    @Test("IS-03: a Keychain locked at launch never signs out, and the session loads after unlock")
+    func lockedKeychainAtLaunch() async throws {
+        let transport = RoutingTransport()
+        await Self.routes(transport)
+        let clock = TestClock()
+        let stored = FirebaseSession(
+            uid: "fb-alex",
+            email: "alex.rivera@example.com",
+            displayName: nil,
+            idToken: "token",
+            refreshToken: "r",
+            expiresAt: clock.now.addingTimeInterval(3_600)
+        )
+        let tokens = InMemoryTokenStore(stored)
+        tokens.setLocked(true)
+        let provider = FirebaseTokenProvider(auth: StaticFirebaseAuth(), store: tokens, clock: clock)
+        let store = InMemoryLocalStore()
+        await store.save(["cached"], for: .conversations)
+        let environment = DataEnvironment.assemble(
+            auth: provider,
+            api: APIClient(baseURL: testBaseURL, transport: transport, tokens: provider),
+            realtime: FakeRealtime(),
+            webBaseURL: nil,
+            localStore: store,
+            keyValueStore: InMemoryKeyValueStore(),
+            connectivity: ManualConnectivity(),
+            clock: clock
+        )
+        await environment.launch()
+        await settle()
+        #expect(environment.session.currentState == .loading)
+        #expect(await store.data(for: .conversations) != nil)
+        tokens.setLocked(false)
+        await environment.protectedDataDidBecomeAvailable()
+        #expect(await eventually { environment.session.currentState.isSignedIn })
+    }
+
     // MARK: IS-01
 
     @Test("IS-01: the first launch after an install removes a session the Keychain kept")
@@ -296,4 +335,12 @@ actor Gate {
         for waiter in waiters { waiter.resume() }
         waiters.removeAll()
     }
+}
+
+/// Firebase that never needs to answer: the stored session is still valid.
+struct StaticFirebaseAuth: FirebaseAuthenticating {
+    func signIn(email: String, password: String) async throws -> FirebaseSession { throw WaiveraError.offline }
+    func refresh(_ session: FirebaseSession) async throws -> FirebaseSession { session }
+    func updatePassword(_ newPassword: String, session: FirebaseSession) async throws -> FirebaseSession { session }
+    func sendPasswordReset(email: String) async throws {}
 }

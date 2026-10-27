@@ -175,6 +175,7 @@ extension DataEnvironment {
             clock: clock,
             callURL: { try await handoff.url(for: $0) },
             foreground: { isForeground in
+                if isForeground { await auth.reloadStoredSession() }
                 await chat.foregroundChanged(isForeground)
                 await realtime.setForeground(isForeground)
             },
@@ -182,7 +183,8 @@ extension DataEnvironment {
                 await session.setParticipants([coordinator])
                 await coordinator.observeDevice()
                 await session.start()
-            }
+            },
+            protectedDataAvailable: { await auth.reloadStoredSession() }
         )
     }
 }
