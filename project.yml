@@ -32,6 +32,21 @@ packages:
     path: Packages/WaiveraTestSupport
   WaiveraFixtures:
     path: Packages/WaiveraFixtures
+  WaiveraRouting:
+    path: Packages/WaiveraRouting
+  WaiveraNotifications:
+    path: Packages/WaiveraNotifications
+  Features:
+    path: Packages/Features
+  # Messaging only (the FirebaseMessaging product); Auth goes over REST inside WaiveraAPI.
+  # Needed to receive FCM tokens for APNs, which sprout_api sends through (ADR 0003).
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk
+    exactVersion: 13.1.1
+  # Component snapshot tests only; never linked into the app.
+  SnapshotTesting:
+    url: https://github.com/pointfreeco/swift-snapshot-testing
+    exactVersion: 1.18.3
 
 targets:
   Waivera:
@@ -40,10 +55,51 @@ targets:
     sources:
       - App/Sources
       - App/Resources
+    configFiles:
+      Debug: Config/Debug.xcconfig
+      Release: Config/Release.xcconfig
     dependencies:
       - package: WaiveraAPI
       - package: WaiveraRealtime
       - package: WaiveraDesign
+        product: WaiveraDesign
+      - package: WaiveraRouting
+      - package: WaiveraNotifications
+        product: WaiveraNotifications
+      - package: WaiveraNotifications
+        product: WaiveraNotificationsLive
+      - package: Features
+        product: AuthFeature
+      - package: Features
+        product: TodayFeature
+      - package: Features
+        product: ChatFeature
+      - package: Features
+        product: ScheduleFeature
+      - package: Features
+        product: ProfileFeature
+      - package: Features
+        product: SettingsFeature
+      - package: Firebase
+        product: FirebaseMessaging
+    info:
+      path: App/Info.plist
+      properties:
+        # Push arrives as alerts; remote-notification lets the app refresh unread state on delivery.
+        UIBackgroundModes: [remote-notification]
+        # The app hands the APNs token to FCM itself (FirebaseBootstrap), so no method swizzling.
+        FirebaseAppDelegateProxyEnabled: false
+        CFBundleURLTypes:
+          - CFBundleURLName: com.waivera.waivera
+            CFBundleURLSchemes: [waivera]
+        # Read by WaiveraConfiguration / AppConfiguration. Values come from Config/*.xcconfig.
+        WaiveraAPIBaseURL: $(WAIVERA_API_BASE_URL)
+        WaiveraWebBaseURL: $(WAIVERA_WEB_BASE_URL)
+        WaiveraFirebaseAPIKey: $(WAIVERA_FIREBASE_API_KEY)
+        WaiveraFirebaseAppID: $(WAIVERA_FIREBASE_APP_ID)
+        WaiveraFirebaseSenderID: $(WAIVERA_FIREBASE_SENDER_ID)
+        WaiveraFirebaseProjectID: $(WAIVERA_FIREBASE_PROJECT_ID)
+        # No NSAppTransportSecurity exceptions: every environment is HTTPS.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.waivera.waivera
@@ -60,6 +116,8 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_STYLE: Automatic
+        # Push needs the aps-environment entitlement. It is not added yet: entitlements change only
+        # with approval and need Apple Developer account access (AGENTS.md safety rules).
 
   WaiveraUITests:
     type: bundle.ui-testing
@@ -68,6 +126,7 @@ targets:
       - WaiveraUITests
     dependencies:
       - target: Waivera
+      - package: WaiveraRouting
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.waivera.waivera.uitests
@@ -75,17 +134,59 @@ targets:
         TEST_TARGET_NAME: Waivera
         CODE_SIGN_STYLE: Automatic
 
+  # Shell model tests (AppModel: gate, sign-out order, push taps, presentation, registration).
+  # Hosted in the app; packages are reached through the host, not linked twice.
+  WaiveraTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - WaiveraTests
+    dependencies:
+      - target: Waivera
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.waivera.waivera.tests
+        GENERATE_INFOPLIST_FILE: YES
+        # Same default isolation as the app so test doubles conform to its main-actor protocols.
+        SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+        CODE_SIGN_STYLE: Automatic
+
+  # Design-system component snapshots (light, dark, accessibility XXXL). Not hosted in the app,
+  # so no app launch, network or push setup runs during these tests.
+  WaiveraSnapshotTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - WaiveraSnapshotTests
+    dependencies:
+      - package: WaiveraDesign
+        product: WaiveraDesign
+      - package: SnapshotTesting
+        product: SnapshotTesting
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.waivera.waivera.snapshottests
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Automatic
+
 schemes:
   Waivera:
     build:
       targets:
         Waivera: all
+        WaiveraTests: [test]
         WaiveraUITests: [test]
+        WaiveraSnapshotTests: [test]
     test:
       gatherCoverageData: true
       targets:
+        - WaiveraTests
         - WaiveraUITests
+        - WaiveraSnapshotTests
         - package: WaiveraAPI/WaiveraAPITests
         - package: WaiveraRealtime/WaiveraRealtimeTests
         - package: WaiveraData/WaiveraDataTests
         - package: WaiveraTestSupport/WaiveraTestSupportTests
+        - package: WaiveraDesign/WaiveraDesignTokensTests
+        - package: WaiveraRouting/WaiveraRoutingTests
+        - package: WaiveraNotifications/WaiveraNotificationsTests

@@ -1,0 +1,10 @@
+{
+  "Simulator Target Bundle": "com.waivera.waivera",
+  "aps": {
+    "alert": {
+      "title": "Waivera",
+      "body": "Something new happened."
+    }
+  },
+  "type": "announcement"
+}

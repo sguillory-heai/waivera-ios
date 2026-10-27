@@ -1,0 +1,10 @@
+/* Notification action: reply inline to a chat message. */
+"notification.action.reply" = "Reply";
+"notification.action.reply.send" = "Send";
+"notification.action.reply.placeholder" = "Message";
+/* Notification action: mark the conversation read without opening it. */
+"notification.action.markRead" = "Mark as read";
+/* Lock screen body when previews are hidden. */
+"notification.hidden.message" = "New message";
+"notification.hidden.schedule" = "Schedule update";
+"notification.hidden.digest" = "Waivera update";

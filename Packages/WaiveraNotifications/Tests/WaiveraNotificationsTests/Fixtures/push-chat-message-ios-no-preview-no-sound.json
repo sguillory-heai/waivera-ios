@@ -1,0 +1,28 @@
+{
+  "message": {
+    "token": "fcm-example-registration-token-ios-0002",
+    "data": {
+      "type": "chat",
+      "conversationId": "7",
+      "messageId": "9312",
+      "url": "/chats/7"
+    },
+    "apns": {
+      "headers": {
+        "apns-priority": "10",
+        "apns-push-type": "alert"
+      },
+      "payload": {
+        "aps": {
+          "alert": {
+            "title": "Alex Rivera",
+            "body": "New message"
+          },
+          "thread-id": "chat-7",
+          "category": "CHAT_MESSAGE",
+          "mutable-content": 1
+        }
+      }
+    }
+  }
+}

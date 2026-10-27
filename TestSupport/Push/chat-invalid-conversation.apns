@@ -1,0 +1,17 @@
+{
+  "Simulator Target Bundle": "com.waivera.waivera",
+  "aps": {
+    "alert": {
+      "title": "Alex Rivera",
+      "body": "This push has no valid conversation"
+    },
+    "thread-id": "chat-0",
+    "category": "CHAT_MESSAGE",
+    "mutable-content": 1,
+    "sound": "default"
+  },
+  "type": "chat",
+  "conversationId": "0",
+  "messageId": "1",
+  "url": "/chats/0"
+}

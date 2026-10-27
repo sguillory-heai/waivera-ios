@@ -1,0 +1,14 @@
+// Release build settings for the Waivera app target.
+//
+// Values are empty in git so a fresh clone builds and runs in its unconfigured state (sign-in
+// screen, no network, no Firebase, no push). Put real values in Config/Local.Release.xcconfig, which
+// is git-ignored; CI writes that file from repository secrets. See README "Configuration".
+// xcconfig treats // as a comment: write URLs as https:/$()/api.example.com
+WAIVERA_API_BASE_URL =
+WAIVERA_WEB_BASE_URL =
+WAIVERA_FIREBASE_API_KEY =
+WAIVERA_FIREBASE_APP_ID =
+WAIVERA_FIREBASE_SENDER_ID =
+WAIVERA_FIREBASE_PROJECT_ID =
+
+#include? "Local.Release.xcconfig"

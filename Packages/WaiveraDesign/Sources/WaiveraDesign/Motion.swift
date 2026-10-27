@@ -1,32 +1,44 @@
-import SwiftUI
+#if canImport(UIKit)
+    import SwiftUI
 
-/// Shared springs. Movement explains a state change and never delays the user.
-public enum Motion {
-    /// Things that move or resize on screen.
-    public static let spatial = Animation.spring(response: 0.4, dampingFraction: 0.85)
-    /// Small, quick movements such as a send button or a badge.
-    public static let spatialFast = Animation.spring(response: 0.25, dampingFraction: 0.9)
-    /// Opacity and colour changes.
-    public static let effects = Animation.easeOut(duration: 0.2)
+    /// SwiftUI animations for the motion tokens. Always pass the view's `accessibilityReduceMotion`.
+    public enum Motion {
+        /// `nil` means "no animation" (Reduce Motion on a press) or "leave it to the system" (navigate).
+        public static func animation(_ token: MotionToken, reduceMotion: Bool) -> Animation? {
+            switch MotionPolicy.curve(for: token, reduceMotion: reduceMotion) {
+            case .snappy(let duration):
+                Animation.snappy(duration: duration)
+            case .smooth(let duration):
+                Animation.smooth(duration: duration)
+            case .bouncy(let duration, let extraBounce):
+                Animation.bouncy(duration: duration, extraBounce: extraBounce)
+            case .crossFade(let duration):
+                Animation.easeInOut(duration: duration)
+            case .system, .none:
+                nil
+            }
+        }
 
-    /// Spatial motion becomes a plain cross-fade when Reduce Motion is on.
-    public static func spatialAnimation(reduceMotion: Bool) -> Animation {
-        reduceMotion ? effects : spatial
+        /// Transition for views entering or leaving: a move plus fade, or a plain fade under Reduce Motion.
+        public static func transition(edge: Edge, reduceMotion: Bool) -> AnyTransition {
+            reduceMotion ? .opacity : .move(edge: edge).combined(with: .opacity)
+        }
     }
-}
 
-public extension View {
-    /// Animates `value` changes with `Motion.spatial`, honouring Reduce Motion.
-    func waiveraSpatialAnimation(value: some Equatable) -> some View {
-        modifier(SpatialAnimation(value: value))
+    public extension View {
+        /// Animates changes to `value` with a motion token, honouring Reduce Motion.
+        func waiveraAnimation(_ token: MotionToken, value: some Equatable) -> some View {
+            modifier(TokenAnimation(token: token, value: value))
+        }
     }
-}
 
-private struct SpatialAnimation<Value: Equatable>: ViewModifier {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    let value: Value
+    private struct TokenAnimation<Value: Equatable>: ViewModifier {
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
+        let token: MotionToken
+        let value: Value
 
-    func body(content: Content) -> some View {
-        content.animation(Motion.spatialAnimation(reduceMotion: reduceMotion), value: value)
+        func body(content: Content) -> some View {
+            content.animation(Motion.animation(token, reduceMotion: reduceMotion), value: value)
+        }
     }
-}
+#endif

@@ -1,0 +1,25 @@
+{
+  "Simulator Target Bundle": "com.waivera.waivera",
+  "aps": {
+    "alert": {
+      "title": "New survey assigned",
+      "body": "A survey is waiting for you."
+    },
+    "sound": "default"
+  },
+  "CalenderEventId": "",
+  "ParticipantId": "4471",
+  "ParticipantFirebaseId": "fb_participant_example_0003",
+  "Endtime": "",
+  "Starttime": "",
+  "EmployeeId": "",
+  "EmployeeDisplayName": "",
+  "MainTitle": "New survey assigned",
+  "InstanceId": "svy_inst_9931",
+  "NotificationType": "Survey",
+  "currentUserId": "",
+  "callerDisplayName": "",
+  "roomId": "",
+  "callerId": "",
+  "conversationId": ""
+}

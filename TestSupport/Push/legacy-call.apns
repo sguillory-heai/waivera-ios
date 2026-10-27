@@ -1,0 +1,25 @@
+{
+  "Simulator Target Bundle": "com.waivera.waivera",
+  "aps": {
+    "alert": {
+      "title": "Incoming Video Call",
+      "body": "Priya Raman is calling you."
+    },
+    "sound": "default"
+  },
+  "CalenderEventId": "",
+  "ParticipantId": "4471",
+  "ParticipantFirebaseId": "fb_participant_example_0003",
+  "Endtime": "",
+  "Starttime": "",
+  "EmployeeId": "",
+  "EmployeeDisplayName": "",
+  "MainTitle": "Incoming Video Call",
+  "InstanceId": "",
+  "NotificationType": "call",
+  "currentUserId": "",
+  "callerDisplayName": "Priya Raman",
+  "roomId": "room_7f3c91",
+  "callerId": "usr_priya_raman",
+  "conversationId": "7"
+}
