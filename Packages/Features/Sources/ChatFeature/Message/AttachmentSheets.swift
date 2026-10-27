@@ -69,13 +69,28 @@
         let url: URL
         let onFinish: (Bool) -> Void
 
+        func makeCoordinator() -> Coordinator { Coordinator(onFinish: onFinish) }
+
         func makeUIViewController(context: Context) -> UIActivityViewController {
             let controller = UIActivityViewController(activityItems: [url], applicationActivities: nil)
-            controller.completionWithItemsHandler = { _, completed, _, _ in onFinish(completed) }
+            // The handler is `@Sendable`; it captures the main-actor coordinator, not the closure.
+            let coordinator = context.coordinator
+            controller.completionWithItemsHandler = { _, completed, _, _ in
+                MainActor.assumeIsolated { coordinator.onFinish(completed) }
+            }
             return controller
         }
 
         func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
+
+        @MainActor
+        final class Coordinator {
+            let onFinish: (Bool) -> Void
+
+            init(onFinish: @escaping (Bool) -> Void) {
+                self.onFinish = onFinish
+            }
+        }
     }
 
     /// "Save to Files" through the system export picker.

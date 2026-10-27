@@ -100,8 +100,9 @@
             let isMuted = row.previewKind == .placeholder || row.previewKind == .system
             let body = isMuted ? Text(row.preview).italic() : Text(row.preview)
             guard let sender = row.senderPrefix else { return body }
-            return Text(ChatListStrings.format("chat.list.preview.senderPrefix", sender)).fontWeight(.semibold)
-                + Text(verbatim: " ") + body
+            let prefix = Text(ChatListStrings.format("chat.list.preview.senderPrefix", sender)).fontWeight(.semibold)
+            // Interpolation instead of `Text + Text`, which the iOS 26 SDK deprecates.
+            return Text("\(prefix) \(body)")
         }
     }
 

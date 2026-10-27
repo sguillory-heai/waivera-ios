@@ -37,7 +37,7 @@
         func waiveraHaptic<T: Equatable>(
             _ event: HapticEvent,
             trigger: T,
-            condition: @escaping (T, T) -> Bool
+            condition: @escaping @Sendable (T, T) -> Bool
         ) -> some View {
             modifier(HapticModifier(event: event, trigger: trigger, condition: condition))
         }
@@ -47,7 +47,8 @@
         @Environment(\.waiveraHapticsEnabled) private var isEnabled
         let event: HapticEvent
         let trigger: T
-        let condition: ((T, T) -> Bool)?
+        /// `@Sendable` because `sensoryFeedback` may call its closure off the main actor.
+        let condition: (@Sendable (T, T) -> Bool)?
 
         func body(content: Content) -> some View {
             let enabled = isEnabled
