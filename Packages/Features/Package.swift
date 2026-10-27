@@ -51,5 +51,13 @@ let package = Package(
                 .product(name: "WaiveraTestSupport", package: "WaiveraTestSupport"),
             ]
         )
+            name: "ProfileFeatureTests",
+                "ProfileFeature",
+        ),
+        .testTarget(
+            name: "SettingsFeatureTests",
+                "SettingsFeature",
+                .product(name: "WaiveraNotifications", package: "WaiveraNotifications"),
+        ),
     ]
 )

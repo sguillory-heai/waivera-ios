@@ -1,5 +1,110 @@
+/* Shared */
+"profile.value.missing" = "—";
+"profile.value.missing.a11y" = "not provided";
+"profile.tryAgain" = "Try again";
+"profile.clearSearch" = "Clear search";
+"profile.unknownPerson" = "Someone";
+
+/* Celebrations (07 §4) */
+"profile.celebration.birthday %@" = "It's %@'s birthday today!";
+"profile.celebration.birthday.compact" = "Birthday today";
+"profile.celebration.someone" = "This coworker";
+
+/* Profile */
 "profile.title" = "Profile";
+"profile.refresh" = "Refresh profile";
+"profile.refreshing" = "Refreshing profile";
+"profile.refreshFailed" = "Couldn't refresh your profile. Showing your saved details.";
+"profile.error.title" = "Profile could not load";
+"profile.unavailable.title" = "Profile unavailable";
+"profile.unavailable.message" = "We couldn't find your employee record. Sign out and sign back in, or ask your administrator to check your account.";
+"profile.section.personal" = "Personal information";
+"profile.section.professional" = "Professional details";
+"profile.email" = "Email";
+"profile.phone" = "Phone";
+"profile.address" = "Address";
+"profile.timeZone" = "Time zone";
+"profile.timeZone.value %@ %@" = "%@ (%@)";
+"profile.timeZone.device" = "Not set. Waivera is using this device's time zone.";
+"profile.hireDate" = "Hire date";
+"profile.positions" = "Positions";
+"profile.officeLocations" = "Office locations";
+"profile.reportsTo" = "Reports to";
+"profile.birthday" = "Birthday";
+"profile.settings.row" = "Settings";
+"profile.settings.row.detail" = "Notifications, appearance and account";
+
+/* Time off */
+"profile.timeOff.title" = "Time off balances";
+"profile.timeOff.remaining" = "Days left";
+"profile.timeOff.allocated" = "Allocated";
+"profile.timeOff.used" = "Used";
+"profile.timeOff.pending" = "Pending";
+"profile.timeOff.progress.a11y %lld" = "%lld percent of your time off remains";
+"profile.timeOff.defaultType" = "Time off";
+"profile.timeOff.status.cancellationPending" = "Cancellation pending";
+"profile.timeOff.status.rejected" = "Rejected";
+"profile.timeOff.status.approved" = "Approved";
+"profile.timeOff.status.pending" = "Pending";
+
+/* Files */
+"profile.files.title" = "Employee files";
+"profile.files.empty" = "No files yet.";
+"profile.files.untitled" = "Untitled file";
+"profile.files.added %@" = "Added %@";
+
+/* Organization */
 "profile.organization.title" = "Organization";
+"profile.organization.unavailable" = "Organization details are unavailable right now.";
+"profile.organization.name" = "Name";
+"profile.organization.abbreviation" = "Short name";
+"profile.organization.address" = "Address";
+"profile.organization.contact" = "Contact";
+
+/* People */
 "profile.people.title" = "People";
+"profile.people.refresh" = "Refresh people";
+"profile.people.search" = "Search people";
+"profile.people.refreshFailed" = "Couldn't refresh the directory. Showing the last list.";
+"profile.people.error.title" = "Unable to load the people directory";
+"profile.people.empty.title" = "No one here yet";
+"profile.people.empty.message" = "No coworkers were returned by the directory.";
+"profile.people.noMatch.title" = "No people match";
+"profile.people.noMatch.message" = "Try another name.";
+"profile.people.open %@" = "%@, open profile";
+
+/* Person detail */
 "profile.person.title" = "Profile";
+"profile.person.message" = "Message";
+"profile.person.message.a11y %@" = "Message %@";
+"profile.person.messageFailed" = "Unable to open the chat.";
+"profile.person.roles" = "Roles";
+"profile.person.error.title" = "Unable to load this profile";
+
+/* Bookmarks */
 "profile.bookmarks.title" = "Bookmarks";
+"profile.bookmarks.search" = "Search saved messages or people";
+"profile.bookmarks.refreshFailed" = "Couldn't refresh your bookmarks. Showing the last list.";
+"profile.bookmarks.fallback" = "Some saved messages took longer to load. The list may be incomplete until the next refresh.";
+"profile.bookmarks.error.title" = "Unable to load bookmarks";
+"profile.bookmarks.error.message" = "Please try again in a moment.";
+"profile.bookmarks.empty.title" = "No saved messages yet";
+"profile.bookmarks.empty.message" = "Long-press a chat message and save it for quick access here.";
+"profile.bookmarks.noMatch.title" = "No saved messages match";
+"profile.bookmarks.noMatch.message" = "Try another keyword, message phrase, or person.";
+"profile.bookmarks.open %@" = "Open saved message from %@";
+"profile.bookmarks.remove" = "Remove";
+"profile.bookmarks.remove.a11y %@" = "Remove bookmark from %@";
+"profile.bookmarks.removed" = "Bookmark removed";
+"profile.bookmarks.removeFailed" = "Couldn't remove the bookmark.";
+"profile.bookmarks.restoreFailed" = "Couldn't save the message again.";
+"profile.bookmarks.threadReply" = "Thread reply";
+"profile.bookmarks.saved" = "Saved";
+"profile.bookmarks.photo" = "Photo";
+"profile.bookmarks.file" = "File attachment";
+"profile.bookmarks.file.named %@" = "File: %@";
+"profile.bookmarks.savedMessage" = "Saved message";
+"profile.bookmarks.search.message" = "message";
+"profile.bookmarks.search.photo" = "photo";
+"profile.bookmarks.search.file" = "file";
+"profile.count.filtered %lld %lld" = "%1$lld of %2$lld shown";
