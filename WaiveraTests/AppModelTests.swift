@@ -11,6 +11,11 @@ import WaiveraTestSupport
 
 struct FixedTokens: PushTokenSource {
     let token: String?
+    let invalidations = LockedValue(0)
+
+    func invalidate() async throws {
+        invalidations.update { $0 += 1 }
+    }
 
     func tokens() -> AsyncStream<String> {
         let (stream, continuation) = AsyncStream<String>.makeStream()
@@ -45,6 +50,7 @@ final class RecordingAuthorizer: NotificationAuthorizing {
 struct AppModelHarness {
     let fakes: FakeDataEnvironment
     let authorizer: RecordingAuthorizer
+    let tokens: FixedTokens
     let model: AppModel
 
     init(
@@ -63,12 +69,15 @@ struct AppModelHarness {
         }
         var launch = LaunchOptions()
         launch.route = route.flatMap(RouteCatalog.entry(named:))
+        let tokens = FixedTokens(token: token)
+        self.tokens = tokens
         model = AppModel(
             environment: AppEnvironment(
                 data: configured ? fakes.environment : nil,
-                tokenSource: FixedTokens(token: token),
+                tokenSource: tokens,
                 authorizer: authorizer,
-                primerStore: primerStore
+                primerStore: primerStore,
+                pendingInvalidation: PendingInvalidationDefaults(suiteName: "waivera.tests.\(UUID().uuidString)")
             ),
             launch: launch
         )

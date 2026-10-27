@@ -23,7 +23,8 @@ enum CompositionRoot {
                     // Permission counts as granted so UI tests never meet the system prompt.
                     authorizer: StaticAuthorizer(status: .authorized),
                     // A throwaway suite so fake runs never mark the real primer as seen.
-                    primerStore: PrimerSeenStore(suiteName: "waivera.fake-server")
+                    primerStore: PrimerSeenStore(suiteName: "waivera.fake-server"),
+                    pendingInvalidation: PendingInvalidationDefaults(suiteName: "waivera.fake-server")
                 )
             }
         #endif

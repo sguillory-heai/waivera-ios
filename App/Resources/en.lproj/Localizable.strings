@@ -1,5 +1,6 @@
 /* Full-screen loading while the session is restored. */
 "app.loading" = "Loading Waivera…";
+"app.privacyCover" = "Waivera is hidden while in the background.";
 "app.tab.today" = "Today";
 "app.tab.chat" = "Chat";
 "app.tab.schedule" = "Schedule";

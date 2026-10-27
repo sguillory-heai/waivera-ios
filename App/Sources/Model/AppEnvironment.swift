@@ -17,6 +17,8 @@ struct AppEnvironment {
     let tokenSource: any PushTokenSource
     let authorizer: any NotificationAuthorizing
     let primerStore: PrimerSeenStore
+    /// Whether a signed-out device still has an FCM token to delete (AS-02).
+    var pendingInvalidation: any PendingInvalidationStore = PendingInvalidationDefaults()
 }
 
 /// Emits no token: simulators without push, unconfigured Firebase, the fake server.

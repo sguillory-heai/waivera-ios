@@ -2,6 +2,7 @@ import AuthFeature
 import SwiftUI
 import WaiveraData
 import WaiveraDesign
+import WaiveraRouting
 
 /// Auth gate: renders the gate screen for the session state, or the tab shell once signed in.
 /// Injects the data layer for every feature screen below it.
@@ -11,6 +12,8 @@ struct RootView: View {
 
     var body: some View {
         content
+            .overlay { if hidesContent { PrivacyCover() } }
+            .environment(\.openURL, OpenURLAction(handler: open))
             .environment(\.dataEnvironment, model.dataEnvironment)
             .preferredColorScheme(model.colorScheme)
             .environment(\.waiveraHapticsEnabled, model.settings.hapticsEnabled)
@@ -19,6 +22,26 @@ struct RootView: View {
             .onChange(of: scenePhase, initial: true) { _, phase in
                 model.scenePhaseChanged(to: phase)
             }
+    }
+
+    /// Chats and colleagues' details stay out of the app switcher snapshot (AS-09): the cover
+    /// goes up as soon as the scene stops being active, before the system takes the snapshot.
+    private var hidesContent: Bool {
+        scenePhase != .active && model.session.isSignedIn
+    }
+
+    /// Every `openURL` in the app passes through here (AS-04): app links navigate, web links go
+    /// to the browser, every other scheme is dropped.
+    private func open(_ url: URL) -> OpenURLAction.Result {
+        switch LinkPolicy.decide(url) {
+        case .navigate:
+            model.handle(url: url)
+            return .handled
+        case .browser:
+            return .systemAction
+        case .blocked:
+            return .discarded
+        }
     }
 
     @ViewBuilder private var content: some View {

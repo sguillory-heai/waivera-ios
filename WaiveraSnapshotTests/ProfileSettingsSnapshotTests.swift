@@ -75,6 +75,16 @@
             sparse.organization = nil
             let empty = ProfileDisplayState(phase: .loaded, user: data.user, content: sparse)
             assertScreen(content(empty), named: "profile_emptySections")
+            var sectionsLoading = data.profile
+            sectionsLoading.timeOff = nil
+            sectionsLoading.files = []
+            sectionsLoading.sections = OwnProfile.SectionPhases(timeOff: .loading, files: .loading)
+            let loadingSections = ProfileDisplayState(phase: .loaded, user: data.user, content: sectionsLoading)
+            assertScreen(content(loadingSections), named: "profile_sectionsLoading")
+            var sectionsFailed = sectionsLoading
+            sectionsFailed.sections = OwnProfile.SectionPhases(timeOff: .failed(.offline), files: .failed(.offline))
+            let failedSections = ProfileDisplayState(phase: .loaded, user: data.user, content: sectionsFailed)
+            assertScreen(content(failedSections), named: "profile_sectionsFailed")
         }
 
         func testOrganization() {

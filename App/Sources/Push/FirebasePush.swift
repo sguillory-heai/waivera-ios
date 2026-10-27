@@ -48,6 +48,15 @@
             stream
         }
 
+        /// Sign-out: deletes the token so a registration the server kept reaches nobody, then
+        /// asks for a fresh one, which the coordinator holds until the next sign-in.
+        nonisolated func invalidate() async throws {
+            guard await MainActor.run(body: { FirebaseBootstrap.isConfigured }) else { return }
+            try await Messaging.messaging().deleteToken()
+            let fresh = try await Messaging.messaging().token()
+            if !fresh.isEmpty { continuation.yield(fresh) }
+        }
+
         nonisolated func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
             guard let fcmToken, !fcmToken.isEmpty else { return }
             continuation.yield(fcmToken)

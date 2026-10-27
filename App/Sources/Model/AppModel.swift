@@ -1,3 +1,4 @@
+import ChatFeature
 import Observation
 import SwiftUI
 import UIKit
@@ -25,12 +26,16 @@ final class AppModel {
     /// Set once the sign-in screen has been shown, so a sign-in attempt keeps showing it while
     /// the backend login runs, but a cold start with a stored session shows the loading screen.
     private(set) var hasShownSignIn = false
+    /// The gate a re-run of the backend login started from (bootstrap failed, onboarding,
+    /// required password change). It stays on screen through `.bootstrapping`, so that screen
+    /// keeps its busy state and its answer instead of flashing the loader or sign-in.
+    private(set) var heldGate: GateScreen?
 
     @ObservationIgnored let dataEnvironment: DataEnvironment?
-    @ObservationIgnored private let environment: AppEnvironment
+    @ObservationIgnored let environment: AppEnvironment
     @ObservationIgnored private let launch: LaunchOptions
-    @ObservationIgnored private let pushCoordinator: PushRegistrationCoordinator
-    @ObservationIgnored private var tapRouter = NotificationTapRouter()
+    @ObservationIgnored let pushCoordinator: PushRegistrationCoordinator
+    @ObservationIgnored var tapRouter = NotificationTapRouter()
     @ObservationIgnored private var isSceneActive = true
     @ObservationIgnored private var reportedForeground: Bool?
     @ObservationIgnored private var started = false
@@ -44,11 +49,16 @@ final class AppModel {
         // Read synchronously so the stored appearance applies before the first frame (08 §7).
         settings = data?.settings.currentSettings ?? AppSettings()
         hasSeenPrimer = environment.primerStore.hasSeen
-        pushCoordinator = PushRegistrationCoordinator { token in
-            guard let data else { return }
-            // The repository debounces, skips an unchanged fingerprint and retries.
-            await data.push.register(token: token, preferences: data.settings.currentSettings.notifications)
-        }
+        let tokenSource = environment.tokenSource
+        pushCoordinator = PushRegistrationCoordinator(
+            register: { token in
+                guard let data else { return }
+                // The repository debounces, skips an unchanged fingerprint and retries.
+                await data.push.register(token: token, preferences: data.settings.currentSettings.notifications)
+            },
+            invalidate: { try await tokenSource.invalidate() },
+            pending: environment.pendingInvalidation
+        )
     }
 
     // MARK: Derived state
@@ -58,20 +68,34 @@ final class AppModel {
         if case .gate(let forced) = launch.route?.target {
             return forced
         }
-        return Self.sessionGate(for: session, hasShownSignIn: hasShownSignIn) ?? primerGate
+        return Self.sessionGate(for: session, hasShownSignIn: hasShownSignIn, heldGate: heldGate) ?? primerGate
     }
 
     /// The gate for every state but `signedIn`.
-    static func sessionGate(for session: SessionState, hasShownSignIn: Bool) -> GateScreen? {
+    static func sessionGate(
+        for session: SessionState,
+        hasShownSignIn: Bool,
+        heldGate: GateScreen? = nil
+    ) -> GateScreen? {
         switch session {
         case .loading: .loading
-        case .bootstrapping: hasShownSignIn ? .signIn : .loading
+        case .bootstrapping: heldGate ?? (hasShownSignIn ? .signIn : .loading)
         case .signedOut: .signIn
         case .bootstrapFailed: .bootstrapFailed
         case .configurationMissing: .configurationMissing
         case .passwordChangeRequired: .passwordChange
         case .onboardingRequired: .onboardingRequired
         case .signedIn: nil
+        }
+    }
+
+    /// The gate kept on screen when the session re-runs the backend login from `previous`.
+    static func gateHeld(whileRebootstrappingFrom previous: SessionState) -> GateScreen? {
+        switch previous {
+        case .bootstrapFailed: .bootstrapFailed
+        case .onboardingRequired: .onboardingRequired
+        case .passwordChangeRequired: .passwordChange
+        default: nil
         }
     }
 
@@ -120,7 +144,11 @@ final class AppModel {
             UIView.setAnimationsEnabled(false)
         }
         observeTokens()
-        Task { await refreshAuthorization() }
+        let coordinator = pushCoordinator
+        Task {
+            await coordinator.launched()
+            await refreshAuthorization()
+        }
         guard let data = dataEnvironment else { return }
         observe(data.session.states()) { model, state in await model.sessionChanged(to: state) }
         observe(data.settings.settings()) { model, value in model.settingsChanged(to: value) }
@@ -176,9 +204,19 @@ final class AppModel {
 
     private func sessionChanged(to newState: SessionState) async {
         let previous = session
+        if case .bootstrapping = newState {
+            heldGate = Self.gateHeld(whileRebootstrappingFrom: previous) ?? heldGate
+        } else {
+            heldGate = nil
+        }
         session = newState
         switch newState {
-        case .signedOut: hasShownSignIn = true
+        case .signedOut:
+            hasShownSignIn = true
+            // Nothing of the previous person stays in Notification Center or the share folder
+            // (AS-02, AS-10).
+            DeliveredNotifications.removeEverything()
+            AttachmentFiles.removeAll()
         case .signedIn: hasShownSignIn = false
         default: break
         }
@@ -258,6 +296,10 @@ extension AppModel {
         navigation.push(route)
     }
 
+    func pop() {
+        navigation.pop()
+    }
+
     func select(_ tab: AppTab) {
         navigation.select(tab)
     }
@@ -283,84 +325,6 @@ extension AppModel {
         if let now = tapRouter.handle(key: key, destination: destination, isAuthenticated: session.isSignedIn) {
             navigation.open(now)
         }
-    }
-}
-
-// MARK: Notifications
-
-extension AppModel {
-    /// Foreground presentation for a push (called by `NotificationCenterDelegate`). Whether a
-    /// chat push is hidden is the data layer's call (`shouldPresentForegroundPush`).
-    func presentationDecision(for payload: PushPayload) -> PresentationDecision {
-        let shouldPresent = dataEnvironment?.alerts.shouldPresentForegroundPush(conversationId: payload.conversationID)
-        let context = ForegroundContext(
-            isConversationLive: payload.isChat && shouldPresent == false,
-            inAppBannersEnabled: settings.notifications.inAppBanners,
-            soundEnabled: settings.notifications.sound
-        )
-        return ForegroundPresentationPolicy.decide(for: payload, context: context)
-    }
-
-    func handle(_ event: NotificationResponseEvent) async {
-        switch event.action {
-        case .open(let destination):
-            let now = tapRouter.handle(key: event.key, destination: destination, isAuthenticated: session.isSignedIn)
-            if let now {
-                navigation.open(now)
-            }
-        case .reply(let conversationID, let threadRootMessageID, let text):
-            guard let data = signedInData else { return }
-            // Queued in the outbox: retried, persisted and confirmed like an in-app send.
-            if let threadRootMessageID {
-                await data.threads.reply(
-                    text: text,
-                    attachment: nil,
-                    rootMessageId: threadRootMessageID,
-                    conversationId: conversationID
-                )
-            } else {
-                await data.messages.send(text: text, attachment: nil, conversationId: conversationID)
-            }
-        case .markRead(let conversationID, _):
-            guard let data = signedInData else { return }
-            await data.messages.markRead(conversationId: conversationID)
-            await DeliveredNotifications.removeAll(conversationID: conversationID)
-        case .none:
-            break
-        }
-    }
-
-    /// The data layer, only while its session is signed in (read directly, not from the
-    /// observed copy, so an action delivered right after launch sees the latest state).
-    private var signedInData: DataEnvironment? {
-        guard let data = dataEnvironment, data.session.currentState.isSignedIn else { return nil }
-        return data
-    }
-
-    func choosePrimer(_ choice: PrimerChoice) {
-        environment.primerStore.markSeen()
-        hasSeenPrimer = true
-        let authorizer = environment.authorizer
-        let coordinator = pushCoordinator
-        Task {
-            let status = await authorizer.request(NotificationPermissionPolicy.request(for: choice))
-            authorization = status
-            await coordinator.authorizationChanged(status)
-        }
-    }
-
-    /// Settings → Notifications "Turn on" / "Turn on alerts".
-    func requestNotificationPermission() {
-        if systemNotificationStatus == .offInSystemSettings {
-            openSystemNotificationSettings()
-        } else {
-            choosePrimer(.enable)
-        }
-    }
-
-    func openSystemNotificationSettings() {
-        guard let url = URL(string: UIApplication.openNotificationSettingsURLString) else { return }
-        UIApplication.shared.open(url)
     }
 }
 

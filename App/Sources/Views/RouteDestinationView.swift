@@ -1,3 +1,4 @@
+import AuthFeature
 import ChatFeature
 import ProfileFeature
 import ScheduleFeature
@@ -79,7 +80,12 @@ struct RouteDestinationView: View {
         case .appearanceSettings:
             AppearanceSettingsView()
         case .accountSettings:
-            AccountSettingsView { model.signOut() }
+            AccountSettingsView(
+                onChangePassword: { model.push(.changePassword) },
+                onSignOut: { model.signOut() }
+            )
+        case .changePassword:
+            PasswordChangeView(onDone: { model.pop() })
         }
     }
 }

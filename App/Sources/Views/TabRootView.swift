@@ -24,6 +24,7 @@ struct TabRootView: View {
         case .chat:
             ConversationListView(
                 onOpenConversation: { model.push(.conversation(conversationID: $0, targetMessageID: nil)) },
+                onOpenPerson: { model.push(.person(userID: $0)) },
                 onNewChat: { model.presentNewChat() }
             )
             .toolbar { avatarMenu }

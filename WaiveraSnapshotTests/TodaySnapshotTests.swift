@@ -80,7 +80,7 @@ final class TodaySnapshotTests: XCTestCase {
     }
 
     func testTodayDeviceZoneNote() {
-        assertVariants(today(TodayPreviewStates.deviceZone()), named: "deviceZone")
+        assertVariants(today(TodayPreviewStates.fallbackZone()), named: "fallbackZone")
     }
 
     func testActivityScreen() {

@@ -12,6 +12,7 @@ import WaiveraRouting
 ///   hub (never shared dev data). `FakeDataEnvironment.scenario(fromArguments:)` is the only
 ///   parser of these two arguments.
 /// - `-WaiveraRoute <name>` — open a `RouteCatalog` entry on launch (`conversation`, `sign-in`, …).
+///   A state variant (`today-empty`) also picks its fake scenario unless one is given explicitly.
 /// - `-WaiveraAppearance light|dark` — force the colour scheme.
 /// - `-WaiveraDisableAnimations` — turn UIKit animations off so the screenshot tour settles fast.
 struct LaunchOptions: Equatable, Sendable {
@@ -50,6 +51,11 @@ struct LaunchOptions: Equatable, Sendable {
             options.fakeScenario = FakeDataEnvironment.scenario(fromArguments: arguments)
             options.disablesAnimations = isOn("-WaiveraDisableAnimations")
             options.route = value(after: "-WaiveraRoute").flatMap(RouteCatalog.entry(named:))
+            if options.fakeScenario != nil, !arguments.contains(FakeDataEnvironment.scenarioArgument),
+                let routeScenario = options.route?.scenario.flatMap(FakeDataEnvironment.Scenario.init(rawValue:))
+            {
+                options.fakeScenario = routeScenario
+            }
             options.appearance = value(after: "-WaiveraAppearance").flatMap(AppearancePreference.init(rawValue:))
         #endif
         return options

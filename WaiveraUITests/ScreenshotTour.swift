@@ -7,7 +7,8 @@ import XCTest
 ///
 /// Gate screens (sign-in, primer, …) need a fresh launch each (`-WaiveraRoute <name>`); tab
 /// routes reuse one launch per variant and switch with `waivera://` links, which keeps the tour
-/// fast. Subclasses run in parallel, one per appearance / text-size variant.
+/// fast. State variants (`today-empty`, `profile-failing`, …) reuse one launch per fake
+/// scenario. Subclasses run in parallel, one per appearance / text-size variant.
 class ScreenshotTourBase: XCTestCase {
     struct Variant {
         let name: String
@@ -41,10 +42,22 @@ class ScreenshotTourBase: XCTestCase {
             app.open(url)
             capture(app, name: "\(entry.name)__\(device)-\(variant.name)")
         }
+        app.terminate()
+        for scenario in RouteCatalog.stateScenarios {
+            let states = RouteCatalog.states.filter { $0.scenario == scenario }
+            guard let first = states.first else { continue }
+            let stateApp = launch(variant: variant, route: first.name, scenario: scenario)
+            for entry in states {
+                guard case .link(let link) = entry.target, let url = URL(string: link) else { continue }
+                stateApp.open(url)
+                capture(stateApp, name: "\(entry.name)__\(device)-\(variant.name)")
+            }
+            stateApp.terminate()
+        }
     }
 
     @MainActor
-    private func launch(variant: Variant, route: String) -> XCUIApplication {
+    private func launch(variant: Variant, route: String, scenario: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
         var arguments = [
             "-WaiveraFakeServer",
@@ -52,6 +65,9 @@ class ScreenshotTourBase: XCTestCase {
             "-WaiveraAppearance", variant.appearance,
             "-WaiveraRoute", route,
         ]
+        if let scenario {
+            arguments += ["-WaiveraFakeScenario", scenario]
+        }
         if let contentSize = variant.contentSize {
             arguments += ["-UIPreferredContentSizeCategoryName", contentSize]
         }
