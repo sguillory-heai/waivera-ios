@@ -33,5 +33,13 @@ let package = Package(
             dependencies.append(.product(name: "WaiveraNotifications", package: "WaiveraNotifications"))
         }
         return .target(name: name, dependencies: dependencies, resources: [.process("Resources")])
-    }
+    } + [
+        .testTarget(
+            name: "ScheduleFeatureTests",
+            dependencies: [
+                "ScheduleFeature",
+                .product(name: "WaiveraTestSupport", package: "WaiveraTestSupport"),
+            ]
+        )
+    ]
 )
