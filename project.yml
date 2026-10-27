@@ -26,6 +26,12 @@ packages:
     path: Packages/WaiveraRealtime
   WaiveraDesign:
     path: Packages/WaiveraDesign
+  WaiveraData:
+    path: Packages/WaiveraData
+  WaiveraTestSupport:
+    path: Packages/WaiveraTestSupport
+  WaiveraFixtures:
+    path: Packages/WaiveraFixtures
 
 targets:
   Waivera:
@@ -81,3 +87,5 @@ schemes:
         - WaiveraUITests
         - package: WaiveraAPI/WaiveraAPITests
         - package: WaiveraRealtime/WaiveraRealtimeTests
+        - package: WaiveraData/WaiveraDataTests
+        - package: WaiveraTestSupport/WaiveraTestSupportTests
