@@ -200,6 +200,22 @@ public struct ChatAlert: Sendable, Hashable {
     /// `nil` when previews are switched off; the screen shows generic copy.
     public var preview: String?
     public var destination: ChatDestination
+
+    public init(
+        conversationId: Int,
+        messageId: Int,
+        reason: Reason,
+        title: ConversationTitle?,
+        preview: String?,
+        destination: ChatDestination
+    ) {
+        self.conversationId = conversationId
+        self.messageId = messageId
+        self.reason = reason
+        self.title = title
+        self.preview = preview
+        self.destination = destination
+    }
 }
 
 public protocol ChatAlertsRepository: Sendable {

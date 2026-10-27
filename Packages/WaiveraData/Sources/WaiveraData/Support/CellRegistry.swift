@@ -20,6 +20,11 @@ public final class CellRegistry<Key: Hashable & Sendable, Value: Sendable>: Send
         }
     }
 
+    /// Visits every cell created so far.
+    public func forEachCell(_ body: (Key, StateCell<Value>) -> Void) {
+        for (key, cell) in cells.get() { body(key, cell) }
+    }
+
     /// Resets every cell to the initial value (sign-out) without dropping subscribers.
     public func resetAll() {
         for cell in cells.get().values { cell.set(initial) }

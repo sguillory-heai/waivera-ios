@@ -157,7 +157,7 @@ public struct Attachment: Codable, Sendable, Hashable {
     }
 
     /// Branches on the content type first, since `attachmentType` has two vocabularies (G-05).
-    static func kind(contentType: String?, type: String?, name: String?) -> Kind {
+    public static func kind(contentType: String?, type: String?, name: String?) -> Kind {
         if let contentType = contentType?.lowercased(), !contentType.isEmpty {
             return contentType.hasPrefix("image/") ? .image : .file
         }

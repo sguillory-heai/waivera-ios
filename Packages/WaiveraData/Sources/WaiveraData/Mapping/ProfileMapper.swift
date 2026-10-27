@@ -1,8 +1,8 @@
 import Foundation
 import WaiveraAPI
 
-enum ProfileMapper {
-    static func currentUser(
+public enum ProfileMapper {
+    public static func currentUser(
         login: UserLoginResponseDto,
         identity: FirebaseIdentity,
         details: UserWithRoleDto?,
@@ -22,7 +22,7 @@ enum ProfileMapper {
         )
     }
 
-    static func organization(_ dto: OrganizationResponse) -> Organization {
+    public static func organization(_ dto: OrganizationResponse) -> Organization {
         Organization(
             id: dto.id,
             name: dto.name?.nilIfBlank,
@@ -31,7 +31,7 @@ enum ProfileMapper {
         )
     }
 
-    static func person(_ dto: UserWithRoleDto) -> PersonProfile {
+    public static func person(_ dto: UserWithRoleDto) -> PersonProfile {
         var person = PersonProfile(id: dto.id, displayName: dto.displayName?.nilIfBlank)
         person.firstName = dto.firstName?.nilIfBlank
         person.lastName = dto.lastName?.nilIfBlank
@@ -47,7 +47,7 @@ enum ProfileMapper {
         return person
     }
 
-    static func profile(_ dto: GetEmployeeProfileDto) -> EmployeeProfile {
+    public static func profile(_ dto: GetEmployeeProfileDto) -> EmployeeProfile {
         var profile = EmployeeProfile(employeeId: dto.employeeId)
         profile.firstName = dto.firstName?.nilIfBlank
         profile.lastName = dto.lastName?.nilIfBlank
@@ -67,7 +67,7 @@ enum ProfileMapper {
     }
 
     /// Element 0 is both the summary and the first row (08 §3).
-    static func timeOff(_ rows: [TimeOffProfileItemDto]) -> TimeOffOverview {
+    public static func timeOff(_ rows: [TimeOffProfileItemDto]) -> TimeOffOverview {
         var overview = TimeOffOverview(entries: rows.map(entry))
         guard let summary = rows.first else { return overview }
         overview.remainingDays = summary.remainingLeaveDays ?? summary.remainingLeaveCount ?? 0
@@ -79,7 +79,7 @@ enum ProfileMapper {
         return overview
     }
 
-    static func entry(_ dto: TimeOffProfileItemDto) -> TimeOffEntry {
+    public static func entry(_ dto: TimeOffProfileItemDto) -> TimeOffEntry {
         let status: TimeOffEntry.Status =
             if dto.isCancellationPending == true {
                 .cancellationPending
@@ -99,7 +99,7 @@ enum ProfileMapper {
         )
     }
 
-    static func file(_ dto: EmployeeFileDto) -> EmployeeFile {
+    public static func file(_ dto: EmployeeFileDto) -> EmployeeFile {
         EmployeeFile(
             id: dto.id,
             fileName: dto.fileName?.nilIfBlank,
