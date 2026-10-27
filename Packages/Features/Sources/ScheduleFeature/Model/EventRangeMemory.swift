@@ -4,7 +4,7 @@ import WaiveraData
 
 /// Remembers which schedule range each event was last seen in, so the event screen watches that
 /// feed instead of searching. `CalendarRepository` has no single-event call yet
-/// (docs/requests/schedule.md §1); this is the stand-in. Bounded, least recently used out first.
+/// (docs/requests/schedule.md item 1); this is the stand-in. Bounded, least recently used out first.
 public final class EventRangeMemory: Sendable {
     public struct Entry: Sendable, Hashable {
         public var view: CalendarPeriod

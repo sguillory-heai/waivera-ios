@@ -8,7 +8,8 @@ public struct CelebrationText: Sendable, Hashable {
 
     public init(_ celebration: ScheduleCelebration, name: String? = nil) {
         let resolved = (name ?? celebration.displayName)?.trimmingCharacters(in: .whitespaces)
-        let who = resolved.flatMap { $0.isEmpty ? nil : $0 } ?? ScheduleStrings.text("schedule.celebration.nameFallback")
+        let who =
+            resolved.flatMap { $0.isEmpty ? nil : $0 } ?? ScheduleStrings.text("schedule.celebration.nameFallback")
         let years = celebration.years ?? 0
         switch celebration.kind {
         case .both:

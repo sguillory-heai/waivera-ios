@@ -41,7 +41,14 @@ struct MilestoneCalendarTests {
     @Test func birthdayAndAnniversaryOnTheSameDayIsAMultipleCelebration() {
         let index = calendar([
             Milestone(kind: .birthday, userId: "u", displayName: "Jordan Lee", month: 11, day: 1),
-            Milestone(kind: .workAnniversary, userId: "u", displayName: "Jordan Lee", month: 11, day: 1, startYear: 2021),
+            Milestone(
+                kind: .workAnniversary,
+                userId: "u",
+                displayName: "Jordan Lee",
+                month: 11,
+                day: 1,
+                startYear: 2021
+            ),
         ])
         let celebration = index.celebration(for: "u", on: day(2026, 11, 1))
         #expect(celebration?.kind == .both)
@@ -77,7 +84,13 @@ struct MilestoneCalendarTests {
     @Test func monthGridLookupDoesNotScanEveryMilestonePerCell() {
         // 400 employees spread over the year: each cell evaluates only that day's people.
         let milestones = (0..<400).map { index in
-            Milestone(kind: .birthday, userId: "u\(index)", displayName: "P\(index)", month: index % 12 + 1, day: index % 28 + 1)
+            Milestone(
+                kind: .birthday,
+                userId: "u\(index)",
+                displayName: "P\(index)",
+                month: index % 12 + 1,
+                day: index % 28 + 1
+            )
         }
         let index = calendar(milestones)
         for cell in SchedulePeriods.cells(.month, containing: day(2026, 10, 1)) {

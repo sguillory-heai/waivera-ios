@@ -17,7 +17,14 @@ struct EventRulesTests {
             event.viewerResponse = response
             event.attendees = [
                 CalendarAttendee(id: "a1", kind: .employee, ref: "usr_me", displayName: "Me", response: response),
-                CalendarAttendee(id: "a2", kind: .external, ref: nil, displayName: nil, email: "guest@example.com", response: .tentative),
+                CalendarAttendee(
+                    id: "a2",
+                    kind: .external,
+                    ref: nil,
+                    displayName: nil,
+                    email: "guest@example.com",
+                    response: .tentative
+                ),
             ]
         }
     }
@@ -25,14 +32,24 @@ struct EventRulesTests {
     private let beforeStart = instant("2026-11-03T12:00:00Z")
 
     @Test func invitedAttendeeBeforeTheStartCanAcceptOrDecline() {
-        let invitation = EventRules.invitation(invited(), myUserId: me, now: beforeStart, zone: chicago, optimistic: nil, failure: nil)
+        let invitation = EventRules.invitation(
+            invited(),
+            myUserId: me,
+            now: beforeStart,
+            zone: chicago,
+            optimistic: nil,
+            failure: nil
+        )
         #expect(invitation?.response == .pending)
         #expect(invitation?.canChange == true)
     }
 
     @Test func ownerNeverSeesAcceptOrDecline() {
         let owned = invited(owner: me)
-        #expect(EventRules.invitation(owned, myUserId: me, now: beforeStart, zone: chicago, optimistic: nil, failure: nil) == nil)
+        #expect(
+            EventRules.invitation(owned, myUserId: me, now: beforeStart, zone: chicago, optimistic: nil, failure: nil)
+                == nil
+        )
         var byId = invited(owner: me)
         byId.isOwner = false
         #expect(EventRules.isOrganizer(byId, myUserId: me))
@@ -43,7 +60,14 @@ struct EventRulesTests {
         online.isOnline = true
         online.meetingDetails = "https://meet.example.test/x"
         let during = instant("2026-11-03T16:10:00Z")
-        let invitation = EventRules.invitation(online, myUserId: me, now: during, zone: chicago, optimistic: nil, failure: nil)
+        let invitation = EventRules.invitation(
+            online,
+            myUserId: me,
+            now: during,
+            zone: chicago,
+            optimistic: nil,
+            failure: nil
+        )
         #expect(invitation?.canChange == false)
         #expect(EventRules.join(online, now: during, isBusy: false, error: nil)?.state == .open)
     }
@@ -51,9 +75,25 @@ struct EventRulesTests {
     @Test func nullAcceptanceMeansNotInvitedOrUnknownNeverPending() {
         for response in [InvitationState.notInvited, .unknown, .cancelled] {
             let event = invited(response)
-            #expect(EventRules.invitation(event, myUserId: me, now: beforeStart, zone: chicago, optimistic: nil, failure: nil) == nil)
+            #expect(
+                EventRules.invitation(
+                    event,
+                    myUserId: me,
+                    now: beforeStart,
+                    zone: chicago,
+                    optimistic: nil,
+                    failure: nil
+                ) == nil
+            )
         }
-        let declined = EventRules.invitation(invited(.declined), myUserId: me, now: beforeStart, zone: chicago, optimistic: nil, failure: nil)
+        let declined = EventRules.invitation(
+            invited(.declined),
+            myUserId: me,
+            now: beforeStart,
+            zone: chicago,
+            optimistic: nil,
+            failure: nil
+        )
         #expect(declined?.response == .declined)
         #expect(declined?.canChange == true)
     }
@@ -95,11 +135,20 @@ struct EventRulesTests {
         meeting.isOnline = true
         meeting.meetingDetails = "https://meet.example.test/x"
         let start = meeting.start
-        #expect(EventRules.join(meeting, now: start.addingTimeInterval(-31 * 60), isBusy: false, error: nil)?.state == .tooEarly)
-        #expect(EventRules.join(meeting, now: start.addingTimeInterval(-29 * 60), isBusy: false, error: nil)?.state == .open)
+        #expect(
+            EventRules.join(meeting, now: start.addingTimeInterval(-31 * 60), isBusy: false, error: nil)?.state
+                == .tooEarly
+        )
+        #expect(
+            EventRules.join(meeting, now: start.addingTimeInterval(-29 * 60), isBusy: false, error: nil)?.state == .open
+        )
         #expect(EventRules.join(meeting, now: meeting.end, isBusy: false, error: nil)?.state == .open)
-        #expect(EventRules.join(meeting, now: meeting.end.addingTimeInterval(1), isBusy: false, error: nil)?.state == .ended)
-        #expect(EventRules.join(meeting, now: start, isBusy: false, error: nil)?.opensAt == start.addingTimeInterval(-1_800))
+        #expect(
+            EventRules.join(meeting, now: meeting.end.addingTimeInterval(1), isBusy: false, error: nil)?.state == .ended
+        )
+        #expect(
+            EventRules.join(meeting, now: start, isBusy: false, error: nil)?.opensAt == start.addingTimeInterval(-1_800)
+        )
     }
 
     @Test func inPersonEventsWithoutALinkHaveNoJoinButton() {
@@ -140,7 +189,13 @@ struct EventRulesTests {
                 Milestone(kind: .birthday, userId: "guest@example.com", displayName: "Guest", month: 11, day: 3),
             ])
         )
-        let rows = EventRules.attendees(invited(), myUserId: me, optimistic: nil, milestones: milestones, today: day(2026, 11, 3))
+        let rows = EventRules.attendees(
+            invited(),
+            myUserId: me,
+            optimistic: nil,
+            milestones: milestones,
+            today: day(2026, 11, 3)
+        )
         #expect(rows[0].celebration?.kind == .birthday)
         #expect(rows[1].celebration == nil)
         #expect(rows[1].userId == nil)

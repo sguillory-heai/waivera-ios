@@ -16,25 +16,25 @@ struct LookupRange: Sendable, Hashable {
 /// away is sent anyway: it is the person's decision.
 ///
 /// Opened by id from the schedule, Today, a push or a deep link. `CalendarRepository` has no
-/// single-event call (docs/requests/schedule.md §1), so the model watches the range the schedule
+/// single-event call (docs/requests/schedule.md item 1), so the model watches the range the schedule
 /// last saw the event in, or the month grids around today for a cold id.
 @MainActor
 @Observable
 public final class CalendarEventModel {
     public let eventID: String
-    public private(set) var state: EventUIState = .loading
+    public internal(set) var state: EventUIState = .loading
     public private(set) var undoOffer: UndoOffer?
-    public private(set) var openRequest: OpenRequest?
-    public private(set) var conversationRequest: ConversationRequest?
+    public internal(set) var openRequest: OpenRequest?
+    public internal(set) var conversationRequest: ConversationRequest?
     /// Haptic triggers: each increments once per moment (choice, saved, failure).
     public private(set) var choiceTicks = 0
     public private(set) var successTicks = 0
-    public private(set) var failureTicks = 0
+    public internal(set) var failureTicks = 0
     /// The safety net for committing an answer; the toast's own dismissal normally commits first.
     @ObservationIgnored public var undoWindow: Duration = .seconds(FeedbackTiming.undoToastAccessible)
 
     private var feeds: [LookupRange: Resource<CalendarFeed>] = [:]
-    private var interaction = EventInteraction()
+    var interaction = EventInteraction()
     private var now: Date
     private var zone: ScheduleZone
     private var myUserId: String?
@@ -43,14 +43,14 @@ public final class CalendarEventModel {
     @ObservationIgnored private var milestoneValue: MilestoneIndex?
     @ObservationIgnored private var text: ScheduleText
     @ObservationIgnored private var token = 0
-    @ObservationIgnored private var found: (event: CalendarEvent, range: LookupRange)?
+    @ObservationIgnored var found: (event: CalendarEvent, range: LookupRange)?
     @ObservationIgnored private var commitTask: Task<Void, Never>?
-    @ObservationIgnored private var joinTask: Task<Void, Never>?
-    @ObservationIgnored private var chatTask: Task<Void, Never>?
+    @ObservationIgnored var joinTask: Task<Void, Never>?
+    @ObservationIgnored var chatTask: Task<Void, Never>?
     @ObservationIgnored private var refreshTask: Task<Void, Never>?
 
-    private let calendar: any CalendarRepository
-    private let conversations: any ConversationsRepository
+    let calendar: any CalendarRepository
+    let conversations: any ConversationsRepository
     private let session: any SessionRepository
     private let clock: any WaiveraClock
     private let memory: EventRangeMemory
@@ -238,104 +238,6 @@ public final class CalendarEventModel {
         }
     }
 
-    // MARK: Join and chat
-
-    public func join() {
-        guard case .loaded(let details) = state, let join = details.join, !join.isBusy, join.state == .open,
-            let event = found?.event
-        else { return }
-        interaction.joinError = nil
-        guard event.isSprout else {
-            if let url = event.joinURL, WebLinks.isWebURL(url) {
-                openRequest = OpenRequest(id: UUID(), url: url)
-            } else {
-                interaction.joinError = .noLink
-                failureTicks += 1
-            }
-            rebuild()
-            return
-        }
-        interaction.joinBusy = true
-        rebuild()
-        let calendar = calendar
-        joinTask?.cancel()
-        joinTask = Task {
-            do {
-                let url = try await calendar.meetingURL(for: event)
-                self.lobbyReady(url)
-            } catch {
-                self.joinFailed(WaiveraError.from(error))
-            }
-        }
-    }
-
-    /// The view tried to open `openRequest`; `accepted` is false when no app took the link.
-    public func linkHandled(_ request: OpenRequest, accepted: Bool) {
-        guard openRequest?.id == request.id else { return }
-        openRequest = nil
-        if !accepted { joinFailed(nil) }
-    }
-
-    public func dismissJoinError() {
-        interaction.joinError = nil
-        rebuild()
-    }
-
-    /// Opens (or creates) the direct conversation with the organizer.
-    public func messageOrganizer() {
-        guard case .loaded(let details) = state, details.canMessageOrganizer, !interaction.chatBusy,
-            let ownerId = found?.event.ownerId
-        else { return }
-        interaction.chatBusy = true
-        interaction.chatError = nil
-        rebuild()
-        let conversations = conversations
-        chatTask?.cancel()
-        chatTask = Task {
-            do {
-                let conversation = try await conversations.openDirectConversation(with: ownerId)
-                self.chatOpened(conversation.id)
-            } catch {
-                self.chatFailed(WaiveraError.from(error))
-            }
-        }
-    }
-
-    public func conversationHandled(_ request: ConversationRequest) {
-        if conversationRequest?.id == request.id { conversationRequest = nil }
-    }
-
-    private func lobbyReady(_ url: URL) {
-        interaction.joinBusy = false
-        if WebLinks.isWebURL(url) {
-            openRequest = OpenRequest(id: UUID(), url: url)
-        } else {
-            interaction.joinError = .failed(nil)
-            failureTicks += 1
-        }
-        rebuild()
-    }
-
-    private func joinFailed(_ error: WaiveraError?) {
-        interaction.joinBusy = false
-        interaction.joinError = .failed(error)
-        failureTicks += 1
-        rebuild()
-    }
-
-    private func chatOpened(_ conversationId: Int) {
-        interaction.chatBusy = false
-        conversationRequest = ConversationRequest(id: UUID(), conversationId: conversationId)
-        rebuild()
-    }
-
-    private func chatFailed(_ error: WaiveraError) {
-        interaction.chatBusy = false
-        interaction.chatError = error
-        failureTicks += 1
-        rebuild()
-    }
-
     // MARK: State
 
     private func apply(feed resource: Resource<CalendarFeed>, for range: LookupRange) {
@@ -350,7 +252,7 @@ public final class CalendarEventModel {
         rebuild()
     }
 
-    private func rebuild() {
+    func rebuild() {
         let lookup = lookupResult()
         switch lookup {
         case .found(let event, let range, let refreshFailed):

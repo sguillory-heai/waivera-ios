@@ -161,7 +161,10 @@ struct EventDetailsFormatter {
         case .tooEarly:
             join.opensAt.map { opensAt in
                 let isToday = CalendarDate(opensAt, in: zone.timeZone) == CalendarDate(now, in: zone.timeZone)
-                let when = isToday ? text.clock(opensAt) : text.dateTime(opensAt, currentYear: CalendarDate(now, in: zone.timeZone).year)
+                let when =
+                    isToday
+                    ? text.clock(opensAt)
+                    : text.dateTime(opensAt, currentYear: CalendarDate(now, in: zone.timeZone).year)
                 return ScheduleStrings.format("schedule.join.opens", when)
             }
         case .ended: ScheduleStrings.text("schedule.join.ended")

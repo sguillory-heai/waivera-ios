@@ -169,7 +169,11 @@ enum AgendaRowFormatter {
             guard end > start else { return startText }
             let endText =
                 endsAfter
-                ? ScheduleStrings.format("schedule.dayTime", text.weekdayShort(CalendarDate(end, in: zone)), text.clock(end))
+                ? ScheduleStrings.format(
+                    "schedule.dayTime",
+                    text.weekdayShort(CalendarDate(end, in: zone)),
+                    text.clock(end)
+                )
                 : text.clock(end)
             return ScheduleStrings.format("schedule.range", startText, endText)
         }

@@ -58,8 +58,10 @@ struct AgendaTests {
 
     @Test func eventEndingExactlyAtMidnightAppearsOnlyOnItsStartDay() {
         let feed = CalendarFeed(events: [event("eod", "2026-10-27T22:00:00-05:00", "2026-10-28T00:00:00-05:00")])
-        #expect(eventIds(ScheduleAgenda.items(feed: feed, zone: chicago, milestones: .empty, on: day(2026, 10, 27)))
-            == ["eod"])
+        #expect(
+            eventIds(ScheduleAgenda.items(feed: feed, zone: chicago, milestones: .empty, on: day(2026, 10, 27)))
+                == ["eod"]
+        )
         #expect(ScheduleAgenda.items(feed: feed, zone: chicago, milestones: .empty, on: day(2026, 10, 28)).isEmpty)
         let markers = ScheduleAgenda.markers(
             feed: feed,
@@ -181,7 +183,11 @@ struct AgendaTests {
 
     @Test func multiDayEventIsCountedOnEveryDayItTouches() {
         var trip = event("trip", "2026-10-26T05:00:00Z", "2026-10-29T05:00:00Z")
-        trip.allDay = .init(start: day(2026, 10, 26), endExclusive: day(2026, 10, 29), cancelledDates: [day(2026, 10, 27)])
+        trip.allDay = .init(
+            start: day(2026, 10, 26),
+            endExclusive: day(2026, 10, 29),
+            cancelledDates: [day(2026, 10, 27)]
+        )
         let conference = event("conf", "2026-10-26T14:00:00Z", "2026-10-28T20:00:00Z")
         let markers = ScheduleAgenda.markers(
             feed: CalendarFeed(events: [trip, conference]),
@@ -196,7 +202,11 @@ struct AgendaTests {
     }
 
     @Test func timeOffAndHolidayCopyMatchTheSpec() {
-        var halfDay = CalendarTimeOff(id: 7, start: instant("2026-10-27T13:00:00Z"), end: instant("2026-10-27T17:00:00Z"))
+        var halfDay = CalendarTimeOff(
+            id: 7,
+            start: instant("2026-10-27T13:00:00Z"),
+            end: instant("2026-10-27T17:00:00Z")
+        )
         halfDay.requestType = "HALF_DAY_AM"
         halfDay.status = "APPROVED"
         let feed = CalendarFeed(

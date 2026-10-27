@@ -3,7 +3,7 @@ import WaiveraAPI
 import WaiveraData
 
 /// "Now" for the schedule screens when no clock is injected. `CalendarRepository` exposes
-/// `today()` but not the instant it is based on (docs/requests/schedule.md §2), so this keeps the
+/// `today()` but not the instant it is based on (docs/requests/schedule.md item 3), so this keeps the
 /// system time of day and moves it onto the repository's today. Live repositories derive today
 /// from the system clock, so the shift is zero there; the demo environment starts on a fixed day,
 /// and this keeps the join window and "today" consistent with it.
