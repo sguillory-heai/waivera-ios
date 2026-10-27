@@ -22,6 +22,14 @@ public struct ConversationView: View {
         self.targetMessageID = targetMessageID
         self.onOpenThread = onOpenThread
         self.onOpenPerson = onOpenPerson
+/// The Chat tab root: conversation list with search and filters.
+public struct ConversationListView: View {
+    let onOpenConversation: (_ conversationID: Int) -> Void
+    let onNewChat: () -> Void
+        onOpenConversation: @escaping (_ conversationID: Int) -> Void,
+        onNewChat: @escaping () -> Void
+        self.onOpenConversation = onOpenConversation
+        self.onNewChat = onNewChat
     }
 
     public var body: some View {
@@ -30,6 +38,8 @@ public struct ConversationView: View {
             systemImage: "bubble.left",
             details: ["conversationId \(conversationID)"]
                 + [targetMessageID.map { "messageId \($0)" }].compactMap { $0 }
+            title: String(localized: "chat.list.title", bundle: .module),
+            systemImage: "bubble.left.and.bubble.right"
         )
     }
 }
@@ -51,6 +61,14 @@ public struct ThreadView: View {
         self.conversationID = conversationID
         self.targetMessageID = targetMessageID
         self.onOpenPerson = onOpenPerson
+/// New chat sheet: pick people, then open or create the conversation.
+public struct NewChatView: View {
+    let onOpenConversation: (_ conversationID: Int) -> Void
+    let onDismiss: () -> Void
+        onOpenConversation: @escaping (_ conversationID: Int) -> Void,
+        onDismiss: @escaping () -> Void
+        self.onOpenConversation = onOpenConversation
+        self.onDismiss = onDismiss
     }
 
     public var body: some View {
@@ -60,17 +78,23 @@ public struct ThreadView: View {
             details: ["rootMessageId \(rootMessageID)"]
                 + [conversationID.map { "conversationId \($0)" }].compactMap { $0 }
                 + [targetMessageID.map { "messageId \($0)" }].compactMap { $0 }
+            title: String(localized: "chat.new.title", bundle: .module),
+            systemImage: "square.and.pencil"
         )
     }
 }
 
-#Preview("Dark") {
-    NavigationStack {
-        ConversationView(conversationID: 7, targetMessageID: 9312, onOpenThread: { _, _ in }, onOpenPerson: { _ in })
+#if DEBUG
+    #Preview("Light, demo data") {
+        NavigationStack { ConversationListView(onOpenConversation: { _ in }, onNewChat: {}) }
+            .fakeDataEnvironment()
     }
-    .preferredColorScheme(.dark)
+#endif
+#Preview("Dark") {
+    NavigationStack { ConversationListView(onOpenConversation: { _ in }, onNewChat: {}) }
+        .preferredColorScheme(.dark)
 }
 #Preview("AX XXXL") {
-    NavigationStack { ThreadView(rootMessageID: 9330, conversationID: 7, targetMessageID: nil, onOpenPerson: { _ in }) }
+    NavigationStack { NewChatView(onOpenConversation: { _ in }, onDismiss: {}) }
         .dynamicTypeSize(.accessibility5)
 }
