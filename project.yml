@@ -165,7 +165,7 @@ targets:
         SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
         CODE_SIGN_STYLE: Automatic
 
-  # Design-system component snapshots (light, dark, accessibility XXXL). Not hosted in the app,
+  # Design-system and feature screen snapshots (light, dark, accessibility XXXL). Not hosted in the app,
   # so no app launch, network or push setup runs during these tests.
   WaiveraSnapshotTests:
     type: bundle.unit-test
@@ -177,7 +177,22 @@ targets:
         product: WaiveraDesign
       - package: Features
         product: AuthFeature
+      - package: Features
         product: TodayFeature
+      - package: Features
+        product: ChatFeature
+      - package: Features
+        product: ScheduleFeature
+      - package: Features
+        product: ProfileFeature
+      - package: Features
+        product: SettingsFeature
+      # The preview states and fixtures the feature snapshots render.
+      - package: WaiveraTestSupport
+      - package: WaiveraData
+        product: WaiveraData
+      - package: WaiveraNotifications
+        product: WaiveraNotifications
       - package: SnapshotTesting
         product: SnapshotTesting
     settings:
@@ -208,3 +223,9 @@ schemes:
         - package: WaiveraRouting/WaiveraRoutingTests
         - package: WaiveraNotifications/WaiveraNotificationsTests
         - package: Features/AuthFeatureTests
+        - package: Features/TodayFeatureTests
+        - package: Features/ChatListTests
+        - package: Features/ChatConversationTests
+        - package: Features/ScheduleFeatureTests
+        - package: Features/ProfileFeatureTests
+        - package: Features/SettingsFeatureTests
