@@ -3,7 +3,7 @@ import Foundation
 /// Errors the app can show to a user. Raw server or provider text never reaches the
 /// screen: every case has client-owned copy in `userMessage`, and the server's own
 /// message is only used internally to pick a case (gap G-12).
-public enum WaiveraError: Error, Equatable, Hashable, Sendable {
+public enum WaiveraError: Error, Equatable, Hashable, Sendable, Codable {
     /// No network, a timeout, or the connection dropped mid-request.
     case offline
     /// Signed out locally; the request was never sent.
@@ -35,7 +35,7 @@ public enum WaiveraError: Error, Equatable, Hashable, Sendable {
     case auth(AuthFailure)
 
     /// Firebase Auth failures, mapped from the REST error codes.
-    public enum AuthFailure: String, Sendable, Hashable {
+    public enum AuthFailure: String, Sendable, Hashable, Codable {
         case invalidCredentials
         case invalidEmail
         case userDisabled
