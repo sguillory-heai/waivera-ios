@@ -12,7 +12,6 @@ struct RootView: View {
 
     var body: some View {
         content
-            .overlay { if hidesContent { PrivacyCover() } }
             .environment(\.openURL, OpenURLAction(handler: open))
             .environment(\.dataEnvironment, model.dataEnvironment)
             .preferredColorScheme(model.colorScheme)
@@ -22,12 +21,6 @@ struct RootView: View {
             .onChange(of: scenePhase, initial: true) { _, phase in
                 model.scenePhaseChanged(to: phase)
             }
-    }
-
-    /// Chats and colleagues' details stay out of the app switcher snapshot (AS-09): the cover
-    /// goes up as soon as the scene stops being active, before the system takes the snapshot.
-    private var hidesContent: Bool {
-        scenePhase != .active && model.session.isSignedIn
     }
 
     /// Every `openURL` in the app passes through here (AS-04): app links navigate, web links go
