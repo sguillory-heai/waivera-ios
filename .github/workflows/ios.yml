@@ -1,7 +1,9 @@
 name: iOS
 
-# Manual only: Actions minutes are limited, so runs are started on purpose
-# after local verification instead of on every push.
+# Manual only: Actions minutes are limited (macOS bills at 10x), so runs are started on
+# purpose after local verification. One run collects every failure: each check is its own
+# step with continue-on-error, everything is uploaded, and the last step fails the job and
+# lists what failed.
 on:
   workflow_dispatch:
 
@@ -13,21 +15,54 @@ permissions:
   contents: read
 
 jobs:
-  # Fast feedback on the Foundation-only packages without paying for a macOS runner.
+  # Foundation-only packages on Linux: cheap, and covers parsing, routing and token logic.
   packages-linux:
     runs-on: ubuntu-latest
     container: swift:6.2
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/cache@v4
+        with:
+          path: Packages/*/.build
+          key: spm-linux-${{ hashFiles('Packages/*/Package.swift', 'Packages/*/Package.resolved') }}
       - name: Test WaiveraAPI
+        id: api
+        continue-on-error: true
         run: swift test --package-path Packages/WaiveraAPI
       - name: Test WaiveraRealtime
+        id: realtime
+        continue-on-error: true
         run: swift test --package-path Packages/WaiveraRealtime
+      - name: Test WaiveraDesign tokens
+        id: design
+        continue-on-error: true
+        run: swift test --package-path Packages/WaiveraDesign
+      - name: Test WaiveraRouting
+        id: routing
+        continue-on-error: true
+        run: swift test --package-path Packages/WaiveraRouting
+      - name: Test WaiveraNotifications
+        id: notifications
+        continue-on-error: true
+        run: swift test --package-path Packages/WaiveraNotifications
+      - name: Fail if any package failed
+        if: always()
+        run: |
+          failed=""
+          [ "${{ steps.api.outcome }}" = success ] || failed="$failed WaiveraAPI"
+          [ "${{ steps.realtime.outcome }}" = success ] || failed="$failed WaiveraRealtime"
+          [ "${{ steps.design.outcome }}" = success ] || failed="$failed WaiveraDesign"
+          [ "${{ steps.routing.outcome }}" = success ] || failed="$failed WaiveraRouting"
+          [ "${{ steps.notifications.outcome }}" = success ] || failed="$failed WaiveraNotifications"
+          if [ -n "$failed" ]; then echo "Failed packages:$failed"; exit 1; fi
 
   app-macos:
     runs-on: macos-15
-    timeout-minutes: 45
+    timeout-minutes: 60
+    env:
+      RESULT: TestResults.xcresult
+      DERIVED: DerivedData
     steps:
       - uses: actions/checkout@v5
       - uses: maxim-lobanov/setup-xcode@v1
@@ -35,32 +70,128 @@ jobs:
           xcode-version: latest-stable
       - name: Install tools
         run: brew install xcodegen swiftlint
-      - name: Lint
-        run: |
-          swiftlint --strict
-          xcrun swift-format lint -r App Packages WaiveraUITests
+      - name: SwiftLint
+        id: swiftlint
+        continue-on-error: true
+        run: swiftlint --strict --reporter github-actions-logging 2>&1 | tee swiftlint.log
+      - name: swift-format
+        id: swiftformat
+        continue-on-error: true
+        run: xcrun swift-format lint --strict -r App Packages WaiveraUITests WaiveraSnapshotTests 2>&1 | tee swift-format.log
       - name: Generate project
+        id: xcodegen
+        continue-on-error: true
         run: xcodegen generate
-      - name: Pick a simulator
+      - name: Cache SwiftPM and DerivedData
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.DERIVED }}/SourcePackages
+            ~/Library/Caches/org.swift.swiftpm
+            ~/Library/org.swift.swiftpm
+          # The generated project's Package.resolved is not committed; direct dependencies are
+          # pinned with exactVersion in project.yml, so the manifests identify the resolution.
+          key: spm-macos-${{ hashFiles('project.yml', 'Packages/*/Package.swift', '**/Package.resolved') }}
+          restore-keys: spm-macos-
+      - name: Pick simulators
         id: sim
+        continue-on-error: true
         run: |
-          udid=$(xcrun simctl list devices available -j \
-            | jq -r '[.devices | to_entries[] | select(.key | contains("iOS")) | .value[]
-                      | select(.name | startswith("iPhone"))][0].udid')
-          test -n "$udid" && test "$udid" != null
-          echo "udid=$udid" >> "$GITHUB_OUTPUT"
-      - name: Build and test
+          pick() {
+            xcrun simctl list devices available -j | jq -r --arg re "$1" '
+              [.devices | to_entries[] | select(.key | contains("iOS")) | .value[]
+               | select(.name | test($re))] | last | .udid // empty'
+          }
+          small=$(pick '^iPhone SE')
+          large=$(pick 'Pro Max$')
+          [ -n "$small" ] || small=$(pick '^iPhone')
+          [ -n "$large" ] || large=$(pick '^iPhone')
+          test -n "$small" && test -n "$large"
+          echo "small=$small" >> "$GITHUB_OUTPUT"
+          echo "large=$large" >> "$GITHUB_OUTPUT"
+      # One build for both destinations, then tests run from the built products (no rebuild).
+      - name: Build for testing
+        id: build
+        continue-on-error: true
         run: |
-          set -o pipefail
-          xcodebuild test \
-            -project Waivera.xcodeproj \
-            -scheme Waivera \
-            -destination "id=${{ steps.sim.outputs.udid }}" \
-            -resultBundlePath TestResults.xcresult \
-            CODE_SIGNING_ALLOWED=NO
-      - name: Upload test results
-        if: failure()
+          status=0
+          xcodebuild build-for-testing \
+            -project Waivera.xcodeproj -scheme Waivera \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$DERIVED" \
+            CODE_SIGNING_ALLOWED=NO > build.log 2>&1 || status=$?
+          grep -E "error:|warning:" build.log | sort -u | head -300 || true
+          tail -30 build.log
+          exit $status
+      # Package tests already ran on Linux; macOS runs only what needs a simulator.
+      - name: UI tests, screenshot tour and component snapshots (SE + Pro Max)
+        id: test
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 35
+        run: |
+          status=0
+          xcodebuild test-without-building \
+            -project Waivera.xcodeproj -scheme Waivera \
+            -destination "id=${{ steps.sim.outputs.small }}" \
+            -destination "id=${{ steps.sim.outputs.large }}" \
+            -derivedDataPath "$DERIVED" \
+            -only-testing:WaiveraUITests -only-testing:WaiveraSnapshotTests \
+            -parallel-testing-enabled YES \
+            -resultBundlePath "$RESULT" \
+            CODE_SIGNING_ALLOWED=NO > test.log 2>&1 || status=$?
+          grep -E "error:|failed|Test Suite .* (passed|failed)|Executed" test.log | head -300 || true
+          exit $status
+      - name: Export screenshots to PNG
+        id: export
+        if: always()
+        continue-on-error: true
+        run: |
+          mkdir -p screenshots
+          if [ -d "$RESULT" ]; then
+            xcrun xcresulttool export attachments --path "$RESULT" --output-path screenshots
+            # Rename exported files to their attachment names (<route>__<device>-<variant>).
+            if [ -f screenshots/manifest.json ]; then
+              jq -r '.[] | .attachments[] | [.exportedFileName, .suggestedHumanReadableName] | @tsv' \
+                screenshots/manifest.json | while IFS=$'\t' read -r file name; do
+                  [ -f "screenshots/$file" ] && mv "screenshots/$file" "screenshots/${name}" || true
+                done
+            fi
+          fi
+          ls screenshots | head -50
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: screenshots
+          path: screenshots
+          if-no-files-found: warn
+      - name: Upload recorded component snapshots
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: snapshots
+          path: WaiveraSnapshotTests/__Snapshots__
+          if-no-files-found: ignore
+      - name: Upload results and logs
+        if: always()
         uses: actions/upload-artifact@v5
         with:
           name: test-results
-          path: TestResults.xcresult
+          path: |
+            ${{ env.RESULT }}
+            *.log
+          if-no-files-found: warn
+      - name: Fail if any check failed
+        if: always()
+        run: |
+          failed=""
+          [ "${{ steps.swiftlint.outcome }}" = success ] || failed="$failed swiftlint"
+          [ "${{ steps.swiftformat.outcome }}" = success ] || failed="$failed swift-format"
+          [ "${{ steps.xcodegen.outcome }}" = success ] || failed="$failed xcodegen"
+          [ "${{ steps.sim.outcome }}" = success ] || failed="$failed simulators"
+          [ "${{ steps.build.outcome }}" = success ] || failed="$failed build"
+          [ "${{ steps.test.outcome }}" = success ] || failed="$failed tests"
+          [ "${{ steps.export.outcome }}" = success ] || failed="$failed screenshot-export"
+          if [ -n "$failed" ]; then echo "Failed checks:$failed"; exit 1; fi
+          echo "All checks passed"
