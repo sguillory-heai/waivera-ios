@@ -11,32 +11,72 @@ public actor LivePushRegistrationRepository: PushRegistrationRepository {
 
     private let api: APIClient
     private let store: any KeyValueStore
+    private let deviceIdentifiers: (any DeviceIdentifierStore)?
     private let clock: any WaiveraClock
     private var token: String?
     private var preferences = NotificationPreferences()
-    private var pending: Task<Void, Never>?
+    /// The scheduled registration; its value is the final error, or `nil` when it registered,
+    /// had nothing to send, or was superseded.
+    private var pending: Task<WaiveraError?, Never>?
     private var generation = 0
 
-    public init(api: APIClient, store: any KeyValueStore, clock: any WaiveraClock) {
+    /// `deviceIdentifiers` is the Keychain on device (IF-13); without it the id stays in `store`.
+    public init(
+        api: APIClient,
+        store: any KeyValueStore,
+        clock: any WaiveraClock,
+        deviceIdentifiers: (any DeviceIdentifierStore)? = nil
+    ) {
         self.api = api
         self.store = store
         self.clock = clock
+        self.deviceIdentifiers = deviceIdentifiers
     }
 
-    /// `waivera-<epoch ms>-<random>`, created once per install (09 §3).
+    /// `waivera-<epoch ms>-<random>`, created once per device and kept across reinstalls when a
+    /// Keychain store is given (push.md §1). An id an earlier build kept in `UserDefaults` moves
+    /// to the Keychain once.
     public var deviceId: String {
-        if let existing = store.value(String.self, forKey: StorageKey.pushInstallationId) { return existing }
+        let legacy = store.value(String.self, forKey: StorageKey.pushInstallationId)
+        guard let deviceIdentifiers else {
+            if let legacy { return legacy }
+            let created = makeDeviceId()
+            store.setValue(created, forKey: StorageKey.pushInstallationId)
+            return created
+        }
+        if let existing = deviceIdentifiers.load() {
+            if legacy != nil { store.set(nil, forKey: StorageKey.pushInstallationId) }
+            return existing
+        }
+        let identifier = legacy ?? makeDeviceId()
+        deviceIdentifiers.save(identifier)
+        // Until the Keychain has it (it can be locked), the defaults copy keeps the id stable.
+        if deviceIdentifiers.load() == identifier {
+            if legacy != nil { store.set(nil, forKey: StorageKey.pushInstallationId) }
+        } else if legacy == nil {
+            store.setValue(identifier, forKey: StorageKey.pushInstallationId)
+        }
+        return identifier
+    }
+
+    private func makeDeviceId() -> String {
         let millis = Int64(clock.now.timeIntervalSince1970 * 1_000)
         let random = String(UInt64.random(in: 0...UInt64(UInt32.max)), radix: 36)
-        let created = "waivera-\(millis)-\(random)"
-        store.setValue(created, forKey: StorageKey.pushInstallationId)
-        return created
+        return "waivera-\(millis)-\(random)"
     }
 
     public func register(token: String, preferences: NotificationPreferences) async {
         self.token = token
         self.preferences = preferences
         schedule()
+    }
+
+    /// Registers and waits for the outcome, throwing the final error once the retries are
+    /// spent, so `PushRegistrationCoordinator` really reaches `.failed` and retries on the next
+    /// activation (IF-06). A newer registration that supersedes this one is not an error.
+    public func registerAndWait(token: String, preferences: NotificationPreferences) async throws {
+        await register(token: token, preferences: preferences)
+        if let failure = await pending?.value { throw failure }
     }
 
     /// The FCM token rotated: re-register with the same preferences, without touching the hub.
@@ -70,7 +110,7 @@ public actor LivePushRegistrationRepository: PushRegistrationRepository {
 
     /// Waits for a scheduled registration (tests).
     public func settle() async {
-        await pending?.value
+        _ = await pending?.value
     }
 
     private func schedule() {
@@ -80,17 +120,18 @@ public actor LivePushRegistrationRepository: PushRegistrationRepository {
         let clock = clock
         pending = Task {
             try? await clock.sleep(for: Self.debounce)
-            guard !Task.isCancelled else { return }
-            await self.sync(generation: current)
+            guard !Task.isCancelled else { return nil }
+            return await self.sync(generation: current)
         }
     }
 
-    private func sync(generation current: Int) async {
-        guard let token else { return }
+    /// Returns the error that ended the retries, or `nil`.
+    private func sync(generation current: Int) async -> WaiveraError? {
+        guard let token else { return nil }
         if !preferences.pushEnabled {
             store.set(nil, forKey: StorageKey.pushFingerprint)
             try? await api.unregisterFromPush(deviceID: deviceId)
-            return
+            return nil
         }
         let request = MobilePushRegistrationRequest(
             deviceID: deviceId,
@@ -106,18 +147,22 @@ public actor LivePushRegistrationRepository: PushRegistrationRepository {
         )
         let fingerprint = Self.fingerprint(request)
         // Re-registering resets `lastRegisteredAt` and can drop an in-flight push (G-08).
-        guard store.value(String.self, forKey: StorageKey.pushFingerprint) != fingerprint else { return }
+        guard store.value(String.self, forKey: StorageKey.pushFingerprint) != fingerprint else { return nil }
+        var failure = WaiveraError.invalidResponse
         for attempt in 1...Self.maxAttempts {
-            guard generation == current, !Task.isCancelled else { return }
+            guard generation == current, !Task.isCancelled else { return nil }
             do {
                 try await api.registerForPush(request)
                 store.setValue(fingerprint, forKey: StorageKey.pushFingerprint)
-                return
+                return nil
             } catch {
-                guard WaiveraError.from(error).isTransient, attempt < Self.maxAttempts else { return }
+                failure = WaiveraError.from(error)
+                guard failure.isTransient, attempt < Self.maxAttempts else { break }
                 try? await clock.sleep(for: .seconds(min(60, 1 << attempt)))
             }
         }
+        // Nothing is stored, so the next activation or token change tries again.
+        return generation == current ? failure : nil
     }
 
     /// A digest of the request, so the device store never holds the push token itself.

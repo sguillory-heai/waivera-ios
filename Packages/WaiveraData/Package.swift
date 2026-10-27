@@ -16,6 +16,8 @@ let package = Package(
         .package(path: "../WaiveraAPI"),
         .package(path: "../WaiveraRealtime"),
         .package(path: "../WaiveraFixtures"),
+        // Tests only: wires the live push repository into the real registration coordinator.
+        .package(path: "../WaiveraNotifications"),
     ],
     targets: [
         .target(name: "WaiveraData", dependencies: [api, realtime]),
@@ -24,6 +26,7 @@ let package = Package(
             name: "WaiveraDataTests",
             dependencies: [
                 "WaiveraData", api, realtime, .product(name: "WaiveraFixtures", package: "WaiveraFixtures"),
+                .product(name: "WaiveraNotifications", package: "WaiveraNotifications"),
             ]
         ),
     ]

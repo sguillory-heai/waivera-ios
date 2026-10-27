@@ -5,6 +5,7 @@ import WaiveraAPI
 /// coordinator before any participant starts and cleared after they stop.
 public final class SessionContext: Sendable {
     private let user = LockedValue<CurrentUser?>(nil)
+    private let since = LockedValue<Date?>(nil)
 
     public init(user: CurrentUser? = nil) {
         self.user.update { $0 = user }
@@ -14,6 +15,15 @@ public final class SessionContext: Sendable {
 
     public func set(_ newUser: CurrentUser?) {
         user.update { $0 = newUser }
+        if newUser == nil { since.update { $0 = nil } }
+    }
+
+    /// When this person first signed in on this device (kept across launches); see
+    /// `SessionRepository.accountSince`.
+    public var accountSince: Date? { since.get() }
+
+    func setAccountSince(_ date: Date?) {
+        since.update { $0 = date }
     }
 
     /// The backend id, or `.signedOut` for callers that need one.

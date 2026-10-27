@@ -24,6 +24,13 @@ public protocol SessionRepository: Sendable {
     func retryBootstrap() async
     /// The single sign-out path: unregister push, stop realtime, clear caches, then Firebase.
     func signOut() async
+    /// When the signed-in person first signed in on this device; `nil` when signed out. A
+    /// notification delivered before it was meant for someone else (IS-07).
+    var accountSince: Date? { get }
+}
+
+extension SessionRepository {
+    public var accountSince: Date? { nil }
 }
 
 /// The inbox (02).
@@ -211,8 +218,16 @@ public protocol SettingsRepository: Sendable {
 public protocol PushRegistrationRepository: Sendable {
     /// Registers, or re-registers when the token or preferences changed. Retries with backoff.
     func register(token: String, preferences: NotificationPreferences) async
+    /// Like `register`, but waits and throws when the registration finally failed (IF-06).
+    func registerAndWait(token: String, preferences: NotificationPreferences) async throws
     /// Unregisters this install (sign-out, or push switched off).
     func unregister() async
+}
+
+extension PushRegistrationRepository {
+    public func registerAndWait(token: String, preferences: NotificationPreferences) async throws {
+        await register(token: token, preferences: preferences)
+    }
 }
 
 /// The quiet connection banner (05 §2).

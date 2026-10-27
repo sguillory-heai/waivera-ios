@@ -16,6 +16,8 @@ public struct LiveDependencies: Sendable {
     public var connectivity: any ConnectivityMonitor
     public var transport: any HTTPTransport
     public var clock: any WaiveraClock
+    /// The push `deviceId` store (the Keychain on device, IF-13).
+    public var deviceIdentifiers: (any DeviceIdentifierStore)?
 
     public init(
         configuration: WaiveraConfiguration,
@@ -25,7 +27,8 @@ public struct LiveDependencies: Sendable {
         keyValueStore: any KeyValueStore,
         connectivity: any ConnectivityMonitor,
         transport: any HTTPTransport = URLSession.shared,
-        clock: any WaiveraClock = SystemClock()
+        clock: any WaiveraClock = SystemClock(),
+        deviceIdentifiers: (any DeviceIdentifierStore)? = nil
     ) {
         self.configuration = configuration
         self.tokenStore = tokenStore
@@ -35,6 +38,7 @@ public struct LiveDependencies: Sendable {
         self.connectivity = connectivity
         self.transport = transport
         self.clock = clock
+        self.deviceIdentifiers = deviceIdentifiers
     }
 }
 
@@ -70,7 +74,8 @@ extension DataEnvironment {
             localStore: dependencies.localStore,
             keyValueStore: dependencies.keyValueStore,
             connectivity: dependencies.connectivity,
-            clock: clock
+            clock: clock,
+            deviceIdentifiers: dependencies.deviceIdentifiers
         )
     }
 
@@ -84,7 +89,8 @@ extension DataEnvironment {
         localStore: any LocalStore,
         keyValueStore: any KeyValueStore,
         connectivity: any ConnectivityMonitor,
-        clock: any WaiveraClock
+        clock: any WaiveraClock,
+        deviceIdentifiers: (any DeviceIdentifierStore)? = nil
     ) -> DataEnvironment {
         let context = SessionContext()
         let presence = ChatPresence()
@@ -109,7 +115,12 @@ extension DataEnvironment {
             clock: clock,
             handoff: handoff
         )
-        let push = LivePushRegistrationRepository(api: api, store: keyValueStore, clock: clock)
+        let push = LivePushRegistrationRepository(
+            api: api,
+            store: keyValueStore,
+            clock: clock,
+            deviceIdentifiers: deviceIdentifiers
+        )
         let attachments = LiveAttachmentsRepository(api: api)
         let avatars = LiveAvatarRepository(api: api, clock: clock)
         let ingestor = RealtimeIngestor(
@@ -119,7 +130,13 @@ extension DataEnvironment {
             bookmarks: bookmarks,
             calendar: calendar
         )
-        let session = LiveSessionRepository(auth: auth, api: api, context: context)
+        let session = LiveSessionRepository(
+            auth: auth,
+            api: api,
+            context: context,
+            localStore: localStore,
+            clock: clock
+        )
         let coordinator = SessionCoordinator(
             chat: chat,
             realtime: realtime,
@@ -135,7 +152,9 @@ extension DataEnvironment {
             localStore: localStore,
             keyValueStore: keyValueStore,
             connectivity: connectivity,
-            settings: settings
+            settings: settings,
+            context: context,
+            clock: clock
         )
         return DataEnvironment(
             session: session,
@@ -186,6 +205,8 @@ actor SessionCoordinator: SessionLifecycleParticipant {
     let keyValueStore: any KeyValueStore
     let connectivity: any ConnectivityMonitor
     let settings: LiveSettingsRepository
+    let context: SessionContext
+    let clock: any WaiveraClock
     private var deviceTasks: [Task<Void, Never>] = []
 
     init(
@@ -203,7 +224,9 @@ actor SessionCoordinator: SessionLifecycleParticipant {
         localStore: any LocalStore,
         keyValueStore: any KeyValueStore,
         connectivity: any ConnectivityMonitor,
-        settings: LiveSettingsRepository
+        settings: LiveSettingsRepository,
+        context: SessionContext,
+        clock: any WaiveraClock
     ) {
         self.chat = chat
         self.realtime = realtime
@@ -220,6 +243,8 @@ actor SessionCoordinator: SessionLifecycleParticipant {
         self.keyValueStore = keyValueStore
         self.connectivity = connectivity
         self.settings = settings
+        self.context = context
+        self.clock = clock
     }
 
     /// Network changes gate realtime and resume queued sends; notification switches
@@ -245,6 +270,12 @@ actor SessionCoordinator: SessionLifecycleParticipant {
         // Belt and braces for AF-04 / AS-01: a cache written for anyone else is never shown.
         let owner = keyValueStore.value(String.self, forKey: StorageKey.cacheOwner)
         if let owner, owner != user.id { await localStore.removeAll() }
+        var since = keyValueStore.value(Date.self, forKey: StorageKey.accountSince)
+        if owner != user.id || since == nil {
+            since = clock.now
+            keyValueStore.setValue(since, forKey: StorageKey.accountSince)
+        }
+        context.setAccountSince(since)
         keyValueStore.setValue(user.id, forKey: StorageKey.cacheOwner)
         await chat.begin(user: user)
         await activity.begin()
@@ -278,5 +309,7 @@ actor SessionCoordinator: SessionLifecycleParticipant {
         await avatars.clear()
         await localStore.removeAll()
         keyValueStore.set(nil, forKey: StorageKey.cacheOwner)
+        keyValueStore.set(nil, forKey: StorageKey.accountSince)
+        context.setAccountSince(nil)
     }
 }

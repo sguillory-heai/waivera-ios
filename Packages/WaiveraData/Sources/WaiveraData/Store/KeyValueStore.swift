@@ -26,6 +26,11 @@ public enum StorageKey {
     public static let pushFingerprint = "waivera.push.fingerprint"
     /// The backend id the offline cache was written for; a different person starts empty.
     public static let cacheOwner = "waivera.cache.owner"
+    /// When `cacheOwner` first signed in on this device (IS-07).
+    public static let accountSince = "waivera.cache.owner.since"
+    /// Set on the first launch after an install; its absence means the Keychain may still hold
+    /// a previous install's session (IS-01).
+    public static let installMarker = "waivera.install.marker"
 }
 
 public final class InMemoryKeyValueStore: KeyValueStore {

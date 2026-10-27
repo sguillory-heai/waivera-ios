@@ -12,6 +12,9 @@ public actor LiveAttachmentsRepository: AttachmentsRepository {
     private var order: [Int] = []
     private var cachedBytes = 0
     private var inFlight: [Int: Task<Data, any Error>] = [:]
+    /// Bumped by `clear()`: a download that finishes after sign-out never lands in the cache
+    /// the next account reads (IS-08).
+    private var generation = 0
 
     public init(api: APIClient) {
         self.api = api
@@ -47,22 +50,30 @@ public actor LiveAttachmentsRepository: AttachmentsRepository {
             touch(messageId)
             return cached
         }
-        if let running = inFlight[messageId] { return try await running.value }
+        let current = generation
+        if let running = inFlight[messageId] {
+            let data = try await running.value
+            guard generation == current else { throw WaiveraError.signedOut }
+            return data
+        }
         let api = api
         let task = Task { try await api.attachmentData(messageId: messageId) }
         inFlight[messageId] = task
-        defer { inFlight[messageId] = nil }
+        defer { if generation == current { inFlight[messageId] = nil } }
+        let data: Data
         do {
-            let data = try await task.value
-            store(data, for: messageId)
-            return data
+            data = try await task.value
         } catch {
             throw WaiveraError.from(error)
         }
+        guard generation == current else { throw WaiveraError.signedOut }
+        store(data, for: messageId)
+        return data
     }
 
-    /// Sign-out.
+    /// Sign-out: cancels running downloads and drops everything cached.
     public func clear() {
+        generation += 1
         cache.removeAll()
         order.removeAll()
         cachedBytes = 0
@@ -97,6 +108,7 @@ public actor LiveAvatarRepository: AvatarRepository {
     private let clock: any WaiveraClock
     private var cache: [String: (data: Data?, expiresAt: Date)] = [:]
     private var inFlight: [String: Task<Data?, Never>] = [:]
+    private var generation = 0
 
     public init(api: APIClient, clock: any WaiveraClock) {
         self.api = api
@@ -118,13 +130,17 @@ public actor LiveAvatarRepository: AvatarRepository {
         }
         let shared = Task { await task.value.0 }
         inFlight[userId] = shared
+        let current = generation
         let (data, lifetime) = await task.value
+        // Signed out meanwhile: the picture is not kept for the next account.
+        guard generation == current else { return nil }
         inFlight[userId] = nil
         cache[userId] = (data, clock.now.addingTimeInterval(lifetime))
         return data
     }
 
     public func clear() {
+        generation += 1
         cache.removeAll()
         for task in inFlight.values { task.cancel() }
         inFlight.removeAll()

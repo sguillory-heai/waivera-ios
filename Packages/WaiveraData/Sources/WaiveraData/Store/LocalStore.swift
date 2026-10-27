@@ -15,6 +15,8 @@ public struct CacheKey: Hashable, Sendable, RawRepresentable {
     public static let directory = CacheKey(rawValue: "people.directory")
     public static let milestones = CacheKey(rawValue: "calendar.milestones")
     public static let profile = CacheKey(rawValue: "profile.own")
+    /// The last successful bootstrap, for an offline cold start (IF-10).
+    public static let bootstrap = CacheKey(rawValue: "session.bootstrap")
 
     public static func messages(_ conversationId: Int) -> CacheKey {
         CacheKey(rawValue: "chat.messages.\(conversationId)")
