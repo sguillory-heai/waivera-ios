@@ -38,7 +38,8 @@ packages:
     path: Packages/WaiveraNotifications
   Features:
     path: Packages/Features
-  # Messaging only (the FirebaseMessaging product); Auth goes over REST inside WaiveraAPI.
+  # Messaging only (FirebaseMessaging, plus FirebaseCore for FirebaseApp.configure); Auth goes over
+  # REST inside WaiveraAPI. 13.x needs Xcode 26.2 or later.
   # Needed to receive FCM tokens for APNs, which sprout_api sends through (ADR 0003).
   Firebase:
     url: https://github.com/firebase/firebase-ios-sdk
@@ -61,6 +62,17 @@ targets:
     dependencies:
       - package: WaiveraAPI
       - package: WaiveraRealtime
+        product: WaiveraRealtime
+      - package: WaiveraRealtime
+        product: WaiveraRealtimeSignalR
+      - package: WaiveraData
+        product: WaiveraData
+      - package: WaiveraData
+        product: WaiveraDataPersistence
+      # Fake server, fixtures and the scripted hub for -WaiveraFakeServer. Every import of it is
+      # inside `#if DEBUG`; SwiftPM cannot link per configuration, so Release links it unused and
+      # dead-code stripping removes it (docs/architecture/data-layer.md).
+      - package: WaiveraTestSupport
       - package: WaiveraDesign
         product: WaiveraDesign
       - package: WaiveraRouting
@@ -80,6 +92,8 @@ targets:
         product: ProfileFeature
       - package: Features
         product: SettingsFeature
+      - package: Firebase
+        product: FirebaseCore
       - package: Firebase
         product: FirebaseMessaging
     info:

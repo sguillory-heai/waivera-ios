@@ -1,34 +1,42 @@
-#if canImport(WaiveraData)
-    import Foundation
-    import WaiveraAPI
-    import WaiveraData
-    import WaiveraNotifications
+import Foundation
+import WaiveraAPI
+import WaiveraData
+import WaiveraDataPersistence
+import WaiveraRealtimeSignalR
 
-    // Adapts the data layer (Packages/WaiveraData, owned by the core agent) to the shell gateways.
-    // Compiled only once WaiveraData is added to project.yml. Written against the protocols assumed
-    // before docs/architecture/data-layer.md existed; reconcile with that doc when integrating:
-    //   SessionRepository: observable `state` of .loading / .signedOut / .passwordChangeRequired /
-    //     .signedIn(user) with `user.id` (backend id) and `user.displayName`; `signOut() async`.
-    //   PushRegistrationRepository: `register(token:preferences:) async throws`, `unregister() async throws`.
-    //   SettingsRepository: theme, haptics enabled, in-app banners, sound, per-category push prefs.
-    enum DataLayerBridge {
-        static func makeLiveEnvironment(
-            configuration: AppConfiguration,
-            tokenSource: any PushTokenSource
-        ) -> AppEnvironment? {
-            guard case .success = WaiveraConfiguration.load(from: configuration.infoDictionary) else {
-                return nil
-            }
-            // Integration point: build the live repositories from `WaiveraData` here and wrap them
-            // in gateways (see the adapters below). Until then the unconfigured environment is used.
-            return nil
-        }
-
-        #if DEBUG && canImport(WaiveraTestSupport)
-            static func makeFakeEnvironment() -> AppEnvironment? {
-                // Integration point: repositories over `WaiveraTestSupport`'s fake server and hub.
-                nil
-            }
-        #endif
-    }
+#if DEBUG
+    import WaiveraTestSupport
 #endif
+
+/// Builds the data layer (docs/architecture/data-layer.md, "Live composition").
+enum DataLayerBridge {
+    /// `nil` when the build has no API base URL or Firebase key.
+    static func makeLiveEnvironment(configuration: AppConfiguration) -> DataEnvironment? {
+        guard case .success(let apiConfiguration) = WaiveraConfiguration.load(from: configuration.infoDictionary)
+        else { return nil }
+        let localStore: any LocalStore
+        if let store = try? SwiftDataLocalStore.make() {
+            localStore = store
+        } else {
+            // The cache only speeds up the first frame; the app works without it.
+            localStore = InMemoryLocalStore()
+        }
+        return DataEnvironment.live(
+            LiveDependencies(
+                configuration: apiConfiguration,
+                tokenStore: KeychainTokenStore(),
+                hubFactory: SignalRHubConnectionFactory(),
+                localStore: localStore,
+                keyValueStore: UserDefaultsKeyValueStore(),
+                connectivity: NetworkPathConnectivity()
+            )
+        )
+    }
+
+    #if DEBUG
+        /// The fixture-backed repositories and scripted hub for `-WaiveraFakeServer`.
+        static func makeFakeEnvironment(_ scenario: FakeDataEnvironment.Scenario, webBaseURL: URL?) -> DataEnvironment {
+            FakeDataEnvironment.make(scenario, webBaseURL: webBaseURL).environment
+        }
+    #endif
+}

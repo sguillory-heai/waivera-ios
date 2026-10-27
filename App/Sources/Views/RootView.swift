@@ -1,20 +1,23 @@
 import AuthFeature
 import SwiftUI
+import WaiveraData
 import WaiveraDesign
 
 /// Auth gate: renders the gate screen for the session state, or the tab shell once signed in.
+/// Injects the data layer for every feature screen below it.
 struct RootView: View {
     @Bindable var model: AppModel
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         content
+            .environment(\.dataEnvironment, model.dataEnvironment)
             .preferredColorScheme(model.colorScheme)
-            .environment(\.waiveraHapticsEnabled, model.preferences.hapticsEnabled)
+            .environment(\.waiveraHapticsEnabled, model.settings.hapticsEnabled)
             .tint(Palette.accent)
             .onOpenURL { url in model.handle(url: url) }
-            .onChange(of: scenePhase) { _, phase in
-                model.scenePhaseChanged(isActive: phase == .active)
+            .onChange(of: scenePhase, initial: true) { _, phase in
+                model.scenePhaseChanged(to: phase)
             }
     }
 
@@ -26,6 +29,14 @@ struct RootView: View {
                 .accessibilityIdentifier("screen.loading")
         case .signIn:
             SignInView()
+        case .bootstrapFailed:
+            BootstrapFailedView(
+                message: model.bootstrapFailureMessage,
+                onRetry: { model.retryBootstrap() },
+                onSignOut: { model.signOut() }
+            )
+        case .configurationMissing:
+            ConfigurationMissingView()
         case .passwordChange:
             PasswordChangeRequiredView { model.signOut() }
         case .onboardingRequired:

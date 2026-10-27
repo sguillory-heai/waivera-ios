@@ -2,7 +2,7 @@ import Foundation
 
 /// Values from the per-environment `.xcconfig` files, read through Info.plist keys
 /// (`Config/*.xcconfig`, documented in README). Empty or unexpanded values count as absent, so a
-/// fresh clone builds and runs with no secrets: sign-in only, no Firebase, no push.
+/// fresh clone builds and runs with no secrets: the configuration-missing screen, no Firebase, no push.
 struct AppConfiguration: Sendable {
     /// Info.plist key names. `WaiveraAPIBaseURL`, `WaiveraFirebaseAPIKey` and `WaiveraWebBaseURL`
     /// are read by `WaiveraConfiguration` in WaiveraAPI.
@@ -51,6 +51,11 @@ struct AppConfiguration: Sendable {
             let senderID = value(.firebaseSenderID), let projectID = value(.firebaseProjectID)
         else { return nil }
         return FirebaseMessaging(apiKey: apiKey, appID: appID, senderID: senderID, projectID: projectID)
+    }
+
+    /// Web app root for call and meeting links; optional.
+    var webBaseURL: URL? {
+        value(.webBaseURL).flatMap(URL.init(string:))
     }
 
     /// Raw Info.plist dictionary for `WaiveraConfiguration.load(from:)`.

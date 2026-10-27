@@ -16,6 +16,7 @@ struct MainTabView: View {
             }
         }
         .modifier(LiquidGlassTabBar())
+        .modifier(ShellBanners(model: model))
         .sheet(item: sheet) { presented in
             switch presented {
             case .newChat:

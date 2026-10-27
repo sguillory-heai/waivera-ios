@@ -9,3 +9,18 @@
 "app.menu.people" = "People";
 "app.menu.bookmarks" = "Bookmarks";
 "app.menu.settings" = "Settings";
+/* In-app banner for a message outside the conversation on screen: "<conversation>: <preview>". */
+"app.alert.message %@ %@" = "%1$@: %2$@";
+/* Button on the in-app message banner that opens the conversation. */
+"app.alert.open" = "Open";
+"app.alert.title.channel %@" = "#%@";
+"app.alert.title.channelUnnamed" = "A channel";
+"app.alert.title.bot" = "Bot";
+"app.alert.title.someone" = "Someone";
+/* A group conversation: first member's name and how many others, e.g. "Priya +2". */
+"app.alert.title.group %@ %lld" = "%1$@ +%2$lld";
+"app.alert.title.conversation" = "A conversation";
+/* Shown instead of the message text when previews are switched off. */
+"app.alert.reason.mention" = "Mentioned you";
+"app.alert.reason.threadReply" = "Replied in a thread";
+"app.alert.reason.message" = "New message";

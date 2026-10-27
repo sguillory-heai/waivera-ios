@@ -1,40 +1,54 @@
 import Observation
 import SwiftUI
 import UIKit
+import WaiveraAPI
+import WaiveraData
 import WaiveraDesign
 import WaiveraNotifications
 import WaiveraNotificationsLive
 import WaiveraRouting
 
-/// The shell's single source of truth: session gate, navigation, notification routing and push
-/// registration. Feature state lives in feature models, never here.
+/// The shell's single source of truth: session gate, navigation, notification routing, push
+/// token hand-off and the app-wide banners. Feature state lives in feature models, never here.
 @Observable
 final class AppModel {
     var navigation = NavigationState()
-    private(set) var session: ShellSession = .loading
-    private(set) var preferences = ShellPreferences()
+    private(set) var session: SessionState
+    private(set) var settings: AppSettings
     /// `nil` until the system has answered, so the primer never flashes.
     private(set) var authorization: NotificationAuthorization?
     private(set) var hasSeenPrimer: Bool
+    /// The quiet reconnecting / offline banner (05 §2).
+    private(set) var connectionBanner: ConnectionBanner = .hidden
+    /// The in-app banner for a message outside the visible conversation (05 §9).
+    private(set) var chatAlert: ChatAlert?
+    /// Set once the sign-in screen has been shown, so a sign-in attempt keeps showing it while
+    /// the backend login runs, but a cold start with a stored session shows the loading screen.
+    private(set) var hasShownSignIn = false
 
+    @ObservationIgnored let dataEnvironment: DataEnvironment?
     @ObservationIgnored private let environment: AppEnvironment
     @ObservationIgnored private let launch: LaunchOptions
     @ObservationIgnored private let pushCoordinator: PushRegistrationCoordinator
     @ObservationIgnored private var tapRouter = NotificationTapRouter()
     @ObservationIgnored private var isSceneActive = true
+    @ObservationIgnored private var reportedForeground: Bool?
     @ObservationIgnored private var started = false
-    @ObservationIgnored private var registrationDebounce: Task<Void, Never>?
-    /// Debounce for bursts of preference toggles (09-push §5 gap 4).
-    @ObservationIgnored private let registrationDebounceDelay: Duration = .milliseconds(400)
 
     init(environment: AppEnvironment, launch: LaunchOptions) {
         self.environment = environment
         self.launch = launch
+        let data = environment.data
+        dataEnvironment = data
+        session = data?.session.currentState ?? .configurationMissing
+        // Read synchronously so the stored appearance applies before the first frame (08 §7).
+        settings = data?.settings.currentSettings ?? AppSettings()
         hasSeenPrimer = environment.primerStore.hasSeen
-        pushCoordinator = PushRegistrationCoordinator(
-            register: environment.registerPush,
-            unregister: environment.unregisterPush
-        )
+        pushCoordinator = PushRegistrationCoordinator { token in
+            guard let data else { return }
+            // The repository debounces, skips an unchanged fingerprint and retries.
+            await data.push.register(token: token, preferences: data.settings.currentSettings.notifications)
+        }
     }
 
     // MARK: Derived state
@@ -46,7 +60,10 @@ final class AppModel {
         }
         switch session {
         case .loading: return .loading
+        case .bootstrapping: return hasShownSignIn ? .signIn : .loading
         case .signedOut: return .signIn
+        case .bootstrapFailed: return .bootstrapFailed
+        case .configurationMissing: return .configurationMissing
         case .passwordChangeRequired: return .passwordChange
         case .onboardingRequired: return .onboardingRequired
         case .signedIn:
@@ -59,8 +76,16 @@ final class AppModel {
         }
     }
 
+    /// Client-owned copy for the bootstrap-failed gate; never server text.
+    var bootstrapFailureMessage: String {
+        if case .bootstrapFailed(let error) = session {
+            return error.userMessage
+        }
+        return WaiveraError.invalidResponse.userMessage
+    }
+
     var colorScheme: ColorScheme? {
-        switch launch.appearance ?? preferences.appearance {
+        switch launch.appearance ?? settings.appearance {
         case .system: nil
         case .light: .light
         case .dark: .dark
@@ -71,50 +96,61 @@ final class AppModel {
         NotificationPermissionPolicy.status(for: authorization ?? .notDetermined)
     }
 
-    var userDisplayName: String { session.user?.displayName ?? "" }
+    var userDisplayName: String {
+        guard let user = session.user else { return "" }
+        return user.displayName ?? user.asChatUser.fullName ?? ""
+    }
 
     // MARK: Lifecycle
 
+    /// Call once, when the app finishes launching.
     func start() {
         guard !started else { return }
         started = true
         if launch.disablesAnimations {
             UIView.setAnimationsEnabled(false)
         }
-        observeSession()
-        observePreferences()
         observeTokens()
         Task { await refreshAuthorization() }
+        guard let data = dataEnvironment else { return }
+        observe(data.session.states()) { model, state in await model.sessionChanged(to: state) }
+        observe(data.settings.settings()) { model, value in model.settingsChanged(to: value) }
+        observe(data.realtimeStatus.banner()) { model, banner in model.connectionBanner = banner }
+        observe(data.alerts.alerts()) { model, alert in model.alertArrived(alert) }
+        Task { await data.launch() }
     }
 
-    func scenePhaseChanged(isActive: Bool) {
+    /// Every scene phase change. Realtime runs only while the app is not in the background;
+    /// `.inactive` (Control Center, the app switcher, a system sheet) keeps the hub connected.
+    func scenePhaseChanged(to phase: ScenePhase) {
+        let isActive = phase == .active
         let becameActive = isActive && !isSceneActive
         isSceneActive = isActive
+        let isForeground = phase != .background
+        if let data = dataEnvironment, reportedForeground != isForeground {
+            reportedForeground = isForeground
+            Task { await data.setForeground(isForeground) }
+        }
         if becameActive {
+            let coordinator = pushCoordinator
             Task {
                 await refreshAuthorization()
-                await pushCoordinator.appBecameActive()
+                await coordinator.appBecameActive()
             }
-        } else if !isActive, !session.isSignedIn {
+        } else if phase == .background, !session.isSignedIn {
             // Leaving the app before finishing sign-in abandons a held notification tap.
             tapRouter.discardPending()
         }
     }
 
-    private func observeSession() {
-        let stream = environment.session.states()
-        Task {
-            for await state in stream {
-                await sessionChanged(to: state)
-            }
-        }
-    }
-
-    private func observePreferences() {
-        let stream = environment.preferences.values()
-        Task {
+    private func observe<Value: Sendable>(
+        _ stream: AsyncStream<Value>,
+        _ apply: @escaping @MainActor (AppModel, Value) async -> Void
+    ) {
+        Task { [weak self] in
             for await value in stream {
-                preferencesChanged(to: value)
+                guard let self else { return }
+                await apply(self, value)
             }
         }
     }
@@ -129,10 +165,20 @@ final class AppModel {
         }
     }
 
-    private func sessionChanged(to newState: ShellSession) async {
-        let wasSignedIn = session.isSignedIn
+    private func sessionChanged(to newState: SessionState) async {
+        let previous = session
         session = newState
-        if newState.isSignedIn, !wasSignedIn {
+        switch newState {
+        case .signedOut: hasShownSignIn = true
+        case .signedIn: hasShownSignIn = false
+        default: break
+        }
+        let switchedAccount = previous.isSignedIn && newState.isSignedIn && previous.user?.id != newState.user?.id
+        if switchedAccount || (!previous.isSignedIn && newState.isSignedIn) {
+            if switchedAccount {
+                navigation = NavigationState()
+                chatAlert = nil
+            }
             if let launchDestination = launch.route?.destination {
                 navigation.open(launchDestination)
             }
@@ -140,30 +186,57 @@ final class AppModel {
                 navigation.open(held)
             }
             await pushCoordinator.didSignIn()
-        } else if !newState.isSignedIn, wasSignedIn {
+        } else if previous.isSignedIn, !newState.isSignedIn {
             navigation = NavigationState()
+            chatAlert = nil
+            await pushCoordinator.didSignOut()
         }
     }
 
-    private func preferencesChanged(to newValue: ShellPreferences) {
-        let previous = preferences
-        preferences = newValue
+    private func settingsChanged(to newValue: AppSettings) {
+        settings = newValue
         HapticPlayer.shared.isEnabled = newValue.hapticsEnabled
-        guard previous.pushRegistrationFingerprint != newValue.pushRegistrationFingerprint else { return }
-        registrationDebounce?.cancel()
-        let coordinator = pushCoordinator
-        let delay = registrationDebounceDelay
-        registrationDebounce = Task {
-            try? await Task.sleep(for: delay)
-            guard !Task.isCancelled else { return }
-            await coordinator.preferencesChanged()
-        }
+        // Notification switch changes re-register inside the data layer (debounced there).
     }
 
     private func refreshAuthorization() async {
         let status = await environment.authorizer.currentAuthorization()
         authorization = status
         await pushCoordinator.authorizationChanged(status)
+    }
+
+    // MARK: Banners
+
+    private func alertArrived(_ alert: ChatAlert) {
+        // The data layer already applied the in-app banner switch and presence (G-09).
+        guard gate == nil else { return }
+        chatAlert = alert
+    }
+
+    func openChatAlert() {
+        guard let alert = chatAlert else { return }
+        chatAlert = nil
+        navigation.open(Self.destination(for: alert.destination))
+    }
+
+    /// Clears `alert` if it is still the one shown (a newer alert keeps its own timer).
+    func dismissChatAlert(_ alert: ChatAlert) {
+        guard chatAlert == alert else { return }
+        chatAlert = nil
+    }
+
+    func retryRealtime() {
+        guard let data = dataEnvironment else { return }
+        Task { await data.realtimeStatus.retryNow() }
+    }
+
+    static func destination(for destination: ChatDestination) -> Destination {
+        switch destination {
+        case .conversation(let id, let targetMessageId):
+            .conversation(id, targetMessageID: targetMessageId)
+        case .thread(let rootMessageId, let conversationId, let targetMessageId):
+            .thread(rootMessageID: rootMessageId, conversationID: conversationId, targetMessageID: targetMessageId)
+        }
     }
 
     // MARK: Navigation
@@ -201,14 +274,14 @@ final class AppModel {
 
     // MARK: Notifications
 
-    /// Foreground presentation for a push (called by `NotificationCenterDelegate`).
+    /// Foreground presentation for a push (called by `NotificationCenterDelegate`). Whether a
+    /// chat push is hidden is the data layer's call (`shouldPresentForegroundPush`).
     func presentationDecision(for payload: PushPayload) -> PresentationDecision {
-        let visible = isSceneActive && gate == nil ? navigation.visibleConversationID : nil
+        let shouldPresent = dataEnvironment?.alerts.shouldPresentForegroundPush(conversationId: payload.conversationID)
         let context = ForegroundContext(
-            isHubConnected: environment.hub.isConnected,
-            visibleConversationID: visible,
-            inAppBannersEnabled: preferences.inAppBannersEnabled,
-            soundEnabled: preferences.soundEnabled
+            isConversationLive: payload.isChat && shouldPresent == false,
+            inAppBannersEnabled: settings.notifications.inAppBanners,
+            soundEnabled: settings.notifications.sound
         )
         return ForegroundPresentationPolicy.decide(for: payload, context: context)
     }
@@ -221,28 +294,43 @@ final class AppModel {
                 navigation.open(now)
             }
         case .reply(let conversationID, let threadRootMessageID, let text):
-            guard session.isSignedIn else { return }
-            await environment.chatActions.reply(
-                conversationID: conversationID,
-                threadRootMessageID: threadRootMessageID,
-                text: text
-            )
-        case .markRead(let conversationID, let messageID):
-            guard session.isSignedIn else { return }
-            await environment.chatActions.markRead(conversationID: conversationID, messageID: messageID)
+            guard let data = signedInData else { return }
+            // Queued in the outbox: retried, persisted and confirmed like an in-app send.
+            if let threadRootMessageID {
+                await data.threads.reply(
+                    text: text,
+                    attachment: nil,
+                    rootMessageId: threadRootMessageID,
+                    conversationId: conversationID
+                )
+            } else {
+                await data.messages.send(text: text, attachment: nil, conversationId: conversationID)
+            }
+        case .markRead(let conversationID, _):
+            guard let data = signedInData else { return }
+            await data.messages.markRead(conversationId: conversationID)
             await DeliveredNotifications.removeAll(conversationID: conversationID)
         case .none:
             break
         }
     }
 
+    /// The data layer, only while its session is signed in (read directly, not from the
+    /// observed copy, so an action delivered right after launch sees the latest state).
+    private var signedInData: DataEnvironment? {
+        guard let data = dataEnvironment, data.session.currentState.isSignedIn else { return nil }
+        return data
+    }
+
     func choosePrimer(_ choice: PrimerChoice) {
         environment.primerStore.markSeen()
         hasSeenPrimer = true
+        let authorizer = environment.authorizer
+        let coordinator = pushCoordinator
         Task {
-            let status = await environment.authorizer.request(NotificationPermissionPolicy.request(for: choice))
+            let status = await authorizer.request(NotificationPermissionPolicy.request(for: choice))
             authorization = status
-            await pushCoordinator.authorizationChanged(status)
+            await coordinator.authorizationChanged(status)
         }
     }
 
@@ -262,13 +350,16 @@ final class AppModel {
 
     // MARK: Session
 
-    /// Unregisters the push token before the session clears (privacy fix, 08 §9).
+    /// The session's single sign-out path: it unregisters push and stops realtime while
+    /// requests still authenticate, then clears Firebase and the caches (01 §6, 08 §9).
     func signOut() {
-        let coordinator = pushCoordinator
-        let session = environment.session
-        Task {
-            await coordinator.prepareForSignOut()
-            await session.signOut()
-        }
+        guard let data = dataEnvironment else { return }
+        Task { await data.session.signOut() }
+    }
+
+    /// Bootstrap-failed gate: run the backend login again without signing out.
+    func retryBootstrap() {
+        guard let data = dataEnvironment else { return }
+        Task { await data.session.retryBootstrap() }
     }
 }
