@@ -1,5 +1,10 @@
 "auth.signIn.title" = "Sign in";
 "auth.signOut" = "Sign out";
+/* The backend login failed after Firebase sign-in; the screen offers Retry. */
+"auth.bootstrapFailed.title" = "Couldn't connect to Waivera";
+/* Developer-facing: the build is missing its .xcconfig values. */
+"auth.configurationMissing.title" = "Configuration required";
+"auth.configurationMissing.message" = "This build has no server configuration. Add the API and Firebase values to Config/Local.Debug.xcconfig, then build again.";
 "auth.passwordChange.title" = "Change your password";
 "auth.passwordChange.message" = "Your organization asks you to set a new password before using Waivera. Change it on the web, then sign in again.";
 "auth.onboarding.title" = "Finish setting up your account";

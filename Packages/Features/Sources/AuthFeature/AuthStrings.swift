@@ -3,6 +3,13 @@ import Foundation
 enum AuthStrings {
     static var signInTitle: String { String(localized: "auth.signIn.title", bundle: .module) }
     static var signOut: String { String(localized: "auth.signOut", bundle: .module) }
+    static var bootstrapFailedTitle: String { String(localized: "auth.bootstrapFailed.title", bundle: .module) }
+    static var configurationMissingTitle: String {
+        String(localized: "auth.configurationMissing.title", bundle: .module)
+    }
+    static var configurationMissingMessage: String {
+        String(localized: "auth.configurationMissing.message", bundle: .module)
+    }
     static var passwordChangeTitle: String { String(localized: "auth.passwordChange.title", bundle: .module) }
     static var passwordChangeMessage: String { String(localized: "auth.passwordChange.message", bundle: .module) }
     static var onboardingTitle: String { String(localized: "auth.onboarding.title", bundle: .module) }

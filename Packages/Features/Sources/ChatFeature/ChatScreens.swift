@@ -1,6 +1,10 @@
 import SwiftUI
 import WaiveraDesign
 
+#if DEBUG
+    import WaiveraTestSupport
+#endif
+
 /// The Chat tab root: conversation list with search and filters.
 public struct ConversationListView: View {
     let onOpenConversation: (_ conversationID: Int) -> Void
@@ -102,7 +106,12 @@ public struct ThreadView: View {
     }
 }
 
-#Preview("Light") { NavigationStack { ConversationListView(onOpenConversation: { _ in }, onNewChat: {}) } }
+#if DEBUG
+    #Preview("Light, demo data") {
+        NavigationStack { ConversationListView(onOpenConversation: { _ in }, onNewChat: {}) }
+            .fakeDataEnvironment()
+    }
+#endif
 #Preview("Dark") {
     NavigationStack {
         ConversationView(conversationID: 7, targetMessageID: 9312, onOpenThread: { _, _ in }, onOpenPerson: { _ in })

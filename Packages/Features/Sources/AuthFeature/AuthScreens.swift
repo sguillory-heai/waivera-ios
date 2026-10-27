@@ -1,4 +1,5 @@
 import SwiftUI
+import WaiveraAPI
 import WaiveraDesign
 
 /// Email and password sign-in. The auth agent fills this in; the app shows it whenever the
@@ -9,6 +10,53 @@ public struct SignInView: View {
     public var body: some View {
         FeaturePlaceholder(title: AuthStrings.signInTitle, systemImage: "person.badge.key")
             .accessibilityIdentifier("screen.sign-in")
+    }
+}
+
+/// Firebase is signed in but the backend login failed for a reason other than 401/403 (01 §2).
+/// Retry runs the backend login again without signing out; Sign out returns to sign-in.
+public struct BootstrapFailedView: View {
+    private let message: String
+    private let onRetry: () -> Void
+    private let onSignOut: () -> Void
+
+    /// `message` is a `WaiveraError.userMessage`, never server text.
+    public init(message: String, onRetry: @escaping () -> Void, onSignOut: @escaping () -> Void) {
+        self.message = message
+        self.onRetry = onRetry
+        self.onSignOut = onSignOut
+    }
+
+    public var body: some View {
+        ScrollView {
+            VStack(spacing: Spacing.large) {
+                EmptyStateView.error(title: AuthStrings.bootstrapFailedTitle, message: message, onRetry: onRetry)
+                WaiveraButton(AuthStrings.signOut, variant: .plain, action: onSignOut)
+                    .padding(.horizontal, Spacing.medium)
+                    .accessibilityIdentifier("bootstrap.signOut")
+            }
+            .padding(.vertical, Spacing.extraLarge)
+        }
+        .background(Palette.background)
+        .accessibilityIdentifier("screen.bootstrap-failed")
+    }
+}
+
+/// The build has no API base URL or Firebase key, so nothing can sign in (01 §3).
+public struct ConfigurationMissingView: View {
+    public init() {}
+
+    public var body: some View {
+        ScrollView {
+            EmptyStateView(
+                systemImage: "wrench.and.screwdriver",
+                title: AuthStrings.configurationMissingTitle,
+                message: AuthStrings.configurationMissingMessage
+            )
+            .padding(.vertical, Spacing.extraLarge)
+        }
+        .background(Palette.background)
+        .accessibilityIdentifier("screen.configuration-missing")
     }
 }
 
@@ -70,5 +118,9 @@ private struct GateMessage: View {
 }
 
 #Preview("Light") { PasswordChangeRequiredView {} }
+#Preview("Bootstrap failed") {
+    BootstrapFailedView(message: WaiveraError.offline.userMessage, onRetry: {}, onSignOut: {})
+}
+#Preview("Configuration missing, dark") { ConfigurationMissingView().preferredColorScheme(.dark) }
 #Preview("Dark") { OnboardingRequiredView {}.preferredColorScheme(.dark) }
 #Preview("AX XXXL") { PasswordChangeRequiredView {}.dynamicTypeSize(.accessibility5) }
