@@ -37,7 +37,8 @@
                 key: "\(request.identifier):\(response.actionIdentifier)",
                 actionIdentifier: response.actionIdentifier,
                 payload: PushPayloadParser.parse(userInfo: request.content.userInfo),
-                userText: (response as? UNTextInputNotificationResponse)?.userText
+                userText: (response as? UNTextInputNotificationResponse)?.userText,
+                deliveredAt: response.notification.date
             )
             await onResponse(event)
         }
