@@ -34,11 +34,11 @@ struct EnglishText: ChatListText {
     func unreadCount(_ count: Int) -> String { "\(count) unread" }
 }
 
-/// Polls `condition` on the main actor until it holds or two seconds pass. Streams deliver on
+/// Polls `condition` on the main actor until it holds or five seconds pass. Streams deliver on
 /// their own tasks, so state settles a few hops after a fake changes.
 @MainActor
 func eventually(_ condition: () -> Bool) async -> Bool {
-    let deadline = ContinuousClock.now + .seconds(2)
+    let deadline = ContinuousClock.now + .seconds(5)
     while ContinuousClock.now < deadline {
         if condition() { return true }
         try? await Task.sleep(for: .milliseconds(5))

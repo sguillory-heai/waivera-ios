@@ -38,26 +38,64 @@ let package = Package(
             name: "AuthFeatureTests",
             dependencies: [
                 "AuthFeature",
+                .product(name: "WaiveraAPI", package: "WaiveraAPI"),
+                .product(name: "WaiveraData", package: "WaiveraData"),
+                .product(name: "WaiveraTestSupport", package: "WaiveraTestSupport"),
+            ]
+        ),
+        .testTarget(
             name: "TodayFeatureTests",
+            dependencies: [
                 "TodayFeature",
+                .product(name: "WaiveraAPI", package: "WaiveraAPI"),
+                .product(name: "WaiveraData", package: "WaiveraData"),
+                .product(name: "WaiveraTestSupport", package: "WaiveraTestSupport"),
+            ]
+        ),
+        .testTarget(
             name: "ChatListTests",
+            dependencies: [
                 "ChatFeature",
                 .product(name: "WaiveraAPI", package: "WaiveraAPI"),
                 .product(name: "WaiveraData", package: "WaiveraData"),
+                .product(name: "WaiveraTestSupport", package: "WaiveraTestSupport"),
+            ]
+        ),
+        .testTarget(
             name: "ChatConversationTests",
+            dependencies: [
+                "ChatFeature",
+                .product(name: "WaiveraAPI", package: "WaiveraAPI"),
+                .product(name: "WaiveraData", package: "WaiveraData"),
                 .product(name: "WaiveraDesign", package: "WaiveraDesign"),
+                .product(name: "WaiveraTestSupport", package: "WaiveraTestSupport"),
+            ]
+        ),
+        .testTarget(
             name: "ScheduleFeatureTests",
+            dependencies: [
                 "ScheduleFeature",
                 .product(name: "WaiveraTestSupport", package: "WaiveraTestSupport"),
             ]
-        )
+        ),
+        .testTarget(
             name: "ProfileFeatureTests",
+            dependencies: [
                 "ProfileFeature",
+                .product(name: "WaiveraAPI", package: "WaiveraAPI"),
+                .product(name: "WaiveraData", package: "WaiveraData"),
+                .product(name: "WaiveraTestSupport", package: "WaiveraTestSupport"),
+            ]
         ),
         .testTarget(
             name: "SettingsFeatureTests",
+            dependencies: [
                 "SettingsFeature",
+                .product(name: "WaiveraAPI", package: "WaiveraAPI"),
+                .product(name: "WaiveraData", package: "WaiveraData"),
                 .product(name: "WaiveraNotifications", package: "WaiveraNotifications"),
+                .product(name: "WaiveraTestSupport", package: "WaiveraTestSupport"),
+            ]
         ),
     ]
 )

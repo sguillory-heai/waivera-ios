@@ -123,6 +123,7 @@ struct ChatListModelTests {
         let harness = ListHarness()
         await harness.start()
         defer { harness.stop() }
+        #expect(await eventually { harness.model.state.content == .rows })
         #expect(await eventually { harness.model.state.connection == .online })
         harness.fakes.realtime.drop(attempt: 2)
         #expect(await eventually { harness.model.state.connection == .reconnecting })
