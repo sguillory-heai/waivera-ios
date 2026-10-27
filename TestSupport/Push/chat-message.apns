@@ -1,0 +1,17 @@
+{
+  "Simulator Target Bundle": "com.waivera.waivera",
+  "aps": {
+    "alert": {
+      "title": "Jordan Lee",
+      "body": "Running 10 minutes late to the Elm Street visit."
+    },
+    "thread-id": "chat-42",
+    "category": "CHAT_MESSAGE",
+    "mutable-content": 1,
+    "sound": "default"
+  },
+  "type": "chat",
+  "conversationId": "42",
+  "messageId": "1001",
+  "url": "/chats/42"
+}

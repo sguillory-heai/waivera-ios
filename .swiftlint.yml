@@ -1,0 +1,32 @@
+included:
+  - App
+  - Packages
+  - WaiveraUITests
+excluded:
+  - Packages/*/.build
+  - Packages/*/Package.swift
+
+disabled_rules:
+  # swift-format owns trailing commas and adds them to multi-line literals.
+  - trailing_comma
+
+opt_in_rules:
+  - empty_count
+  - first_where
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - modifier_order
+  - redundant_type_annotation
+  - sorted_imports
+  - toggle_bool
+  - vertical_whitespace_closing_braces
+
+line_length:
+  warning: 120
+  ignores_urls: true
+
+force_unwrapping:
+  severity: error
+
+identifier_name:
+  excluded: [id, x, y]

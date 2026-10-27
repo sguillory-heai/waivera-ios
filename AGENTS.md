@@ -9,7 +9,7 @@ This file is the single source of truth for every coding agent (Claude Code, Cod
 - Swift 6.2 with strict concurrency (complete checking, main-actor default isolation for the app target). SwiftUI first; UIKit only through `UIViewRepresentable` when SwiftUI has no equivalent.
 - Minimum iOS: 17.0 (required for `@Observable` and SwiftData). Adopt iOS 26 Liquid Glass APIs behind `#available`.
 - State: `@Observable` models, `@State`/`@Environment` injection. Do not add `ObservableObject`, Combine, or third-party state libraries.
-- Networking: `URLSession` + `async/await`, `Codable` DTOs in the `WaiveraAPI` package. Realtime: the official SignalR Swift client against `sprout_api` `/hubs/chat` and `/hubs/video`.
+- Networking: `URLSession` + `async/await`, `Codable` DTOs in the `WaiveraAPI` package. Realtime: the official SignalR Swift client against `sprout_api` `api/chatHub` and `api/videoHub`.
 - Push: Firebase Cloud Messaging over APNs. Auth: Firebase Auth, tokens in Keychain only.
 - Local data: SwiftData only for offline caches; the server is authoritative.
 - Dependencies via Swift Package Manager only. Adding a package needs a stated reason in the PR.
