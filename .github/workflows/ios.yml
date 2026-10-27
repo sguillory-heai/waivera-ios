@@ -1,9 +1,9 @@
 name: iOS
 
+# Manual only: Actions minutes are limited, so runs are started on purpose
+# after local verification instead of on every push.
 on:
-  pull_request:
-  push:
-    branches: [master]
+  workflow_dispatch:
 
 concurrency:
   group: ios-${{ github.ref }}
