@@ -16,6 +16,13 @@ public struct ChatPush: Equatable, Sendable {
         self.threadRootMessageID = threadRootMessageID
         self.url = url
     }
+
+    /// A reply inside a thread (once sprout_api sends `threadRootMessageId`). It does not show
+    /// in the main timeline, so the conversation being on screen never hides it.
+    public var isThreadReply: Bool {
+        guard let threadRootMessageID else { return false }
+        return threadRootMessageID != messageID
+    }
 }
 
 /// Every push shape the app may receive, decoded defensively (push.md "Defensive decoding rule").

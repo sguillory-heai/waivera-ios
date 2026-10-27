@@ -9,11 +9,15 @@ public struct ForegroundContext: Equatable, Sendable {
     public var inAppBannersEnabled: Bool
     /// Settings "Sound".
     public var soundEnabled: Bool
+    /// The session is signed in. A push that reaches a signed-out device (an unregister that
+    /// never reached the server) is someone else's message, so it is never shown.
+    public var isSignedIn: Bool
 
-    public init(isConversationLive: Bool, inAppBannersEnabled: Bool, soundEnabled: Bool) {
+    public init(isConversationLive: Bool, inAppBannersEnabled: Bool, soundEnabled: Bool, isSignedIn: Bool) {
         self.isConversationLive = isConversationLive
         self.inAppBannersEnabled = inAppBannersEnabled
         self.soundEnabled = soundEnabled
+        self.isSignedIn = isSignedIn
     }
 }
 
@@ -37,7 +41,8 @@ public struct PresentationDecision: Equatable, Sendable {
 /// never hides a message. The icon badge is never set by a push.
 public enum ForegroundPresentationPolicy {
     public static func decide(for payload: PushPayload, context: ForegroundContext) -> PresentationDecision {
-        if payload.isChat, context.isConversationLive {
+        guard context.isSignedIn else { return .suppressed }
+        if case .chat(let chat) = payload, !chat.isThreadReply, context.isConversationLive {
             return .suppressed
         }
         return PresentationDecision(

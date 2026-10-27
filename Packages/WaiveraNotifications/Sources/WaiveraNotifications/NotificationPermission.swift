@@ -67,6 +67,30 @@ public enum NotificationPermissionPolicy {
     }
 }
 
+/// Remembers that a signed-out device still has an FCM token to delete. A flag, never the token.
+public struct PendingInvalidationDefaults: PendingInvalidationStore {
+    public static let key = "waivera.push.pendingTokenInvalidation"
+
+    private let suiteName: String?
+
+    /// `suiteName` is for tests; the app uses the standard defaults.
+    public init(suiteName: String? = nil) {
+        self.suiteName = suiteName
+    }
+
+    public var isPending: Bool {
+        defaults.bool(forKey: Self.key)
+    }
+
+    public func setPending(_ pending: Bool) {
+        defaults.set(pending, forKey: Self.key)
+    }
+
+    private var defaults: UserDefaults {
+        suiteName.flatMap(UserDefaults.init(suiteName:)) ?? .standard
+    }
+}
+
 /// Remembers that the primer was shown, per install. A UI flag only, so UserDefaults is fine.
 public struct PrimerSeenStore: Sendable {
     public static let key = "waivera.notificationPrimerSeen"

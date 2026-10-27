@@ -2,6 +2,20 @@
 /// tests and the fake server use a stub. Emits the current token (if any) and every refresh.
 public protocol PushTokenSource: Sendable {
     func tokens() -> AsyncStream<String>
+    /// Deletes the current token so pushes sent to it stop arriving, even when the server never
+    /// heard the unregister. FCM issues a new token on the next start.
+    func invalidate() async throws
+}
+
+extension PushTokenSource {
+    public func invalidate() async throws {}
+}
+
+/// Remembers, across launches, that a token still needs invalidating (the app backs it with
+/// `UserDefaults`; it holds a flag, never the token).
+public protocol PendingInvalidationStore: Sendable {
+    var isPending: Bool { get }
+    func setPending(_ pending: Bool)
 }
 
 /// Decides when the app hands its FCM token to the data layer (09-push §5, push.md §1):
@@ -16,6 +30,7 @@ public protocol PushTokenSource: Sendable {
 /// unregisters, so sign-out sends exactly one unregister call.
 public actor PushRegistrationCoordinator {
     public typealias Register = @Sendable (_ token: String) async throws -> Void
+    public typealias Invalidate = @Sendable () async throws -> Void
 
     public enum State: Equatable, Sendable {
         case idle
@@ -24,14 +39,22 @@ public actor PushRegistrationCoordinator {
     }
 
     private let register: Register
+    private let invalidate: Invalidate
+    private let pending: (any PendingInvalidationStore)?
 
     private var token: String?
     private var isSignedIn = false
     private var authorization: NotificationAuthorization = .notDetermined
     public private(set) var state: State = .idle
 
-    public init(register: @escaping Register) {
+    public init(
+        register: @escaping Register,
+        invalidate: @escaping Invalidate = {},
+        pending: (any PendingInvalidationStore)? = nil
+    ) {
         self.register = register
+        self.invalidate = invalidate
+        self.pending = pending
     }
 
     public func tokenChanged(_ newToken: String) async {
@@ -50,23 +73,47 @@ public actor PushRegistrationCoordinator {
         }
     }
 
-    /// Call when the session becomes signed in (including an account switch).
+    /// Call when the session becomes signed in (including an account switch). Registering binds
+    /// the current token to the new account, so a pending invalidation is dropped.
     public func didSignIn() async {
         isSignedIn = true
+        pending?.setPending(false)
         await registerIfNeeded(force: true)
     }
 
-    /// Call when the session leaves the signed-in state, for any reason. Nothing is sent: the
-    /// session's own sign-out unregisters this device while requests can still authenticate.
-    public func didSignOut() {
+    /// Call when the session leaves the signed-in state, for any reason. Nothing is sent to the
+    /// server here (the session's own sign-out unregisters while requests still authenticate);
+    /// the token itself is deleted, so a registration the server kept points at a dead token.
+    /// A failed deletion is remembered and retried at launch and on activation.
+    public func didSignOut() async {
         isSignedIn = false
         state = .idle
+        token = nil
+        pending?.setPending(true)
+        await invalidateIfPending()
     }
 
-    /// The app came to the foreground: retry a registration that failed.
+    /// Call once at launch, before the session is known: finishes an invalidation a previous
+    /// run could not.
+    public func launched() async {
+        await invalidateIfPending()
+    }
+
+    /// The app came to the foreground: retry a registration or an invalidation that failed.
     public func appBecameActive() async {
         if case .failed = state {
             await registerIfNeeded(force: true)
+        }
+        await invalidateIfPending()
+    }
+
+    private func invalidateIfPending() async {
+        guard !isSignedIn, pending?.isPending ?? true else { return }
+        do {
+            try await invalidate()
+            if !isSignedIn { pending?.setPending(false) }
+        } catch {
+            // Stays pending; the next launch or activation tries again.
         }
     }
 

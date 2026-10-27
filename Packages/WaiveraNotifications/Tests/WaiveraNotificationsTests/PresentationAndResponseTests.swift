@@ -7,7 +7,24 @@ struct ForegroundPresentationTests {
     private let chat42 = PushPayload.chat(ChatPush(conversationID: 42, messageID: 1))
 
     private func context(live: Bool, banners: Bool = true, sound: Bool = true) -> ForegroundContext {
-        ForegroundContext(isConversationLive: live, inAppBannersEnabled: banners, soundEnabled: sound)
+        ForegroundContext(isConversationLive: live, inAppBannersEnabled: banners, soundEnabled: sound, isSignedIn: true)
+    }
+
+    @Test func aThreadReplyIsShownEvenWhileItsConversationIsOnScreen() {
+        let reply = PushPayload.chat(ChatPush(conversationID: 42, messageID: 9331, threadRootMessageID: 9330))
+        #expect(ForegroundPresentationPolicy.decide(for: reply, context: context(live: true)) != .suppressed)
+        let root = PushPayload.chat(ChatPush(conversationID: 42, messageID: 9330, threadRootMessageID: 9330))
+        #expect(ForegroundPresentationPolicy.decide(for: root, context: context(live: true)) == .suppressed)
+    }
+
+    @Test func nothingIsShownWhileSignedOut() {
+        let signedOut = ForegroundContext(
+            isConversationLive: false,
+            inAppBannersEnabled: true,
+            soundEnabled: true,
+            isSignedIn: false
+        )
+        #expect(ForegroundPresentationPolicy.decide(for: chat42, context: signedOut) == .suppressed)
     }
 
     @Test func chatPushIsHiddenWhenTheDataLayerSaysItsConversationIsLive() {
@@ -197,6 +214,15 @@ struct PrimerSeenStoreTests {
         #expect(!store.hasSeen)
         store.markSeen()
         #expect(PrimerSeenStore(suiteName: suite).hasSeen)
+    }
+
+    @Test func remembersAPendingTokenDeletionAcrossInstances() {
+        let suite = "waivera.tests.pending.\(UInt64.random(in: 0...UInt64.max))"
+        #expect(!PendingInvalidationDefaults(suiteName: suite).isPending)
+        PendingInvalidationDefaults(suiteName: suite).setPending(true)
+        #expect(PendingInvalidationDefaults(suiteName: suite).isPending)
+        PendingInvalidationDefaults(suiteName: suite).setPending(false)
+        #expect(!PendingInvalidationDefaults(suiteName: suite).isPending)
     }
 }
 

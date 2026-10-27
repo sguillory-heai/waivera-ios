@@ -61,5 +61,12 @@
                 .map(\.request.identifier)
             center.removeDeliveredNotifications(withIdentifiers: identifiers)
         }
+
+        /// Sign-out: nothing of the previous person stays in Notification Center.
+        public static func removeEverything() {
+            let center = UNUserNotificationCenter.current()
+            center.removeAllDeliveredNotifications()
+            center.removeAllPendingNotificationRequests()
+        }
     }
 #endif
