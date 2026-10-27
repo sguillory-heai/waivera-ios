@@ -114,7 +114,7 @@ struct TodayModelTests {
 
     // MARK: Reconnect and offline
 
-    @Test func reconnectOfflineShowsTheQuietLineAndTheScheduleRefetchesAfter() async {
+    @Test func reconnectOfflineShowsTheQuietLineAndLeavesTheResyncToTheDataLayer() async {
         let harness = TodayHarness()
         let model = harness.todayModel()
         await running(model) {
@@ -129,10 +129,10 @@ struct TodayModelTests {
             let feeds = harness.fakes.activity.resource.refreshCount
             let weeks = harness.calendar.calls.count("refresh:week")
             harness.fakes.realtimeStatus.setOffline(false)
-            #expect(await eventually { harness.calendar.calls.count("refresh:week") == weeks + 2 })
-            #expect(model.state.quietStatus == nil)
+            #expect(await eventually { model.state.quietStatus == nil })
             await settle()
             #expect(harness.fakes.activity.resource.refreshCount == feeds, "the data layer resyncs activity itself")
+            #expect(harness.calendar.calls.count("refresh:week") == weeks, "the data layer resyncs the calendar")
         }
     }
 

@@ -27,12 +27,16 @@
         static var phone: String { text("profile.phone") }
         static var address: String { text("profile.address") }
         static var timeZone: String { text("profile.timeZone") }
-        static var timeZoneDevice: String { text("profile.timeZone.device") }
+        static var timeZoneFallback: String { text("profile.timeZone.fallback") }
         static var hireDate: String { text("profile.hireDate") }
         static var positions: String { text("profile.positions") }
         static var officeLocations: String { text("profile.officeLocations") }
         static var reportsTo: String { text("profile.reportsTo") }
         static var birthday: String { text("profile.birthday") }
+        static var scId: String { text("profile.scId") }
+        static var waiverFamilies: String { text("profile.waiverFamilies") }
+        static var agencies: String { text("profile.agencies") }
+        static var sectionFailed: String { text("profile.section.failed") }
         static var settingsRow: String { text("profile.settings.row") }
         static var settingsRowDetail: String { text("profile.settings.row.detail") }
 

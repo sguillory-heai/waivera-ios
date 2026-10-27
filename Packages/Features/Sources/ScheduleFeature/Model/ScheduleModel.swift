@@ -2,7 +2,6 @@ import Foundation
 import Observation
 import WaiveraAPI
 import WaiveraData
-import WaiveraRealtime
 
 /// The feed a period needs: two keys are equal when they fetch the same range in the same zone,
 /// so picking another day in the same month does not restart the subscription.
@@ -21,26 +20,6 @@ public struct FeedKey: Sendable, Hashable {
         hasher.combine(view)
         hasher.combine(interval)
         hasher.combine(zoneIdentifier)
-    }
-}
-
-/// Decides when a realtime status change means "we were away; refetch". Calendar has no hub
-/// events (gaps.md G-07), so coming back is the only signal that data may have moved.
-struct ReconnectTracker {
-    private var seenConnected = false
-    private var lostSinceConnected = false
-
-    /// Returns true when this status is a reconnect after a loss.
-    mutating func observe(isConnected: Bool) -> Bool {
-        if isConnected {
-            defer {
-                seenConnected = true
-                lostSinceConnected = false
-            }
-            return lostSinceConnected
-        }
-        if seenConnected { lostSinceConnected = true }
-        return false
     }
 }
 
@@ -68,14 +47,12 @@ public final class ScheduleModel {
 
     @ObservationIgnored private var milestoneCalendar = MilestoneCalendar.empty
     @ObservationIgnored private var text: ScheduleText
-    @ObservationIgnored private var reconnects = ReconnectTracker()
     @ObservationIgnored private var refreshTask: Task<Void, Never>?
 
     private let calendar: any CalendarRepository
     private let session: any SessionRepository
     private let realtime: any RealtimeStatusRepository
     private let clock: any WaiveraClock
-    private let memory: EventRangeMemory
     private let deviceZone: @Sendable () -> TimeZone
     private let locale: Locale
 
@@ -83,17 +60,14 @@ public final class ScheduleModel {
         calendar: any CalendarRepository,
         session: any SessionRepository,
         realtime: any RealtimeStatusRepository,
-        clock: (any WaiveraClock)? = nil,
-        memory: EventRangeMemory = .shared,
+        clock: any WaiveraClock = SystemClock(),
         deviceZone: @escaping @Sendable () -> TimeZone = { TimeZone.current },
         locale: Locale = .autoupdatingCurrent
     ) {
         self.calendar = calendar
         self.session = session
         self.realtime = realtime
-        let clock = clock ?? RepositoryAlignedClock(calendar: calendar)
         self.clock = clock
-        self.memory = memory
         self.deviceZone = deviceZone
         self.locale = locale
         let zone = ScheduleZone.resolve(savedIdentifier: session.currentState.user?.timeZoneIdentifier)
@@ -117,7 +91,7 @@ public final class ScheduleModel {
     }
 
     public convenience init(data: DataEnvironment) {
-        self.init(calendar: data.calendar, session: data.session, realtime: data.realtimeStatus)
+        self.init(calendar: data.calendar, session: data.session, realtime: data.realtimeStatus, clock: data.clock)
     }
 
     // MARK: Derived
@@ -151,9 +125,6 @@ public final class ScheduleModel {
                 for await resource in calendar.milestones() { await self.apply(milestones: resource) }
             }
             group.addTask { await self.refreshMilestonesIfStale() }
-            group.addTask {
-                for await status in realtime.statuses() { await self.apply(status: status) }
-            }
             group.addTask {
                 for await banner in realtime.banner() { await self.apply(banner: banner) }
             }
@@ -247,9 +218,6 @@ public final class ScheduleModel {
     private func apply(feed resource: Resource<CalendarFeed>, for key: FeedKey) {
         guard key == feedKey else { return }
         feedSnapshot = (key, resource)
-        if let events = resource.value?.events {
-            memory.remember(events.map(\.id), view: key.view, anchor: key.anchor)
-        }
         rebuild()
     }
 
@@ -260,11 +228,6 @@ public final class ScheduleModel {
             milestoneCalendar = MilestoneCalendar(index)
         }
         rebuild()
-    }
-
-    private func apply(status: RealtimeStatus) {
-        guard reconnects.observe(isConnected: status.isConnected) else { return }
-        retry()
     }
 
     private func apply(banner: ConnectionBanner) {

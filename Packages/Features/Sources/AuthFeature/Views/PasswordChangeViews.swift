@@ -207,13 +207,14 @@
             WaiveraTextField(
                 label,
                 text: Binding(get: { value(of: field) }, set: { model.set(field, to: $0) }),
+                focus: $focus,
+                field: field,
                 error: issue.map(AuthStrings.issue),
                 isSecure: true,
-                contentType: type
+                contentType: type,
+                accessibilityIdentifier: "passwordChange.\(field)"
             )
-            .focused($focus, equals: field)
             .disabled(!model.fieldsEnabled)
-            .accessibilityIdentifier("passwordChange.\(field)")
         }
 
         private func value(of field: Field) -> String {

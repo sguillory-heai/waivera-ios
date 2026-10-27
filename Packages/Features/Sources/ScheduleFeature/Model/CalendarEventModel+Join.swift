@@ -6,7 +6,7 @@ import WaiveraData
 extension CalendarEventModel {
     public func join() {
         guard case .loaded(let details) = state, let join = details.join, !join.isBusy, join.state == .open,
-            let event = found?.event
+            let event = found
         else { return }
         interaction.joinError = nil
         guard event.isSprout else {
@@ -48,7 +48,7 @@ extension CalendarEventModel {
     /// Opens (or creates) the direct conversation with the organizer.
     public func messageOrganizer() {
         guard case .loaded(let details) = state, details.canMessageOrganizer, !interaction.chatBusy,
-            let ownerId = found?.event.ownerId
+            let ownerId = found?.ownerId
         else { return }
         interaction.chatBusy = true
         interaction.chatError = nil

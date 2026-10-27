@@ -8,8 +8,9 @@
         @MainActor static let live = ChatPlatform(
             copy: { UIPasteboard.general.string = $0 },
             haptic: { HapticPlayer.shared.play($0) },
-            openInApp: { SafariPresenter.present($0) },
-            openExternally: { UIApplication.shared.open($0) }
+            // Callers already check; the check here keeps any future caller to http(s) (AS-04).
+            openInApp: { url in if SafeLinks.isAllowed(url) { SafariPresenter.present(url) } },
+            openExternally: { url in if SafeLinks.isAllowed(url) { UIApplication.shared.open(url) } }
         )
     }
 

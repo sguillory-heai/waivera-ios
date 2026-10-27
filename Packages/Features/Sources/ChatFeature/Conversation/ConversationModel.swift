@@ -174,6 +174,7 @@ final class ConversationModel {
         next.isStale = !built.isEmpty && timeline.error != nil
         next.hasOlder = value?.hasOlder ?? false
         next.isLoadingOlder = value?.isLoadingOlder ?? false
+        next.olderFailed = value?.olderPageError != nil
         next.viewerId = context.viewerId
         next.names = context.names(messages: value?.messages ?? [])
         if next != state { state = next }
@@ -189,9 +190,14 @@ final class ConversationModel {
     }
 
     private func trackArrivals(messages: [ChatMessage], pending: [OutgoingMessage]) {
-        let arrivals = arrivalTracker.update(ArrivalTracker.entries(messages: messages, pending: pending))
+        let entries = ArrivalTracker.entries(messages: messages, pending: pending)
+        let arrivals = arrivalTracker.update(entries)
         guard !arrivals.isEmpty else { return }
         liveArrivals.formUnion(arrivals)
+        // Someone else's message landing on screen; the design system decides how it feels.
+        if isVisible, zip(messages, entries).contains(where: { !$0.0.isMine && arrivals.contains($0.1.key) }) {
+            platform.haptic(.messageReceivedWhileVisible)
+        }
         let clock = clock
         Task { [weak self] in
             try? await clock.sleep(seconds: Self.arrivalWindow)
@@ -219,7 +225,7 @@ final class ConversationModel {
         else { return }
         lastMarkedRead = newest
         let id = conversationID
-        Task { await data.messages.markRead(conversationId: id) }
+        Task { try? await data.messages.markRead(conversationId: id) }
     }
 
     // MARK: Loading
@@ -240,14 +246,23 @@ final class ConversationModel {
 
     // MARK: Highlight (03 §9)
 
-    /// Scrolls to and briefly highlights the deep-linked message. The data layer has no
-    /// message-context endpoint yet (docs/requests/conversation.md), so older pages load until
-    /// the target appears, at most eight.
+    /// Scrolls to and briefly highlights the deep-linked message. The data layer loads the
+    /// window around it in one call; if that fails, older pages load until the target appears,
+    /// at most eight.
     func highlightTargetIfNeeded() async {
         guard let target = targetMessageID, target > 0, !highlightRequested else { return }
         highlightRequested = true
         guard await waitUntil({ self.state.content != .loading }) else { return }
         var key = keyFor(target)
+        if key == nil, let data {
+            let before = rebuildCount
+            let loaded =
+                (try? await data.messages.loadAround(conversationId: conversationID, messageId: target)) ?? false
+            if loaded {
+                _ = await waitUntil({ self.rebuildCount != before && self.keyFor(target) != nil }, timeout: 2)
+                key = keyFor(target)
+            }
+        }
         var pages = 0
         while key == nil, pages < Self.maxHighlightPages, state.hasOlder, let data {
             let before = rebuildCount

@@ -108,6 +108,12 @@ public final class ProfileModel {
         derive()
     }
 
+    /// A section card's Retry: refetches only that section.
+    public func retry(section: ProfileSection) async {
+        guard user != nil else { return }
+        await profiles.refresh(section: section)
+    }
+
     private func apply(user: CurrentUser?) {
         guard user != self.user else { return }
         self.user = user

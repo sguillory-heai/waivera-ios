@@ -21,6 +21,7 @@
 "thread.loading" = "Loading thread";
 "older.failed" = "Older messages didn't load.";
 "older.loading" = "Loading older messages";
+"older.failed" = "Couldn't load older messages.";
 "retry" = "Retry";
 "jump.to.latest" = "Jump to latest";
 "day.today" = "Today";

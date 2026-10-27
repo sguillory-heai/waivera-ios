@@ -2,7 +2,6 @@ import Foundation
 import Testing
 import WaiveraAPI
 import WaiveraData
-import WaiveraRealtime
 import WaiveraTestSupport
 
 @testable import ScheduleFeature
@@ -18,7 +17,6 @@ struct ScheduleModelTests {
         let calendar: TestCalendarRepository
         let session: TestSession
         let realtime: TestRealtime
-        let memory: EventRangeMemory
         let model: ScheduleModel
     }
 
@@ -40,13 +38,11 @@ struct ScheduleModelTests {
         )
         let session = TestSession.signedIn(zone: savedZone)
         let realtime = TestRealtime()
-        let memory = EventRangeMemory()
         let model = ScheduleModel(
             calendar: calendar,
             session: session,
             realtime: realtime,
             clock: clock,
-            memory: memory,
             deviceZone: { deviceZone },
             locale: english
         )
@@ -55,7 +51,6 @@ struct ScheduleModelTests {
             calendar: calendar,
             session: session,
             realtime: realtime,
-            memory: memory,
             model: model
         )
     }
@@ -149,7 +144,9 @@ struct ScheduleModelTests {
         }
     }
 
-    @Test func reconnectRefetchesTheVisibleRangeAndMilestones() async {
+    /// Calendar has no hub events; the data layer refetches every observed feed and the
+    /// milestones on reconnect, so the screen must not fetch a second time.
+    @Test func reconnectLeavesTheResyncToTheDataLayer() async {
         let h = harness()
         await running(h.model) {
             #expect(await eventually { h.model.state.agenda == .empty })
@@ -159,8 +156,9 @@ struct ScheduleModelTests {
             try? await Task.sleep(for: .milliseconds(20))
             #expect(h.calendar.calls.count("refresh:") == feedRefreshes)
             h.realtime.status.set(RealtimeStatus(state: .connected, epoch: 2))
-            #expect(await eventually { h.calendar.calls.count("refresh:") == feedRefreshes + 1 })
-            #expect(await eventually { h.calendar.calls.count("milestones") == milestoneRefreshes + 1 })
+            try? await Task.sleep(for: .milliseconds(30))
+            #expect(h.calendar.calls.count("refresh:") == feedRefreshes)
+            #expect(h.calendar.calls.count("milestones") == milestoneRefreshes)
         }
     }
 

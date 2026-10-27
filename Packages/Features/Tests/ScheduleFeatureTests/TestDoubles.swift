@@ -1,7 +1,6 @@
 import Foundation
 import WaiveraAPI
 import WaiveraData
-import WaiveraRealtime
 import WaiveraTestSupport
 
 @testable import ScheduleFeature
@@ -49,7 +48,7 @@ let english = Locale(identifier: "en_US")
 /// the range like the API does; `failure` and `gate` control what a refresh does.
 final class TestCalendarRepository: CalendarRepository, @unchecked Sendable {
     let zone: TimeZone
-    let isDeviceFallback: Bool
+    let isFallback: Bool
     let todayValue: LockedValue<CalendarDate>
     let server: LockedValue<CalendarFeed>
     let failure = LockedValue<WaiveraError?>(nil)
@@ -59,6 +58,7 @@ final class TestCalendarRepository: CalendarRepository, @unchecked Sendable {
     let milestoneCell = StateCell(Resource<MilestoneIndex>())
     let milestoneServer: LockedValue<MilestoneIndex>
     let cells = CellRegistry<DateInterval, Resource<CalendarFeed>>(initial: Resource())
+    let eventCells = CellRegistry<String, Resource<EventLookup>>(initial: Resource())
     let calls = CallLog()
     /// When set, refreshes wait until `release()`.
     let held = LockedValue<[CheckedContinuation<Void, Never>]>([])
@@ -67,21 +67,21 @@ final class TestCalendarRepository: CalendarRepository, @unchecked Sendable {
 
     init(
         zone: TimeZone = Zones.chicago,
-        isDeviceFallback: Bool = false,
+        isFallback: Bool = false,
         today: CalendarDate,
         feed: CalendarFeed = CalendarFeed(),
         milestones: [Milestone] = [],
         clock: any WaiveraClock
     ) {
         self.zone = zone
-        self.isDeviceFallback = isDeviceFallback
+        self.isFallback = isFallback
         todayValue = LockedValue(today)
         server = LockedValue(feed)
         milestoneServer = LockedValue(MilestoneIndex(milestones))
         self.clock = clock
     }
 
-    func scheduleTimeZone() -> (zone: TimeZone, isDeviceFallback: Bool) { (zone, isDeviceFallback) }
+    func scheduleTimeZone() -> (zone: TimeZone, isFallback: Bool) { (zone, isFallback) }
     func today() -> CalendarDate { todayValue.get() }
 
     func interval(_ period: CalendarPeriod, _ date: CalendarDate) -> DateInterval {
@@ -109,6 +109,23 @@ final class TestCalendarRepository: CalendarRepository, @unchecked Sendable {
             return
         }
         cell.set(Resource(value: slice(server.get(), range), phase: .loaded, updatedAt: clock.now))
+    }
+
+    func event(id: String) -> AsyncStream<Resource<EventLookup>> { eventCells.cell(id).stream() }
+
+    func refreshEvent(id: String) async {
+        calls.record("refreshEvent:\(id)")
+        let cell = eventCells.cell(id)
+        cell.update { $0.phase = .loading }
+        if holds.get() {
+            await withCheckedContinuation { continuation in held.update { $0.append(continuation) } }
+        }
+        if let failure = failure.get() {
+            cell.update { $0.phase = .failed(failure) }
+            return
+        }
+        let lookup = server.get().events.first { $0.id == id }.map(EventLookup.found) ?? .notFound
+        cell.set(Resource(value: lookup, phase: .loaded, updatedAt: clock.now))
     }
 
     func release() {
@@ -179,6 +196,7 @@ final class TestSession: SessionRepository {
     func start() async {}
     func signIn(email: String, password: String) async throws {}
     func changePassword(current: String, new: String) async throws {}
+    func sendPasswordReset(email: String) async throws {}
     func retryBootstrap() async {}
     func signOut() async {}
 }

@@ -78,6 +78,16 @@ struct ChatListNotice: Identifiable, Sendable, Hashable {
     enum Kind: Sendable, Hashable {
         /// The web lobby could not be opened; Retry tries again.
         case callFailed(conversationId: Int)
+        /// Mark as read did not reach the server, so the badge came back; Retry sends it again.
+        case markReadFailed(conversationId: Int)
+    }
+
+    /// The banner copy's string key.
+    var messageKey: String {
+        switch kind {
+        case .callFailed: "chat.list.call.failed"
+        case .markReadFailed: "chat.list.markRead.failed"
+        }
     }
 
     let id: UUID

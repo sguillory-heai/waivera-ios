@@ -87,7 +87,7 @@
 "today.nextUp.empty" = "Nothing else on your schedule for the next two weeks.";
 "today.nextUp.failed" = "Your schedule couldn't load.";
 "today.nextUp.happeningNow" = "Happening now";
-"today.nextUp.deviceZone" = "Times are in this device's time zone (%@) because your profile has no saved time zone.";
+"today.nextUp.fallbackZone" = "Times are in %@ because your profile has no saved time zone.";
 
 /* Celebrations */
 "today.celebration.nameFallback" = "This employee";

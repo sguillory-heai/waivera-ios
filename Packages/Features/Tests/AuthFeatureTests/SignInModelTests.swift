@@ -12,7 +12,7 @@ struct SignInModelTests {
     private let email = "alex.rivera@example.org"
 
     private func filled(_ session: ScriptedSession, password: String = "correct horse") -> SignInModel {
-        let model = SignInModel(session: session, passwordReset: nil)
+        let model = SignInModel(session: session)
         model.setEmail(email)
         model.setPassword(password)
         return model
@@ -21,7 +21,7 @@ struct SignInModelTests {
     // MARK: Idle and enablement
 
     @Test func buttonNeedsBothFields() {
-        let model = SignInModel(session: ScriptedSession(), passwordReset: nil)
+        let model = SignInModel(session: ScriptedSession())
         #expect(model.fieldsEnabled)
         #expect(!model.canSubmit)
         model.setEmail("   ")
@@ -35,7 +35,7 @@ struct SignInModelTests {
 
     @Test func invalidFieldsAreExplainedAndNothingIsSent() async {
         let session = ScriptedSession()
-        let model = SignInModel(session: session, passwordReset: nil)
+        let model = SignInModel(session: session)
         model.setEmail("alex.rivera")
         await model.submit()
         #expect(model.emailIssue == .emailInvalid)
@@ -63,7 +63,7 @@ struct SignInModelTests {
 
     @Test func submitTrimsTheEmailButNotThePassword() async {
         let session = ScriptedSession()
-        let model = SignInModel(session: session, passwordReset: nil)
+        let model = SignInModel(session: session)
         model.setEmail("  \(email)  ")
         model.setPassword(" pass word ")
         await model.submit()
@@ -152,12 +152,12 @@ struct SignInModelTests {
     }
 
     @Test func signOutReasonShowsWhenTheScreenOpens() {
-        let model = SignInModel(session: ScriptedSession(.signedOut(.unauthorized)), passwordReset: nil)
+        let model = SignInModel(session: ScriptedSession(.signedOut(.unauthorized)))
         #expect(model.notice == .failed(.unauthorized))
     }
 
     @Test func plainSignOutShowsNothing() {
-        let model = SignInModel(session: ScriptedSession(.signedOut(nil)), passwordReset: nil)
+        let model = SignInModel(session: ScriptedSession(.signedOut(nil)))
         #expect(model.notice == nil)
         #expect(model.failureCount == 0)
     }
@@ -195,7 +195,7 @@ struct SignInModelTests {
 
     @Test func configurationMissingStateDisablesTheForm() async {
         let session = ScriptedSession(.configurationMissing)
-        let model = SignInModel(session: session, passwordReset: nil)
+        let model = SignInModel(session: session)
         #expect(!model.isConfigured)
         model.setEmail(email)
         model.setPassword("secret")
@@ -230,17 +230,15 @@ struct SignInModelTests {
 
     // MARK: Password reset
 
-    @Test func resetIsHiddenWithoutASender() {
-        #expect(!SignInModel(session: ScriptedSession(), passwordReset: nil).canResetPassword)
-        #expect(SignInModel(session: ScriptedSession(), passwordReset: ScriptedSession()).canResetPassword)
-        // The adapter picks the session up once it can send resets.
-        #expect(PasswordResetAdapter.sender(for: ScriptedSession()) != nil)
-        #expect(PasswordResetAdapter.sender(for: FakeDataEnvironment.make(.signedOut).session) == nil)
+    @Test func resetIsHiddenOnlyWithoutConfiguration() {
+        #expect(!SignInModel(session: nil).canResetPassword)
+        #expect(SignInModel(session: ScriptedSession()).canResetPassword)
+        #expect(SignInModel(session: FakeDataEnvironment.make(.signedOut).session).canResetPassword)
     }
 
     @Test func resetNeedsAValidEmail() async {
         let sender = ScriptedSession()
-        let model = SignInModel(session: ScriptedSession(), passwordReset: sender)
+        let model = SignInModel(session: sender)
         model.setEmail("alex")
         await model.sendPasswordReset()
         #expect(model.emailIssue == .emailInvalid)
@@ -249,7 +247,7 @@ struct SignInModelTests {
 
     @Test func resetSendsTheTrimmedEmail() async {
         let sender = ScriptedSession()
-        let model = SignInModel(session: ScriptedSession(), passwordReset: sender)
+        let model = SignInModel(session: sender)
         model.setEmail(" \(email) ")
         await model.sendPasswordReset()
         #expect(sender.calls == ["reset:\(email)"])
@@ -260,7 +258,7 @@ struct SignInModelTests {
     @Test func unknownAccountReadsAsSent() async {
         let sender = ScriptedSession()
         sender.resetOutcome.set(.fail(.auth(.invalidCredentials)))
-        let model = SignInModel(session: ScriptedSession(), passwordReset: sender)
+        let model = SignInModel(session: sender)
         model.setEmail(email)
         await model.sendPasswordReset()
         #expect(model.notice == .resetSent(email: email), "never reveal whether an account exists")
@@ -269,7 +267,7 @@ struct SignInModelTests {
     @Test func offlineResetShowsTheError() async {
         let sender = ScriptedSession()
         sender.resetOutcome.set(.fail(.offline))
-        let model = SignInModel(session: ScriptedSession(), passwordReset: sender)
+        let model = SignInModel(session: sender)
         model.setEmail(email)
         await model.sendPasswordReset()
         #expect(model.notice == .failed(.offline))

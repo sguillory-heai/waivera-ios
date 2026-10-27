@@ -37,7 +37,7 @@
             .navigationBarTitleDisplayMode(.inline)
             .task {
                 let current =
-                    model ?? data.map { ActivityFeedModel(environment: $0, clock: TodayClock.resolve(for: $0)) }
+                    model ?? data.map { ActivityFeedModel(environment: $0, clock: $0.clock) }
                 if model == nil { model = current }
                 await current?.run()
             }

@@ -11,18 +11,28 @@
     /// Settings → Account: identity, the voluntary password change, and Sign out behind the
     /// shared confirmation sheet. `onSignOut` is the app's single sign-out path, which unregisters
     /// the push token, stops realtime, clears caches and signs out of Firebase.
+    ///
+    /// `onChangePassword` lets the app push its change-password route (which a deep link also
+    /// opens); without it the row presents this feature's own sheet.
     public struct AccountSettingsView: View {
         @Environment(\.dataEnvironment) private var data
         let onSignOut: () -> Void
+        let onChangePassword: (() -> Void)?
 
-        public init(onSignOut: @escaping () -> Void) {
+        public init(onChangePassword: (() -> Void)? = nil, onSignOut: @escaping () -> Void) {
+            self.onChangePassword = onChangePassword
             self.onSignOut = onSignOut
         }
 
         public var body: some View {
             Group {
                 if let data {
-                    AccountScreen(model: AccountModel(environment: data), session: data.session, onSignOut: onSignOut)
+                    AccountScreen(
+                        model: AccountModel(environment: data),
+                        session: data.session,
+                        onChangePassword: onChangePassword,
+                        onSignOut: onSignOut
+                    )
                 } else {
                     AccountContent(account: nil, isSigningOut: false, actions: AccountActions(signOut: onSignOut))
                 }
@@ -36,11 +46,18 @@
         @State private var model: AccountModel
         @State private var isChangingPassword = false
         let session: any SessionRepository
+        let onChangePassword: (() -> Void)?
         let onSignOut: () -> Void
 
-        init(model: AccountModel, session: any SessionRepository, onSignOut: @escaping () -> Void) {
+        init(
+            model: AccountModel,
+            session: any SessionRepository,
+            onChangePassword: (() -> Void)?,
+            onSignOut: @escaping () -> Void
+        ) {
             _model = State(initialValue: model)
             self.session = session
+            self.onChangePassword = onChangePassword
             self.onSignOut = onSignOut
         }
 
@@ -49,7 +66,9 @@
                 account: model.account,
                 isSigningOut: model.isSigningOut,
                 actions: AccountActions(
-                    changePassword: { isChangingPassword = true },
+                    changePassword: {
+                        if let onChangePassword { onChangePassword() } else { isChangingPassword = true }
+                    },
                     signOut: { model.requestSignOut() }
                 )
             )

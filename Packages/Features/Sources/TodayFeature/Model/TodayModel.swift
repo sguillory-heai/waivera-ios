@@ -160,23 +160,12 @@ final class TodayModel {
         }
     }
 
-    /// Chats and activity resync themselves after a reconnect (data layer); the schedule does not
-    /// (docs/requests/today.md §2), so Today's weeks are refetched once the connection is back.
+    /// Only for the offline line: chats, activity and the calendar resync themselves after a
+    /// reconnect (data layer).
     private func observeConnection() async {
         for await banner in environment.realtimeStatus.banner() {
-            let wasDown = Self.isDown(connection)
             connection = banner
             rebuild()
-            if wasDown, banner == .hidden {
-                tasks.run { [weak self] in await self?.refreshSchedule() }
-            }
-        }
-    }
-
-    private static func isDown(_ banner: ConnectionBanner) -> Bool {
-        switch banner {
-        case .offline, .reconnecting: true
-        case .hidden, .connecting: false
         }
     }
 
@@ -267,7 +256,7 @@ final class TodayModel {
 
     // MARK: State
 
-    private var zone: (zone: TimeZone, isDeviceFallback: Bool) { environment.calendar.scheduleTimeZone() }
+    private var zone: (zone: TimeZone, isFallback: Bool) { environment.calendar.scheduleTimeZone() }
     private var today: CalendarDate { CalendarDate(now, in: zone.zone) }
 
     private func rebuild() {
@@ -276,7 +265,7 @@ final class TodayModel {
         let zone = zone
         let context = TodayContext(
             zone: zone.zone,
-            usesDeviceTimeZone: zone.isDeviceFallback,
+            usesFallbackTimeZone: zone.isFallback,
             now: now,
             connection: connection,
             local: local,

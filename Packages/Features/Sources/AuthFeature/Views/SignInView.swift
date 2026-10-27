@@ -42,9 +42,7 @@
 
         init(session: (any SessionRepository)?) {
             // Only the first value is kept; later inits of this view reuse the stored model.
-            _model = State(
-                initialValue: SignInModel(session: session, passwordReset: PasswordResetAdapter.sender(for: session))
-            )
+            _model = State(initialValue: SignInModel(session: session))
         }
 
         var body: some View {
@@ -148,28 +146,30 @@
             WaiveraTextField(
                 AuthStrings.emailLabel,
                 text: Binding(get: { model.email }, set: { model.setEmail($0) }),
+                focus: $focus,
+                field: .email,
                 placeholder: AuthStrings.emailPlaceholder,
                 error: model.emailIssue.map(AuthStrings.issue),
                 contentType: .username,
-                keyboard: .emailAddress
+                keyboard: .emailAddress,
+                accessibilityIdentifier: "signIn.email"
             )
-            .focused($focus, equals: .email)
             .submitLabel(.next)
             .onSubmit { focus = .password }
             .disabled(!model.fieldsEnabled)
-            .accessibilityIdentifier("signIn.email")
             WaiveraTextField(
                 AuthStrings.passwordLabel,
                 text: Binding(get: { model.password }, set: { model.setPassword($0) }),
+                focus: $focus,
+                field: .password,
                 error: model.passwordIssue.map(AuthStrings.issue),
                 isSecure: true,
-                contentType: .password
+                contentType: .password,
+                accessibilityIdentifier: "signIn.password"
             )
-            .focused($focus, equals: .password)
             .submitLabel(.go)
             .onSubmit { submit() }
             .disabled(!model.fieldsEnabled)
-            .accessibilityIdentifier("signIn.password")
         }
 
         @ViewBuilder private var buttons: some View {

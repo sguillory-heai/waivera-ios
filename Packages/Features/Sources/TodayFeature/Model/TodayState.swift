@@ -90,9 +90,9 @@ enum QuietStatus: Hashable, Sendable {
 struct TodayState: Equatable, Sendable {
     /// Today's date in the employee's saved zone.
     var date: CalendarDate?
-    /// The zone every time on the screen is in, and whether it fell back to the device zone.
+    /// The zone every time on the screen is in, and whether it fell back to America/Chicago.
     var timeZone: TimeZone = .current
-    var usesDeviceTimeZone = false
+    var usesFallbackTimeZone = false
     /// Nothing is cached and the first load is still running: the skeleton (after ~300 ms).
     var isInitialLoad = true
     /// Nothing is cached and every source failed: the full error state with Try again.

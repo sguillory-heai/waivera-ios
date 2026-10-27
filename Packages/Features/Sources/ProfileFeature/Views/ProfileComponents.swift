@@ -103,6 +103,44 @@
         }
     }
 
+    /// A time off or files card in its own load state: a skeleton while it loads, a Retry card
+    /// when it failed with nothing to show, else the card itself.
+    struct ProfileSectionSlot<Content: View>: View {
+        let display: ProfileSections.Display
+        let title: String
+        let onRetry: () -> Void
+        @ViewBuilder let content: () -> Content
+
+        var body: some View {
+            switch display {
+            case .hidden:
+                EmptyView()
+            case .loading:
+                SectionCard(title: title) {
+                    VStack(alignment: .leading, spacing: Spacing.smallPlus) {
+                        SkeletonBlock()
+                        SkeletonBlock().padding(.trailing, Spacing.huge)
+                    }
+                    .padding(Spacing.medium)
+                    .accessibilityElement()
+                    .accessibilityLabel(Text(ProfileStrings.refreshing))
+                }
+            case .failed:
+                SectionCard(title: title) {
+                    BannerView(
+                        .error,
+                        message: ProfileStrings.sectionFailed,
+                        actionTitle: ProfileStrings.tryAgain,
+                        action: onRetry
+                    )
+                    .padding(Spacing.small)
+                }
+            case .content:
+                content()
+            }
+        }
+    }
+
     /// A toolbar refresh button that turns into a spinner while a refresh runs.
     struct RefreshToolbarButton: View {
         let title: String

@@ -84,6 +84,25 @@ struct ConversationModelTests {
 
     // MARK: Sending (03 §11)
 
+    @Test func someoneElsesMessageArrivingOnScreenPlaysTheReceiveCue() async {
+        let harness = await ModelHarness()
+        let model = harness.conversation()
+        let task = Task { await model.run() }
+        #expect(await eventually { model.isReady })
+        #expect(!harness.recorder.haptics.contains(.messageReceivedWhileVisible), "history never buzzes")
+        var incoming = ChatMessage(
+            id: 20_500,
+            conversationId: 7,
+            isMine: false,
+            createdAt: harness.clock.now.addingTimeInterval(3_600)
+        )
+        incoming.authorId = "usr_priya_raman"
+        incoming.plaintext = "Running late"
+        await harness.fakes.chat.receive(incoming)
+        #expect(await eventually { harness.recorder.haptics.contains(.messageReceivedWhileVisible) })
+        task.cancel()
+    }
+
     @Test func aSendIsOptimisticAndKeepsItsRowWhenConfirmed() async throws {
         let harness = await ModelHarness()
         await harness.fakes.chat.setSendOutcome(.hold)
@@ -242,9 +261,30 @@ struct ConversationModelTests {
         try? await Task.sleep(for: .milliseconds(100))
         #expect(model.state.highlightKey == nil)
         #expect(harness.fakes.chat.calls.count("loadOlder:7") <= ConversationModel.maxHighlightPages)
+        #expect(harness.fakes.chat.calls.count("loadAround:7:1") == 1, "the context window is tried first")
         task.cancel()
     }
 
+    @Test func aFailedOlderPageOffersRetryWithoutMarkingTheRowsStale() async {
+        let harness = await ModelHarness()
+        let model = harness.conversation()
+        let task = Task { await model.run() }
+        #expect(await eventually { model.isReady })
+        await harness.fakes.chat.setOlderPageFailure(.offline)
+        #expect(await eventually { model.state.hasOlder })
+        await model.loadOlder()
+        #expect(await eventually { model.state.olderFailed })
+        #expect(model.state.isStale == false)
+        #expect(model.state.content == .messages)
+        await harness.fakes.chat.setOlderPageFailure(nil)
+        await model.loadOlder()
+        #expect(await eventually { !model.state.olderFailed })
+        task.cancel()
+    }
+
+}
+
+extension ConversationModelTests {
     // MARK: Actions (03 §14)
 
     @Test func deleteAsksFirstThenDeletes() async throws {

@@ -64,12 +64,22 @@
                         items: state.items,
                         context: rowContext(now: model.clock.now),
                         actions: rowActions,
-                        hasOlder: state.hasOlder,
+                        hasOlder: state.hasOlder && !state.olderFailed,
                         isLoadingOlder: state.isLoadingOlder,
                         scrollCommand: state.scrollCommand,
                         accessibilityLabelKey: "messages.list",
                         onLoadOlder: { Task { await model.loadOlder() } }
                     ) {
+                        if state.olderFailed {
+                            BannerView(
+                                .error,
+                                message: ConversationStrings.text("older.failed"),
+                                actionTitle: ConversationStrings.text("retry"),
+                                action: { Task { await model.loadOlder() } }
+                            )
+                            .padding(.horizontal, Spacing.medium)
+                            .padding(.vertical, Spacing.small)
+                        }
                         if state.isStale {
                             BannerView(.info, message: ConversationStrings.text("messages.stale"))
                                 .padding(.horizontal, Spacing.medium)

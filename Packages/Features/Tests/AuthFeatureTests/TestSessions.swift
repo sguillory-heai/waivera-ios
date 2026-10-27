@@ -70,7 +70,7 @@ final class ScriptedSession: SessionRepository, @unchecked Sendable {
     }
 }
 
-extension ScriptedSession: PasswordResetSending {
+extension ScriptedSession {
     func sendPasswordReset(email: String) async throws {
         record("reset:\(email)")
         try await perform(resetOutcome.get())

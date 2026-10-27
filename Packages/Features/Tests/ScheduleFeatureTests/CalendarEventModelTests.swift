@@ -16,7 +16,6 @@ struct CalendarEventModelTests {
         let clock: ManualClock
         let calendar: TestCalendarRepository
         let conversations: TestConversations
-        let memory: EventRangeMemory
         let model: CalendarEventModel
     }
 
@@ -43,8 +42,7 @@ struct CalendarEventModelTests {
     func harness(
         id: String = "inv",
         events: [CalendarEvent]? = nil,
-        milestones: [Milestone] = [],
-        memory: EventRangeMemory = EventRangeMemory()
+        milestones: [Milestone] = []
     ) -> Harness {
         let clock = ManualClock(now: now)
         let calendar = TestCalendarRepository(
@@ -60,11 +58,10 @@ struct CalendarEventModelTests {
             conversations: conversations,
             session: TestSession.signedIn(),
             clock: clock,
-            memory: memory,
             deviceZone: { Zones.chicago },
             locale: english
         )
-        return Harness(clock: clock, calendar: calendar, conversations: conversations, memory: memory, model: model)
+        return Harness(clock: clock, calendar: calendar, conversations: conversations, model: model)
     }
 
     func observing(_ model: CalendarEventModel, _ body: () async throws -> Void) async rethrows {
@@ -82,7 +79,7 @@ struct CalendarEventModelTests {
         let h = harness()
         h.calendar.holds.update { $0 = true }
         await observing(h.model) {
-            #expect(await eventually { h.calendar.calls.count("refresh:month") == 3 })
+            #expect(await eventually { h.calendar.calls.count("refreshEvent:inv") == 1 })
             #expect(h.model.state == .loading)
             h.calendar.release()
             #expect(await eventually { details(h.model) != nil })
@@ -91,23 +88,23 @@ struct CalendarEventModelTests {
         #expect(details(h.model)?.organizer?.name == "Priya Raman")
     }
 
-    @Test func coldIdIsLookedUpInTheMonthGridsAroundTodayInTheSavedZone() async {
+    @Test func coldIdIsFetchedOnceThroughTheSingleEventLookup() async {
         let h = harness()
         await observing(h.model) {
             #expect(await eventually { details(h.model) != nil })
         }
-        let refreshed = Set(h.calendar.calls.all.filter { $0.hasPrefix("refresh:") })
-        #expect(refreshed == ["refresh:month:2026-11-01", "refresh:month:2026-09-27", "refresh:month:2026-11-29"])
+        #expect(h.calendar.calls.all.filter { $0.hasPrefix("refresh") } == ["refreshEvent:inv"])
     }
 
-    @Test func eventSeenOnTheScheduleIsWatchedInItsOwnRange() async {
-        let memory = EventRangeMemory()
-        memory.remember(["inv"], view: .week, anchor: day(2026, 11, 3))
-        let h = harness(memory: memory)
+    @Test func cachedEventIsShownWithoutAFetch() async {
+        let h = harness()
+        let cached = Resource(value: EventLookup.found(invitation()), phase: .loaded, updatedAt: now)
+        h.calendar.eventCells.cell("inv").set(cached)
         await observing(h.model) {
             #expect(await eventually { details(h.model) != nil })
+            try? await Task.sleep(for: .milliseconds(30))
         }
-        #expect(h.calendar.calls.all.filter { $0.hasPrefix("refresh:") } == ["refresh:week:2026-11-01"])
+        #expect(h.calendar.calls.count("refreshEvent") == 0)
     }
 
     @Test func unknownIdIsNotFoundOnceEveryRangeHasSynced() async {

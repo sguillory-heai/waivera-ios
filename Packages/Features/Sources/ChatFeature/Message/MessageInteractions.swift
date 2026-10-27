@@ -217,18 +217,26 @@ final class MessageInteractions {
 }
 
 /// Temporary copies of attachments for Share and Save. One folder, emptied before each copy,
-/// so shared files never pile up.
-enum AttachmentFiles {
+/// so shared files never pile up, and on sign-out, so none outlives the session (AS-10).
+public enum AttachmentFiles {
     static let directoryName = "waivera-chat-share"
+
+    static var directory: URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent(directoryName, isDirectory: true)
+    }
+
+    /// Deletes every shared copy. The app calls it whenever the session ends.
+    public static func removeAll() {
+        let manager = FileManager.default
+        guard manager.fileExists(atPath: directory.path) else { return }
+        for item in (try? manager.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? [] {
+            try? manager.removeItem(at: item)
+        }
+    }
 
     static func write(_ data: Data, fileName: String) throws -> URL {
         let manager = FileManager.default
-        let directory = manager.temporaryDirectory.appendingPathComponent(directoryName, isDirectory: true)
-        if manager.fileExists(atPath: directory.path) {
-            for item in (try? manager.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? [] {
-                try? manager.removeItem(at: item)
-            }
-        }
+        removeAll()
         try manager.createDirectory(at: directory, withIntermediateDirectories: true)
         let url = directory.appendingPathComponent(AttachmentRules.sanitizedFileName(fileName))
         try data.write(to: url, options: [.atomic])

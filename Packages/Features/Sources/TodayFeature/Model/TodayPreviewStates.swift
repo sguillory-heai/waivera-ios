@@ -90,9 +90,9 @@
             return state
         }
 
-        static func deviceZone() -> TodayState {
+        static func fallbackZone() -> TodayState {
             var state = populated()
-            state.usesDeviceTimeZone = true
+            state.usesFallbackTimeZone = true
             return state
         }
 

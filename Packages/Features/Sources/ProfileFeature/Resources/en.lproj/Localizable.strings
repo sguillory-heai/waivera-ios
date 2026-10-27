@@ -25,12 +25,16 @@
 "profile.address" = "Address";
 "profile.timeZone" = "Time zone";
 "profile.timeZone.value %@ %@" = "%@ (%@)";
-"profile.timeZone.device" = "Not set. Waivera is using this device's time zone.";
+"profile.timeZone.fallback" = "Not set. Times are shown in Central Time (America/Chicago).";
 "profile.hireDate" = "Hire date";
 "profile.positions" = "Positions";
 "profile.officeLocations" = "Office locations";
 "profile.reportsTo" = "Reports to";
 "profile.birthday" = "Birthday";
+"profile.scId" = "SCID";
+"profile.waiverFamilies" = "Waiver families";
+"profile.agencies" = "Agencies";
+"profile.section.failed" = "This section didn't load.";
 "profile.settings.row" = "Settings";
 "profile.settings.row.detail" = "Notifications, appearance and account";
 

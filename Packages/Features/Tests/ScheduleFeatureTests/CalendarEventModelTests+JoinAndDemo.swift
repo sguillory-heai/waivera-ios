@@ -156,7 +156,6 @@ extension CalendarEventModelTests {
             conversations: fake.chat,
             session: fake.session,
             clock: fake.clock,
-            memory: EventRangeMemory(),
             deviceZone: { Zones.chicago },
             locale: english
         )
@@ -178,7 +177,6 @@ extension CalendarEventModelTests {
             conversations: fake.chat,
             session: fake.session,
             clock: fake.clock,
-            memory: EventRangeMemory(),
             deviceZone: { Zones.chicago },
             locale: english
         )

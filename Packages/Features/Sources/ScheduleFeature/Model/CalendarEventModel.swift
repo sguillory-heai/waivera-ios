@@ -4,20 +4,13 @@ import WaiveraAPI
 import WaiveraData
 import WaiveraDesign
 
-/// A feed the event lookup watches.
-struct LookupRange: Sendable, Hashable {
-    var view: CalendarPeriod
-    var anchor: CalendarDate
-}
-
 /// Event detail (07 §7). Accept and Decline are optimistic: the answer shows at once with Undo,
 /// nothing is sent until the undo toast goes away (or the safety timer runs out), and a failed
 /// save rolls back with a visible Retry. An answer still in its undo window when the screen goes
 /// away is sent anyway: it is the person's decision.
 ///
-/// Opened by id from the schedule, Today, a push or a deep link. `CalendarRepository` has no
-/// single-event call (docs/requests/schedule.md item 1), so the model watches the range the schedule
-/// last saw the event in, or the month grids around today for a cold id.
+/// Opened by id from the schedule, Today, a push or a deep link. The repository's single-event
+/// lookup serves it from the cache and fetches it when the id is cold.
 @MainActor
 @Observable
 public final class CalendarEventModel {
@@ -33,17 +26,16 @@ public final class CalendarEventModel {
     /// The safety net for committing an answer; the toast's own dismissal normally commits first.
     @ObservationIgnored public var undoWindow: Duration = .seconds(FeedbackTiming.undoToastAccessible)
 
-    private var feeds: [LookupRange: Resource<CalendarFeed>] = [:]
+    private var lookup: Resource<EventLookup>?
     var interaction = EventInteraction()
     private var now: Date
     private var zone: ScheduleZone
     private var myUserId: String?
-    @ObservationIgnored private var ranges: [LookupRange]
     @ObservationIgnored private var milestones = MilestoneCalendar.empty
     @ObservationIgnored private var milestoneValue: MilestoneIndex?
     @ObservationIgnored private var text: ScheduleText
     @ObservationIgnored private var token = 0
-    @ObservationIgnored var found: (event: CalendarEvent, range: LookupRange)?
+    @ObservationIgnored var found: CalendarEvent?
     @ObservationIgnored private var commitTask: Task<Void, Never>?
     @ObservationIgnored var joinTask: Task<Void, Never>?
     @ObservationIgnored var chatTask: Task<Void, Never>?
@@ -53,7 +45,6 @@ public final class CalendarEventModel {
     let conversations: any ConversationsRepository
     private let session: any SessionRepository
     private let clock: any WaiveraClock
-    private let memory: EventRangeMemory
     private let deviceZone: @Sendable () -> TimeZone
     private let locale: Locale
 
@@ -62,8 +53,7 @@ public final class CalendarEventModel {
         calendar: any CalendarRepository,
         conversations: any ConversationsRepository,
         session: any SessionRepository,
-        clock: (any WaiveraClock)? = nil,
-        memory: EventRangeMemory = .shared,
+        clock: any WaiveraClock = SystemClock(),
         deviceZone: @escaping @Sendable () -> TimeZone = { TimeZone.current },
         locale: Locale = .autoupdatingCurrent
     ) {
@@ -71,9 +61,7 @@ public final class CalendarEventModel {
         self.calendar = calendar
         self.conversations = conversations
         self.session = session
-        let clock = clock ?? RepositoryAlignedClock(calendar: calendar)
         self.clock = clock
-        self.memory = memory
         self.deviceZone = deviceZone
         self.locale = locale
         let user = session.currentState.user
@@ -82,41 +70,37 @@ public final class CalendarEventModel {
         myUserId = user?.id
         now = clock.now
         text = ScheduleText(zone: zone.timeZone, locale: locale)
-        ranges = Self.ranges(for: eventID, memory: memory, today: CalendarDate(clock.now, in: zone.timeZone))
     }
 
     public convenience init(eventID: String, data: DataEnvironment) {
-        self.init(eventID: eventID, calendar: data.calendar, conversations: data.conversations, session: data.session)
-    }
-
-    /// The remembered range, else the previous, current and next month grids around today.
-    static func ranges(for eventID: String, memory: EventRangeMemory, today: CalendarDate) -> [LookupRange] {
-        if let entry = memory.entry(for: eventID) { return [LookupRange(view: entry.view, anchor: entry.anchor)] }
-        let month = today.firstOfMonth
-        return [0, -1, 1].map { LookupRange(view: .month, anchor: month.addingMonths($0)) }
+        self.init(
+            eventID: eventID,
+            calendar: data.calendar,
+            conversations: data.conversations,
+            session: data.session,
+            clock: data.clock
+        )
     }
 
     // MARK: Lifecycle
 
-    /// Watches the lookup feeds and milestones; fetches feeds that are missing. Runs until the
-    /// view's task is cancelled.
+    /// Watches the event and milestones; fetches the event when nothing is cached. Runs until
+    /// the view's task is cancelled.
     public func observe() async {
         let calendar = calendar
-        let ranges = ranges
+        let eventID = eventID
         await withDiscardingTaskGroup { group in
             group.addTask {
                 for await resource in calendar.milestones() { await self.apply(milestones: resource) }
             }
-            for range in ranges {
-                group.addTask {
-                    var checked = false
-                    for await resource in calendar.feed(period: range.view, containing: range.anchor) {
-                        await self.apply(feed: resource, for: range)
-                        if !checked {
-                            checked = true
-                            if resource.phase != .loading, resource.value == nil || resource.updatedAt == nil {
-                                await calendar.refresh(period: range.view, containing: range.anchor)
-                            }
+            group.addTask {
+                var checked = false
+                for await resource in calendar.event(id: eventID) {
+                    await self.apply(lookup: resource)
+                    if !checked {
+                        checked = true
+                        if resource.phase != .loading, resource.value == nil || resource.updatedAt == nil {
+                            await calendar.refreshEvent(id: eventID)
                         }
                     }
                 }
@@ -130,18 +114,12 @@ public final class CalendarEventModel {
         rebuild()
     }
 
-    /// The error state's Retry: refetch every watched range.
+    /// The error state's Retry: refetch the event.
     public func retry() {
         refreshTask?.cancel()
         let calendar = calendar
-        let targets = found.map { [$0.range] } ?? ranges
-        refreshTask = Task {
-            await withDiscardingTaskGroup { group in
-                for range in targets {
-                    group.addTask { await calendar.refresh(period: range.view, containing: range.anchor) }
-                }
-            }
-        }
+        let eventID = eventID
+        refreshTask = Task { await calendar.refreshEvent(id: eventID) }
     }
 
     /// The screen went away: an answer still in its undo window is sent now.
@@ -226,10 +204,8 @@ public final class CalendarEventModel {
             interaction.optimistic = OptimisticResponse(accept: accept, phase: .saved)
             successTicks += 1
             rebuild()
-            // The feed is the source of truth: refetch so every screen shows the new answer.
-            if let range = found?.range {
-                await calendar.refresh(period: range.view, containing: range.anchor)
-            }
+            // The server is the source of truth: refetch so this screen shows its answer.
+            await calendar.refreshEvent(id: eventID)
         } catch {
             interaction.optimistic = nil
             interaction.failure = ResponseFailure(accept: accept, error: WaiveraError.from(error))
@@ -240,8 +216,8 @@ public final class CalendarEventModel {
 
     // MARK: State
 
-    private func apply(feed resource: Resource<CalendarFeed>, for range: LookupRange) {
-        feeds[range] = resource
+    private func apply(lookup resource: Resource<EventLookup>) {
+        lookup = resource
         rebuild()
     }
 
@@ -253,10 +229,9 @@ public final class CalendarEventModel {
     }
 
     func rebuild() {
-        let lookup = lookupResult()
-        switch lookup {
-        case .found(let event, let range, let refreshFailed):
-            found = (event, range)
+        switch lookupResult() {
+        case .found(let event, let refreshFailed):
+            found = event
             if let optimistic = interaction.optimistic, optimistic.phase == .saved,
                 event.viewerResponse == (optimistic.accept ? .accepted : .declined)
             {
@@ -283,20 +258,17 @@ public final class CalendarEventModel {
 
     private enum Lookup {
         case loading
-        case found(CalendarEvent, LookupRange, refreshFailed: Bool)
+        case found(CalendarEvent, refreshFailed: Bool)
         case failed(WaiveraError)
         case notFound
     }
 
     private func lookupResult() -> Lookup {
-        for range in ranges {
-            guard let resource = feeds[range], let event = resource.value?.events.first(where: { $0.id == eventID })
-            else { continue }
-            return .found(event, range, refreshFailed: resource.error != nil)
+        guard let lookup else { return .loading }
+        switch lookup.value {
+        case .found(let event): return .found(event, refreshFailed: lookup.error != nil)
+        case .notFound: return lookup.error.map(Lookup.failed) ?? .notFound
+        case nil: return lookup.error.map(Lookup.failed) ?? .loading
         }
-        let resources = ranges.map { feeds[$0] }
-        if resources.contains(where: { $0 == nil || ($0?.value == nil && $0?.error == nil) }) { return .loading }
-        if let error = resources.compactMap({ $0?.value == nil ? $0?.error : nil }).first { return .failed(error) }
-        return .notFound
     }
 }

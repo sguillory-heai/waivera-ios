@@ -44,7 +44,7 @@
             .background(Palette.background)
             .navigationTitle(TodayStrings.text("today.title"))
             .task {
-                let current = model ?? data.map { TodayModel(environment: $0, clock: TodayClock.resolve(for: $0)) }
+                let current = model ?? data.map { TodayModel(environment: $0, clock: $0.clock) }
                 if model == nil { model = current }
                 await current?.run()
             }

@@ -41,7 +41,7 @@ struct TodayLocalState: Equatable, Sendable {
 /// Who, where and when the screen is rendered for.
 struct TodayContext: Sendable {
     var zone: TimeZone
-    var usesDeviceTimeZone = false
+    var usesFallbackTimeZone = false
     var now: Date
     var connection: ConnectionBanner = .hidden
     var local = TodayLocalState()
@@ -102,7 +102,7 @@ enum TodayAssembler {
         var state = TodayState()
         state.date = today
         state.timeZone = context.zone
-        state.usesDeviceTimeZone = context.usesDeviceTimeZone
+        state.usesFallbackTimeZone = context.usesFallbackTimeZone
         state.isInitialLoad = nothingCached && stillLoading
         state.loadError = nothingCached && !stillLoading ? primary.compactMap(\.error).first : nil
         state.quietStatus = quietStatus(primary, context: context)

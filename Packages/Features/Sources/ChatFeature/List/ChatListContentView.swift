@@ -144,6 +144,20 @@
             }
         }
 
+    }
+
+    extension ChatListContentView {
+        @ViewBuilder private func markReadSwipe(_ row: ChatRow) -> some View {
+            if row.isUnread {
+                Button {
+                    actions.onMarkRead(row.id)
+                } label: {
+                    Label(ChatListStrings.string("chat.list.action.markRead"), systemImage: "envelope.open.fill")
+                }
+                .tint(Palette.accent)
+            }
+        }
+
         private func rowView(_ row: ChatRow) -> some View {
             ConversationRowView(
                 row: row,
@@ -160,16 +174,7 @@
                     ArrivalWash(key: row.arrivalKey)
                 }
             )
-            .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                if row.isUnread {
-                    Button {
-                        actions.onMarkRead(row.id)
-                    } label: {
-                        Label(ChatListStrings.string("chat.list.action.markRead"), systemImage: "envelope.open.fill")
-                    }
-                    .tint(Palette.accent)
-                }
-            }
+            .swipeActions(edge: .leading, allowsFullSwipe: true) { markReadSwipe(row) }
             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                 if row.isCallLive {
                     Button {
@@ -272,7 +277,7 @@
             if let notice = state.notice {
                 BannerView(
                     .error,
-                    message: ChatListStrings.string("chat.list.call.failed"),
+                    message: ChatListStrings.string(notice.messageKey),
                     actionTitle: ChatListStrings.string("chat.list.retry"),
                     action: { actions.onRetryNotice(notice) },
                     onDismiss: actions.onDismissNotice
@@ -280,7 +285,7 @@
                 .padding(Spacing.medium)
                 .transition(Motion.transition(edge: .bottom, reduceMotion: reduceMotion))
                 .task(id: notice.id) {
-                    let message = ChatListStrings.string("chat.list.call.failed")
+                    let message = ChatListStrings.string(notice.messageKey)
                     UIAccessibility.post(notification: .announcement, argument: message)
                     let lifetime =
                         UIAccessibility.isVoiceOverRunning

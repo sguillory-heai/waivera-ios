@@ -26,6 +26,22 @@ struct ProfileModelTests {
         }
     }
 
+    @Test func aSectionRetryReloadsOnlyThatSection() async {
+        let fake = await launchedFake()
+        let model = ProfileModel(environment: fake.environment)
+        await whileRunning(model.run) {
+            await eventually { model.phase == .loaded }
+            fake.profile.resource.mutate { $0.sections.timeOff = .failed(.offline) }
+            await eventually { model.content?.sections.timeOff == .failed(.offline) }
+            #expect(model.phase == .loaded, "a section failure never fails the screen")
+            let before = fake.profile.resource.refreshCount
+            await model.retry(section: .timeOff)
+            #expect(fake.profile.calls.all == ["refreshSection:timeOff"])
+            #expect(fake.profile.resource.refreshCount == before)
+            await eventually { model.content?.sections.timeOff == .loaded }
+        }
+    }
+
     @Test func missingBackendIdShowsOneUnavailableState() async {
         let fake = FakeDataEnvironment.make(.signedOut, clock: ManualClock())
         let model = ProfileModel(environment: fake.environment)

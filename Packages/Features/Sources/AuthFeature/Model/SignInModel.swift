@@ -43,18 +43,17 @@ public final class SignInModel {
     public private(set) var successCount = 0
 
     @ObservationIgnored private var session: (any SessionRepository)?
-    @ObservationIgnored private var passwordReset: (any PasswordResetSending)?
 
-    public init(session: (any SessionRepository)?, passwordReset: (any PasswordResetSending)? = nil) {
+    public init(session: (any SessionRepository)?) {
         self.session = session
-        self.passwordReset = passwordReset
         isConfigured = session != nil
         if let state = session?.currentState { apply(state) }
     }
 
     // MARK: Derived state
 
-    public var canResetPassword: Bool { passwordReset != nil }
+    /// "Forgot password?" needs a configured session (Firebase sends the email).
+    public var canResetPassword: Bool { session != nil }
     public var fieldsEnabled: Bool { isConfigured && phase == .idle && !isConnecting }
     /// The button stays disabled until both fields have something in them (01 §3).
     public var canSubmit: Bool {
@@ -162,7 +161,7 @@ public final class SignInModel {
     }
 
     public func sendPasswordReset() async {
-        guard fieldsEnabled, let passwordReset else { return }
+        guard fieldsEnabled, let session else { return }
         if let issue = AuthValidation.emailIssue(email) {
             emailIssue = issue
             failureCount += 1
@@ -172,7 +171,7 @@ public final class SignInModel {
         phase = .sendingReset
         notice = nil
         do {
-            try await passwordReset.sendPasswordReset(email: address)
+            try await session.sendPasswordReset(email: address)
             resetSent(to: address)
         } catch {
             let mapped = WaiveraError.from(error)

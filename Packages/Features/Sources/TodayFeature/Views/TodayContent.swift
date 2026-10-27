@@ -150,9 +150,9 @@
                         .todayListRow()
                 }
             }
-            if state.usesDeviceTimeZone {
+            if state.usesFallbackTimeZone {
                 QuietLine(
-                    text: TodayStrings.format("today.nextUp.deviceZone", state.timeZone.identifier),
+                    text: TodayStrings.format("today.nextUp.fallbackZone", state.timeZone.identifier),
                     systemImage: "globe"
                 )
                 .todayListRow()

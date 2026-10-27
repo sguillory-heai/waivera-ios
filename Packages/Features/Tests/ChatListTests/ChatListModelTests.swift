@@ -151,7 +151,8 @@ struct ChatListModelTests {
     func coldStartFromCache() async {
         let clock = ManualClock()
         let cached = Sample.conversation(
-            #"{"id": 7, "participants": [\#(Sample.me), \#(Sample.priya)], "lastMessage": {"id": 1, "userId": "usr_priya_raman", "messagePlaintext": "cached", "createDate": "2026-11-01T14:00:00Z"}}"#
+            #"{"id": 7, "participants": [\#(Sample.me), \#(Sample.priya)], "lastMessage": {"id": 1, "#
+                + #""userId": "usr_priya_raman", "messagePlaintext": "cached", "createDate": "2026-11-01T14:00:00Z"}}"#
         )
         let stub = StubConversations([cached], updatedAt: nil, phase: .loading, clock: clock)
         let harness = ListHarness(conversations: stub)
@@ -286,6 +287,9 @@ struct ChatListModelTests {
         #expect(harness.model.state.notice == nil)
     }
 
+}
+
+extension ChatListModelTests {
     // MARK: Filters, search, navigation
 
     @Test("The Unread filter says You're all caught up once the last unread is read")
@@ -296,7 +300,7 @@ struct ChatListModelTests {
         #expect(await eventually { harness.ids.count == 5 })
         harness.model.filter = .unread
         #expect(harness.ids == [63, 90, 7, 41])
-        for id in [63, 90, 7, 41] { await harness.fakes.chat.markRead(conversationId: id) }
+        for id in [63, 90, 7, 41] { try? await harness.fakes.chat.markRead(conversationId: id) }
         #expect(await eventually { harness.model.state.content == .empty(.allCaughtUp) })
     }
 
@@ -330,31 +334,6 @@ struct ChatListModelTests {
         #expect(!harness.model.open(conversationId: 41))
         harness.model.appeared()
         #expect(harness.model.open(conversationId: 41))
-    }
-
-    @Test("Mark as read clears the badge at once and tells the data layer")
-    func markRead() async {
-        let harness = ListHarness()
-        await harness.start()
-        defer { harness.stop() }
-        #expect(await eventually { harness.row(41)?.unreadCount == 3 })
-        harness.model.markRead(conversationId: 41)
-        #expect(harness.row(41)?.unreadCount == 0)
-        #expect(await eventually { harness.fakes.chat.calls.count("markRead:41") == 1 })
-        // A new message after marking read shows unread again.
-        await harness.fakes.chat.receive(Sample.message(id: 20_010, conversationId: 41, text: "again"))
-        #expect(await eventually { harness.row(41)?.unreadCount == 1 })
-    }
-
-    @Test("Mark as read on a read row does nothing")
-    func markReadNoop() async {
-        let harness = ListHarness()
-        await harness.start()
-        defer { harness.stop() }
-        #expect(await eventually { harness.ids.count == 5 })
-        harness.model.markRead(conversationId: 58)
-        await settle()
-        #expect(harness.fakes.chat.calls.count("markRead:58") == 0)
     }
 
     // MARK: Staleness

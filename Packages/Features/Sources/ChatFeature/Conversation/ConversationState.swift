@@ -30,6 +30,8 @@ struct ConversationState: Equatable, Sendable {
     var isStale = false
     var hasOlder = false
     var isLoadingOlder = false
+    /// The last older page failed; the top of the list offers Retry instead of loading again.
+    var olderFailed = false
     var highlightKey: String?
     var visibleTimestamps: Set<String> = []
     var names: [String: String] = [:]

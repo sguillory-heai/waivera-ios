@@ -120,7 +120,7 @@ final class ActivityController {
             let value = await latest(repository.feed()) ?? resource
             resource = value
             local.isLoadingMore = false
-            local.loadMoreFailed = value.error != nil
+            local.loadMoreFailed = value.error != nil || value.value?.loadMoreError != nil
             onChange()
             autoPageIfNeeded()
         }

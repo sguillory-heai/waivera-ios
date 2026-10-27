@@ -28,38 +28,37 @@
 
         public static func signIn(_ state: SignIn) async -> SignInModel {
             let session = FakeDataEnvironment.make(.signedOut).session
-            let reset = FixturePasswordReset()
             switch state {
             case .empty:
-                return SignInModel(session: session, passwordReset: reset)
+                return SignInModel(session: session)
             case .filled:
-                let model = SignInModel(session: session, passwordReset: reset)
+                let model = SignInModel(session: session)
                 model.setEmail(email)
                 model.setPassword("correct horse battery")
                 return model
             case .invalid:
-                let model = SignInModel(session: session, passwordReset: reset)
+                let model = SignInModel(session: session)
                 model.setEmail("alex.rivera")
                 await model.submit()
                 return model
             case .failed:
-                let model = SignInModel(session: session, passwordReset: reset)
+                let model = SignInModel(session: session)
                 model.setEmail(email)
                 model.setPassword("not the password")
                 await model.submit()
                 return model
             case .unauthorized:
-                let model = SignInModel(session: session, passwordReset: reset)
+                let model = SignInModel(session: session)
                 model.apply(.signedOut(.unauthorized))
                 return model
             case .connecting:
-                let model = SignInModel(session: session, passwordReset: reset)
+                let model = SignInModel(session: session)
                 model.setEmail(email)
                 model.setPassword("correct horse battery")
                 model.apply(.bootstrapping)
                 return model
             case .resetSent:
-                let model = SignInModel(session: session, passwordReset: reset)
+                let model = SignInModel(session: session)
                 model.setEmail(email)
                 await model.sendPasswordReset()
                 return model
@@ -146,10 +145,6 @@
         static var user: CurrentUser { DemoData.make().user }
     }
 
-    struct FixturePasswordReset: PasswordResetSending {
-        func sendPasswordReset(email: String) async throws {}
-    }
-
     /// A session whose actions fail with one error, sitting in a fixed state.
     final class FailingSession: SessionRepository, @unchecked Sendable {
         private let cell: StateCell<SessionState>
@@ -167,6 +162,7 @@
         func start() async {}
         func signIn(email: String, password: String) async throws { throw error }
         func changePassword(current: String, new: String) async throws { throw error }
+        func sendPasswordReset(email: String) async throws { throw error }
         func retryBootstrap() async {
             if let retryState { cell.set(retryState) }
         }
@@ -186,6 +182,7 @@
         func start() async {}
         func signIn(email: String, password: String) async throws { try await hold() }
         func changePassword(current: String, new: String) async throws { try await hold() }
+        func sendPasswordReset(email: String) async throws { try await hold() }
         func retryBootstrap() async { try? await hold() }
         func signOut() async { cell.set(.signedOut(nil)) }
 

@@ -58,6 +58,7 @@
             ProfileContentView(
                 state: ProfileDisplayState(model: model),
                 onRetry: { refreshRequest += 1 },
+                onRetrySection: { section in Task { await model.retry(section: section) } },
                 onOpenOrganization: onOpenOrganization,
                 onOpenSettings: onOpenSettings
             )
@@ -89,7 +90,7 @@
         var displayName: String?
         var celebration: Celebration?
         var timeZone: TimeZone
-        var isDeviceZone: Bool
+        var isFallbackZone: Bool
         var refreshError: WaiveraError?
 
         @MainActor
@@ -101,7 +102,7 @@
             celebration = model.celebration
             let zone = ProfileText.timeZone(profile: model.content?.profile, user: model.user)
             timeZone = zone.zone
-            isDeviceZone = zone.isDevice
+            isFallbackZone = zone.isFallback
             refreshError = model.refreshError
         }
 
@@ -119,7 +120,7 @@
             self.celebration = celebration
             let zone = ProfileText.timeZone(profile: content?.profile, user: user)
             timeZone = zone.zone
-            isDeviceZone = zone.isDevice
+            isFallbackZone = zone.isFallback
             self.refreshError = refreshError
         }
     }
@@ -128,6 +129,7 @@
     struct ProfileContentView: View {
         let state: ProfileDisplayState
         let onRetry: () -> Void
+        var onRetrySection: (ProfileSection) -> Void = { _ in }
         let onOpenOrganization: () -> Void
         let onOpenSettings: () -> Void
 
@@ -165,13 +167,23 @@
                     ProfileIdentityCard(state: state)
                     ProfilePersonalSection(state: state)
                     ProfileProfessionalSection(profile: state.content?.profile)
-                    if let timeOff = state.content?.timeOff, TimeOffRules.hasContent(timeOff) {
-                        TimeOffCard(overview: timeOff)
+                    ProfileSectionSlot(
+                        display: ProfileSections.timeOff(state.content),
+                        title: ProfileStrings.timeOffTitle,
+                        onRetry: { onRetrySection(.timeOff) }
+                    ) {
+                        if let timeOff = state.content?.timeOff { TimeOffCard(overview: timeOff) }
                     }
-                    EmployeeFilesCard(
-                        files: ProfileSections.visibleFiles(state.content?.files ?? []),
-                        zone: state.timeZone
-                    )
+                    ProfileSectionSlot(
+                        display: ProfileSections.files(state.content),
+                        title: ProfileStrings.filesTitle,
+                        onRetry: { onRetrySection(.files) }
+                    ) {
+                        EmployeeFilesCard(
+                            files: ProfileSections.visibleFiles(state.content?.files ?? []),
+                            zone: state.timeZone
+                        )
+                    }
                     ProfileLinksSection(
                         organization: state.content?.organization,
                         onOpenOrganization: onOpenOrganization,
@@ -253,7 +265,7 @@
         }
 
         private var zoneText: String {
-            if state.isDeviceZone { return ProfileStrings.timeZoneDevice }
+            if state.isFallbackZone { return ProfileStrings.timeZoneFallback }
             return ProfileStrings.timeZoneValue(
                 name: ProfileFormat.zoneName(state.timeZone),
                 identifier: state.timeZone.identifier
@@ -278,6 +290,15 @@
                 DetailRow(label: ProfileStrings.reportsTo, value: ProfileText.joined(profile?.managers ?? []))
                 RowDivider()
                 DetailRow(label: ProfileStrings.birthday, value: profile?.birthday.map { ProfileFormat.birthday($0) })
+                RowDivider()
+                DetailRow(label: ProfileStrings.scId, value: profile?.scId)
+                RowDivider()
+                DetailRow(
+                    label: ProfileStrings.waiverFamilies,
+                    value: ProfileText.joined(profile?.waiverFamilies ?? [])
+                )
+                RowDivider()
+                DetailRow(label: ProfileStrings.agencies, value: ProfileText.joined(profile?.agencies ?? []))
             }
         }
     }

@@ -2,6 +2,7 @@ import Foundation
 import Testing
 import WaiveraAPI
 import WaiveraData
+import WaiveraTestSupport
 
 @testable import ProfileFeature
 
@@ -144,7 +145,11 @@ struct ProfileTextTests {
         #expect(ProfileText.timeZone(profile: profile, user: user).zone.identifier == "America/Denver")
         #expect(ProfileText.timeZone(profile: nil, user: user).zone.identifier == "America/Chicago")
         let fallback = ProfileText.timeZone(profile: nil, user: CurrentUser(id: "u1", firebaseUid: "f1"))
-        #expect(fallback.isDevice)
+        #expect(fallback.isFallback)
+        #expect(fallback.zone.identifier == "America/Chicago")
+        profile.timeZoneIdentifier = "GMT-6"
+        let offset = ProfileText.timeZone(profile: profile, user: CurrentUser(id: "u1", firebaseUid: "f1"))
+        #expect(offset.isFallback && offset.zone.identifier == "America/Chicago")
     }
 
     @Test func reconnectNeedsANewerConnectedEpoch() {
@@ -153,5 +158,30 @@ struct ProfileTextTests {
             detector.isReconnect(RealtimeStatusSnapshot(isConnected: connected, epoch: epoch))
         }
         #expect(results == [false, false, true, false])
+    }
+
+    @Test func sectionCardsLoadAndFailOnTheirOwn() {
+        var profile = DemoData.make().profile
+        #expect(ProfileSections.timeOff(profile) == .content)
+        #expect(ProfileSections.files(profile) == .content)
+        profile.timeOff = nil
+        profile.files = []
+        profile.sections = OwnProfile.SectionPhases(timeOff: .loading, files: .loading)
+        #expect(ProfileSections.timeOff(profile) == .loading)
+        #expect(ProfileSections.files(profile) == .loading)
+        profile.sections = OwnProfile.SectionPhases(timeOff: .failed(.offline), files: .failed(.offline))
+        #expect(ProfileSections.timeOff(profile) == .failed)
+        #expect(ProfileSections.files(profile) == .failed)
+        profile.sections = OwnProfile.SectionPhases(timeOff: .loaded, files: .loaded)
+        #expect(ProfileSections.timeOff(profile) == .hidden, "no balances or requests hides the card")
+        #expect(ProfileSections.files(profile) == .content, "an empty list still says No files")
+        #expect(ProfileSections.timeOff(nil) == .hidden)
+    }
+
+    @Test func aFailedRefreshOverShownFilesKeepsThem() {
+        var profile = DemoData.make().profile
+        profile.sections = OwnProfile.SectionPhases(timeOff: .failed(.offline), files: .failed(.offline))
+        #expect(ProfileSections.timeOff(profile) == .content)
+        #expect(ProfileSections.files(profile) == .content)
     }
 }

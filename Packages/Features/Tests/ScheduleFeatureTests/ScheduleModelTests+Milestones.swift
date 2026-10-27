@@ -2,12 +2,11 @@ import Foundation
 import Testing
 import WaiveraAPI
 import WaiveraData
-import WaiveraRealtime
 import WaiveraTestSupport
 
 @testable import ScheduleFeature
 
-/// Milestones, pull to refresh, range memory and the demo environment.
+/// Milestones, pull to refresh and the demo environment.
 @MainActor
 extension ScheduleModelTests {
     @Test func staleMilestonesRefreshOnOpenButFreshOnesDoNot() async {
@@ -65,14 +64,6 @@ extension ScheduleModelTests {
         #expect(h.calendar.calls.count("milestones") == 1)
     }
 
-    @Test func eventsSeenOnTheScheduleAreRememberedForTheEventScreen() async {
-        let h = harness(feed: CalendarFeed(events: [event("e1", "2026-10-29T16:00:00Z", "2026-10-29T17:00:00Z")]))
-        await running(h.model) {
-            #expect(await eventually { h.memory.entry(for: "e1") != nil })
-        }
-        #expect(h.memory.entry(for: "e1") == EventRangeMemory.Entry(view: .month, anchor: day(2026, 10, 27)))
-    }
-
     @Test func freshFeedIsNotRefetchedOnAppearance() async {
         let h = harness()
         let fresh = Resource(value: CalendarFeed(), phase: .loaded, updatedAt: h.clock.now)
@@ -92,7 +83,6 @@ extension ScheduleModelTests {
             session: fake.session,
             realtime: fake.realtimeStatus,
             clock: fake.clock,
-            memory: EventRangeMemory(),
             deviceZone: { Zones.chicago },
             locale: english
         )

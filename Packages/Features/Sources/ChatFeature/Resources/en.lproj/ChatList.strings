@@ -55,6 +55,7 @@
 "chat.list.call.joinAction" = "Join call";
 "chat.list.call.opening" = "Opening call";
 "chat.list.call.failed" = "Unable to open the video call. Try again.";
+"chat.list.markRead.failed" = "Couldn't mark the chat as read. Try again.";
 
 "chat.list.time.now" = "Now";
 "chat.list.time.yesterday" = "Yesterday";

@@ -61,6 +61,39 @@ public enum ProfileSections {
     public static func visibleFiles(_ files: [EmployeeFile]) -> [EmployeeFile] {
         Array(files.prefix(visibleFileCount))
     }
+
+    /// What a time off or files card shows: each loads and fails on its own (08 §2-4).
+    public enum Display: Equatable, Sendable {
+        case hidden
+        case loading
+        /// Nothing to show and the section's load failed; the card offers Retry.
+        case failed
+        case content
+    }
+
+    /// Time off hides when the employee has no balances or requests.
+    public static func timeOff(_ content: OwnProfile?) -> Display {
+        display(phase: content?.sections.timeOff, hasValue: content?.timeOff != nil) {
+            TimeOffRules.hasContent(content?.timeOff)
+        }
+    }
+
+    /// Files always show once loaded; an empty list reads "No files".
+    public static func files(_ content: OwnProfile?) -> Display {
+        let phase = content?.sections.files
+        let hasValue = phase == .loaded || content?.files.isEmpty == false
+        return display(phase: phase, hasValue: hasValue) { true }
+    }
+
+    private static func display(phase: ResourcePhase?, hasValue: Bool, showsContent: () -> Bool) -> Display {
+        guard let phase else { return .hidden }
+        if hasValue { return showsContent() ? .content : .hidden }
+        switch phase {
+        case .failed: return .failed
+        case .idle, .loading: return .loading
+        case .loaded: return showsContent() ? .content : .hidden
+        }
+    }
 }
 
 /// Names and identity lines shared by the profile screens.
@@ -93,12 +126,12 @@ public enum ProfileText {
         return cleaned.isEmpty ? nil : cleaned.joined(separator: ", ")
     }
 
-    /// The zone the profile shows and dates render in: the profile's saved zone, else the
-    /// session's saved zone. The device zone is used only when neither is set or valid.
-    public static func timeZone(profile: EmployeeProfile?, user: CurrentUser?) -> (zone: TimeZone, isDevice: Bool) {
-        if let zone = profile?.timeZoneIdentifier.flatMap(TimeZone.init(identifier:)) { return (zone, false) }
-        if let user, !user.isUsingDeviceTimeZone { return (user.scheduleTimeZone, false) }
-        return (.current, true)
+    /// The zone the profile shows and dates render in: the profile's saved named zone, else the
+    /// session's. When neither is a named zone, America/Chicago (dates.md §2); never the device.
+    public static func timeZone(profile: EmployeeProfile?, user: CurrentUser?) -> (zone: TimeZone, isFallback: Bool) {
+        if let zone = ScheduleZone.namedZone(profile?.timeZoneIdentifier) { return (zone, false) }
+        let zone = user?.scheduleZone ?? ScheduleZone.resolve(savedIdentifier: nil)
+        return (zone.timeZone, zone.isFallback)
     }
 }
 

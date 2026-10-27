@@ -307,3 +307,12 @@ struct AttachmentAndErrorTests {
         #expect(TypingLabel(userIds: ["usr_a", "usr_b", "usr_c"], names: names) == .many)
     }
 }
+
+struct AttachmentFilesTests {
+    @Test func sharedCopiesAreRemovedWhenTheSessionEnds() throws {
+        let url = try AttachmentFiles.write(Data("roster".utf8), fileName: "roster.pdf")
+        #expect(FileManager.default.fileExists(atPath: url.path))
+        AttachmentFiles.removeAll()
+        #expect(!FileManager.default.fileExists(atPath: url.path))
+    }
+}

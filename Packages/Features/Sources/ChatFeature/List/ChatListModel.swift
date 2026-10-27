@@ -92,7 +92,7 @@ final class ChatListModel {
         user = session.currentState.user
     }
 
-    convenience init(environment: DataEnvironment, clock: any WaiveraClock = SystemClock()) {
+    convenience init(environment: DataEnvironment) {
         self.init(
             conversations: environment.conversations,
             messages: environment.messages,
@@ -100,7 +100,7 @@ final class ChatListModel {
             realtimeStatus: environment.realtimeStatus,
             callURL: environment.callURL,
             text: LocalizedChatListText(),
-            clock: clock
+            clock: environment.clock
         )
     }
 
@@ -169,16 +169,29 @@ final class ChatListModel {
         return true
     }
 
-    /// Optimistic: the badge clears at once. The data layer sends `MarkAsRead` over the hub, or
-    /// REST when the hub is down.
+    /// Optimistic: the badge clears at once; the data layer sends `MarkAsRead` (hub, else REST).
+    /// On failure it restores the unread count, the badge comes back and a notice offers Retry.
     func markRead(conversationId: Int) {
         guard let conversation = conversation(conversationId), conversation.unreadCount > 0,
             optimisticRead[conversationId] == nil
         else { return }
         optimisticRead[conversationId] = conversation.lastMessage?.id ?? 0
+        if state.notice?.kind == .markReadFailed(conversationId: conversationId) { state.notice = nil }
         rebuild()
         let messages = messages
-        Task { await messages.markRead(conversationId: conversationId) }
+        Task {
+            do {
+                try await messages.markRead(conversationId: conversationId)
+            } catch {
+                self.markReadFailed(conversationId: conversationId)
+            }
+        }
+    }
+
+    private func markReadFailed(conversationId: Int) {
+        optimisticRead[conversationId] = nil
+        state.notice = ChatListNotice(.markReadFailed(conversationId: conversationId))
+        rebuild()
     }
 
     /// The web lobby for a live call (03 §19). Only one call opens at a time. Returns an
@@ -208,7 +221,9 @@ final class ChatListModel {
     func dismissNotice() {
         state.notice = nil
     }
+}
 
+extension ChatListModel {
     // MARK: Streams
 
     private func observeConversations() async {
@@ -370,56 +385,16 @@ final class ChatListModel {
         commit(next)
     }
 
-    private func commit(_ next: ChatListState) {
-        if next != state { state = next }
-    }
+    private func commit(_ next: ChatListState) { if next != state { state = next } }
 
     private func row(_ conversation: Conversation, zone: TimeZone) -> ChatRow {
-        let preview = ConversationPresentation.preview(conversation.lastMessage, text: text)
-        let title = ConversationPresentation.title(conversation, text: text)
-        let sender = ConversationPresentation.senderPrefix(conversation, preview: preview, text: text)
-        let typingLabel = ConversationPresentation.typingLabel(
-            conversation,
+        ChatRowBuilder(
+            text: text,
             typingUserIds: typing[conversation.id] ?? [],
-            text: text
-        )
-        let isCallLive = conversation.activeCall != nil
-        let timeLabel = timeFormatter.label(for: conversation.lastMessage?.createdAt, now: now, timeZone: zone)
-        let unread = optimisticRead[conversation.id] == nil ? conversation.unreadCount : 0
-        let spokenPreview: String
-        if isCallLive {
-            spokenPreview = text.callInProgress
-        } else if let typingLabel {
-            spokenPreview = typingLabel
-        } else if let sender {
-            spokenPreview = text.senderPreview(sender: sender, preview: preview.text)
-        } else {
-            spokenPreview = preview.text
-        }
-        let isChannel = conversation.kind == .channel
-        return ChatRow(
-            id: conversation.id,
-            title: title,
-            leading: ConversationPresentation.leading(conversation),
-            preview: preview.text,
-            previewKind: preview.kind,
-            senderPrefix: sender,
-            typingLabel: typingLabel,
-            timeLabel: timeLabel,
-            unreadCount: unread,
-            hasAttachment: conversation.lastMessage.map { $0.attachment != nil && !$0.isDeleted } ?? false,
-            isChannel: isChannel,
-            isReadOnly: isChannel && !conversation.canWrite,
-            isCallLive: isCallLive,
+            timeLabel: timeFormatter.label(for: conversation.lastMessage?.createdAt, now: now, timeZone: zone),
+            isMarkedRead: optimisticRead[conversation.id] != nil,
             isOpeningCall: openingCallId == conversation.id,
-            arrivalKey: arrivals[conversation.id],
-            accessibilityText: ConversationPresentation.accessibilityText(
-                title: title,
-                previewLine: spokenPreview,
-                timeLabel: timeLabel,
-                unreadCount: unread,
-                text: text
-            )
-        )
+            arrivalKey: arrivals[conversation.id]
+        ).row(conversation)
     }
 }

@@ -11,6 +11,7 @@
     /// The Chat tab root: conversation list with search and filters (02).
     public struct ConversationListView: View {
         let onOpenConversation: (_ conversationID: Int) -> Void
+        let onOpenPerson: (_ userID: String) -> Void
         let onNewChat: () -> Void
 
         @Environment(\.dataEnvironment) private var data
@@ -19,9 +20,11 @@
 
         public init(
             onOpenConversation: @escaping (_ conversationID: Int) -> Void,
+            onOpenPerson: @escaping (_ userID: String) -> Void,
             onNewChat: @escaping () -> Void
         ) {
             self.onOpenConversation = onOpenConversation
+            self.onOpenPerson = onOpenPerson
             self.onNewChat = onNewChat
         }
 
@@ -32,6 +35,7 @@
                         model: model,
                         avatars: avatars,
                         onOpenConversation: onOpenConversation,
+                        onOpenPerson: onOpenPerson,
                         onNewChat: onNewChat
                     )
                 } else {
@@ -65,6 +69,7 @@
         @Bindable var model: ChatListModel
         let avatars: AvatarPrefetcher<AvatarImage>
         let onOpenConversation: (Int) -> Void
+        let onOpenPerson: (String) -> Void
         let onNewChat: () -> Void
 
         @Environment(\.openURL) private var openURL
@@ -88,7 +93,7 @@
                 onNewChat: onNewChat,
                 onMarkRead: { model.markRead(conversationId: $0) },
                 onJoinCall: joinCall,
-                onViewProfile: viewProfile,
+                onViewProfile: onOpenPerson,
                 onRefresh: { [model] in await model.refresh() },
                 onRetryLoad: { Task { await model.refresh() } },
                 onTopVisibilityChange: { model.setAtTop($0) },
@@ -97,6 +102,7 @@
                 onRetryNotice: { notice in
                     switch notice.kind {
                     case .callFailed(let conversationId): joinCall(conversationId)
+                    case .markReadFailed(let conversationId): model.markRead(conversationId: conversationId)
                     }
                 }
             )
@@ -114,14 +120,6 @@
             }
         }
 
-        /// Through the app's own `waivera://people/{id}` link: the entry view has no person
-        /// closure (docs/requests/chat-list.md asks for one).
-        private func viewProfile(_ userId: String) {
-            guard let encoded = userId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
-                let url = URL(string: "waivera://people/\(encoded)")
-            else { return }
-            openURL(url)
-        }
     }
 
     /// A decoded avatar. `UIImage` is immutable once created, so sharing it across the decode
@@ -138,19 +136,23 @@
     }
 
     #if DEBUG
+        @MainActor private var previewList: some View {
+            ConversationListView(onOpenConversation: { _ in }, onOpenPerson: { _ in }, onNewChat: {})
+        }
+
         #Preview("Light, demo data") {
-            NavigationStack { ConversationListView(onOpenConversation: { _ in }, onNewChat: {}) }
+            NavigationStack { previewList }
                 .fakeDataEnvironment()
         }
 
         #Preview("Dark, empty") {
-            NavigationStack { ConversationListView(onOpenConversation: { _ in }, onNewChat: {}) }
+            NavigationStack { previewList }
                 .fakeDataEnvironment(.empty)
                 .preferredColorScheme(.dark)
         }
 
         #Preview("AX XXXL, failing") {
-            NavigationStack { ConversationListView(onOpenConversation: { _ in }, onNewChat: {}) }
+            NavigationStack { previewList }
                 .fakeDataEnvironment(.failing)
                 .dynamicTypeSize(.accessibility5)
         }
