@@ -13,6 +13,8 @@ enum AppStrings {
     static var menuSettings: String { String(localized: "app.menu.settings") }
     static var alertOpen: String { String(localized: "app.alert.open") }
     static var privacyCover: String { String(localized: "app.privacyCover") }
+    static var replyNotSentTitle: String { String(localized: "app.reply.notSent.title") }
+    static var replyNotSentBody: String { String(localized: "app.reply.notSent.body") }
 
     /// "Priya Raman: can you cover Friday?", or the reason when previews are off.
     static func chatAlert(_ alert: ChatAlert) -> String {

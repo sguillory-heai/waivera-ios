@@ -25,3 +25,6 @@
 "app.alert.reason.mention" = "Mentioned you";
 "app.alert.reason.threadReply" = "Replied in a thread";
 "app.alert.reason.message" = "New message";
+/* Local notification after a reply typed in a notification could not be sent yet. */
+"app.reply.notSent.title" = "Reply not sent yet";
+"app.reply.notSent.body" = "Open the chat to check on it. Waivera keeps it and can send it from there.";

@@ -63,6 +63,32 @@
             center.removeDeliveredNotifications(withIdentifiers: identifiers)
         }
 
+        /// A notification reply that could not be sent in the time iOS gave the app (IF-03). It is
+        /// still queued and goes out on the next launch; this says so, and a tap opens the chat.
+        /// The text is the caller's localized copy, never the reply itself.
+        public static func postReplyNotSent(
+            conversationID: Int,
+            threadRootMessageID: Int?,
+            title: String,
+            body: String
+        ) async {
+            let content = UNMutableNotificationContent()
+            content.title = title
+            content.body = body
+            content.threadIdentifier = NotificationCategories.threadIdentifier(conversationID: conversationID)
+            var userInfo: [String: String] = ["type": "chat", "conversationId": String(conversationID)]
+            if let threadRootMessageID {
+                userInfo["threadRootMessageId"] = String(threadRootMessageID)
+            }
+            content.userInfo = userInfo
+            let request = UNNotificationRequest(
+                identifier: "reply-not-sent-\(conversationID)",
+                content: content,
+                trigger: nil
+            )
+            try? await UNUserNotificationCenter.current().add(request)
+        }
+
         /// Sign-out: nothing of the previous person stays in Notification Center.
         public static func removeEverything() {
             let center = UNUserNotificationCenter.current()

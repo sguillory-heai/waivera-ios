@@ -53,8 +53,12 @@ final class AppModel {
         pushCoordinator = PushRegistrationCoordinator(
             register: { token in
                 guard let data else { return }
-                // The repository debounces, skips an unchanged fingerprint and retries.
-                await data.push.register(token: token, preferences: data.settings.currentSettings.notifications)
+                // The repository debounces, skips an unchanged fingerprint and retries. A final
+                // failure is thrown so the coordinator tries again on the next activation (IF-06).
+                try await data.push.registerAndWait(
+                    token: token,
+                    preferences: data.settings.currentSettings.notifications
+                )
             },
             invalidate: { try await tokenSource.invalidate() },
             pending: environment.pendingInvalidation
@@ -154,6 +158,10 @@ final class AppModel {
         observe(data.settings.settings()) { model, value in model.settingsChanged(to: value) }
         observe(data.realtimeStatus.banner()) { model, banner in model.connectionBanner = banner }
         observe(data.alerts.alerts()) { model, alert in model.alertArrived(alert) }
+        // Read on any surface, here or on the web, clears that chat's notifications (IF-07).
+        observe(data.alerts.conversationsRead()) { _, conversationID in
+            await DeliveredNotifications.removeAll(conversationID: conversationID)
+        }
         Task { await data.launch() }
     }
 
@@ -229,11 +237,13 @@ final class AppModel {
             if let launchDestination = launch.route?.destination {
                 navigation.open(launchDestination)
             }
-            if let held = tapRouter.didAuthenticate() {
+            if let held = tapRouter.didAuthenticate(accountSince: dataEnvironment?.session.accountSince) {
                 navigation.open(held)
             }
             await pushCoordinator.didSignIn()
         } else if previous.isSignedIn, !newState.isSignedIn {
+            // A tap held from this session never opens for whoever signs in next (IS-07).
+            tapRouter.discardPending()
             navigation = NavigationState()
             chatAlert = nil
             await pushCoordinator.didSignOut()
@@ -322,6 +332,7 @@ extension AppModel {
         guard let destination = DeepLink.destination(from: url) else { return }
         // Links are not deduplicated: the same link tapped twice should work twice.
         let key = "url:\(UUID().uuidString)"
+        // A link has no delivery date: it is the current person's own tap.
         if let now = tapRouter.handle(key: key, destination: destination, isAuthenticated: session.isSignedIn) {
             navigation.open(now)
         }
