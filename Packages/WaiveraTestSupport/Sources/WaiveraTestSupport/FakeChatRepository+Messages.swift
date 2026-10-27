@@ -60,7 +60,12 @@ extension FakeChatRepository: MessagesRepository {
     {
         let entry: OutgoingMessage?
         if let threadRootMessageId {
-            entry = await reply(text: text, attachment: nil, rootMessageId: threadRootMessageId, conversationId: conversationId)
+            entry = await reply(
+                text: text,
+                attachment: nil,
+                rootMessageId: threadRootMessageId,
+                conversationId: conversationId
+            )
         } else {
             entry = await send(text: text, attachment: nil, conversationId: conversationId)
         }

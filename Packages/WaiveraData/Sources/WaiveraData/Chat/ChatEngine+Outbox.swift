@@ -219,7 +219,9 @@ extension ChatEngine {
                 entry.state = .queued(attempt: entry.attempts)
                 outbox[clientMessageId] = entry
                 startAttempt(clientMessageId, after: Self.offlineBackoff(afterTries: tries))
-            } else if failure.isTransient, entry.attempts - offlineTries[clientMessageId, default: 0] < Self.maxAutomaticAttempts {
+            } else if failure.isTransient,
+                entry.attempts - offlineTries[clientMessageId, default: 0] < Self.maxAutomaticAttempts
+            {
                 let online = entry.attempts - offlineTries[clientMessageId, default: 0]
                 entry.state = .queued(attempt: entry.attempts)
                 outbox[clientMessageId] = entry

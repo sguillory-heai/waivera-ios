@@ -105,7 +105,8 @@ extension ChatEngine: MessagesRepository {
             state.buffered.removeAll()
         }
         if let newestFetched {
-            state.syncedThroughId = joinsCache ? max(state.syncedThroughId ?? newestFetched, newestFetched) : newestFetched
+            state.syncedThroughId =
+                joinsCache ? max(state.syncedThroughId ?? newestFetched, newestFetched) : newestFetched
         }
         state.isLoaded = true
         state.isStale = false
@@ -369,7 +370,9 @@ extension ChatEngine: MessagesRepository {
         }
         let conversationId = message.conversationId
         var state = timelines[conversationId] ?? TimelineState()
-        if fromRealtime, openConversations[conversationId] == nil, state.isStale || (!state.isLoaded && state.messages.isEmpty) {
+        if fromRealtime, openConversations[conversationId] == nil,
+            state.isStale || (!state.isLoaded && state.messages.isEmpty)
+        {
             // Nobody is looking and the cache is behind or empty: the next open fetches it.
             return
         }

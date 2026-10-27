@@ -43,7 +43,9 @@ struct CriticFixTests {
 
     @Test("IS-02: an HTML 403 from a captive portal keeps the session")
     func captivePortalRefreshKeepsTheSession() async throws {
-        let (provider, store) = try await signedInProvider(refreshReply: .json("<html>Sign in to Wi-Fi</html>", status: 403))
+        let (provider, store) = try await signedInProvider(
+            refreshReply: .json("<html>Sign in to Wi-Fi</html>", status: 403)
+        )
         await #expect(throws: WaiveraError.server(statusCode: 503)) { try await provider.idToken(forceRefresh: true) }
         #expect(await provider.currentIdentity?.uid == "uid-1")
         #expect(try store.load() != nil)

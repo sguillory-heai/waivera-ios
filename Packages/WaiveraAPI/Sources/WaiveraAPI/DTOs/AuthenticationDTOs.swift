@@ -28,7 +28,8 @@ public struct UserLoginResponseDto: Codable, Sendable, Equatable {
         requiresPasswordChange = container.lenientBool(forKey: .requiresPasswordChange)
         requiresOnboarding = container.lenientBool(forKey: .requiresOnboarding)
         let alias = try decoder.container(keyedBy: AliasKeys.self)
-        let id = container.lenient(LenientID.self, forKey: .userId)?.value
+        let id =
+            container.lenient(LenientID.self, forKey: .userId)?.value
             ?? alias.lenient(LenientID.self, forKey: .userID)?.value
         guard let id, !id.trimmingCharacters(in: .whitespaces).isEmpty else {
             throw DecodingError.keyNotFound(

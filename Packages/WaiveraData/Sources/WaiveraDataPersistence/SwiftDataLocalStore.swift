@@ -92,7 +92,12 @@
         /// The store file under Caches, with the folder excluded from backup and protected.
         static func preparedFileURL() throws -> URL {
             let fileManager = FileManager.default
-            let caches = try fileManager.url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+            let caches = try fileManager.url(
+                for: .cachesDirectory,
+                in: .userDomainMask,
+                appropriateFor: nil,
+                create: true
+            )
             var folder = caches.appending(path: folderName, directoryHint: .isDirectory)
             try fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
             #if os(iOS)
@@ -123,7 +128,10 @@
         static func removeLegacyStore() {
             guard
                 let support = try? FileManager.default.url(
-                    for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: false
+                    for: .applicationSupportDirectory,
+                    in: .userDomainMask,
+                    appropriateFor: nil,
+                    create: false
                 )
             else { return }
             let legacy = support.appending(path: fileName, directoryHint: .notDirectory)
@@ -160,7 +168,8 @@
                 try? FileManager.default.removeItem(at: file)
             }
             // If the folder cannot be recreated, the rest of the session caches in memory only.
-            database = (try? Self.preparedFileURL()).flatMap { try? Self.openDatabase(at: $0) }
+            database =
+                (try? Self.preparedFileURL()).flatMap { try? Self.openDatabase(at: $0) }
                 ?? (try? Self.openDatabase(at: nil))
         }
     }

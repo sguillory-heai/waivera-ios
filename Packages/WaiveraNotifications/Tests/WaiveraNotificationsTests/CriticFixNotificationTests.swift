@@ -22,23 +22,50 @@ struct CriticFixNotificationTests {
 
     @Test("IF-02: a reply is hidden only while its own thread is on screen")
     func replyFollowsItsThread() {
-        #expect(ForegroundPresentationPolicy.decide(for: reply, context: context(conversation: false, thread: true)) == .suppressed)
-        #expect(ForegroundPresentationPolicy.decide(for: reply, context: context(conversation: true, thread: false)) != .suppressed)
+        #expect(
+            ForegroundPresentationPolicy.decide(for: reply, context: context(conversation: false, thread: true))
+                == .suppressed
+        )
+        #expect(
+            ForegroundPresentationPolicy.decide(for: reply, context: context(conversation: true, thread: false))
+                != .suppressed
+        )
     }
 
     @Test("IF-02: a root message shows while only a thread of its conversation is on screen")
     func rootIgnoresTheThread() {
-        #expect(ForegroundPresentationPolicy.decide(for: root, context: context(conversation: false, thread: true)) != .suppressed)
-        #expect(ForegroundPresentationPolicy.decide(for: root, context: context(conversation: true, thread: false)) == .suppressed)
+        #expect(
+            ForegroundPresentationPolicy.decide(for: root, context: context(conversation: false, thread: true))
+                != .suppressed
+        )
+        #expect(
+            ForegroundPresentationPolicy.decide(for: root, context: context(conversation: true, thread: false))
+                == .suppressed
+        )
     }
 
     private let since = Date(timeIntervalSince1970: 1_792_500_000)
 
     @Test("IS-07: a notification delivered before this account signed in belongs to someone else")
     func accountPolicy() {
-        #expect(!NotificationAccountPolicy.belongsToCurrentAccount(deliveredAt: since.addingTimeInterval(-600), accountSince: since))
-        #expect(NotificationAccountPolicy.belongsToCurrentAccount(deliveredAt: since.addingTimeInterval(60), accountSince: since))
-        #expect(NotificationAccountPolicy.belongsToCurrentAccount(deliveredAt: since.addingTimeInterval(-1), accountSince: since))
+        #expect(
+            !NotificationAccountPolicy.belongsToCurrentAccount(
+                deliveredAt: since.addingTimeInterval(-600),
+                accountSince: since
+            )
+        )
+        #expect(
+            NotificationAccountPolicy.belongsToCurrentAccount(
+                deliveredAt: since.addingTimeInterval(60),
+                accountSince: since
+            )
+        )
+        #expect(
+            NotificationAccountPolicy.belongsToCurrentAccount(
+                deliveredAt: since.addingTimeInterval(-1),
+                accountSince: since
+            )
+        )
         #expect(NotificationAccountPolicy.belongsToCurrentAccount(deliveredAt: nil, accountSince: since))
         let event = NotificationResponseEvent(
             key: "a:reply",
@@ -65,7 +92,9 @@ struct CriticFixNotificationTests {
         #expect(router.didAuthenticate(accountSince: since) == nil)
         #expect(router.pending == nil)
 
-        #expect(router.handle(key: "b:open", destination: destination, isAuthenticated: false, deliveredAt: since) == nil)
+        #expect(
+            router.handle(key: "b:open", destination: destination, isAuthenticated: false, deliveredAt: since) == nil
+        )
         #expect(router.didAuthenticate(accountSince: since) == destination)
     }
 

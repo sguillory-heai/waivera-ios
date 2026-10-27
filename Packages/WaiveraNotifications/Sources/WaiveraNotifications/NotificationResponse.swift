@@ -124,7 +124,13 @@ public struct NotificationResponseEvent: Equatable, Sendable {
     /// When the notification was delivered (`UNNotification.date`), for the account check.
     public let deliveredAt: Date?
 
-    public init(key: String, actionIdentifier: String, payload: PushPayload, userText: String?, deliveredAt: Date? = nil) {
+    public init(
+        key: String,
+        actionIdentifier: String,
+        payload: PushPayload,
+        userText: String?,
+        deliveredAt: Date? = nil
+    ) {
         self.key = key
         self.actionIdentifier = actionIdentifier
         self.payload = payload

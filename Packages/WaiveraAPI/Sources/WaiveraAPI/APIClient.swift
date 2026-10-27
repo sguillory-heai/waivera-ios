@@ -57,10 +57,12 @@ public final class SessionRejections: Sendable {
     public func stream() -> AsyncStream<Int> { broadcaster.stream() }
 
     func send() {
-        broadcaster.send(count.update { value -> Int in
-            value += 1
-            return value
-        })
+        broadcaster.send(
+            count.update { value -> Int in
+                value += 1
+                return value
+            }
+        )
     }
 }
 

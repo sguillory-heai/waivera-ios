@@ -124,7 +124,11 @@ struct CriticFixChatTests {
         await harness.begin()
         await harness.engine.refresh()
         harness.realtime.connect()
-        let alerts = LiveChatAlertsRepository(chat: harness.engine, presence: harness.presence, realtime: harness.realtime)
+        let alerts = LiveChatAlertsRepository(
+            chat: harness.engine,
+            presence: harness.presence,
+            realtime: harness.realtime
+        )
         return (harness, alerts)
     }
 
@@ -290,7 +294,9 @@ struct CriticFixChatTests {
         await settle()
         await harness.engine.open(conversationId: 7)
         try? await harness.engine.markRead(conversationId: 7)
-        await harness.engine.handle(.readReceipt(ReadReceiptEvent(conversationId: 41, userId: viewerId, lastReadAt: nil)))
+        await harness.engine.handle(
+            .readReceipt(ReadReceiptEvent(conversationId: 41, userId: viewerId, lastReadAt: nil))
+        )
         await harness.engine.handle(
             .readReceipt(ReadReceiptEvent(conversationId: 42, userId: "usr_priya_raman", lastReadAt: nil))
         )

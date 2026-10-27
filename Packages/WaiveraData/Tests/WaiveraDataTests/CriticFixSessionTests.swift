@@ -20,7 +20,8 @@ struct CriticFixSessionTests {
         let clock: TestClock
         let environment: DataEnvironment
 
-        init(store: InMemoryLocalStore, keyValues: InMemoryKeyValueStore, transport: RoutingTransport, clock: TestClock) {
+        init(store: InMemoryLocalStore, keyValues: InMemoryKeyValueStore, transport: RoutingTransport, clock: TestClock)
+        {
             self.store = store
             self.keyValues = keyValues
             self.transport = transport
@@ -111,7 +112,9 @@ struct CriticFixSessionTests {
         let relaunched = Rig(store: store, keyValues: keyValues, transport: transport, clock: clock)
         await relaunched.environment.launch()
         #expect(await eventually { relaunched.state.user?.id == viewerId && relaunched.state.isSignedIn })
-        #expect(await eventually { await latest(relaunched.environment.conversations.conversations())?.value?.count == 3 })
+        #expect(
+            await eventually { await latest(relaunched.environment.conversations.conversations())?.value?.count == 3 }
+        )
 
         await transport.setOffline(false)
         let logins = await transport.count("GET api/Authentication/login")
@@ -125,7 +128,12 @@ struct CriticFixSessionTests {
         let transport = RoutingTransport()
         await Self.routes(transport)
         await transport.setOffline(true)
-        let rig = Rig(store: InMemoryLocalStore(), keyValues: InMemoryKeyValueStore(), transport: transport, clock: TestClock())
+        let rig = Rig(
+            store: InMemoryLocalStore(),
+            keyValues: InMemoryKeyValueStore(),
+            transport: transport,
+            clock: TestClock()
+        )
         await rig.environment.launch()
         #expect(await eventually { rig.state == .bootstrapFailed(.offline) })
     }
@@ -240,12 +248,17 @@ struct CriticFixSessionTests {
 
     // MARK: IF-06
 
-    private func failingPush() async -> (LivePushRegistrationRepository, RoutingTransport, TestClock, InMemoryKeyValueStore) {
+    private func failingPush() async -> (
+        LivePushRegistrationRepository, RoutingTransport, TestClock, InMemoryKeyValueStore
+    ) {
         let transport = RoutingTransport()
         await transport.set("POST api/mobile-push/register", .status(503))
         let clock = TestClock()
         let keyValues = InMemoryKeyValueStore()
-        return (LivePushRegistrationRepository(api: makeAPI(transport), store: keyValues, clock: clock), transport, clock, keyValues)
+        return (
+            LivePushRegistrationRepository(api: makeAPI(transport), store: keyValues, clock: clock), transport, clock,
+            keyValues
+        )
     }
 
     @Test("IF-06: registration that keeps failing throws and stores no fingerprint")
