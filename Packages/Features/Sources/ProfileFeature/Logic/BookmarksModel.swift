@@ -32,7 +32,12 @@ public struct BookmarkSearchWords: Hashable, Sendable {
     public var photo: String
     public var file: String
 
-    public init(threadReply: String = "thread reply", message: String = "message", photo: String = "photo", file: String = "file") {
+    public init(
+        threadReply: String = "thread reply",
+        message: String = "message",
+        photo: String = "photo",
+        file: String = "file"
+    ) {
         self.threadReply = threadReply
         self.message = message
         self.photo = photo

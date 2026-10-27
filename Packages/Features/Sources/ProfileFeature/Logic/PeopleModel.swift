@@ -24,7 +24,8 @@ public enum PeopleFilter {
             guard person.id.nonBlank != nil, person.name.nonBlank != nil else { return false }
             if let me, person.id == me.id || person.id == me.firebaseUid { return false }
             guard seen.insert(person.id).inserted else { return false }
-            return needle.isEmpty || person.name.range(of: needle, options: [.caseInsensitive, .diacriticInsensitive]) != nil
+            return needle.isEmpty
+                || person.name.range(of: needle, options: [.caseInsensitive, .diacriticInsensitive]) != nil
         }
     }
 }
@@ -131,7 +132,9 @@ public final class PeopleModel {
         let everyone = PeopleFilter.apply(all, me: me, query: "")
         let matches = query.nonBlank == nil ? everyone : PeopleFilter.apply(all, me: me, query: query)
         let today = calendar.today()
-        rows = matches.map { PersonRow(id: $0.id, name: $0.name, celebration: milestones.celebration(for: $0.id, on: today)) }
+        rows = matches.map {
+            PersonRow(id: $0.id, name: $0.name, celebration: milestones.celebration(for: $0.id, on: today))
+        }
         totalCount = everyone.count
         refreshError = resource.value == nil ? nil : resource.error
         phase =

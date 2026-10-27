@@ -16,7 +16,9 @@ struct ProfileFormatTests {
         body()
     }
 
-    @Test(arguments: ["America/Los_Angeles", "America/Chicago", "UTC", "Asia/Tokyo", "Pacific/Kiritimati", "Pacific/Pago_Pago"])
+    @Test(arguments: [
+        "America/Los_Angeles", "America/Chicago", "UTC", "Asia/Tokyo", "Pacific/Kiritimati", "Pacific/Pago_Pago",
+    ])
     func birthdayReadsApr2WithNoYearOnEveryDeviceZone(zone: String) throws {
         let birthday = try calendarDate(1990, 4, 2)
         withDefaultZone(zone) {

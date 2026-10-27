@@ -43,7 +43,8 @@ func whileRunning(_ run: @escaping @MainActor () async -> Void, _ body: () async
 func utc(_ year: Int, _ month: Int, _ day: Int, _ hour: Int = 0, _ minute: Int = 0) -> Date {
     var calendar = Calendar(identifier: .gregorian)
     calendar.timeZone = TimeZone(identifier: "UTC") ?? .current
-    return calendar.date(from: DateComponents(year: year, month: month, day: day, hour: hour, minute: minute)) ?? .distantPast
+    return calendar.date(from: DateComponents(year: year, month: month, day: day, hour: hour, minute: minute))
+        ?? .distantPast
 }
 
 func calendarDate(_ year: Int, _ month: Int, _ day: Int) throws -> CalendarDate {
@@ -71,7 +72,10 @@ final class ScriptedBookmarks: BookmarksRepository, @unchecked Sendable {
         let isSaved = !(resource.value?.bookmarks.contains { $0.id == messageId } ?? false)
         resource.mutate { list in
             if isSaved {
-                list.bookmarks.insert(Bookmark(message: ChatMessage(id: messageId, conversationId: conversationId)), at: 0)
+                list.bookmarks.insert(
+                    Bookmark(message: ChatMessage(id: messageId, conversationId: conversationId)),
+                    at: 0
+                )
             } else {
                 list.bookmarks.removeAll { $0.id == messageId }
             }
