@@ -177,6 +177,7 @@ targets:
         product: WaiveraDesign
       - package: Features
         product: AuthFeature
+        product: TodayFeature
       - package: SnapshotTesting
         product: SnapshotTesting
     settings:

@@ -38,6 +38,8 @@ let package = Package(
             name: "AuthFeatureTests",
             dependencies: [
                 "AuthFeature",
+            name: "TodayFeatureTests",
+                "TodayFeature",
                 .product(name: "WaiveraAPI", package: "WaiveraAPI"),
                 .product(name: "WaiveraData", package: "WaiveraData"),
                 .product(name: "WaiveraTestSupport", package: "WaiveraTestSupport"),
