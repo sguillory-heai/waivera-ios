@@ -63,7 +63,8 @@ final class ConversationModel {
             bookmarks: data?.bookmarks,
             attachments: data?.attachments,
             platform: platform,
-            isConnected: { context.isConnected }
+            isConnected: { context.isConnected },
+            wait: { try? await clock.sleep(seconds: $0) }
         )
     }
 
@@ -125,6 +126,7 @@ final class ConversationModel {
     private func applyConversation() {
         guard let conversation = context.conversation else { return }
         state.title = conversation.title
+        state.memberCount = Self.memberCount(conversation)
         state.isBotConversation = conversation.kind == .bot
         state.canWrite = WritePermission.canWrite(conversation)
         state.readOnlyReason = ReadOnlyReason.conversation(conversation)
@@ -181,6 +183,12 @@ final class ConversationModel {
         refreshTyping()
         rebuildCount += 1
         markReadIfNeeded()
+    }
+
+    /// A group's members, counted once each; only a group has the header's members button.
+    static func memberCount(_ conversation: Conversation) -> Int? {
+        guard case .group = conversation.title else { return nil }
+        return Set(conversation.participants.map(\.id).filter { !$0.isEmpty }).count
     }
 
     private static func content(built: [TimelineItem], timeline: Resource<MessageTimeline>) -> ConversationContent {

@@ -31,9 +31,20 @@ enum ConversationStrings {
         case .bot: text("title.bot")
         case .person(let name): nonBlank(name) ?? text("title.person.unknown")
         case .group(let first, let others):
-            plural("title.group", count: others, nonBlank(first) ?? text("title.person.unknown"), others)
+            plural("title.group", count: others, groupFirstName(first), others)
         }
     }
+
+    /// The part of a group title that may be cut ("Maria-Fernanda R." in "… & 4 others").
+    static func groupFirstName(_ first: String?) -> String {
+        nonBlank(first) ?? text("title.person.unknown")
+    }
+
+    /// "18 members", the group header's button to the members screen.
+    static func members(_ count: Int) -> String { plural("members", count: count) }
+
+    /// "In north-region", the thread header's one-line subtitle.
+    static func threadIn(_ channel: String) -> String { format("thread.in", channel) }
 
     static func subtitle(_ subtitle: ConnectionSubtitle) -> String {
         switch subtitle {
