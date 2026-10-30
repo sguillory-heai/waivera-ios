@@ -85,8 +85,8 @@ public final class ScheduleModel {
         let zone = ScheduleZone.resolve(savedIdentifier: session.currentState.user?.timeZoneIdentifier)
         let text = ScheduleText(zone: zone.timeZone, locale: locale)
         let now = clock.now
-        let me = session.currentState.user?.id
-        myUserId = me
+        let viewerId = session.currentState.user?.id
+        myUserId = viewerId
         self.zone = zone
         self.text = text
         self.now = now
@@ -102,7 +102,7 @@ public final class ScheduleModel {
             milestonesFailed: false,
             isOffline: false,
             now: now,
-            myUserId: me
+            myUserId: viewerId
         ).build(text: text)
     }
 
@@ -232,6 +232,88 @@ public final class ScheduleModel {
         refreshTask = Task { await calendar.refreshMilestones() }
     }
 
+    // MARK: Inputs
+
+    private func sessionChanged(_ state: SessionState) {
+        if state.user?.id != myUserId {
+            myUserId = state.user?.id
+            rebuild()
+        }
+        let resolved = ScheduleZone.resolve(savedIdentifier: state.user?.timeZoneIdentifier)
+        guard resolved != zone else { return }
+        zone = resolved
+        text = ScheduleText(zone: resolved.timeZone, locale: locale)
+        rebuild()
+    }
+
+    private func apply(feed resource: Resource<CalendarFeed>, for key: FeedKey) {
+        guard key == feedKey else { return }
+        feedSnapshot = (key, resource)
+        rebuild()
+    }
+
+    private func apply(milestones resource: Resource<MilestoneIndex>) {
+        let previous = milestoneResource.value
+        milestoneResource = resource
+        if let index = resource.value, index != previous {
+            milestoneCalendar = MilestoneCalendar(index)
+        }
+        rebuild()
+    }
+
+    private func apply(banner: ConnectionBanner) {
+        let offline = banner == .offline
+        guard offline != isOffline else { return }
+        isOffline = offline
+        rebuild()
+    }
+
+    private func refreshMilestonesIfStale() async {
+        var replay = calendar.milestones().makeAsyncIterator()
+        let current = await replay.next()
+        let isFresh = current?.updatedAt.map { clock.now.timeIntervalSince($0) < Self.milestonesStaleAfter } ?? false
+        if isFresh, current?.value != nil {
+            return
+        }
+        if current?.phase == .loading { return }
+        await calendar.refreshMilestones()
+    }
+
+    private func needsRefresh(_ resource: Resource<CalendarFeed>) -> Bool {
+        if resource.phase == .loading { return false }
+        guard resource.value != nil, let updated = resource.updatedAt else { return true }
+        return clock.now.timeIntervalSince(updated) > Self.feedStaleAfter
+    }
+
+    private func rebuild() {
+        let key = feedKey
+        let feed = feedSnapshot.flatMap { $0.key == key ? $0.resource : nil }
+        let previous = state
+        var next = ScheduleStateBuilder(
+            view: view,
+            selectedDate: selectedDate,
+            today: today,
+            zone: zone,
+            deviceZone: deviceZone(),
+            feed: feed,
+            milestones: milestoneCalendar,
+            milestonesFailed: milestoneResource.error != nil,
+            isOffline: isOffline,
+            now: now,
+            myUserId: myUserId,
+            openingWishesFor: openingWishesFor
+        ).build(text: text)
+        // A rebuild that keeps the period (a feed update, a tick) keeps the last direction, so a
+        // slide already under way is not turned around.
+        next.periodStep =
+            next.period == previous.period ? previous.periodStep : next.period.stepDirection(from: previous.period)
+        state = next
+    }
+}
+
+// MARK: - Send wishes
+
+extension ScheduleModel {
     /// "Send wishes" on a celebration card: opens (or creates) the direct chat. The button is
     /// busy from the tap until the chat opens or fails; a second tap meanwhile is ignored.
     public func sendWishes(to userId: String) {
@@ -278,85 +360,6 @@ public final class ScheduleModel {
         case .failure: wishesFailure = WishesFailure(id: requestCount, userId: userId)
         }
         rebuild()
-    }
-
-    // MARK: Inputs
-
-    private func sessionChanged(_ state: SessionState) {
-        if state.user?.id != myUserId {
-            myUserId = state.user?.id
-            rebuild()
-        }
-        let resolved = ScheduleZone.resolve(savedIdentifier: state.user?.timeZoneIdentifier)
-        guard resolved != zone else { return }
-        zone = resolved
-        text = ScheduleText(zone: resolved.timeZone, locale: locale)
-        rebuild()
-    }
-
-    private func apply(feed resource: Resource<CalendarFeed>, for key: FeedKey) {
-        guard key == feedKey else { return }
-        feedSnapshot = (key, resource)
-        rebuild()
-    }
-
-    private func apply(milestones resource: Resource<MilestoneIndex>) {
-        let previous = milestoneResource.value
-        milestoneResource = resource
-        if let index = resource.value, index != previous {
-            milestoneCalendar = MilestoneCalendar(index)
-        }
-        rebuild()
-    }
-
-    private func apply(banner: ConnectionBanner) {
-        let offline = banner == .offline
-        guard offline != isOffline else { return }
-        isOffline = offline
-        rebuild()
-    }
-
-    private func refreshMilestonesIfStale() async {
-        var replay = calendar.milestones().makeAsyncIterator()
-        let current = await replay.next()
-        if let updated = current?.updatedAt, clock.now.timeIntervalSince(updated) < Self.milestonesStaleAfter,
-            current?.value != nil
-        {
-            return
-        }
-        if current?.phase == .loading { return }
-        await calendar.refreshMilestones()
-    }
-
-    private func needsRefresh(_ resource: Resource<CalendarFeed>) -> Bool {
-        if resource.phase == .loading { return false }
-        guard resource.value != nil, let updated = resource.updatedAt else { return true }
-        return clock.now.timeIntervalSince(updated) > Self.feedStaleAfter
-    }
-
-    private func rebuild() {
-        let key = feedKey
-        let feed = feedSnapshot.flatMap { $0.key == key ? $0.resource : nil }
-        let previous = state
-        var next = ScheduleStateBuilder(
-            view: view,
-            selectedDate: selectedDate,
-            today: today,
-            zone: zone,
-            deviceZone: deviceZone(),
-            feed: feed,
-            milestones: milestoneCalendar,
-            milestonesFailed: milestoneResource.error != nil,
-            isOffline: isOffline,
-            now: now,
-            myUserId: myUserId,
-            openingWishesFor: openingWishesFor
-        ).build(text: text)
-        // A rebuild that keeps the period (a feed update, a tick) keeps the last direction, so a
-        // slide already under way is not turned around.
-        next.periodStep =
-            next.period == previous.period ? previous.periodStep : next.period.stepDirection(from: previous.period)
-        state = next
     }
 }
 

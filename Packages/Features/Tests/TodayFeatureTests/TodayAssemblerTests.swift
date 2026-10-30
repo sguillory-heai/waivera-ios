@@ -8,9 +8,10 @@ import WaiveraData
 /// The pure rules behind the Today list: what needs the person, Next up, celebrations, the
 /// activity section and the screen states.
 struct TodayAssemblerTests {
-    private func assemble(_ sources: TodaySources = Fixture.sources(), _ context: TodayContext = Fixture.context())
-        -> TodayState
-    {
+    private func assemble(
+        _ sources: TodaySources = Fixture.sources(),
+        _ context: TodayContext = Fixture.context()
+    ) -> TodayState {
         TodayAssembler.assemble(sources, context: context)
     }
 

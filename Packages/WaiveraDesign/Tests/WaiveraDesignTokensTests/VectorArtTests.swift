@@ -20,7 +20,7 @@ struct VectorArtTests {
 
     @Test func smoothCurvesReflectThePreviousControl() throws {
         let commands = try VectorPathParser.parse("M0 0 C0 10 10 10 10 0 S20 -10 20 0")
-        #expect(commands.last == .cubic(x1: 10, y1: -10, x2: 20, y2: -10, x: 20, y: 0))
+        #expect(commands.last == .cubic(control1X: 10, control1Y: -10, control2X: 20, control2Y: -10, x: 20, y: 0))
     }
 
     @Test func arcsBecomeCubicsThatEndOnTheTarget() throws {

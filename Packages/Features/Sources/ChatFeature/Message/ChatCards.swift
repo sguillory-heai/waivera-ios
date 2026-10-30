@@ -118,10 +118,18 @@
             )
         }
 
-        private func arrange(width: CGFloat?, subviews: Subviews)
-            -> (size: CGSize, label: CGSize, value: CGSize, stacked: Bool)
-        {
-            guard subviews.count == 2 else { return (.zero, .zero, .zero, false) }
+        /// The pair's size, each part's size and whether the value sits under the label.
+        private struct Arrangement {
+            var size: CGSize
+            var label: CGSize
+            var value: CGSize
+            var stacked: Bool
+        }
+
+        private func arrange(width: CGFloat?, subviews: Subviews) -> Arrangement {
+            guard subviews.count == 2 else {
+                return Arrangement(size: .zero, label: .zero, value: .zero, stacked: false)
+            }
             let label = subviews[0].sizeThatFits(.unspecified)
             let valueIdeal = subviews[1].sizeThatFits(.unspecified)
             let pair = width ?? (label.width + gap + valueIdeal.width)
@@ -137,13 +145,15 @@
             if let room {
                 let value = subviews[1].sizeThatFits(ProposedViewSize(width: room, height: nil))
                 let fitted = CGSize(width: min(value.width, room), height: value.height)
-                return (CGSize(width: pair, height: max(label.height, fitted.height)), label, fitted, false)
+                let size = CGSize(width: pair, height: max(label.height, fitted.height))
+                return Arrangement(size: size, label: label, value: fitted, stacked: false)
             }
             let stackedLabel = subviews[0].sizeThatFits(ProposedViewSize(width: pair, height: nil))
             let value = subviews[1].sizeThatFits(ProposedViewSize(width: pair, height: nil))
             let fitted = CGSize(width: min(value.width, pair), height: value.height)
             let height = stackedLabel.height + Spacing.xxSmall + fitted.height
-            return (CGSize(width: pair, height: height), stackedLabel, fitted, true)
+            let size = CGSize(width: pair, height: height)
+            return Arrangement(size: size, label: stackedLabel, value: fitted, stacked: true)
         }
     }
 

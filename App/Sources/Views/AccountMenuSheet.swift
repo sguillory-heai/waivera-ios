@@ -13,16 +13,20 @@ struct AccountMenuSheet: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                MenuButton(identifier: "menu.profile", action: { onSelect(.profile) }) {
-                    ListRow(
-                        title: accountName.isEmpty ? AppStrings.accountFallback : accountName,
-                        subtitle: AppStrings.viewProfile,
-                        titleKind: .personName,
-                        showsChevron: true
-                    ) {
-                        AvatarView(name: accountName, image: accountImage)
+                MenuButton(
+                    identifier: "menu.profile",
+                    action: { onSelect(.profile) },
+                    label: {
+                        ListRow(
+                            title: accountName.isEmpty ? AppStrings.accountFallback : accountName,
+                            subtitle: AppStrings.viewProfile,
+                            titleKind: .personName,
+                            showsChevron: true
+                        ) {
+                            AvatarView(name: accountName, image: accountImage)
+                        }
                     }
-                }
+                )
                 MenuRow(title: AppStrings.menuPeople, systemImage: "person.2.fill", identifier: "menu.people") {
                     onSelect(.people)
                 }

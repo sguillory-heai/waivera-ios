@@ -3,10 +3,10 @@ import WaiveraAPI
 import WaiveraRealtime
 
 extension ChatEngine: ConversationsRepository {
-    public nonisolated func conversations() -> AsyncStream<Resource<[Conversation]>> { conversationsCell.stream() }
-    public nonisolated func typing() -> AsyncStream<[Int: [String]]> { typingTracker.cell.stream() }
-    public nonisolated func totalUnread() -> AsyncStream<Int> { unreadCell.stream() }
-    public nonisolated func failedSends() -> AsyncStream<Set<Int>> { failedSendsCell.stream() }
+    nonisolated public func conversations() -> AsyncStream<Resource<[Conversation]>> { conversationsCell.stream() }
+    nonisolated public func typing() -> AsyncStream<[Int: [String]]> { typingTracker.cell.stream() }
+    nonisolated public func totalUnread() -> AsyncStream<Int> { unreadCell.stream() }
+    nonisolated public func failedSends() -> AsyncStream<Set<Int>> { failedSendsCell.stream() }
 
     /// Concurrent callers share one request.
     public func refresh() async {

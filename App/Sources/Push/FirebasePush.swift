@@ -32,7 +32,7 @@
         private let continuation: AsyncStream<String>.Continuation
 
         /// Only assigns stored properties, so it needs no actor (`NSObject.init` is nonisolated).
-        nonisolated override init() {
+        override nonisolated init() {
             let pair = AsyncStream<String>.makeStream(bufferingPolicy: .bufferingNewest(1))
             stream = pair.stream
             continuation = pair.continuation

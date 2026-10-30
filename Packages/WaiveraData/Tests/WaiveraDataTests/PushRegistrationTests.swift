@@ -11,16 +11,14 @@ struct PushRegistrationTests {
     private let registerRoute = "POST api/mobile-push/register"
     private let unregisterRoute = "POST api/mobile-push/unregister"
 
-    private func make() async -> (LivePushRegistrationRepository, RoutingTransport, TestClock, InMemoryKeyValueStore) {
+    private func make() async -> PushRig {
         let transport = RoutingTransport()
         await transport.set(registerRoute, .fixture("rest-mobile-push-register"))
         await transport.set(unregisterRoute, .fixture("rest-mobile-push-unregister"))
         let clock = TestClock()
         let store = InMemoryKeyValueStore()
-        return (
-            LivePushRegistrationRepository(api: makeAPI(transport), store: store, clock: clock), transport, clock,
-            store
-        )
+        let push = LivePushRegistrationRepository(api: makeAPI(transport), store: store, clock: clock)
+        return PushRig(push: push, transport: transport, clock: clock, store: store)
     }
 
     private func body(_ transport: RoutingTransport, _ index: Int = 0) async throws -> [String: Any] {
@@ -29,7 +27,10 @@ struct PushRegistrationTests {
     }
 
     @Test func registersFCMOnceForTheSameFingerprint() async throws {
-        let (push, transport, clock, _) = await make()
+        let made = await make()
+        let push = made.push
+        let transport = made.transport
+        let clock = made.clock
         await push.register(token: "fcm-1", preferences: NotificationPreferences())
         await settle()
         await clock.advance(by: 0.5)
@@ -48,7 +49,10 @@ struct PushRegistrationTests {
     }
 
     @Test func burstsAreDebouncedAndTokenRotationReregisters() async throws {
-        let (push, transport, clock, _) = await make()
+        let made = await make()
+        let push = made.push
+        let transport = made.transport
+        let clock = made.clock
         await push.register(token: "fcm-1", preferences: NotificationPreferences())
         var muted = NotificationPreferences()
         muted.sound = false
@@ -68,7 +72,11 @@ struct PushRegistrationTests {
     }
 
     @Test func pushSwitchedOffUnregisters() async {
-        let (push, transport, clock, store) = await make()
+        let made = await make()
+        let push = made.push
+        let transport = made.transport
+        let clock = made.clock
+        let store = made.store
         var off = NotificationPreferences()
         off.pushEnabled = false
         await push.register(token: "fcm-1", preferences: off)
@@ -81,7 +89,11 @@ struct PushRegistrationTests {
     }
 
     @Test func transientFailuresRetry() async {
-        let (push, transport, clock, store) = await make()
+        let made = await make()
+        let push = made.push
+        let transport = made.transport
+        let clock = made.clock
+        let store = made.store
         await transport.enqueue(registerRoute, .status(503), .status(503))
         await push.register(token: "fcm-1", preferences: NotificationPreferences())
         await settle()
@@ -96,13 +108,18 @@ struct PushRegistrationTests {
     }
 
     @Test func installIdIsStable() async {
-        let (push, _, _, _) = await make()
+        let made = await make()
+        let push = made.push
         let first = await push.deviceId
         #expect(await push.deviceId == first)
     }
 
     @Test func signOutUnregistersAndForgetsTheToken() async {
-        let (push, transport, clock, store) = await make()
+        let made = await make()
+        let push = made.push
+        let transport = made.transport
+        let clock = made.clock
+        let store = made.store
         await push.register(token: "fcm-1", preferences: NotificationPreferences())
         await settle()
         await clock.advance(by: 0.5)
@@ -119,4 +136,12 @@ struct PushRegistrationTests {
         await push.settle()
         #expect(await transport.count(registerRoute) == 1)
     }
+}
+
+/// A push registration repository over a routing transport, with its clock and store.
+struct PushRig {
+    let push: LivePushRegistrationRepository
+    let transport: RoutingTransport
+    let clock: TestClock
+    let store: InMemoryKeyValueStore
 }

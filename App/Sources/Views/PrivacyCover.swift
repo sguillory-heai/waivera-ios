@@ -34,8 +34,11 @@ final class PrivacyCoverController {
         self.isEnabled = isEnabled
         let center = NotificationCenter.default
         observers.append(
-            center.addObserver(forName: UIScene.willDeactivateNotification, object: nil, queue: .main) {
-                [weak self] notification in
+            center.addObserver(
+                forName: UIScene.willDeactivateNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] notification in
                 MainActor.assumeIsolated {
                     guard let scene = notification.object as? UIWindowScene else { return }
                     self?.cover(scene)
@@ -43,8 +46,11 @@ final class PrivacyCoverController {
             }
         )
         observers.append(
-            center.addObserver(forName: UIScene.didActivateNotification, object: nil, queue: .main) {
-                [weak self] notification in
+            center.addObserver(
+                forName: UIScene.didActivateNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] notification in
                 MainActor.assumeIsolated {
                     guard let scene = notification.object as? UIWindowScene else { return }
                     self?.uncover(scene)

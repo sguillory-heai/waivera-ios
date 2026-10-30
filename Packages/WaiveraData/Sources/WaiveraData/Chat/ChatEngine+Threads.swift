@@ -3,7 +3,7 @@ import WaiveraAPI
 import WaiveraRealtime
 
 extension ChatEngine: ThreadsRepository {
-    public nonisolated func thread(rootMessageId: Int, conversationId: Int) -> AsyncStream<Resource<ThreadTimeline>> {
+    nonisolated public func thread(rootMessageId: Int, conversationId: Int) -> AsyncStream<Resource<ThreadTimeline>> {
         threadCells.cell(rootMessageId).stream()
     }
 
@@ -59,9 +59,12 @@ extension ChatEngine: ThreadsRepository {
     }
 
     @discardableResult
-    public func reply(text: String, attachment: Attachment?, rootMessageId: Int, conversationId: Int) async
-        -> OutgoingMessage?
-    {
+    public func reply(
+        text: String,
+        attachment: Attachment?,
+        rootMessageId: Int,
+        conversationId: Int
+    ) async -> OutgoingMessage? {
         await throttle.stop(conversationId: conversationId)
         return await enqueue(
             text: text,

@@ -20,7 +20,7 @@ public struct BookmarkRow: Identifiable, Hashable, Sendable {
     public var threadRootID: Int?
     public var author: String?
     /// Whose avatar leads the card.
-    public var authorID: String? = nil
+    public var authorID: String?
     public var createdAt: Date?
     public var preview: BookmarkPreview
     /// A top-level message that has replies: it opens as itself, and files under Threads.

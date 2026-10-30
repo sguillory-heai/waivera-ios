@@ -122,7 +122,7 @@ struct CalendarDateTests {
     @Test func dateOnlyRoundTripsThroughJSON() throws {
         let date = try #require(CalendarDate(year: 2026, month: 11, day: 26))
         let data = try WaiveraJSON.encoder().encode([date])
-        #expect(String(decoding: data, as: UTF8.self) == #"["2026-11-26"]"#)
+        #expect(String(bytes: data, encoding: .utf8) == #"["2026-11-26"]"#)
         #expect(try WaiveraJSON.decoder().decode([CalendarDate].self, from: data) == [date])
     }
 }

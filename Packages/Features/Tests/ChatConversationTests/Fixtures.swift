@@ -18,17 +18,16 @@ enum Fixture {
         (try? JSONDecoder().decode(JSONValue.self, from: Data(value.utf8))) ?? .null
     }
 
-    // swiftlint:disable:next function_parameter_count
     static func message(
         _ id: Int,
         author: String? = "usr_a",
-        at: Date = base,
+        at createdAt: Date = base,
         kind: ChatMessage.Kind = .user,
         clientId: String? = nil,
         text: String? = nil,
         conversationId: Int = 1
     ) -> ChatMessage {
-        var message = ChatMessage(id: id, conversationId: conversationId, createdAt: at)
+        var message = ChatMessage(id: id, conversationId: conversationId, createdAt: createdAt)
         message.authorId = author
         message.kind = kind
         message.clientMessageId = clientId
@@ -36,8 +35,8 @@ enum Fixture {
         return message
     }
 
-    static func system(_ id: Int, _ text: String, at: Date = base, call: Int? = 3) -> ChatMessage {
-        var message = message(id, author: nil, at: at, kind: .system, text: text)
+    static func system(_ id: Int, _ text: String, at createdAt: Date = base, call: Int? = 3) -> ChatMessage {
+        var message = message(id, author: nil, at: createdAt, kind: .system, text: text)
         message.callRecordId = call
         return message
     }
@@ -45,7 +44,7 @@ enum Fixture {
     static func outgoing(
         _ clientId: String,
         state: OutgoingMessage.State = .sending,
-        at: Date = base,
+        at createdAt: Date = base,
         parent: Int? = nil,
         text: String = "draft"
     ) -> OutgoingMessage {
@@ -55,7 +54,7 @@ enum Fixture {
             parentMessageId: parent,
             text: text,
             doc: nil,
-            createdAt: at,
+            createdAt: createdAt,
             state: state
         )
     }

@@ -239,7 +239,9 @@ struct TodayModelTests {
             #expect(await eventually { model.state.nextUp.items.map(\.eventId) == ["evt_review"] })
         }
     }
+}
 
+extension TodayModelTests {
     // MARK: Send wishes
 
     @Test func sendWishesOpensTheDirectChatOnceAndIsBusyMeanwhile() async throws {
@@ -275,8 +277,8 @@ struct TodayModelTests {
             #expect(model.state.openingWishesFor == "usr_sam_ortiz", "Retry tries again")
             #expect(await eventually { model.state.openingWishesFor == nil })
 
-            let me = harness.fakes.data.user.id
-            model.sendWishes(to: me)
+            let viewerId = harness.fakes.data.user.id
+            model.sendWishes(to: viewerId)
             #expect(model.state.openingWishesFor == nil, "no wishes to yourself")
         }
     }

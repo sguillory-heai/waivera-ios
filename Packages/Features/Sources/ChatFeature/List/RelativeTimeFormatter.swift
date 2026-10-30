@@ -35,9 +35,8 @@ final class RelativeTimeFormatter {
             clockFormatter.timeZone = timeZone
             return clockFormatter.string(from: date)
         }
-        if let yesterday = calendar.date(byAdding: .day, value: -1, to: now),
-            calendar.isDate(date, inSameDayAs: yesterday)
-        {
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: now)
+        if let yesterday, calendar.isDate(date, inSameDayAs: yesterday) {
             return text.yesterday
         }
         dateFormatter.timeZone = timeZone

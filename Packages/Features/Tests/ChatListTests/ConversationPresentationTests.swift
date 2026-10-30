@@ -13,7 +13,8 @@ struct ConversationPresentationTests {
     @Test("A channel object without isChannel renders as a channel with its name")
     func channelObjectMakesAChannel() {
         let conversation = Sample.conversation(
-            #"{"id": 41, "participants": [\#(Sample.me)], "channel": {"channelId": "c1", "name": "  north-team "}}"#
+            #"{"id": 41, "participants": [\#(Sample.viewerUser)], "#
+                + #""channel": {"channelId": "c1", "name": "  north-team "}}"#
         )
         #expect(ConversationPresentation.title(conversation, text: text) == "north-team")
         #expect(ConversationPresentation.leading(conversation) == .channel(archived: false))
@@ -31,7 +32,7 @@ struct ConversationPresentationTests {
 
     @Test("A conversation whose only participant is me is the Waivera bot")
     func legacyBotDirect() {
-        let conversation = Sample.conversation(#"{"id": 90, "participants": [\#(Sample.me)]}"#)
+        let conversation = Sample.conversation(#"{"id": 90, "participants": [\#(Sample.viewerUser)]}"#)
         #expect(ConversationPresentation.title(conversation, text: text) == "Waivera")
         #expect(ConversationPresentation.leading(conversation) == .bot)
         #expect(!conversation.canWrite)
@@ -40,7 +41,7 @@ struct ConversationPresentationTests {
     @Test("A group of four including me reads '<compact first> & 2 others'")
     func groupTitle() {
         let conversation = Sample.conversation(
-            #"{"id": 63, "participants": [\#(Sample.me), \#(Sample.priya), \#(Sample.jordan), \#(Sample.sam)]}"#
+            #"{"id": 63, "participants": [\#(Sample.viewerUser), \#(Sample.priya), \#(Sample.jordan), \#(Sample.sam)]}"#
         )
         #expect(ConversationPresentation.title(conversation, text: text) == "Priya Raman & 2 others")
         #expect(ConversationPresentation.leading(conversation) == .group)
@@ -49,7 +50,7 @@ struct ConversationPresentationTests {
     @Test("A group of three reads '& 1 other'")
     func groupTitleSingular() {
         let conversation = Sample.conversation(
-            #"{"id": 64, "participants": [\#(Sample.me), \#(Sample.priya), \#(Sample.jordan)]}"#
+            #"{"id": 64, "participants": [\#(Sample.viewerUser), \#(Sample.priya), \#(Sample.jordan)]}"#
         )
         #expect(ConversationPresentation.title(conversation, text: text) == "Priya Raman & 1 other")
     }
@@ -61,19 +62,19 @@ struct ConversationPresentationTests {
     func emailCompaction() {
         let ops = #"{"id": "usr_ops", "email": "operations.team@waivera.example"}"#
         let conversation = Sample.conversation(
-            #"{"id": 65, "participants": [\#(Sample.me), \#(ops), \#(Sample.jordan)]}"#
+            #"{"id": 65, "participants": [\#(Sample.viewerUser), \#(ops), \#(Sample.jordan)]}"#
         )
         #expect(ConversationPresentation.title(conversation, text: text) == "operations.team & 1 other")
         let north = #"{"id": "usr_ops", "email": "operations.team.north@waivera.example"}"#
         let longer = Sample.conversation(
-            #"{"id": 66, "participants": [\#(Sample.me), \#(north), \#(Sample.jordan)]}"#
+            #"{"id": 66, "participants": [\#(Sample.viewerUser), \#(north), \#(Sample.jordan)]}"#
         )
         #expect(ConversationPresentation.title(longer, text: text) == "operations.team… & 1 other")
     }
 
     @Test("A direct chat is titled with the peer's name and shows their avatar")
     func directTitle() {
-        let conversation = Sample.conversation(#"{"id": 7, "participants": [\#(Sample.me), \#(Sample.priya)]}"#)
+        let conversation = Sample.conversation(#"{"id": 7, "participants": [\#(Sample.viewerUser), \#(Sample.priya)]}"#)
         #expect(ConversationPresentation.title(conversation, text: text) == "Priya Raman")
         #expect(
             ConversationPresentation.leading(conversation) == .direct(userId: "usr_priya_raman", name: "Priya Raman")
@@ -170,7 +171,7 @@ struct ConversationPresentationTests {
     @Test("My own last message is prefixed You; a group message by its author's first name")
     func senderPrefix() {
         var group = Sample.conversation(
-            #"{"id": 63, "participants": [\#(Sample.me), \#(Sample.priya), \#(Sample.jordan)]}"#
+            #"{"id": 63, "participants": [\#(Sample.viewerUser), \#(Sample.priya), \#(Sample.jordan)]}"#
         )
         group.lastMessage = Sample.message(id: 5, conversationId: 63, authorId: "usr_jordan_lee", text: "on my way")
         let preview = ConversationPresentation.preview(group.lastMessage, text: text)
@@ -181,7 +182,7 @@ struct ConversationPresentationTests {
 
     @Test("A direct chat from the other person has no sender prefix")
     func directHasNoPrefix() {
-        var direct = Sample.conversation(#"{"id": 7, "participants": [\#(Sample.me), \#(Sample.priya)]}"#)
+        var direct = Sample.conversation(#"{"id": 7, "participants": [\#(Sample.viewerUser), \#(Sample.priya)]}"#)
         direct.lastMessage = Sample.message(id: 5, conversationId: 7)
         let preview = ConversationPresentation.preview(direct.lastMessage, text: text)
         #expect(ConversationPresentation.senderPrefix(direct, preview: preview, text: text) == nil)
@@ -190,7 +191,7 @@ struct ConversationPresentationTests {
     @Test("One person typing names them; two say several; nobody shows the preview")
     func typingLabels() {
         let group = Sample.conversation(
-            #"{"id": 63, "participants": [\#(Sample.me), \#(Sample.priya), \#(Sample.jordan)]}"#
+            #"{"id": 63, "participants": [\#(Sample.viewerUser), \#(Sample.priya), \#(Sample.jordan)]}"#
         )
         #expect(ConversationPresentation.typingLabel(group, typingUserIds: [], text: text) == nil)
         #expect(

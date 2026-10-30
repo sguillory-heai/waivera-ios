@@ -25,14 +25,16 @@ struct EnvironmentTests {
         let store = InMemoryLocalStore()
         let auth = FakeAuth()
         let environment = DataEnvironment.assemble(
-            auth: auth,
-            api: APIClient(baseURL: testBaseURL, transport: transport, tokens: auth),
-            realtime: realtime,
-            webBaseURL: nil,
-            localStore: store,
-            keyValueStore: InMemoryKeyValueStore(),
-            connectivity: ManualConnectivity(),
-            clock: TestClock()
+            LiveServices(
+                auth: auth,
+                api: APIClient(baseURL: testBaseURL, transport: transport, tokens: auth),
+                realtime: realtime,
+                webBaseURL: nil,
+                localStore: store,
+                keyValueStore: InMemoryKeyValueStore(),
+                connectivity: ManualConnectivity(),
+                clock: TestClock()
+            )
         )
         await environment.launch()
         #expect(

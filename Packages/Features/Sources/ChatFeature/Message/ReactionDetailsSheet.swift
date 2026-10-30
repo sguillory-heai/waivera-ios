@@ -43,9 +43,10 @@
                     }
                 }
                 .scrollIndicators(.hidden)
-                List(Array(ReactionRules.reactions(reactions, emoji: selected ?? "").enumerated()), id: \.offset) {
-                    _,
-                    reaction in
+                List(
+                    Array(ReactionRules.reactions(reactions, emoji: selected ?? "").enumerated()),
+                    id: \.offset
+                ) { _, reaction in
                     let name = ConversationStrings.reactorName(
                         ReactionRules.reactorName(reaction, viewerId: viewerId, names: names)
                     )

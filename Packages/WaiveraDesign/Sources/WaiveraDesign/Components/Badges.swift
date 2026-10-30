@@ -14,7 +14,7 @@
         }
 
         public var body: some View {
-            PopVisibility(isVisible: count > 0) {
+            PopVisibility(isVisible: count >= 1) {
                 CountPill(
                     text: BadgeFormatter.text(for: count) ?? "",
                     accessibilityText: DesignStrings.unreadCount(count),

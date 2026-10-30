@@ -54,14 +54,14 @@ public actor LiveSessionRepository: SessionRepository {
         self.clock = clock
     }
 
-    public nonisolated var accountSince: Date? { context.accountSince }
+    nonisolated public var accountSince: Date? { context.accountSince }
 
     public func setParticipants(_ participants: [any SessionLifecycleParticipant]) {
         self.participants = participants
     }
 
-    public nonisolated func states() -> AsyncStream<SessionState> { cell.stream() }
-    public nonisolated var currentState: SessionState { cell.current }
+    nonisolated public func states() -> AsyncStream<SessionState> { cell.stream() }
+    nonisolated public var currentState: SessionState { cell.current }
 
     public func start() async {
         guard identityTask == nil else { return }
@@ -135,42 +135,6 @@ public actor LiveSessionRepository: SessionRepository {
             return .success((login, user))
         } catch {
             return .failure(WaiveraError.from(error))
-        }
-    }
-
-    private func finishBootstrap(_ outcome: Result<(UserLoginResponseDto, CurrentUser), WaiveraError>, generation: Int)
-        async
-    {
-        guard generation == self.generation else { return }
-        switch outcome {
-        case .failure(.unauthorized), .failure(.forbidden):
-            // A half-authenticated app is worse than the login screen (01 §2).
-            await auth.signOut()
-            cell.set(.signedOut(.unauthorized))
-        case .failure(.offline):
-            if let cached = await cachedUser(), generation == self.generation {
-                await enter(cached)
-                retryWhileOffline(generation: generation)
-            } else if generation == self.generation {
-                cell.set(.bootstrapFailed(.offline))
-            }
-        case .failure(let error):
-            cell.set(.bootstrapFailed(error))
-        case .success(let (login, user)):
-            context.set(user)
-            if login.requiresPasswordChange || login.requiresOnboarding {
-                // An offline launch must not open the app past a gate from a stale bootstrap
-                // (Android AF-06).
-                if let localStore { await localStore.remove(.bootstrap) }
-            }
-            if login.requiresPasswordChange {
-                cell.set(.passwordChangeRequired(user))
-            } else if login.requiresOnboarding {
-                cell.set(.onboardingRequired(user))
-            } else {
-                await enter(user)
-                if let localStore { await localStore.save(user, for: .bootstrap) }
-            }
         }
     }
 
@@ -316,5 +280,55 @@ public actor LiveSessionRepository: SessionRepository {
         for participant in participants { await participant.sessionDidEnd() }
         startedUserId = nil
         context.set(nil)
+    }
+}
+
+// MARK: - Bootstrap outcome
+
+extension LiveSessionRepository {
+    private func finishBootstrap(
+        _ outcome: Result<(UserLoginResponseDto, CurrentUser), WaiveraError>,
+        generation: Int
+    ) async {
+        guard generation == self.generation else { return }
+        switch outcome {
+        case .failure(.unauthorized), .failure(.forbidden):
+            // A half-authenticated app is worse than the login screen (01 §2).
+            await auth.signOut()
+            cell.set(.signedOut(.unauthorized))
+        case .failure(.offline):
+            await finishOffline(generation: generation)
+        case .failure(let error):
+            cell.set(.bootstrapFailed(error))
+        case .success(let (login, user)):
+            await finishSignedIn(login, user: user)
+        }
+    }
+
+    /// Offline with this person's last bootstrap cached: start from the cache and keep retrying.
+    private func finishOffline(generation: Int) async {
+        if let cached = await cachedUser(), generation == self.generation {
+            await enter(cached)
+            retryWhileOffline(generation: generation)
+        } else if generation == self.generation {
+            cell.set(.bootstrapFailed(.offline))
+        }
+    }
+
+    private func finishSignedIn(_ login: UserLoginResponseDto, user: CurrentUser) async {
+        context.set(user)
+        if login.requiresPasswordChange || login.requiresOnboarding {
+            // An offline launch must not open the app past a gate from a stale bootstrap
+            // (Android AF-06).
+            if let localStore { await localStore.remove(.bootstrap) }
+        }
+        if login.requiresPasswordChange {
+            cell.set(.passwordChangeRequired(user))
+        } else if login.requiresOnboarding {
+            cell.set(.onboardingRequired(user))
+        } else {
+            await enter(user)
+            if let localStore { await localStore.save(user, for: .bootstrap) }
+        }
     }
 }

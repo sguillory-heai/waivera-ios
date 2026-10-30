@@ -167,7 +167,7 @@
                 ],
                 ticks: (1..<10).map { Double($0) / 10 },
                 labels: stride(from: 8, through: 18, by: 2).map {
-                    DayHourLabel(at: Double($0 - 8) / 10, time: ClockTime(hour: $0, minute: 0))
+                    DayHourLabel(position: Double($0 - 8) / 10, time: ClockTime(hour: $0, minute: 0))
                 },
                 now: 0.1,
                 eventCount: 3,
@@ -195,6 +195,20 @@
             return screen
         }
 
+        private static func base() -> TodayState {
+            var state = TodayState()
+            state.accountName = "Alex Rivera"
+            state.greeting = Greeting(part: .morning, firstName: "Alex")
+            state.date = today
+            state.timeZone = zone
+            state.isInitialLoad = false
+            return state
+        }
+    }
+
+    // MARK: Sample rows
+
+    extension TodayPreviewStates {
         private static let needsYouItems: [NeedsYouItem] = [
             .notSent(NotSentItem(conversationId: 3, name: "Sam Ortiz")),
             .directMessage(
@@ -301,15 +315,5 @@
                 destination: .conversation(id: 9, targetMessageId: 9401)
             ),
         ]
-
-        private static func base() -> TodayState {
-            var state = TodayState()
-            state.accountName = "Alex Rivera"
-            state.greeting = Greeting(part: .morning, firstName: "Alex")
-            state.date = today
-            state.timeZone = zone
-            state.isInitialLoad = false
-            return state
-        }
     }
 #endif

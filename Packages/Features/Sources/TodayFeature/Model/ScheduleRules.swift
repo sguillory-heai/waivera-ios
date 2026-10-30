@@ -89,9 +89,12 @@ enum ScheduleRules {
         )
     }
 
-    private static func label(for event: CalendarEvent, now: Date, zone: TimeZone, today: CalendarDate)
-        -> UpcomingLabel
-    {
+    private static func label(
+        for event: CalendarEvent,
+        now: Date,
+        zone: TimeZone,
+        today: CalendarDate
+    ) -> UpcomingLabel {
         if let span = event.allDay {
             return TimeLabels.allDay(start: span.start, endExclusive: span.endExclusive, today: today)
         }

@@ -23,7 +23,7 @@ struct CriticFixChatTests {
     private func prepared() async -> ChatHarness {
         let harness = ChatHarness()
         await harness.transport.set("PUT api/chat/7/read-through", .fixture("rest-chat-read-through"))
-        await harness.transport.set("POST api/chat/7/mark-as-read", .ok)
+        await harness.transport.set("POST api/chat/7/mark-as-read", .emptyOK)
         await harness.begin()
         return harness
     }
@@ -120,7 +120,7 @@ struct CriticFixChatTests {
         await harness.transport.set("GET api/chat/thread/9330", .fixture("rest-chat-get-thread"))
         await harness.transport.set("GET api/chat/all", .fixture("rest-chat-get-all"))
         await harness.transport.set("PUT api/chat/7/read-through", .fixture("rest-chat-read-through"))
-        await harness.transport.set("POST api/chat/7/mark-as-read", .ok)
+        await harness.transport.set("POST api/chat/7/mark-as-read", .emptyOK)
         await harness.begin()
         await harness.engine.refresh()
         harness.realtime.connect()
@@ -280,7 +280,9 @@ struct CriticFixChatTests {
         await settle()
         #expect(await harness.transport.count(sendRoute) == 1)
     }
+}
 
+extension CriticFixChatTests {
     // MARK: IF-07
 
     @Test("IF-07: opening, marking read and reading elsewhere report the conversation read")

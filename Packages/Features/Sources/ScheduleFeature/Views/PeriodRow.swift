@@ -23,8 +23,7 @@
                             state.period,
                             axis: state.periodStep == 0 ? nil : .horizontal,
                             forward: state.periodStep >= 0
-                        ) {
-                            _ in
+                        ) { _ in
                             Text(dynamicTypeSize.isExtraLargeText ? state.shortTitle : state.title)
                                 .waiveraTextStyle(.titleMedium)
                                 .foregroundStyle(Palette.text)

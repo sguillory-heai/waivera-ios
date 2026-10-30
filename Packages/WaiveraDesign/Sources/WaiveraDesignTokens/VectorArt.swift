@@ -68,8 +68,8 @@ public enum LogoGradient {
 public enum PathCommand: Equatable, Sendable {
     case move(x: Double, y: Double)
     case line(x: Double, y: Double)
-    case quad(x1: Double, y1: Double, x: Double, y: Double)
-    case cubic(x1: Double, y1: Double, x2: Double, y2: Double, x: Double, y: Double)
+    case quad(controlX: Double, controlY: Double, x: Double, y: Double)
+    case cubic(control1X: Double, control1Y: Double, control2X: Double, control2Y: Double, x: Double, y: Double)
     case close
 }
 
@@ -82,202 +82,169 @@ public enum VectorPathError: Error, Equatable {
 /// Android vector drawables. Smooth curves reflect the previous control point; arcs become cubics.
 public enum VectorPathParser {
     public static func parse(_ data: String) throws -> [PathCommand] {
-        var scanner = NumberScanner(Array(data.unicodeScalars))
-        var commands: [PathCommand] = []
-        var current = (x: 0.0, y: 0.0)
-        var subpathStart = (x: 0.0, y: 0.0)
-        var lastCubicControl: (x: Double, y: Double)?
-        var lastQuadControl: (x: Double, y: Double)?
-        var command: Character?
+        var reader = PathReader(data)
+        return try reader.readAll()
+    }
+}
 
-        while true {
-            scanner.skipSeparators()
-            guard let next = scanner.peek else { break }
-            if next.properties.isAlphabetic {
-                command = Character(next)
-                scanner.advance()
-            } else if command == nil {
-                throw VectorPathError.unexpectedCharacter(Character(next))
-            }
-            guard let active = command else { break }
-            let relative = active.isLowercase
-            let base = relative ? current : (x: 0.0, y: 0.0)
-            func number() throws -> Double {
-                guard let value = scanner.number() else { throw VectorPathError.missingNumber(command: active) }
-                return value
-            }
-            func point() throws -> (x: Double, y: Double) {
-                let x = try number()
-                let y = try number()
-                return (base.x + x, base.y + y)
-            }
-            var cubicControl: (x: Double, y: Double)?
-            var quadControl: (x: Double, y: Double)?
+/// A point in viewport units.
+typealias VectorPoint = (x: Double, y: Double)
 
-            switch active.uppercased() {
-            case "M":
-                let target = try point()
-                commands.append(.move(x: target.x, y: target.y))
-                current = target
-                subpathStart = target
-                // Further pairs after a move are implicit lines.
-                command = relative ? "l" : "L"
-            case "L":
-                let target = try point()
-                commands.append(.line(x: target.x, y: target.y))
-                current = target
-            case "H":
-                let x = try number() + (relative ? current.x : 0)
-                commands.append(.line(x: x, y: current.y))
-                current.x = x
-            case "V":
-                let y = try number() + (relative ? current.y : 0)
-                commands.append(.line(x: current.x, y: y))
-                current.y = y
-            case "C":
-                let first = try point()
-                let second = try point()
-                let target = try point()
-                commands.append(.cubic(x1: first.x, y1: first.y, x2: second.x, y2: second.y, x: target.x, y: target.y))
-                cubicControl = second
-                current = target
-            case "S":
-                let first = reflect(lastCubicControl, about: current)
-                let second = try point()
-                let target = try point()
-                commands.append(.cubic(x1: first.x, y1: first.y, x2: second.x, y2: second.y, x: target.x, y: target.y))
-                cubicControl = second
-                current = target
-            case "Q":
-                let control = try point()
-                let target = try point()
-                commands.append(.quad(x1: control.x, y1: control.y, x: target.x, y: target.y))
-                quadControl = control
-                current = target
-            case "T":
-                let control = reflect(lastQuadControl, about: current)
-                let target = try point()
-                commands.append(.quad(x1: control.x, y1: control.y, x: target.x, y: target.y))
-                quadControl = control
-                current = target
-            case "A":
-                let radiusX = try number()
-                let radiusY = try number()
-                let rotation = try number()
-                let largeArc = try scanner.flag(command: active)
-                let sweep = try scanner.flag(command: active)
-                let target = try point()
-                commands += ArcConverter.cubics(
-                    from: current,
-                    to: target,
-                    radiusX: radiusX,
-                    radiusY: radiusY,
-                    rotationDegrees: rotation,
-                    largeArc: largeArc,
-                    sweep: sweep
-                )
-                current = target
-            case "Z":
-                commands.append(.close)
-                current = subpathStart
-                command = nil
-            default:
-                throw VectorPathError.unexpectedCharacter(active)
-            }
+/// The parser's running state: the pen position, the open subpath and the control points a
+/// smooth curve reflects.
+private struct PathReader {
+    private var scanner: NumberScanner
+    private var commands: [PathCommand] = []
+    private var current: VectorPoint = (0, 0)
+    private var subpathStart: VectorPoint = (0, 0)
+    /// The command letter that repeats while numbers follow it; nil after a close.
+    private var command: Character?
+    private var active: Character = "M"
+    private var lastCubicControl: VectorPoint?
+    private var lastQuadControl: VectorPoint?
+    private var cubicControl: VectorPoint?
+    private var quadControl: VectorPoint?
+
+    init(_ data: String) {
+        scanner = NumberScanner(Array(data.unicodeScalars))
+    }
+
+    mutating func readAll() throws -> [PathCommand] {
+        while let next = try nextCommand() {
+            active = next
+            cubicControl = nil
+            quadControl = nil
+            try apply(relative: next.isLowercase)
             lastCubicControl = cubicControl
             lastQuadControl = quadControl
         }
         return commands
     }
 
-    private static func reflect(
-        _ control: (x: Double, y: Double)?,
-        about point: (x: Double, y: Double)
-    ) -> (x: Double, y: Double) {
+    /// The command for the next group of numbers: a new letter, or the previous one repeated.
+    private mutating func nextCommand() throws -> Character? {
+        scanner.skipSeparators()
+        guard let next = scanner.peek else { return nil }
+        if next.properties.isAlphabetic {
+            command = Character(next)
+            scanner.advance()
+        } else if command == nil {
+            throw VectorPathError.unexpectedCharacter(Character(next))
+        }
+        return command
+    }
+
+    private mutating func apply(relative: Bool) throws {
+        switch active.uppercased() {
+        case "M":
+            try moveTo(relative: relative)
+        case "L", "H", "V":
+            try lineTo(active.uppercased(), relative: relative)
+        case "C", "S":
+            try cubicTo(smooth: active.uppercased() == "S", relative: relative)
+        case "Q", "T":
+            try quadTo(smooth: active.uppercased() == "T", relative: relative)
+        case "A":
+            try arcTo(relative: relative)
+        case "Z":
+            commands.append(.close)
+            current = subpathStart
+            command = nil
+        default:
+            throw VectorPathError.unexpectedCharacter(active)
+        }
+    }
+
+    private mutating func number() throws -> Double {
+        guard let value = scanner.number() else { throw VectorPathError.missingNumber(command: active) }
+        return value
+    }
+
+    /// The next coordinate pair, made absolute against the pen position for relative commands.
+    private mutating func point(relative: Bool) throws -> VectorPoint {
+        let base = relative ? current : (x: 0.0, y: 0.0)
+        let x = try number()
+        let y = try number()
+        return (base.x + x, base.y + y)
+    }
+
+    private mutating func moveTo(relative: Bool) throws {
+        let target = try point(relative: relative)
+        commands.append(.move(x: target.x, y: target.y))
+        current = target
+        subpathStart = target
+        // Further pairs after a move are implicit lines.
+        command = relative ? "l" : "L"
+    }
+
+    private mutating func lineTo(_ kind: String, relative: Bool) throws {
+        var target = current
+        switch kind {
+        case "H": target.x = try number() + (relative ? current.x : 0)
+        case "V": target.y = try number() + (relative ? current.y : 0)
+        default: target = try point(relative: relative)
+        }
+        commands.append(.line(x: target.x, y: target.y))
+        current = target
+    }
+
+    private mutating func cubicTo(smooth: Bool, relative: Bool) throws {
+        let first: VectorPoint
+        if smooth {
+            first = Self.reflect(lastCubicControl, about: current)
+        } else {
+            first = try point(relative: relative)
+        }
+        let second = try point(relative: relative)
+        let target = try point(relative: relative)
+        commands.append(
+            .cubic(
+                control1X: first.x,
+                control1Y: first.y,
+                control2X: second.x,
+                control2Y: second.y,
+                x: target.x,
+                y: target.y
+            )
+        )
+        cubicControl = second
+        current = target
+    }
+
+    private mutating func quadTo(smooth: Bool, relative: Bool) throws {
+        let control: VectorPoint
+        if smooth {
+            control = Self.reflect(lastQuadControl, about: current)
+        } else {
+            control = try point(relative: relative)
+        }
+        let target = try point(relative: relative)
+        commands.append(.quad(controlX: control.x, controlY: control.y, x: target.x, y: target.y))
+        quadControl = control
+        current = target
+    }
+
+    private mutating func arcTo(relative: Bool) throws {
+        let radiusX = try number()
+        let radiusY = try number()
+        let rotation = try number()
+        let largeArc = try scanner.flag(command: active)
+        let sweep = try scanner.flag(command: active)
+        let target = try point(relative: relative)
+        let arc = ArcShape(
+            radiusX: radiusX,
+            radiusY: radiusY,
+            rotationDegrees: rotation,
+            largeArc: largeArc,
+            sweep: sweep
+        )
+        commands += ArcConverter.cubics(from: current, to: target, arc: arc)
+        current = target
+    }
+
+    private static func reflect(_ control: VectorPoint?, about point: VectorPoint) -> VectorPoint {
         guard let control else { return point }
         return (2 * point.x - control.x, 2 * point.y - control.y)
-    }
-}
-
-/// Endpoint-parameterised SVG arcs to cubic Béziers (SVG 1.1 appendix F.6), one curve per
-/// quarter turn or less.
-enum ArcConverter {
-    static func cubics(
-        from start: (x: Double, y: Double),
-        to end: (x: Double, y: Double),
-        radiusX: Double,
-        radiusY: Double,
-        rotationDegrees: Double,
-        largeArc: Bool,
-        sweep: Bool
-    ) -> [PathCommand] {
-        if start == end { return [] }
-        var rx = abs(radiusX)
-        var ry = abs(radiusY)
-        if rx == 0 || ry == 0 { return [.line(x: end.x, y: end.y)] }
-        let phi = rotationDegrees * .pi / 180
-        let cosPhi = cos(phi)
-        let sinPhi = sin(phi)
-        let dx = (start.x - end.x) / 2
-        let dy = (start.y - end.y) / 2
-        let x1p = cosPhi * dx + sinPhi * dy
-        let y1p = -sinPhi * dx + cosPhi * dy
-        let lambda = (x1p * x1p) / (rx * rx) + (y1p * y1p) / (ry * ry)
-        if lambda > 1 {
-            rx *= lambda.squareRoot()
-            ry *= lambda.squareRoot()
-        }
-        let numerator = rx * rx * ry * ry - rx * rx * y1p * y1p - ry * ry * x1p * x1p
-        let denominator = rx * rx * y1p * y1p + ry * ry * x1p * x1p
-        var factor = (max(0, numerator) / denominator).squareRoot()
-        if largeArc == sweep { factor = -factor }
-        let cxp = factor * rx * y1p / ry
-        let cyp = -factor * ry * x1p / rx
-        let cx = cosPhi * cxp - sinPhi * cyp + (start.x + end.x) / 2
-        let cy = sinPhi * cxp + cosPhi * cyp + (start.y + end.y) / 2
-
-        func angle(_ ux: Double, _ uy: Double, _ vx: Double, _ vy: Double) -> Double {
-            atan2(ux * vy - uy * vx, ux * vx + uy * vy)
-        }
-        let theta1 = angle(1, 0, (x1p - cxp) / rx, (y1p - cyp) / ry)
-        var delta = angle((x1p - cxp) / rx, (y1p - cyp) / ry, (-x1p - cxp) / rx, (-y1p - cyp) / ry)
-        if !sweep && delta > 0 { delta -= 2 * .pi }
-        if sweep && delta < 0 { delta += 2 * .pi }
-
-        let segments = max(1, Int((abs(delta) / (.pi / 2)).rounded(.up)))
-        let step = delta / Double(segments)
-        let handle = 4.0 / 3.0 * tan(step / 4)
-        func point(_ theta: Double) -> (x: Double, y: Double) {
-            let x = rx * cos(theta)
-            let y = ry * sin(theta)
-            return (cosPhi * x - sinPhi * y + cx, sinPhi * x + cosPhi * y + cy)
-        }
-        func derivative(_ theta: Double) -> (x: Double, y: Double) {
-            let x = -rx * sin(theta)
-            let y = ry * cos(theta)
-            return (cosPhi * x - sinPhi * y, sinPhi * x + cosPhi * y)
-        }
-        var result: [PathCommand] = []
-        var theta = theta1
-        for index in 0..<segments {
-            let next = theta + step
-            let from = point(theta)
-            let to = index == segments - 1 ? end : point(next)
-            let d1 = derivative(theta)
-            let d2 = derivative(next)
-            result.append(
-                .cubic(
-                    x1: from.x + handle * d1.x,
-                    y1: from.y + handle * d1.y,
-                    x2: to.x - handle * d2.x,
-                    y2: to.y - handle * d2.y,
-                    x: to.x,
-                    y: to.y
-                )
-            )
-            theta = next
-        }
-        return result
     }
 }
 

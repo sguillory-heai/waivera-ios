@@ -7,7 +7,7 @@ import WaiveraTestSupport
 @testable import ProfileFeature
 
 struct PeopleFilterTests {
-    private let me = CurrentUser(id: "usr_me", firebaseUid: "fb_me")
+    private let viewer = CurrentUser(id: "usr_me", firebaseUid: "fb_me")
 
     @Test func dropsBlankNamesMissingIdsAndDuplicates() {
         let people = [
@@ -25,14 +25,14 @@ struct PeopleFilterTests {
             DirectoryPerson(id: "fb_me", name: "Me via Firebase"),
             DirectoryPerson(id: "p", name: "Priya Raman"),
         ]
-        #expect(PeopleFilter.apply(people, me: me, query: "").map(\.id) == ["p"])
+        #expect(PeopleFilter.apply(people, me: viewer, query: "").map(\.id) == ["p"])
     }
 
     @Test func searchIsCaseInsensitiveSubstring() {
         let people = [DirectoryPerson(id: "p", name: "Priya Raman"), DirectoryPerson(id: "j", name: "Jordan Lee")]
-        #expect(PeopleFilter.apply(people, me: me, query: "RAM").map(\.id) == ["p"])
-        #expect(PeopleFilter.apply(people, me: me, query: "  lee ").map(\.id) == ["j"])
-        #expect(PeopleFilter.apply(people, me: me, query: "zz").isEmpty)
+        #expect(PeopleFilter.apply(people, me: viewer, query: "RAM").map(\.id) == ["p"])
+        #expect(PeopleFilter.apply(people, me: viewer, query: "  lee ").map(\.id) == ["j"])
+        #expect(PeopleFilter.apply(people, me: viewer, query: "zz").isEmpty)
     }
 }
 
@@ -157,7 +157,7 @@ struct PersonModelTests {
         let fake = await launchedFake()
         let model = PersonModel(userID: "usr_priya_raman", environment: fake.environment)
         await whileRunning(model.run) {
-            await eventually { model.me != nil }
+            await eventually { model.viewer != nil }
             let first = await model.message()
             #expect(first != nil)
             let again = await model.message()

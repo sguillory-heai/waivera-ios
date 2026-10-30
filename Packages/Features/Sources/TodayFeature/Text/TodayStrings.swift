@@ -38,9 +38,11 @@ enum TodayStrings {
 
     /// Reads one placeholder starting at the `%` at `start`. Returns the argument index (nil for
     /// a literal `%%`) and where the placeholder ends.
-    private static func placeholder(in template: String, at start: String.Index, next: inout Int)
-        -> (Int?, String.Index)?
-    {
+    private static func placeholder(
+        in template: String,
+        at start: String.Index,
+        next: inout Int
+    ) -> (Int?, String.Index)? {
         var cursor = template.index(after: start)
         guard cursor < template.endIndex else { return nil }
         if template[cursor] == "%" { return (nil, template.index(after: cursor)) }
@@ -55,13 +57,11 @@ enum TodayStrings {
             position = number - 1
             cursor = template.index(after: cursor)
         }
-        for specifier in ["@", "ld", "d"] {
-            if template[cursor...].hasPrefix(specifier) {
-                let end = template.index(cursor, offsetBy: specifier.count)
-                let argument = position ?? next
-                next = argument + 1
-                return (argument, end)
-            }
+        for specifier in ["@", "ld", "d"] where template[cursor...].hasPrefix(specifier) {
+            let end = template.index(cursor, offsetBy: specifier.count)
+            let argument = position ?? next
+            next = argument + 1
+            return (argument, end)
         }
         return nil
     }
@@ -199,17 +199,20 @@ enum TodayStrings {
     }
 
     /// A stat tile: its number, its label and what VoiceOver reads; a dash until it loads.
-    static func stat(_ value: Int?, label key: String) -> (value: String, label: String, spoken: String) {
+    static func stat(_ value: Int?, label key: String) -> StatText {
         let label = text(value == 1 ? "\(key).one" : "\(key).other")
-        guard let value else { return (text("today.stat.unknown"), label, format("today.stat.loading", label)) }
-        return (String(value), label, format("today.stat.label", String(value), label))
+        guard let value else { return StatText(text("today.stat.unknown"), label, format("today.stat.loading", label)) }
+        return StatText(String(value), label, format("today.stat.label", String(value), label))
     }
 
     /// The reward hero's "5/5 handled" tile.
-    static func handledStat(_ progress: TodayProgress?) -> (value: String, label: String, spoken: String) {
+    static func handledStat(_ progress: TodayProgress?) -> StatText {
         let label = text("today.stat.handled")
-        guard let progress else { return (text("today.stat.unknown"), label, format("today.stat.loading", label)) }
-        return (format("today.stat.fraction", String(progress.handled), String(progress.total)), label, ring(progress))
+        guard let progress else {
+            return StatText(text("today.stat.unknown"), label, format("today.stat.loading", label))
+        }
+        let fraction = format("today.stat.fraction", String(progress.handled), String(progress.total))
+        return StatText(fraction, label, ring(progress))
     }
 
     // MARK: Your day
@@ -284,5 +287,18 @@ enum TodayStrings {
         case (true, nil): text("today.celebration.label.birthday")
         default: text("today.celebration.label.anniversary")
         }
+    }
+}
+
+/// A stat tile's words: its number, its label and what VoiceOver reads for it.
+struct StatText: Hashable, Sendable {
+    var value: String
+    var label: String
+    var spoken: String
+
+    init(_ value: String, _ label: String, _ spoken: String) {
+        self.value = value
+        self.label = label
+        self.spoken = spoken
     }
 }

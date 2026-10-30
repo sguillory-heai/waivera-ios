@@ -38,9 +38,11 @@ struct TodayHeroRulesTests {
 
     // MARK: Handled tally
 
-    private func observation(_ open: Set<String>, undoable: Set<String> = [], day: CalendarDate = Fixture.today)
-        -> HandledObservation
-    {
+    private func observation(
+        _ open: Set<String>,
+        undoable: Set<String> = [],
+        day: CalendarDate = Fixture.today
+    ) -> HandledObservation {
         HandledObservation(userId: Fixture.viewerId, day: day, open: open, undoable: undoable)
     }
 
@@ -242,8 +244,8 @@ struct TodayHeroRulesTests {
     }
 
     @Test func hourLabelsThatWouldCollideAreDroppedNeverOverlapped() {
-        let xs = AxisLabelPlacement.place(centers: [0, 0.5, 1], widths: [30, 30, 30], total: 100, gap: 8)
-        #expect(xs == [0, nil, 70])
+        let offsets = AxisLabelPlacement.place(centers: [0, 0.5, 1], widths: [30, 30, 30], total: 100, gap: 8)
+        #expect(offsets == [0, nil, 70])
         #expect(
             AxisLabelPlacement.place(centers: [0, 0.5, 1], widths: [20, 20, 20], total: 200, gap: 8) == [0, 90, 180]
         )

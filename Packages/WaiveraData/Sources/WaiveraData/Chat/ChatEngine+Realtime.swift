@@ -18,6 +18,18 @@ extension ChatEngine {
                 userId: typing.userId,
                 isTyping: typing.isTyping
             )
+        case .reaction, .messageUpdated, .messageDeleted, .bookmark:
+            applyMessageChange(event)
+        case .conversationCreated, .callStateChanged, .adHocRemoved, .readReceipt, .readState:
+            applyConversationChange(event, viewerId: viewer.id)
+        case .activity, .activityRemoved, .notification, .taskComment:
+            // These belong to other repositories.
+            break
+        }
+    }
+
+    private func applyMessageChange(_ event: ChatHubEvent) {
+        switch event {
         case .reaction(let reaction):
             updateMessage(reaction.messageId, conversationId: reaction.conversationId) {
                 ChatMapper.applying(reaction, to: $0)
@@ -32,6 +44,13 @@ extension ChatEngine {
             }
         case .bookmark(let update?):
             applyBookmark(messageId: update.messageId, isBookmarked: update.isBookmarked)
+        default:
+            break
+        }
+    }
+
+    private func applyConversationChange(_ event: ChatHubEvent, viewerId: String) {
+        switch event {
         case .conversationCreated(let dto):
             guard let conversation = mapper?.conversation(dto) else { return }
             insert(conversation, keepUnread: false)
@@ -47,11 +66,10 @@ extension ChatEngine {
         case .readReceipt(let receipt):
             // Other people's receipts are not rendered (03 §12). The viewer's own, from another
             // device, clears this conversation's delivered notifications (IF-07).
-            if receipt.userId == viewer.id { conversationReadBroadcaster.send(receipt.conversationId) }
+            if receipt.userId == viewerId { conversationReadBroadcaster.send(receipt.conversationId) }
         case .readState(let state):
             if state.threadRootMessageId == nil { conversationReadBroadcaster.send(state.conversationId) }
-        case .activity, .activityRemoved, .bookmark(nil), .notification, .taskComment:
-            // These belong to other repositories.
+        default:
             break
         }
     }
@@ -172,7 +190,7 @@ extension ChatEngine {
         resumeOutbox()
     }
 
-    public nonisolated func conversationsRead() -> AsyncStream<Int> { conversationReadBroadcaster.stream() }
-    public nonisolated func alerts() -> AsyncStream<ChatAlert> { alertBroadcaster.stream() }
-    public nonisolated func readStates() -> AsyncStream<ChatReadState> { readStateBroadcaster.stream() }
+    nonisolated public func conversationsRead() -> AsyncStream<Int> { conversationReadBroadcaster.stream() }
+    nonisolated public func alerts() -> AsyncStream<ChatAlert> { alertBroadcaster.stream() }
+    nonisolated public func readStates() -> AsyncStream<ChatReadState> { readStateBroadcaster.stream() }
 }

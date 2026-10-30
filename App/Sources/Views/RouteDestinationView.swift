@@ -13,7 +13,6 @@ struct RouteDestinationView: View {
     let route: AppRoute
 
     // One case per route by design; splitting it would scatter the route table.
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     var body: some View {
         switch route {
         case .activity:

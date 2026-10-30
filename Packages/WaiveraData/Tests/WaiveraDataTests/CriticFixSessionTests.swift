@@ -7,8 +7,8 @@ import WaiveraRealtime
 
 @testable import WaiveraData
 
-/// Session, push and cleanup fixes for the iOS reviews (IF-05, IF-06, IF-10, IF-13, IS-01,
-/// IS-06, IS-07, IS-08).
+/// Session and cleanup fixes for the iOS reviews (IF-05, IF-10, IS-03, IS-06, IS-07; AF-06,
+/// PS-03, PS-04).
 @Suite("Critic fixes: session and device")
 struct CriticFixSessionTests {
     private struct Rig {
@@ -20,21 +20,27 @@ struct CriticFixSessionTests {
         let clock: TestClock
         let environment: DataEnvironment
 
-        init(store: InMemoryLocalStore, keyValues: InMemoryKeyValueStore, transport: RoutingTransport, clock: TestClock)
-        {
+        init(
+            store: InMemoryLocalStore,
+            keyValues: InMemoryKeyValueStore,
+            transport: RoutingTransport,
+            clock: TestClock
+        ) {
             self.store = store
             self.keyValues = keyValues
             self.transport = transport
             self.clock = clock
             environment = DataEnvironment.assemble(
-                auth: auth,
-                api: APIClient(baseURL: testBaseURL, transport: transport, tokens: auth),
-                realtime: realtime,
-                webBaseURL: nil,
-                localStore: store,
-                keyValueStore: keyValues,
-                connectivity: ManualConnectivity(),
-                clock: clock
+                LiveServices(
+                    auth: auth,
+                    api: APIClient(baseURL: testBaseURL, transport: transport, tokens: auth),
+                    realtime: realtime,
+                    webBaseURL: nil,
+                    localStore: store,
+                    keyValueStore: keyValues,
+                    connectivity: ManualConnectivity(),
+                    clock: clock
+                )
             )
         }
 
@@ -217,14 +223,16 @@ struct CriticFixSessionTests {
         let store = InMemoryLocalStore()
         await store.save(["cached"], for: .conversations)
         let environment = DataEnvironment.assemble(
-            auth: provider,
-            api: APIClient(baseURL: testBaseURL, transport: transport, tokens: provider),
-            realtime: FakeRealtime(),
-            webBaseURL: nil,
-            localStore: store,
-            keyValueStore: InMemoryKeyValueStore(),
-            connectivity: ManualConnectivity(),
-            clock: clock
+            LiveServices(
+                auth: provider,
+                api: APIClient(baseURL: testBaseURL, transport: transport, tokens: provider),
+                realtime: FakeRealtime(),
+                webBaseURL: nil,
+                localStore: store,
+                keyValueStore: InMemoryKeyValueStore(),
+                connectivity: ManualConnectivity(),
+                clock: clock
+            )
         )
         await environment.launch()
         await settle()
@@ -233,144 +241,6 @@ struct CriticFixSessionTests {
         tokens.setLocked(false)
         await environment.protectedDataDidBecomeAvailable()
         #expect(await eventually { environment.session.currentState.isSignedIn })
-    }
-
-    // MARK: IS-01
-
-    @Test("IS-01: the first launch after an install removes a session the Keychain kept")
-    func firstLaunchWipesTheKeychainSession() throws {
-        let session = FirebaseSession(
-            uid: "fb-previous",
-            email: nil,
-            displayName: nil,
-            idToken: "t",
-            refreshToken: "r",
-            expiresAt: .distantFuture
-        )
-        let tokens = InMemoryTokenStore(session)
-        let devices = InMemoryDeviceIdentifierStore("waivera-1-abc")
-        let defaults = InMemoryKeyValueStore()
-        #expect(FirstLaunchGuard.run(defaults: defaults, tokenStore: tokens))
-        #expect(try tokens.load() == nil)
-        #expect(devices.load() == "waivera-1-abc")
-
-        try tokens.save(session)
-        #expect(!FirstLaunchGuard.run(defaults: defaults, tokenStore: tokens))
-        #expect(try tokens.load() == session)
-    }
-
-    // MARK: IF-13
-
-    @Test("IF-13: the device id moves from UserDefaults to the Keychain store once")
-    func deviceIdMigratesToTheKeychain() async throws {
-        let transport = RoutingTransport()
-        await transport.set("POST api/mobile-push/register", .fixture("rest-mobile-push-register"))
-        let keyValues = InMemoryKeyValueStore()
-        keyValues.setValue("waivera-legacy-1", forKey: StorageKey.pushInstallationId)
-        let devices = InMemoryDeviceIdentifierStore()
-        let push = LivePushRegistrationRepository(
-            api: makeAPI(transport),
-            store: keyValues,
-            clock: TestClock(),
-            deviceIdentifiers: devices
-        )
-        #expect(await push.deviceId == "waivera-legacy-1")
-        #expect(devices.load() == "waivera-legacy-1")
-        #expect(keyValues.data(forKey: StorageKey.pushInstallationId) == nil)
-        // A reinstall clears UserDefaults; the Keychain keeps the same id.
-        let reinstalled = LivePushRegistrationRepository(
-            api: makeAPI(transport),
-            store: InMemoryKeyValueStore(),
-            clock: TestClock(),
-            deviceIdentifiers: devices
-        )
-        #expect(await reinstalled.deviceId == "waivera-legacy-1")
-    }
-
-    // MARK: IF-06
-
-    private func failingPush() async -> (
-        LivePushRegistrationRepository, RoutingTransport, TestClock, InMemoryKeyValueStore
-    ) {
-        let transport = RoutingTransport()
-        await transport.set("POST api/mobile-push/register", .status(503))
-        let clock = TestClock()
-        let keyValues = InMemoryKeyValueStore()
-        return (
-            LivePushRegistrationRepository(api: makeAPI(transport), store: keyValues, clock: clock), transport, clock,
-            keyValues
-        )
-    }
-
-    @Test("IF-06: registration that keeps failing throws and stores no fingerprint")
-    func failedRegistrationThrows() async throws {
-        let (push, transport, clock, keyValues) = await failingPush()
-        let result = Task { () -> WaiveraError? in
-            do {
-                try await push.registerAndWait(token: "fcm-1", preferences: NotificationPreferences())
-                return nil
-            } catch {
-                return error as? WaiveraError
-            }
-        }
-        for _ in 0..<12 {
-            await settle()
-            await clock.advance(by: 61)
-        }
-        #expect(await result.value == .server(statusCode: 503))
-        #expect(await transport.count("POST api/mobile-push/register") == LivePushRegistrationRepository.maxAttempts)
-        #expect(keyValues.data(forKey: StorageKey.pushFingerprint) == nil)
-    }
-
-    @Test("IF-06: the coordinator over the live repository retries on the next activation")
-    func coordinatorRetriesALiveFailure() async throws {
-        let (push, transport, clock, _) = await failingPush()
-        let coordinator = PushRegistrationCoordinator(register: { token in
-            try await push.registerAndWait(token: token, preferences: NotificationPreferences())
-        })
-        let signIn = Task {
-            await coordinator.authorizationChanged(.authorized)
-            await coordinator.tokenChanged("fcm-1")
-            await coordinator.didSignIn()
-        }
-        for _ in 0..<24 {
-            await settle()
-            await clock.advance(by: 61)
-        }
-        await signIn.value
-        #expect(await coordinator.state == .failed(token: "fcm-1"))
-        let failedCalls = await transport.count("POST api/mobile-push/register")
-        await transport.set("POST api/mobile-push/register", .fixture("rest-mobile-push-register"))
-        let activation = Task { await coordinator.appBecameActive() }
-        for _ in 0..<4 {
-            await settle()
-            await clock.advance(by: 1)
-        }
-        await activation.value
-        #expect(await transport.count("POST api/mobile-push/register") == failedCalls + 1)
-        #expect(await coordinator.state == .registered(token: "fcm-1"))
-    }
-
-    // MARK: IS-08
-
-    @Test("IS-08: a download that finishes after sign-out cleanup is not cached")
-    func downloadAfterClearIsDropped() async throws {
-        let transport = RoutingTransport()
-        let route = "GET api/chat/message/9320/attachment"
-        await transport.set(route, .json("file-bytes"))
-        let gate = Gate()
-        await transport.setBeforeReply { request in
-            if RoutingTransport.route(of: request) == route { await gate.wait() }
-        }
-        let attachments = LiveAttachmentsRepository(api: makeAPI(transport))
-        let download = Task { try await attachments.data(forMessageId: 9320) }
-        #expect(await eventually { await transport.count(route) == 1 })
-        await attachments.clear()
-        await gate.open()
-        await #expect(throws: WaiveraError.signedOut) { try await download.value }
-        // The next request goes to the network again: nothing of the first download was kept.
-        _ = try await attachments.data(forMessageId: 9320)
-        #expect(await transport.count(route) == 2)
     }
 }
 

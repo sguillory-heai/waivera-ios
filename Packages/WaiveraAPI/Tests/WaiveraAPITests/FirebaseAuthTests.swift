@@ -64,7 +64,7 @@ struct FirebaseAuthRESTTests {
         let request = try #require(await transport.requests.first)
         #expect(request.url?.absoluteString == "https://securetoken.googleapis.com/v1/token?key=key")
         #expect(
-            String(decoding: request.httpBody ?? Data(), as: UTF8.self)
+            String(bytes: request.httpBody ?? Data(), encoding: .utf8)
                 == "grant_type=refresh_token&refresh_token=a%2Fb%2Bc"
         )
     }

@@ -201,9 +201,13 @@ extension FocusGeometry {
     }
 
     /// A piece of `width` lined up with the bubble's own side, kept inside `minLeft...maxRight`.
-    private func sideAligned(_ width: CGFloat, left: CGFloat, right: CGFloat, minLeft: CGFloat, maxRight: CGFloat)
-        -> CGFloat
-    {
+    private func sideAligned(
+        _ width: CGFloat,
+        left: CGFloat,
+        right: CGFloat,
+        minLeft: CGFloat,
+        maxRight: CGFloat
+    ) -> CGFloat {
         let desired = mine ? right - width : left
         return max(minLeft, min(desired, maxRight - width))
     }

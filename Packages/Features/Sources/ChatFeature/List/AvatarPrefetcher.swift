@@ -60,7 +60,7 @@ final class AvatarPrefetcher<Decoded: Sendable> {
         for id in queue { requested.remove(id) }
     }
 
-    private nonisolated static func load(
+    nonisolated private static func load(
         _ id: String,
         repository: any AvatarRepository,
         decode: @Sendable (Data) -> Decoded?

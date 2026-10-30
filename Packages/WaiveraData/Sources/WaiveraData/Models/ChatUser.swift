@@ -41,8 +41,8 @@ public struct ChatUser: Codable, Sendable, Hashable, Identifiable {
     /// truncated name.
     public var compactName: String? {
         guard let name = fullName else { return nil }
-        if let at = name.firstIndex(of: "@") {
-            let local = String(name[..<at])
+        if let atSign = name.firstIndex(of: "@") {
+            let local = String(name[..<atSign])
             return local.count > 16 ? String(local.prefix(15)) + "…" : local
         }
         if name.count <= 18 { return name }

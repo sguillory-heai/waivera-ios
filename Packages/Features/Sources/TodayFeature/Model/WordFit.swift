@@ -20,13 +20,19 @@ enum WordFit {
         widestLabelWord: Double,
         width: Double,
         tiles: Int,
-        gap: Double,
-        tilePadding: Double,
         extraLargeText: Bool,
-        stackMaxWidth: Double
+        metrics: StatTileMetrics
     ) -> Bool {
         guard width > 0, tiles > 0 else { return false }
-        let tileLabel = (width - gap * Double(tiles - 1)) / Double(tiles) - tilePadding * 2
-        return widestLabelWord > tileLabel || (extraLargeText && width < stackMaxWidth)
+        let tileLabel = (width - metrics.gap * Double(tiles - 1)) / Double(tiles) - metrics.tilePadding * 2
+        return widestLabelWord > tileLabel || (extraLargeText && width < metrics.stackMaxWidth)
     }
+}
+
+/// The stat row's spacing: the gap between tiles, a tile's side padding and the widest hero
+/// that stacks at extra-large text.
+struct StatTileMetrics: Equatable, Sendable {
+    var gap: Double
+    var tilePadding: Double
+    var stackMaxWidth: Double
 }

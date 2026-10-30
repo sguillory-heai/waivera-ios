@@ -95,14 +95,14 @@ struct ConversationPortTests {
     // MARK: Group header (spec §9.2)
 
     @Test func onlyAGroupCountsItsMembers() {
-        let me = ChatUser(id: "usr_me", firstName: "Alex")
+        let viewer = ChatUser(id: "usr_me", firstName: "Alex")
         let priya = ChatUser(id: "usr_priya", firstName: "Priya")
         let jordan = ChatUser(id: "usr_jordan", firstName: "Jordan")
-        let group = Conversation(id: 1, kind: .group, viewerId: "usr_me", participants: [me, priya, jordan, priya])
+        let group = Conversation(id: 1, kind: .group, viewerId: "usr_me", participants: [viewer, priya, jordan, priya])
         #expect(ConversationModel.memberCount(group) == 3)
-        let direct = Conversation(id: 2, kind: .direct, viewerId: "usr_me", participants: [me, priya])
+        let direct = Conversation(id: 2, kind: .direct, viewerId: "usr_me", participants: [viewer, priya])
         #expect(ConversationModel.memberCount(direct) == nil)
-        var channel = Conversation(id: 3, kind: .channel, viewerId: "usr_me", participants: [me, priya, jordan])
+        var channel = Conversation(id: 3, kind: .channel, viewerId: "usr_me", participants: [viewer, priya, jordan])
         channel.channel = nil
         #expect(ConversationModel.memberCount(channel) == nil)
     }

@@ -10,138 +10,138 @@ import WaiveraTestSupport
 @MainActor
 extension CalendarEventModelTests {
     @Test func organizerHasNoAnswerButtons() async {
-        let h = harness(events: [
+        let rig = harness(events: [
             invitation {
                 $0.ownerId = "usr_me"; $0.isOwner = true
             }
         ])
-        await observing(h.model) {
-            #expect(await eventually { details(h.model) != nil })
+        await observing(rig.model) {
+            #expect(await eventually { details(rig.model) != nil })
         }
-        #expect(details(h.model)?.invitation == nil)
-        #expect(details(h.model)?.isOrganizer == true)
-        #expect(details(h.model)?.canMessageOrganizer == false)
-        #expect(details(h.model)?.organizer?.name == "You're the organizer")
+        #expect(details(rig.model)?.invitation == nil)
+        #expect(details(rig.model)?.isOrganizer == true)
+        #expect(details(rig.model)?.canMessageOrganizer == false)
+        #expect(details(rig.model)?.organizer?.name == "You're the organizer")
     }
 
     @Test func nullAcceptanceShowsNoButtons() async {
-        let h = harness(events: [
+        let rig = harness(events: [
             invitation {
                 $0.viewerResponse = .notInvited; $0.attendees = []
             }
         ])
-        await observing(h.model) {
-            #expect(await eventually { details(h.model) != nil })
+        await observing(rig.model) {
+            #expect(await eventually { details(rig.model) != nil })
         }
-        #expect(details(h.model)?.invitation == nil)
-        h.model.respond(accept: true)
-        #expect(h.model.undoOffer == nil)
+        #expect(details(rig.model)?.invitation == nil)
+        rig.model.respond(accept: true)
+        #expect(rig.model.undoOffer == nil)
     }
 
     @Test func startedEventCannotBeAnswered() async {
-        let h = harness()
-        await observing(h.model) {
-            #expect(await eventually { details(h.model) != nil })
-            h.clock.advance(by: 3_700)
-            h.model.tick()
-            #expect(details(h.model)?.invitation?.canChange == false)
-            #expect(details(h.model)?.invitationStatus?.hasPrefix("This event has started") == true)
-            #expect(details(h.model)?.join?.state == .open)
-            h.model.respond(accept: true)
-            #expect(h.model.undoOffer == nil)
+        let rig = harness()
+        await observing(rig.model) {
+            #expect(await eventually { details(rig.model) != nil })
+            rig.clock.advance(by: 3_700)
+            rig.model.tick()
+            #expect(details(rig.model)?.invitation?.canChange == false)
+            #expect(details(rig.model)?.invitationStatus?.hasPrefix("This event has started") == true)
+            #expect(details(rig.model)?.join?.state == .open)
+            rig.model.respond(accept: true)
+            #expect(rig.model.undoOffer == nil)
         }
     }
 
     @Test func joinOpensTheValidatedLinkOnlyInsideTheWindow() async {
-        let h = harness()
-        await observing(h.model) {
-            #expect(await eventually { details(h.model) != nil })
-            #expect(details(h.model)?.join?.state == .tooEarly)
-            #expect(details(h.model)?.joinNote == "Join opens at 9:30 AM")
-            h.model.join()
-            #expect(h.model.openRequest == nil)
-            h.clock.advance(by: 31 * 60)
-            h.model.tick()
-            h.model.join()
-            #expect(h.model.openRequest?.url.absoluteString == "https://meet.example.test/care")
-            guard let request = h.model.openRequest else { return }
-            h.model.linkHandled(request, accepted: false)
-            #expect(
-                details(h.model)?.joinError == "Unable to join meeting. The web meeting experience could not be opened."
-            )
+        let rig = harness()
+        await observing(rig.model) {
+            #expect(await eventually { details(rig.model) != nil })
+            #expect(details(rig.model)?.join?.state == .tooEarly)
+            #expect(details(rig.model)?.joinNote == "Join opens at 9:30 AM")
+            rig.model.join()
+            #expect(rig.model.openRequest == nil)
+            rig.clock.advance(by: 31 * 60)
+            rig.model.tick()
+            rig.model.join()
+            #expect(rig.model.openRequest?.url.absoluteString == "https://meet.example.test/care")
+            guard let request = rig.model.openRequest else { return }
+            rig.model.linkHandled(request, accepted: false)
+            let message = "Unable to join meeting. The web meeting experience could not be opened."
+            #expect(details(rig.model)?.joinError == message)
         }
     }
 
     @Test func onlineMeetingWithoutALinkSaysSo() async {
-        let h = harness(events: [
+        let rig = harness(events: [
             invitation {
                 $0.meetingDetails = "Dial 555-0100"; $0.location = "Room 2"
             }
         ])
-        await observing(h.model) {
-            #expect(await eventually { details(h.model) != nil })
-            h.clock.advance(by: 31 * 60)
-            h.model.tick()
-            h.model.join()
-            #expect(h.model.openRequest == nil)
-            #expect(details(h.model)?.joinError == "Unable to join meeting. This meeting does not include a join link.")
+        await observing(rig.model) {
+            #expect(await eventually { details(rig.model) != nil })
+            rig.clock.advance(by: 31 * 60)
+            rig.model.tick()
+            rig.model.join()
+            #expect(rig.model.openRequest == nil)
+            let message = "Unable to join meeting. This meeting does not include a join link."
+            #expect(details(rig.model)?.joinError == message)
         }
     }
 
     @Test func sproutMeetingAsksTheApiForTheLobbyAndRejectsNonWebUrls() async {
-        let h = harness(events: [
+        let rig = harness(events: [
             invitation {
                 $0.isSprout = true; $0.meetingDetails = nil
             }
         ])
-        h.calendar.meetingResult.update { $0 = .success(URL(string: "https://web.example.test/lobby/r1?state=x")!) }
-        await observing(h.model) {
-            #expect(await eventually { details(h.model) != nil })
-            h.clock.advance(by: 31 * 60)
-            h.model.tick()
-            h.model.join()
-            #expect(await eventually { h.model.openRequest != nil })
-            #expect(h.calendar.calls.all.contains("meeting:inv"))
-            if let request = h.model.openRequest { h.model.linkHandled(request, accepted: true) }
-            h.calendar.meetingResult.update { $0 = .success(URL(string: "waivera-evil://lobby")!) }
-            h.model.join()
-            #expect(await eventually { details(h.model)?.joinError != nil })
-            #expect(h.model.openRequest == nil)
+        rig.calendar.meetingResult.update { $0 = .success(URL(string: "https://web.example.test/lobby/r1?state=x")!) }
+        await observing(rig.model) {
+            #expect(await eventually { details(rig.model) != nil })
+            rig.clock.advance(by: 31 * 60)
+            rig.model.tick()
+            rig.model.join()
+            #expect(await eventually { rig.model.openRequest != nil })
+            #expect(rig.calendar.calls.all.contains("meeting:inv"))
+            if let request = rig.model.openRequest { rig.model.linkHandled(request, accepted: true) }
+            rig.calendar.meetingResult.update { $0 = .success(URL(string: "waivera-evil://lobby")!) }
+            rig.model.join()
+            #expect(await eventually { details(rig.model)?.joinError != nil })
+            #expect(rig.model.openRequest == nil)
         }
     }
 
     @Test func messageOrganizerOpensTheDirectConversation() async {
-        let h = harness()
-        await observing(h.model) {
-            #expect(await eventually { details(h.model)?.canMessageOrganizer == true })
-            h.model.messageOrganizer()
-            #expect(await eventually { h.model.conversationRequest?.conversationId == 42 })
+        let rig = harness()
+        await observing(rig.model) {
+            #expect(await eventually { details(rig.model)?.canMessageOrganizer == true })
+            rig.model.messageOrganizer()
+            #expect(await eventually { rig.model.conversationRequest?.conversationId == 42 })
         }
-        #expect(h.conversations.calls.all == ["direct:usr_owner"])
+        #expect(rig.conversations.calls.all == ["direct:usr_owner"])
     }
 
     @Test func messageOrganizerFailureIsShown() async {
-        let h = harness()
-        h.conversations.result.update { $0 = .failure(.offline) }
-        await observing(h.model) {
-            #expect(await eventually { details(h.model) != nil })
-            h.model.messageOrganizer()
-            #expect(await eventually { details(h.model)?.chatError != nil })
+        let rig = harness()
+        rig.conversations.result.update { $0 = .failure(.offline) }
+        await observing(rig.model) {
+            #expect(await eventually { details(rig.model) != nil })
+            rig.model.messageOrganizer()
+            #expect(await eventually { details(rig.model)?.chatError != nil })
         }
     }
 
     @Test func milestoneLoadedLaterBadgesTheOrganizer() async {
-        let h = harness(milestones: [
+        let rig = harness(milestones: [
             Milestone(kind: .birthday, userId: "usr_owner", displayName: "Priya Raman", month: 11, day: 3)
         ])
-        await observing(h.model) {
-            #expect(await eventually { details(h.model) != nil })
-            #expect(details(h.model)?.organizer?.celebration == nil)
-            await h.calendar.refreshMilestones()
-            #expect(await eventually { details(h.model)?.organizer?.celebration?.kind == .birthday })
+        await observing(rig.model) {
+            #expect(await eventually { details(rig.model) != nil })
+            #expect(details(rig.model)?.organizer?.celebration == nil)
+            await rig.calendar.refreshMilestones()
+            #expect(await eventually { details(rig.model)?.organizer?.celebration?.kind == .birthday })
         }
         #expect(
-            details(h.model)?.organizer?.accessibilityLabel
+            details(rig.model)?.organizer?.accessibilityLabel
                 == "Organized by, Priya Raman is celebrating a birthday today."
         )
     }

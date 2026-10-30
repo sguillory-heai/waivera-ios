@@ -13,7 +13,7 @@ public enum NotificationAuthorization: Equatable, Sendable {
 public enum SystemNotificationStatus: Equatable, Sendable {
     /// Not asked yet; Settings offers "Turn on notifications".
     case notAsked
-    case on
+    case enabled
     /// Provisional: notifications arrive quietly in Notification Center. Offer "Turn on alerts".
     case deliveredQuietly
     /// Denied: show a persistent note with a link to the system Settings app.
@@ -51,7 +51,7 @@ public enum NotificationPermissionPolicy {
     public static func status(for authorization: NotificationAuthorization) -> SystemNotificationStatus {
         switch authorization {
         case .notDetermined: .notAsked
-        case .authorized, .ephemeral: .on
+        case .authorized, .ephemeral: .enabled
         case .provisional: .deliveredQuietly
         case .denied: .offInSystemSettings
         }

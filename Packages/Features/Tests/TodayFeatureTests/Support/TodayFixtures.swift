@@ -112,9 +112,12 @@ enum Fixture {
         return conversation
     }
 
-    static func bot(_ id: Int, unread: Int = 1, ticketId: String? = "4821", at raw: String = "2026-11-01T15:00:00Z")
-        -> Conversation
-    {
+    static func bot(
+        _ id: Int,
+        unread: Int = 1,
+        ticketId: String? = "4821",
+        at raw: String = "2026-11-01T15:00:00Z"
+    ) -> Conversation {
         var conversation = Conversation(id: id, kind: .bot, viewerId: viewerId)
         var message = ChatMessage(id: id * 100, conversationId: id, createdAt: instant(raw))
         message.isBot = true

@@ -29,7 +29,7 @@ struct DayBlock: Hashable, Sendable {
 }
 
 struct DayHourLabel: Hashable, Sendable {
-    var at: Double
+    var position: Double
     var time: ClockTime
 }
 
@@ -48,9 +48,13 @@ enum DayRules {
         events.filter { !skipped.contains($0.viewerResponse) }
     }
 
+    /// Unread, unarchived conversations, or `nil` until the list has loaded.
+    static func unreadChats(_ status: SourceStatus, in conversations: [Conversation]) -> Int? {
+        status.isReady ? conversations.filter { $0.unreadCount > 0 && !$0.isArchived }.count : nil
+    }
+
     static func stats(
-        conversations: SourceStatus,
-        conversationList: [Conversation],
+        unreadChats: Int?,
         schedule: SourceStatus,
         events: [CalendarEvent],
         zone: TimeZone,
@@ -61,8 +65,7 @@ enum DayRules {
         return TodayStats(
             eventsToday: schedule.isReady
                 ? going.filter { overlaps($0, from: today, until: today.adding(days: 1), zone: zone) }.count : nil,
-            unreadChats: conversations.isReady
-                ? conversationList.filter { $0.unreadCount > 0 && !$0.isArchived }.count : nil,
+            unreadChats: unreadChats,
             eventsThisWeek: schedule.isReady
                 ? going.filter { overlaps($0, from: weekStart, until: weekStart.adding(days: 7), zone: zone) }.count
                 : nil
@@ -105,7 +108,10 @@ enum DayRules {
         let window = Window(start: clock.instant(hour: startHour), end: clock.instant(hour: endHour))
         let ticks = startHour + 1 < endHour ? (startHour + 1..<endHour).map { window.at(clock.instant(hour: $0)) } : []
         let labels = stride(from: startHour, through: endHour, by: labelEveryHours).map {
-            DayHourLabel(at: window.at(clock.instant(hour: $0)), time: ClockTime(hour: $0 % hoursPerDay, minute: 0))
+            DayHourLabel(
+                position: window.at(clock.instant(hour: $0)),
+                time: ClockTime(hour: $0 % hoursPerDay, minute: 0)
+            )
         }
         return DayTimeline(
             windowStart: ClockTime(hour: startHour % hoursPerDay, minute: 0),
@@ -166,13 +172,13 @@ enum DayRules {
             return calendar.date(from: parts) ?? dayStart.addingTimeInterval(TimeInterval(hour) * 3_600)
         }
 
-        func floorHour(_ at: Date) -> Int {
-            at <= dayStart ? 0 : calendar.component(.hour, from: at)
+        func floorHour(_ instant: Date) -> Int {
+            instant <= dayStart ? 0 : calendar.component(.hour, from: instant)
         }
 
-        func ceilHour(_ at: Date) -> Int {
-            guard at < dayEnd else { return DayRules.hoursPerDay }
-            let parts = calendar.dateComponents([.hour, .minute, .second, .nanosecond], from: at)
+        func ceilHour(_ instant: Date) -> Int {
+            guard instant < dayEnd else { return DayRules.hoursPerDay }
+            let parts = calendar.dateComponents([.hour, .minute, .second, .nanosecond], from: instant)
             let hour = parts.hour ?? 0
             let onTheHour = parts.minute == 0 && parts.second == 0 && (parts.nanosecond ?? 0) < 1_000_000
             return onTheHour ? hour : hour + 1

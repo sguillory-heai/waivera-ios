@@ -48,7 +48,7 @@ struct ActivityTests {
         await transport.set("PUT api/chat/recent-activity/4411/read", .status(500))
         await #expect(throws: WaiveraError.self) { try await repository.markRead(activityId: 4411) }
         #expect(await feed(repository)?.value?.items.first { $0.id == 4411 }?.isRead == false)
-        await transport.set("PUT api/chat/recent-activity/read-all", .ok)
+        await transport.set("PUT api/chat/recent-activity/read-all", .emptyOK)
         try? await repository.markAllRead()
         #expect(await feed(repository)?.value?.unreadCount == 0)
     }
@@ -71,7 +71,13 @@ struct ActivityTests {
 struct BookmarksTests {
     private let primary = "GET api/chat/bookmarks"
 
-    private func make() async -> (LiveBookmarksRepository, RoutingTransport, ChatHarness) {
+    private struct Made {
+        let repository: LiveBookmarksRepository
+        let transport: RoutingTransport
+        let harness: ChatHarness
+    }
+
+    private func make() async -> Made {
         let harness = ChatHarness()
         await harness.begin()
         let repository = LiveBookmarksRepository(
@@ -80,11 +86,13 @@ struct BookmarksTests {
             chat: harness.engine,
             clock: harness.clock
         )
-        return (repository, harness.transport, harness)
+        return Made(repository: repository, transport: harness.transport, harness: harness)
     }
 
     @Test func primaryEndpoint() async {
-        let (repository, transport, _) = await make()
+        let made = await make()
+        let repository = made.repository
+        let transport = made.transport
         await transport.set(primary, .fixture("rest-chat-get-bookmarks"))
         await repository.refresh()
         let list = await latest(repository.bookmarks())?.value
@@ -94,7 +102,9 @@ struct BookmarksTests {
     }
 
     @Test func fallbackWalksConversationsWhenThePrimaryFails() async {
-        let (repository, transport, _) = await make()
+        let made = await make()
+        let repository = made.repository
+        let transport = made.transport
         await transport.set(primary, .status(500))
         await transport.set("GET api/chat/my-conversations", .fixture("rest-chat-get-my-conversations"))
         await transport.set("GET api/chat/search/conversation/7", .fixture("rest-chat-search-conversation"))
@@ -108,7 +118,9 @@ struct BookmarksTests {
     }
 
     @Test func fallbackFailureReportsTheOriginalError() async {
-        let (repository, transport, _) = await make()
+        let made = await make()
+        let repository = made.repository
+        let transport = made.transport
         await transport.set(primary, .status(500))
         await transport.set("GET api/chat/my-conversations", .status(503))
         await repository.refresh()
@@ -116,7 +128,10 @@ struct BookmarksTests {
     }
 
     @Test func togglePatchesTheTimeline() async throws {
-        let (repository, transport, harness) = await make()
+        let made = await make()
+        let repository = made.repository
+        let transport = made.transport
+        let harness = made.harness
         await transport.set("GET api/chat/7/messages/pagination", jsonArray([message(9330)]))
         await transport.set("POST api/chat/message/9330/bookmark", .fixture("rest-chat-toggle-bookmark"))
         await harness.engine.open(conversationId: 7)

@@ -50,10 +50,10 @@ struct NotificationSwitchesTests {
     }
 
     @Test func dependentSwitchesAreLiveOnlyWhenANotificationCanArrive() {
-        #expect(NotificationSwitches.block(pushEnabled: true, system: .on) == nil)
+        #expect(NotificationSwitches.block(pushEnabled: true, system: .enabled) == nil)
         #expect(NotificationSwitches.block(pushEnabled: true, system: .deliveredQuietly) == nil)
         #expect(NotificationSwitches.block(pushEnabled: true, system: .notAsked) == nil)
-        #expect(NotificationSwitches.block(pushEnabled: false, system: .on) == .pushOff)
+        #expect(NotificationSwitches.block(pushEnabled: false, system: .enabled) == .pushOff)
         // iOS blocking the app is the reason to fix first, whatever the push switch says.
         #expect(NotificationSwitches.block(pushEnabled: true, system: .offInSystemSettings) == .systemOff)
         #expect(NotificationSwitches.block(pushEnabled: false, system: .offInSystemSettings) == .systemOff)

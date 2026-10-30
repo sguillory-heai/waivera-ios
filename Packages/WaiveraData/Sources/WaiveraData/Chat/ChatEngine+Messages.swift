@@ -3,7 +3,7 @@ import WaiveraAPI
 import WaiveraRealtime
 
 extension ChatEngine: MessagesRepository {
-    public nonisolated func timeline(conversationId: Int) -> AsyncStream<Resource<MessageTimeline>> {
+    nonisolated public func timeline(conversationId: Int) -> AsyncStream<Resource<MessageTimeline>> {
         timelineCells.cell(conversationId).stream()
     }
 
@@ -183,9 +183,11 @@ extension ChatEngine: MessagesRepository {
 
     /// The context window plus forward pages until it joins the loaded rows or reaches the
     /// newest message; `nil` when the target is gone or the gap is too long to close.
-    private func contextWindow(conversationId: Int, messageId: Int, mapper: ChatMapper) async throws
-        -> [ChatMessage]?
-    {
+    private func contextWindow(
+        conversationId: Int,
+        messageId: Int,
+        mapper: ChatMapper
+    ) async throws -> [ChatMessage]? {
         let page = try await api.messageContext(
             conversationId: conversationId,
             messageId: messageId,
@@ -370,9 +372,8 @@ extension ChatEngine: MessagesRepository {
         }
         let conversationId = message.conversationId
         var state = timelines[conversationId] ?? TimelineState()
-        if fromRealtime, openConversations[conversationId] == nil,
-            state.isStale || (!state.isLoaded && state.messages.isEmpty)
-        {
+        let cacheIsBehind = state.isStale || (!state.isLoaded && state.messages.isEmpty)
+        if fromRealtime, openConversations[conversationId] == nil, cacheIsBehind {
             // Nobody is looking and the cache is behind or empty: the next open fetches it.
             return
         }

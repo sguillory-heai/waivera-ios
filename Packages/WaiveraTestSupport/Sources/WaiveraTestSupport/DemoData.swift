@@ -111,9 +111,10 @@ public struct DemoData: Sendable {
         "rest-chat-get-messages-pagination-system-message",
     ]
 
-    private static func chatContent(_ chat: ChatMapper, conversations: [Conversation])
-        -> (messages: [Int: [ChatMessage]], threads: [Int: ThreadTimeline])
-    {
+    private static func chatContent(
+        _ chat: ChatMapper,
+        conversations: [Conversation]
+    ) -> (messages: [Int: [ChatMessage]], threads: [Int: ThreadTimeline]) {
         var all = messageFixtures.flatMap { list(MessageSendResponse.self, $0) }
         all += decode([MessageSendResponse].self, DemoPayloads.groupMessages)
         all += decode([MessageSendResponse].self, DemoPayloads.callLog)

@@ -108,7 +108,7 @@ public enum Confetti {
     private static let gravity = 0.9
     private static let fadeFrom = 0.65
     private static let spread = 2.4
-    private static let up = -Double.pi / 2
+    private static let straightUp = -Double.pi / 2
 
     public struct Piece: Equatable, Sendable {
         /// Launch direction in radians; 0 points right, -π/2 straight up.
@@ -136,7 +136,7 @@ public enum Confetti {
         var random = SeededRandom(seed: seed)
         return (0..<count).map { index in
             Piece(
-                angle: up + (random.nextUnit() - 0.5) * 2 * spread,
+                angle: straightUp + (random.nextUnit() - 0.5) * 2 * spread,
                 reach: minReach + random.nextUnit() * reachRange,
                 spin: (random.nextUnit() - 0.5) * 2 * maxSpin,
                 colorIndex: index,

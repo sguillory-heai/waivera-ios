@@ -137,7 +137,7 @@ struct RichTextTests {
     @Test func extractFindsAStringifiedDoc() throws {
         let raw = #"{"type":"doc","content":["# + Fixture.paragraph(Fixture.text("hi")) + "]}"
         let once = JSONValue.string(raw)
-        let encodedTwice = String(decoding: try JSONEncoder().encode(raw), as: UTF8.self)
+        let encodedTwice = String(bytes: try JSONEncoder().encode(raw), encoding: .utf8) ?? ""
         let twice = JSONValue.string(encodedTwice)
         #expect(TipTapParser.extractDoc(once, text: nil).map(TipTapParser.plainText) == "hi")
         #expect(TipTapParser.extractDoc(twice, text: nil).map(TipTapParser.plainText) == "hi")

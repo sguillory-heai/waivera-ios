@@ -30,18 +30,19 @@ public actor LiveCalendarRepository: CalendarRepository {
         self.handoff = handoff
     }
 
-    public nonisolated func scheduleTimeZone() -> (zone: TimeZone, isFallback: Bool) {
+    nonisolated public func scheduleTimeZone() -> (zone: TimeZone, isFallback: Bool) {
         let zone = context.currentUser?.scheduleZone ?? ScheduleZone.resolve(savedIdentifier: nil)
         return (zone.timeZone, zone.isFallback)
     }
 
-    public nonisolated func today() -> CalendarDate {
+    nonisolated public func today() -> CalendarDate {
         CalendarDate(clock.now, in: scheduleTimeZone().zone)
     }
 
-    public nonisolated func feed(period: CalendarPeriod, containing date: CalendarDate)
-        -> AsyncStream<Resource<CalendarFeed>>
-    {
+    nonisolated public func feed(
+        period: CalendarPeriod,
+        containing date: CalendarDate
+    ) -> AsyncStream<Resource<CalendarFeed>> {
         feeds.cell(period.fetchInterval(containing: date, in: scheduleTimeZone().zone)).stream()
     }
 
@@ -134,7 +135,7 @@ public actor LiveCalendarRepository: CalendarRepository {
 
     // MARK: Single event
 
-    public nonisolated func event(id: String) -> AsyncStream<Resource<EventLookup>> {
+    nonisolated public func event(id: String) -> AsyncStream<Resource<EventLookup>> {
         events.cell(id).stream()
     }
 
@@ -198,7 +199,7 @@ public actor LiveCalendarRepository: CalendarRepository {
         }
     }
 
-    public nonisolated func milestones() -> AsyncStream<Resource<MilestoneIndex>> { milestoneCell.stream() }
+    nonisolated public func milestones() -> AsyncStream<Resource<MilestoneIndex>> { milestoneCell.stream() }
 
     public func refreshMilestones() async {
         let current = generation

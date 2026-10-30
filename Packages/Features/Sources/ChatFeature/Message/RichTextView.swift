@@ -170,12 +170,7 @@
             for run in text.runs {
                 let range = run.range
                 if let marks = run[RichMarksAttribute.self] {
-                    var intent: InlinePresentationIntent = []
-                    if marks.contains(.bold) { intent.insert(.stronglyEmphasized) }
-                    if marks.contains(.italic) { intent.insert(.emphasized) }
-                    if marks.contains(.code) { intent.insert(.code) }
-                    if marks.contains(.strike) { intent.insert(.strikethrough) }
-                    text[range].inlinePresentationIntent = intent
+                    text[range].inlinePresentationIntent = presentationIntent(marks)
                     if marks.contains(.underline) { text[range].underlineStyle = .single }
                 }
                 if run[RichMentionAttribute.self] != nil {
@@ -189,12 +184,19 @@
                 }
                 if run.link != nil {
                     text[range].foregroundColor = Palette.accent
-                }
-                if run.link != nil {
                     text[range].underlineStyle = .single
                 }
             }
             return text
+        }
+
+        private static func presentationIntent(_ marks: Set<RichMark>) -> InlinePresentationIntent {
+            var intent: InlinePresentationIntent = []
+            if marks.contains(.bold) { intent.insert(.stronglyEmphasized) }
+            if marks.contains(.italic) { intent.insert(.emphasized) }
+            if marks.contains(.code) { intent.insert(.code) }
+            if marks.contains(.strike) { intent.insert(.strikethrough) }
+            return intent
         }
     }
 #endif

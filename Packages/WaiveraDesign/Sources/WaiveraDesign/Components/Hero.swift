@@ -233,12 +233,10 @@
                     .accessibilityLabel(Text(item.accessibilityLabel))
                     .accessibilityIdentifier("heroBar.\(item.id)")
                 }
-                if let accountName = accountName ?? accountMenu?.name,
-                    let onAccount = onAccount ?? accountMenu?.openMenu
-                {
-                    Button(action: onAccount) {
+                if let name = resolvedAccountName, let openAccount = resolvedOnAccount {
+                    Button(action: openAccount) {
                         AvatarView(
-                            name: accountName,
+                            name: name,
                             image: accountImage ?? accountMenu?.image,
                             size: CGFloat(HeroMetrics.barAvatar),
                             fill: .hero
@@ -254,6 +252,9 @@
             .padding(.trailing, Spacing.small)
             .frame(minHeight: CGFloat(HeroMetrics.barHeight))
         }
+
+        private var resolvedAccountName: String? { accountName ?? accountMenu?.name }
+        private var resolvedOnAccount: (() -> Void)? { onAccount ?? accountMenu?.openMenu }
     }
 
     /// The glass summary card on the hero ("5 of 9 handled"): a faint white fill and hairline.

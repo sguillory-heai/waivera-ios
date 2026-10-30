@@ -285,7 +285,6 @@ struct ConversationModelTests {
         #expect(await eventually { !model.state.olderFailed })
         task.cancel()
     }
-
 }
 
 extension ConversationModelTests {

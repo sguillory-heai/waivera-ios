@@ -39,7 +39,6 @@ final class ConversationModel {
     @ObservationIgnored var nextScrollId = 0
     @ObservationIgnored var rebuildCount = 0
 
-    // swiftlint:disable:next function_parameter_count
     init(
         conversationID: Int,
         targetMessageID: Int?,
@@ -307,7 +306,6 @@ final class ConversationModel {
         nextScrollId += 1
         state.scrollCommand = ScrollCommand(id: nextScrollId, target: target)
     }
-
 }
 
 extension StagedImage {

@@ -45,28 +45,28 @@ final class ChatListModel {
     /// Peers of the first rows, for `AvatarPrefetcher` (02 §4b).
     private(set) var avatarUserIds: [String] = []
 
-    @ObservationIgnored private let conversations: any ConversationsRepository
+    @ObservationIgnored let conversations: any ConversationsRepository
     @ObservationIgnored private let messages: any MessagesRepository
-    @ObservationIgnored private let session: any SessionRepository
-    @ObservationIgnored private let realtimeStatus: any RealtimeStatusRepository
+    @ObservationIgnored let session: any SessionRepository
+    @ObservationIgnored let realtimeStatus: any RealtimeStatusRepository
     @ObservationIgnored private let callURL: @Sendable (Conversation) async throws -> URL
-    @ObservationIgnored private let failedSendsSource: @Sendable () -> AsyncStream<Set<Int>>
+    @ObservationIgnored let failedSendsSource: @Sendable () -> AsyncStream<Set<Int>>
     @ObservationIgnored private let text: any ChatListText
-    @ObservationIgnored private let clock: any WaiveraClock
+    @ObservationIgnored let clock: any WaiveraClock
     @ObservationIgnored private let timeFormatter: RelativeTimeFormatter
 
     @ObservationIgnored private var resource = Resource<[Conversation]>()
-    @ObservationIgnored private var typing: [Int: [String]] = [:]
+    @ObservationIgnored var typing: [Int: [String]] = [:]
     /// Conversations with a message of mine that never went out (the outbox's failed sends).
-    @ObservationIgnored private var failedSends: Set<Int> = []
+    @ObservationIgnored var failedSends: Set<Int> = []
     /// Rows just marked read under the Unread filter: they stay for the removal beat, so the
     /// badge is seen to clear before the row leaves.
     @ObservationIgnored private var leavingRead: Set<Int> = []
-    @ObservationIgnored private var user: CurrentUser?
-    @ObservationIgnored private var banner = ConnectionBanner.hidden
-    @ObservationIgnored private var isHubConnected = false
-    @ObservationIgnored private var hubEpoch = 0
-    @ObservationIgnored private var now: Date
+    @ObservationIgnored var user: CurrentUser?
+    @ObservationIgnored var banner = ConnectionBanner.hidden
+    @ObservationIgnored var isHubConnected = false
+    @ObservationIgnored var hubEpoch = 0
+    @ObservationIgnored var now: Date
     @ObservationIgnored private var openingCallId: Int?
     @ObservationIgnored private var arrivals: [Int: Int] = [:]
     /// Conversation id → the last message id (0 for none) it had when marked read here, until
@@ -77,8 +77,8 @@ final class ChatListModel {
     @ObservationIgnored private var orderHold = InboxOrderHold()
     @ObservationIgnored private var isAtTop = true
     @ObservationIgnored private var navigationLocked = false
-    @ObservationIgnored private var isRefreshing = false
-    @ObservationIgnored private var checkedStaleness = false
+    @ObservationIgnored var isRefreshing = false
+    @ObservationIgnored var checkedStaleness = false
 
     init(
         conversations: any ConversationsRepository,
@@ -266,81 +266,9 @@ final class ChatListModel {
 }
 
 extension ChatListModel {
-    // MARK: Streams
-
-    private func observeConversations() async {
-        for await next in conversations.conversations() {
-            apply(next)
-            if !checkedStaleness, next.phase != .loading {
-                checkedStaleness = true
-                if isStale(next) { Task { await self.refreshInBackground() } }
-            }
-        }
-    }
-
-    private func observeTyping() async {
-        for await next in conversations.typing() {
-            typing = next
-            rebuild()
-        }
-    }
-
-    private func observeFailedSends() async {
-        for await next in failedSendsSource() {
-            failedSends = next
-            rebuild()
-        }
-    }
-
-    private func observeSession() async {
-        for await next in session.states() {
-            user = next.user
-            rebuild()
-        }
-    }
-
-    private func observeBanner() async {
-        for await next in realtimeStatus.banner() {
-            banner = next
-            updateConnection()
-        }
-    }
-
-    private func observeStatuses() async {
-        for await status in realtimeStatus.statuses() {
-            isHubConnected = status.isConnected
-            hubEpoch = status.epoch
-            updateConnection()
-        }
-    }
-
-    private func tick() async {
-        while !Task.isCancelled {
-            do {
-                try await clock.sleep(for: RelativeTimeFormatter.tickInterval)
-            } catch {
-                return
-            }
-            now = clock.now
-            rebuild()
-        }
-    }
-
-    private func refreshInBackground() async {
-        guard !isRefreshing else { return }
-        isRefreshing = true
-        await conversations.refresh()
-        isRefreshing = false
-    }
-
-    private func isStale(_ resource: Resource<[Conversation]>) -> Bool {
-        guard let updatedAt = resource.updatedAt else { return true }
-        return clock.now.timeIntervalSince(updatedAt) >= Self.staleAfter
-    }
-
     // MARK: Applying values
 
-    private func apply(_ next: Resource<[Conversation]>) {
+    func apply(_ next: Resource<[Conversation]>) {
         resource = next
         let rows = next.value ?? []
         detectArrivals(rows)
@@ -378,16 +306,18 @@ extension ChatListModel {
         rebuild()
     }
 
-    private func updateConnection() {
+    func updateConnection() {
         let next = Self.connection(banner: banner, isConnected: isHubConnected, epoch: hubEpoch)
         if next != state.connection { state.connection = next }
     }
 
     /// The pill: the device being offline wins, then the hub state. Before the first connect
     /// the hub is "Connecting"; once it has connected, a stopped hub is "Offline".
-    nonisolated static func connection(banner: ConnectionBanner, isConnected: Bool, epoch: Int)
-        -> ConnectionIndicator
-    {
+    nonisolated static func connection(
+        banner: ConnectionBanner,
+        isConnected: Bool,
+        epoch: Int
+    ) -> ConnectionIndicator {
         switch banner {
         case .offline: return .offline
         case .reconnecting: return .reconnecting
@@ -408,7 +338,7 @@ extension ChatListModel {
 
     // MARK: State building
 
-    private func rebuild() {
+    func rebuild() {
         var next = state
         next.refreshError = nil
         guard let all = resource.value else {

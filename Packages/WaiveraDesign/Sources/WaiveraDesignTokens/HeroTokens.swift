@@ -34,26 +34,35 @@ public enum HeroColorToken: String, CaseIterable, Sendable {
     case sheet
 
     public func value(isDark: Bool) -> RGBColor {
+        isDark ? values.dark : values.light
+    }
+
+    // One table row per case, as in `ColorToken`.
+    private var values: (light: RGBColor, dark: RGBColor) {
         switch self {
-        case .headerTop: RGBColor(hex: isDark ? 0x1B0F29 : 0x2A1145)
-        case .headerBottom: RGBColor(hex: isDark ? 0x33195A : 0x4C2384)
-        case .glowPink: RGBColor(hex: BrandPalette.brandPink, alpha: 0.42)
-        case .glowViolet: RGBColor(hex: BrandPalette.brandViolet, alpha: 0.55)
-        case .onHeader: RGBColor(hex: BrandPalette.white)
+        case .headerTop: (RGBColor(hex: 0x2A1145), RGBColor(hex: 0x1B0F29))
+        case .headerBottom: (RGBColor(hex: 0x4C2384), RGBColor(hex: 0x33195A))
+        case .glowPink: Self.both(RGBColor(hex: BrandPalette.brandPink, alpha: 0.42))
+        case .glowViolet: Self.both(RGBColor(hex: BrandPalette.brandViolet, alpha: 0.55))
+        case .onHeader: Self.both(RGBColor(hex: BrandPalette.white))
         // The concept's 62-72% white; 80% keeps 4.5:1 under the glows at full strength.
-        case .onHeaderSecondary: RGBColor(hex: BrandPalette.white, alpha: 0.8)
-        case .card: RGBColor(hex: BrandPalette.white, alpha: isDark ? 0.06 : 0.08)
-        case .cardBorder: RGBColor(hex: BrandPalette.white, alpha: 0.13)
-        case .tile: RGBColor(hex: BrandPalette.white, alpha: 0.07)
-        case .tileBorder: RGBColor(hex: BrandPalette.white, alpha: 0.1)
-        case .ringTrack: RGBColor(hex: BrandPalette.white, alpha: 0.14)
-        case .ringArc: RGBColor(hex: 0xE1D3FF)
-        case .accountFill: RGBColor(hex: BrandPalette.white, alpha: 0.16)
-        case .chip: RGBColor(hex: 0x0A6B60, alpha: Double(0x66) / 255)
-        case .onChip: RGBColor(hex: 0x8EF0DC)
-        case .nextIcon: RGBColor(hex: 0xFFB8DC)
-        case .sheet: RGBColor(hex: isDark ? 0x120F17 : 0xFFFFFF)
+        case .onHeaderSecondary: Self.both(RGBColor(hex: BrandPalette.white, alpha: 0.8))
+        case .card: (RGBColor(hex: BrandPalette.white, alpha: 0.08), RGBColor(hex: BrandPalette.white, alpha: 0.06))
+        case .cardBorder: Self.both(RGBColor(hex: BrandPalette.white, alpha: 0.13))
+        case .tile: Self.both(RGBColor(hex: BrandPalette.white, alpha: 0.07))
+        case .tileBorder: Self.both(RGBColor(hex: BrandPalette.white, alpha: 0.1))
+        case .ringTrack: Self.both(RGBColor(hex: BrandPalette.white, alpha: 0.14))
+        case .ringArc: Self.both(RGBColor(hex: 0xE1D3FF))
+        case .accountFill: Self.both(RGBColor(hex: BrandPalette.white, alpha: 0.16))
+        case .chip: Self.both(RGBColor(hex: 0x0A6B60, alpha: Double(0x66) / 255))
+        case .onChip: Self.both(RGBColor(hex: 0x8EF0DC))
+        case .nextIcon: Self.both(RGBColor(hex: 0xFFB8DC))
+        case .sheet: (RGBColor(hex: 0xFFFFFF), RGBColor(hex: 0x120F17))
         }
+    }
+
+    private static func both(_ color: RGBColor) -> (light: RGBColor, dark: RGBColor) {
+        (color, color)
     }
 }
 
@@ -120,13 +129,13 @@ public enum HeroMetrics {
     ) -> (start: (x: Double, y: Double), end: (x: Double, y: Double)) {
         guard width > 0, height > 0 else { return ((0.5, 0), (0.5, 1)) }
         let radians = degrees * .pi / 180
-        let dx = sin(radians)
-        let dy = -cos(radians)
-        let half = (abs(width * dx) + abs(height * dy)) / 2
+        let directionX = sin(radians)
+        let directionY = -cos(radians)
+        let half = (abs(width * directionX) + abs(height * directionY)) / 2
         let centerX = width / 2
         let centerY = height / 2
-        let start = ((centerX - dx * half) / width, (centerY - dy * half) / height)
-        let end = ((centerX + dx * half) / width, (centerY + dy * half) / height)
+        let start = ((centerX - directionX * half) / width, (centerY - directionY * half) / height)
+        let end = ((centerX + directionX * half) / width, (centerY + directionY * half) / height)
         return (start, end)
     }
 }

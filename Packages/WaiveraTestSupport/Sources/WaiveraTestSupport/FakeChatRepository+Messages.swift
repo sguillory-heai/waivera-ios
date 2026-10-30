@@ -4,7 +4,7 @@ import WaiveraData
 import WaiveraRealtime
 
 extension FakeChatRepository: MessagesRepository {
-    public nonisolated func timeline(conversationId: Int) -> AsyncStream<Resource<MessageTimeline>> {
+    nonisolated public func timeline(conversationId: Int) -> AsyncStream<Resource<MessageTimeline>> {
         timelineCells.cell(conversationId).stream()
     }
 
@@ -55,9 +55,12 @@ extension FakeChatRepository: MessagesRepository {
     }
 
     /// The fake sends at once, so the wait ends with the send's state.
-    public func sendAndWait(text: String, conversationId: Int, threadRootMessageId: Int?, timeout: Duration) async
-        -> OutboxOutcome
-    {
+    public func sendAndWait(
+        text: String,
+        conversationId: Int,
+        threadRootMessageId: Int?,
+        timeout: Duration
+    ) async -> OutboxOutcome {
         let entry: OutgoingMessage?
         if let threadRootMessageId {
             entry = await reply(
@@ -148,9 +151,12 @@ extension FakeChatRepository: MessagesRepository {
 
     // MARK: Outbox
 
-    func enqueue(text: String, attachment: Attachment?, conversationId: Int, parentMessageId: Int?)
-        -> OutgoingMessage?
-    {
+    func enqueue(
+        text: String,
+        attachment: Attachment?,
+        conversationId: Int,
+        parentMessageId: Int?
+    ) -> OutgoingMessage? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty || attachment != nil else { return nil }
         nextClientId += 1
@@ -220,7 +226,7 @@ extension FakeChatRepository: MessagesRepository {
 }
 
 extension FakeChatRepository: ThreadsRepository {
-    public nonisolated func thread(rootMessageId: Int, conversationId: Int) -> AsyncStream<Resource<ThreadTimeline>> {
+    nonisolated public func thread(rootMessageId: Int, conversationId: Int) -> AsyncStream<Resource<ThreadTimeline>> {
         threadCells.cell(rootMessageId).stream()
     }
 
@@ -255,9 +261,12 @@ extension FakeChatRepository: ThreadsRepository {
     }
 
     @discardableResult
-    public func reply(text: String, attachment: Attachment?, rootMessageId: Int, conversationId: Int) async
-        -> OutgoingMessage?
-    {
+    public func reply(
+        text: String,
+        attachment: Attachment?,
+        rootMessageId: Int,
+        conversationId: Int
+    ) async -> OutgoingMessage? {
         calls.record("reply:\(rootMessageId)")
         if threadsById[rootMessageId] == nil {
             threadsById[rootMessageId] = ThreadTimeline(rootMessageId: rootMessageId, conversationId: conversationId)

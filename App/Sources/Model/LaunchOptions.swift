@@ -51,9 +51,9 @@ struct LaunchOptions: Equatable, Sendable {
             options.fakeScenario = FakeDataEnvironment.scenario(fromArguments: arguments)
             options.disablesAnimations = isOn("-WaiveraDisableAnimations")
             options.route = value(after: "-WaiveraRoute").flatMap(RouteCatalog.entry(named:))
-            if options.fakeScenario != nil, !arguments.contains(FakeDataEnvironment.scenarioArgument),
-                let routeScenario = options.route?.scenario.flatMap(FakeDataEnvironment.Scenario.init(rawValue:))
-            {
+            let routeScenario = options.route?.scenario.flatMap(FakeDataEnvironment.Scenario.init(rawValue:))
+            let namesScenario = arguments.contains(FakeDataEnvironment.scenarioArgument)
+            if options.fakeScenario != nil, !namesScenario, let routeScenario {
                 options.fakeScenario = routeScenario
             }
             options.appearance = value(after: "-WaiveraAppearance").flatMap(AppearancePreference.init(rawValue:))

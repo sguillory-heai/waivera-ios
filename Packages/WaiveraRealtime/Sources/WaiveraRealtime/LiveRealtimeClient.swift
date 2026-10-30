@@ -52,9 +52,9 @@ public actor LiveRealtimeClient: RealtimeClient {
         self.clock = clock
     }
 
-    public nonisolated func statuses() -> AsyncStream<RealtimeStatus> { statusBroadcaster.stream() }
-    public nonisolated var currentStatus: RealtimeStatus { status.get() }
-    public nonisolated func events() -> AsyncStream<ChatHubEvent> { eventBroadcaster.stream() }
+    nonisolated public func statuses() -> AsyncStream<RealtimeStatus> { statusBroadcaster.stream() }
+    nonisolated public var currentStatus: RealtimeStatus { status.get() }
+    nonisolated public func events() -> AsyncStream<ChatHubEvent> { eventBroadcaster.stream() }
 
     // MARK: Lifecycle
 
@@ -198,10 +198,8 @@ public actor LiveRealtimeClient: RealtimeClient {
             guard generation == current else { return }
             guard let event = HubEventDecoder.decode(invocation) else { continue }
             if case .message(let message) = event, !deduplicator.shouldProcess(message, now: clock.now) { continue }
-            if case .conversationListMessage(let message) = event,
-                !deduplicator.shouldProcess(message, now: clock.now)
-            {
-                continue
+            if case .conversationListMessage(let message) = event {
+                guard deduplicator.shouldProcess(message, now: clock.now) else { continue }
             }
             eventBroadcaster.send(event)
         }

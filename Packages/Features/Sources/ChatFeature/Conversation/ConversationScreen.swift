@@ -76,24 +76,25 @@
                         isLoadingOlder: state.isLoadingOlder,
                         scrollCommand: state.scrollCommand,
                         accessibilityLabelKey: "messages.list",
-                        onLoadOlder: { Task { await model.loadOlder() } }
-                    ) {
-                        if state.olderFailed {
-                            BannerView(
-                                .error,
-                                message: ConversationStrings.text("older.failed"),
-                                actionTitle: ConversationStrings.text("retry"),
-                                action: { Task { await model.loadOlder() } }
-                            )
-                            .padding(.horizontal, Spacing.medium)
-                            .padding(.vertical, Spacing.small)
-                        }
-                        if state.isStale {
-                            BannerView(.info, message: ConversationStrings.text("messages.stale"))
+                        onLoadOlder: { Task { await model.loadOlder() } },
+                        header: {
+                            if state.olderFailed {
+                                BannerView(
+                                    .error,
+                                    message: ConversationStrings.text("older.failed"),
+                                    actionTitle: ConversationStrings.text("retry"),
+                                    action: { Task { await model.loadOlder() } }
+                                )
                                 .padding(.horizontal, Spacing.medium)
                                 .padding(.vertical, Spacing.small)
+                            }
+                            if state.isStale {
+                                BannerView(.info, message: ConversationStrings.text("messages.stale"))
+                                    .padding(.horizontal, Spacing.medium)
+                                    .padding(.vertical, Spacing.small)
+                            }
                         }
-                    }
+                    )
                 }
             }
         }

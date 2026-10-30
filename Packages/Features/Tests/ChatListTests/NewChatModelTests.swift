@@ -41,12 +41,12 @@ final class NewChatHarness {
 
 @MainActor
 struct NewChatModelTests {
-    static let direct = Sample.conversation(#"{"id": 7, "participants": [\#(Sample.me), \#(Sample.priya)]}"#)
+    static let direct = Sample.conversation(#"{"id": 7, "participants": [\#(Sample.viewerUser), \#(Sample.priya)]}"#)
     static let group = Sample.conversation(
-        #"{"id": 63, "participants": [\#(Sample.me), \#(Sample.priya), \#(Sample.jordan), \#(Sample.sam)]}"#
+        #"{"id": 63, "participants": [\#(Sample.viewerUser), \#(Sample.priya), \#(Sample.jordan), \#(Sample.sam)]}"#
     )
     static let channel = Sample.conversation(
-        #"{"id": 41, "participants": [\#(Sample.me), \#(Sample.jordan)], "channel": {"name": "north"}}"#
+        #"{"id": 41, "participants": [\#(Sample.viewerUser), \#(Sample.jordan)], "channel": {"name": "north"}}"#
     )
 
     @Test("Loading, then the directory without me")
@@ -165,7 +165,7 @@ struct NewChatModelTests {
         #expect(await eventually { harness.model.state.content == .people })
         harness.stub?.createFailure.update { $0 = .conflict }
         let existing = Sample.conversation(
-            #"{"id": 70, "participants": [\#(Sample.me), \#(Sample.jordan), \#(Sample.sam)]}"#
+            #"{"id": 70, "participants": [\#(Sample.viewerUser), \#(Sample.jordan), \#(Sample.sam)]}"#
         )
         harness.stub?.afterRefresh.update { $0 = [Self.direct, existing] }
         harness.model.toggle("usr_sam_ortiz")

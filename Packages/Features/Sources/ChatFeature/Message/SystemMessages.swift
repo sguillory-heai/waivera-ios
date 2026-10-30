@@ -112,9 +112,8 @@ enum CallLogs {
             let value = text(of: ended)
             let range = NSRange(value.startIndex..., in: value)
             let expression = try? NSRegularExpression(pattern: durationPattern, options: [.caseInsensitive])
-            if let match = expression?.firstMatch(in: value, range: range),
-                let captured = Range(match.range(at: 1), in: value)
-            {
+            let match = expression?.firstMatch(in: value, range: range)
+            if let match, let captured = Range(match.range(at: 1), in: value) {
                 let trimmed = value[captured].trimmingCharacters(in: .whitespaces)
                 if !trimmed.isEmpty { return trimmed }
             }

@@ -158,7 +158,7 @@ struct ChatListModelTests {
     func coldStartFromCache() async {
         let clock = ManualClock()
         let cached = Sample.conversation(
-            #"{"id": 7, "participants": [\#(Sample.me), \#(Sample.priya)], "lastMessage": {"id": 1, "#
+            #"{"id": 7, "participants": [\#(Sample.viewerUser), \#(Sample.priya)], "lastMessage": {"id": 1, "#
                 + #""userId": "usr_priya_raman", "messagePlaintext": "cached", "createDate": "2026-11-01T14:00:00Z"}}"#
         )
         let stub = StubConversations([cached], updatedAt: nil, phase: .loading, clock: clock)
@@ -268,7 +268,7 @@ struct ChatListModelTests {
     @Test("A live call shows the join row; joining returns an https lobby without navigating")
     func liveCall() async {
         let clock = ManualClock()
-        var calling = Sample.conversation(#"{"id": 7, "participants": [\#(Sample.me), \#(Sample.priya)]}"#)
+        var calling = Sample.conversation(#"{"id": 7, "participants": [\#(Sample.viewerUser), \#(Sample.priya)]}"#)
         calling.activeCall = CallRoom(roomId: "room-1")
         let stub = StubConversations([calling], updatedAt: clock.now, clock: clock)
         let harness = ListHarness(conversations: stub)
@@ -286,7 +286,7 @@ struct ChatListModelTests {
     @Test("A call that cannot open posts a notice with Retry")
     func callFailure() async {
         let clock = ManualClock()
-        var calling = Sample.conversation(#"{"id": 7, "participants": [\#(Sample.me), \#(Sample.priya)]}"#)
+        var calling = Sample.conversation(#"{"id": 7, "participants": [\#(Sample.viewerUser), \#(Sample.priya)]}"#)
         calling.activeCall = CallRoom(roomId: "room-1")
         let stub = StubConversations([calling], updatedAt: clock.now, clock: clock)
         let harness = ListHarness(conversations: stub, webBaseURL: nil)
@@ -299,7 +299,6 @@ struct ChatListModelTests {
         harness.model.dismissNotice()
         #expect(harness.model.state.notice == nil)
     }
-
 }
 
 extension ChatListModelTests {

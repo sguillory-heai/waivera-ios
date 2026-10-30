@@ -145,8 +145,10 @@ extension APIClient {
         return rows?.elements ?? []
     }
 
-    public func searchConversation(_ conversationId: Int, query: ChatSearchQuery) async throws -> [MessageSendResponse]
-    {
+    public func searchConversation(
+        _ conversationId: Int,
+        query: ChatSearchQuery
+    ) async throws -> [MessageSendResponse] {
         let request = APIRequest(.get, "api/chat/search/conversation/\(conversationId)", query: query.queryItems)
         let rows: LossyArray<MessageSendResponse>? = try await envelopedIfPresent(request)
         return rows?.elements ?? []

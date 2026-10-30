@@ -76,160 +76,160 @@ struct CalendarEventModelTests {
     }
 
     @Test func loadingUntilTheFeedArrivesThenLoaded() async {
-        let h = harness()
-        h.calendar.holds.update { $0 = true }
-        await observing(h.model) {
-            #expect(await eventually { h.calendar.calls.count("refreshEvent:inv") == 1 })
-            #expect(h.model.state == .loading)
-            h.calendar.release()
-            #expect(await eventually { details(h.model) != nil })
+        let rig = harness()
+        rig.calendar.holds.update { $0 = true }
+        await observing(rig.model) {
+            #expect(await eventually { rig.calendar.calls.count("refreshEvent:inv") == 1 })
+            #expect(rig.model.state == .loading)
+            rig.calendar.release()
+            #expect(await eventually { details(rig.model) != nil })
         }
-        #expect(details(h.model)?.title == "Care plan review")
-        #expect(details(h.model)?.organizer?.name == "Priya Raman")
+        #expect(details(rig.model)?.title == "Care plan review")
+        #expect(details(rig.model)?.organizer?.name == "Priya Raman")
     }
 
     @Test func coldIdIsFetchedOnceThroughTheSingleEventLookup() async {
-        let h = harness()
-        await observing(h.model) {
-            #expect(await eventually { details(h.model) != nil })
+        let rig = harness()
+        await observing(rig.model) {
+            #expect(await eventually { details(rig.model) != nil })
         }
-        #expect(h.calendar.calls.all.filter { $0.hasPrefix("refresh") } == ["refreshEvent:inv"])
+        #expect(rig.calendar.calls.all.filter { $0.hasPrefix("refresh") } == ["refreshEvent:inv"])
     }
 
     @Test func cachedEventIsShownWithoutAFetch() async {
-        let h = harness()
+        let rig = harness()
         let cached = Resource(value: EventLookup.found(invitation()), phase: .loaded, updatedAt: now)
-        h.calendar.eventCells.cell("inv").set(cached)
-        await observing(h.model) {
-            #expect(await eventually { details(h.model) != nil })
+        rig.calendar.eventCells.cell("inv").set(cached)
+        await observing(rig.model) {
+            #expect(await eventually { details(rig.model) != nil })
             try? await Task.sleep(for: .milliseconds(30))
         }
-        #expect(h.calendar.calls.count("refreshEvent") == 0)
+        #expect(rig.calendar.calls.count("refreshEvent") == 0)
     }
 
     @Test func unknownIdIsNotFoundOnceEveryRangeHasSynced() async {
-        let h = harness(id: "missing")
-        await observing(h.model) {
-            #expect(await eventually { h.model.state == .notFound })
+        let rig = harness(id: "missing")
+        await observing(rig.model) {
+            #expect(await eventually { rig.model.state == .notFound })
         }
     }
 
     @Test func coldFailureIsAnErrorAndRetryRecovers() async {
-        let h = harness()
-        h.calendar.failure.update { $0 = .server(statusCode: 502) }
-        await observing(h.model) {
-            #expect(await eventually { h.model.state == .error(.server(statusCode: 502)) })
-            h.calendar.failure.update { $0 = nil }
-            h.model.retry()
-            #expect(await eventually { details(h.model) != nil })
+        let rig = harness()
+        rig.calendar.failure.update { $0 = .server(statusCode: 502) }
+        await observing(rig.model) {
+            #expect(await eventually { rig.model.state == .error(.server(statusCode: 502)) })
+            rig.calendar.failure.update { $0 = nil }
+            rig.model.retry()
+            #expect(await eventually { details(rig.model) != nil })
         }
     }
 
     @Test func failedRefreshKeepsTheSavedCopyWithABanner() async {
-        let h = harness()
-        await observing(h.model) {
-            #expect(await eventually { details(h.model) != nil })
-            h.calendar.failure.update { $0 = .offline }
-            h.model.retry()
-            #expect(await eventually { details(h.model)?.refreshNotice != nil })
+        let rig = harness()
+        await observing(rig.model) {
+            #expect(await eventually { details(rig.model) != nil })
+            rig.calendar.failure.update { $0 = .offline }
+            rig.model.retry()
+            #expect(await eventually { details(rig.model)?.refreshNotice != nil })
         }
     }
 
     @Test func acceptShowsAtOnceAndIsSentOnlyWhenTheUndoWindowEnds() async {
-        let h = harness()
-        await observing(h.model) {
-            #expect(await eventually { details(h.model)?.invitation?.canChange == true })
-            h.model.respond(accept: true)
-            #expect(details(h.model)?.invitation?.response == .accepted)
-            #expect(details(h.model)?.invitationStatus == "You're going.")
-            #expect(details(h.model)?.attendees.first?.detail == "Accepted")
-            #expect(h.model.undoOffer?.message == "You accepted the invitation")
-            #expect(h.model.choiceTicks == 1)
+        let rig = harness()
+        await observing(rig.model) {
+            #expect(await eventually { details(rig.model)?.invitation?.canChange == true })
+            rig.model.respond(accept: true)
+            #expect(details(rig.model)?.invitation?.response == .accepted)
+            #expect(details(rig.model)?.invitationStatus == "You're going.")
+            #expect(details(rig.model)?.attendees.first?.detail == "Accepted")
+            #expect(rig.model.undoOffer?.message == "You accepted the invitation")
+            #expect(rig.model.choiceTicks == 1)
             try? await Task.sleep(for: .milliseconds(20))
-            #expect(h.calendar.calls.count("respond") == 0)
-            #expect(await eventually { h.clock.pendingSleepers > 0 })
-            h.clock.advance(by: 11)
-            #expect(await eventually { h.calendar.calls.all.contains("respond:inv:true") })
-            #expect(await eventually { h.model.successTicks == 1 })
-            #expect(await eventually { details(h.model)?.invitation?.phase == .idle })
-            #expect(details(h.model)?.invitation?.response == .accepted)
-            #expect(h.model.undoOffer == nil)
+            #expect(rig.calendar.calls.count("respond") == 0)
+            #expect(await eventually { rig.clock.pendingSleepers > 0 })
+            rig.clock.advance(by: 11)
+            #expect(await eventually { rig.calendar.calls.all.contains("respond:inv:true") })
+            #expect(await eventually { rig.model.successTicks == 1 })
+            #expect(await eventually { details(rig.model)?.invitation?.phase == .idle })
+            #expect(details(rig.model)?.invitation?.response == .accepted)
+            #expect(rig.model.undoOffer == nil)
         }
     }
 
     @Test func toastDismissalSendsTheAnswerRightAway() async {
-        let h = harness()
-        await observing(h.model) {
-            #expect(await eventually { details(h.model)?.invitation != nil })
-            h.model.respond(accept: false)
-            guard let offer = h.model.undoOffer else {
+        let rig = harness()
+        await observing(rig.model) {
+            #expect(await eventually { details(rig.model)?.invitation != nil })
+            rig.model.respond(accept: false)
+            guard let offer = rig.model.undoOffer else {
                 Issue.record("no undo offer")
                 return
             }
-            h.model.undoDismissed(offer)
-            #expect(await eventually { h.calendar.calls.all.contains("respond:inv:false") })
+            rig.model.undoDismissed(offer)
+            #expect(await eventually { rig.calendar.calls.all.contains("respond:inv:false") })
         }
     }
 
     @Test func undoInsideTheWindowSendsNothing() async {
-        let h = harness()
-        await observing(h.model) {
-            #expect(await eventually { details(h.model)?.invitation != nil })
-            h.model.respond(accept: true)
-            guard let offer = h.model.undoOffer else { return }
-            h.model.undo(offer)
-            #expect(details(h.model)?.invitation?.response == .pending)
-            h.clock.advance(by: 30)
+        let rig = harness()
+        await observing(rig.model) {
+            #expect(await eventually { details(rig.model)?.invitation != nil })
+            rig.model.respond(accept: true)
+            guard let offer = rig.model.undoOffer else { return }
+            rig.model.undo(offer)
+            #expect(details(rig.model)?.invitation?.response == .pending)
+            rig.clock.advance(by: 30)
             try? await Task.sleep(for: .milliseconds(30))
-            #expect(h.calendar.calls.count("respond") == 0)
+            #expect(rig.calendar.calls.count("respond") == 0)
         }
     }
 
     @Test func aReplacedToastCannotUndoOrCommitTheNewerChoice() async {
-        let h = harness()
-        await observing(h.model) {
-            #expect(await eventually { details(h.model)?.invitation != nil })
-            h.model.respond(accept: true)
-            guard let first = h.model.undoOffer else { return }
-            h.model.respond(accept: false)
-            h.model.undo(first)
-            h.model.undoDismissed(first)
-            #expect(details(h.model)?.invitation?.response == .declined)
+        let rig = harness()
+        await observing(rig.model) {
+            #expect(await eventually { details(rig.model)?.invitation != nil })
+            rig.model.respond(accept: true)
+            guard let first = rig.model.undoOffer else { return }
+            rig.model.respond(accept: false)
+            rig.model.undo(first)
+            rig.model.undoDismissed(first)
+            #expect(details(rig.model)?.invitation?.response == .declined)
             try? await Task.sleep(for: .milliseconds(20))
-            #expect(h.calendar.calls.count("respond") == 0)
-            h.clock.advance(by: 11)
-            #expect(await eventually { h.calendar.calls.all.contains("respond:inv:false") })
-            #expect(h.calendar.calls.count("respond:inv:true") == 0)
+            #expect(rig.calendar.calls.count("respond") == 0)
+            rig.clock.advance(by: 11)
+            #expect(await eventually { rig.calendar.calls.all.contains("respond:inv:false") })
+            #expect(rig.calendar.calls.count("respond:inv:true") == 0)
         }
     }
 
     @Test func failedSaveRollsBackAndRetrySendsTheSameAnswer() async {
-        let h = harness()
-        h.calendar.respondFailure.update { $0 = .server(statusCode: 500) }
-        await observing(h.model) {
-            #expect(await eventually { details(h.model)?.invitation != nil })
-            h.model.respond(accept: true)
-            guard let offer = h.model.undoOffer else { return }
-            h.model.undoDismissed(offer)
-            #expect(await eventually { details(h.model)?.invitationFailure != nil })
-            #expect(details(h.model)?.invitation?.response == .pending)
-            #expect(details(h.model)?.invitation?.canChange == true)
-            #expect(details(h.model)?.invitationFailure?.hasPrefix("Response not saved.") == true)
-            #expect(h.model.failureTicks == 1)
-            h.calendar.respondFailure.update { $0 = nil }
-            h.model.retryResponse()
-            #expect(await eventually { h.calendar.calls.count("respond:inv:true") == 2 })
-            #expect(await eventually { details(h.model)?.invitationFailure == nil })
+        let rig = harness()
+        rig.calendar.respondFailure.update { $0 = .server(statusCode: 500) }
+        await observing(rig.model) {
+            #expect(await eventually { details(rig.model)?.invitation != nil })
+            rig.model.respond(accept: true)
+            guard let offer = rig.model.undoOffer else { return }
+            rig.model.undoDismissed(offer)
+            #expect(await eventually { details(rig.model)?.invitationFailure != nil })
+            #expect(details(rig.model)?.invitation?.response == .pending)
+            #expect(details(rig.model)?.invitation?.canChange == true)
+            #expect(details(rig.model)?.invitationFailure?.hasPrefix("Response not saved.") == true)
+            #expect(rig.model.failureTicks == 1)
+            rig.calendar.respondFailure.update { $0 = nil }
+            rig.model.retryResponse()
+            #expect(await eventually { rig.calendar.calls.count("respond:inv:true") == 2 })
+            #expect(await eventually { details(rig.model)?.invitationFailure == nil })
         }
     }
 
     @Test func leavingDuringTheUndoWindowStillSendsTheAnswer() async {
-        let h = harness()
-        await observing(h.model) {
-            #expect(await eventually { details(h.model)?.invitation != nil })
-            h.model.respond(accept: true)
+        let rig = harness()
+        await observing(rig.model) {
+            #expect(await eventually { details(rig.model)?.invitation != nil })
+            rig.model.respond(accept: true)
         }
-        h.model.disappear()
-        #expect(await eventually { h.calendar.calls.all.contains("respond:inv:true") })
+        rig.model.disappear()
+        #expect(await eventually { rig.calendar.calls.all.contains("respond:inv:true") })
     }
 }

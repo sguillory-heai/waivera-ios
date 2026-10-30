@@ -15,10 +15,10 @@ struct ScheduleStateBuilder {
     var milestonesFailed: Bool
     var isOffline: Bool
     /// The current instant, for today's "Now" line and the ended cards.
-    var now: Date? = nil
+    var now: Date?
     /// The signed-in person, whose own celebration card offers no "Send wishes".
-    var myUserId: String? = nil
-    var openingWishesFor: String? = nil
+    var myUserId: String?
+    var openingWishesFor: String?
 
     func build(text: ScheduleText) -> ScheduleUIState {
         let feedValue = feed?.value ?? CalendarFeed()
@@ -75,8 +75,10 @@ struct ScheduleStateBuilder {
         return ScheduleStrings.text(isOffline ? "schedule.offline" : "schedule.refreshFailed")
     }
 
-    private func agendaContent(_ value: CalendarFeed, text: ScheduleText) -> (state: AgendaState, now: AgendaNowMarker?)
-    {
+    private func agendaContent(
+        _ value: CalendarFeed,
+        text: ScheduleText
+    ) -> (state: AgendaState, now: AgendaNowMarker?) {
         guard let feed else { return (.loading, nil) }
         if feed.value == nil {
             if let error = feed.error { return (.error(error), nil) }
@@ -141,28 +143,35 @@ enum AgendaRowFormatter {
         return AgendaRail(time: text.clock(start), kicker: nil)
     }
 
-    private static func baseRow(_ item: AgendaItem, day: CalendarDate, text: ScheduleText, myUserId: String?)
-        -> AgendaRow
-    {
+    private static func celebrationRow(_ celebration: ScheduleCelebration, id: String, myUserId: String?) -> AgendaRow {
+        let copy = CelebrationText(celebration)
+        var row = AgendaRow(
+            id: id,
+            kind: .celebration(celebration),
+            title: copy.full,
+            subtitle: CelebrationText.kindLabel(celebration),
+            accessibilityLabel: copy.accessible
+        )
+        row.emoji = CelebrationText.emoji(celebration)
+        row.isMine = myUserId != nil && celebration.userId == myUserId
+        if row.isMine {
+            // Your own card speaks to you; it has no Send wishes either.
+            let sentence = CelebrationText.selfSentence(celebration)
+            row.title = sentence
+            row.accessibilityLabel = sentence
+        }
+        return row
+    }
+
+    private static func baseRow(
+        _ item: AgendaItem,
+        day: CalendarDate,
+        text: ScheduleText,
+        myUserId: String?
+    ) -> AgendaRow {
         switch item {
         case .celebration(let celebration):
-            let copy = CelebrationText(celebration)
-            var row = AgendaRow(
-                id: item.id,
-                kind: .celebration(celebration),
-                title: copy.full,
-                subtitle: CelebrationText.kindLabel(celebration),
-                accessibilityLabel: copy.accessible
-            )
-            row.emoji = CelebrationText.emoji(celebration)
-            row.isMine = myUserId != nil && celebration.userId == myUserId
-            if row.isMine {
-                // Your own card speaks to you; it has no Send wishes either.
-                let sentence = CelebrationText.selfSentence(celebration)
-                row.title = sentence
-                row.accessibilityLabel = sentence
-            }
-            return row
+            return celebrationRow(celebration, id: item.id, myUserId: myUserId)
         case .holiday(let holiday):
             let title = holiday.title ?? ScheduleStrings.text("schedule.holiday.default")
             let subtitle = holiday.details ?? ScheduleStrings.text("schedule.holiday.subtitle")
@@ -245,9 +254,13 @@ enum AgendaRowFormatter {
 /// Where "now" falls in today's agenda (UI4-12). Everything compares instants, so a fall-back
 /// day's repeated hour cannot misplace the line.
 enum AgendaNowRules {
-    static func marker(items: [AgendaItem], now: Date, zone: TimeZone, day: CalendarDate, text: ScheduleText)
-        -> AgendaNowMarker?
-    {
+    static func marker(
+        items: [AgendaItem],
+        now: Date,
+        zone: TimeZone,
+        day: CalendarDate,
+        text: ScheduleText
+    ) -> AgendaNowMarker? {
         guard CalendarDate(now, in: zone) == day else { return nil }
         let timed = items.compactMap { item in endsAt(item).map { (item.id, $0) } }
         guard !timed.isEmpty else { return nil }

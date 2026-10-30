@@ -56,8 +56,11 @@ public enum AuthValidation {
         public var isValid: Bool { current == nil && new == nil && confirmation == nil }
     }
 
-    public static func passwordChangeIssues(current: String, new: String, confirmation: String) -> PasswordChangeIssues
-    {
+    public static func passwordChangeIssues(
+        current: String,
+        new: String,
+        confirmation: String
+    ) -> PasswordChangeIssues {
         var issues = PasswordChangeIssues()
         if current.isEmpty { issues.current = .currentPasswordRequired }
         if new.count < minimumNewPasswordLength {

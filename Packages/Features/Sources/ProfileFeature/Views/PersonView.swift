@@ -191,17 +191,17 @@
             case .loaded(let person):
                 // Absent values are left out here (06 §C2): this card describes someone else, not
                 // a form to fill. The own profile shows "—" instead.
-                let candidates: [(String, String?, String)] = [
-                    (ProfileStrings.organizationTitle, person.organizationName, "building.2"),
-                    (ProfileStrings.personRoles, ProfileText.joined(person.roles), "person.text.rectangle"),
-                    (ProfileStrings.phone, person.phoneNumber?.nonBlank, "phone"),
+                let candidates = [
+                    PersonDetail(ProfileStrings.organizationTitle, person.organizationName, "building.2"),
+                    PersonDetail(ProfileStrings.personRoles, ProfileText.joined(person.roles), "person.text.rectangle"),
+                    PersonDetail(ProfileStrings.phone, person.phoneNumber?.nonBlank, "phone"),
                 ]
-                let rows = candidates.compactMap { row in row.1.map { (label: row.0, value: $0, image: row.2) } }
+                let rows = candidates.filter { $0.value != nil }
                 if !rows.isEmpty {
                     SectionCard {
                         ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
                             if index > 0 { RowDivider(underTile: true) }
-                            DetailRow(label: row.label, value: row.value, systemImage: row.image)
+                            DetailRow(label: row.label, value: row.value ?? "", systemImage: row.image)
                         }
                     }
                 }
@@ -345,4 +345,17 @@
             .dynamicTypeSize(.accessibility5)
         }
     #endif
+
+    /// One detail on a person's card; rows with no value are left out.
+    private struct PersonDetail {
+        let label: String
+        let value: String?
+        let image: String
+
+        init(_ label: String, _ value: String?, _ image: String) {
+            self.label = label
+            self.value = value
+            self.image = image
+        }
+    }
 #endif

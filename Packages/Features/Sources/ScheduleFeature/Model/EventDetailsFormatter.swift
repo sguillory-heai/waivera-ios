@@ -29,14 +29,14 @@ struct EventDetailsFormatter {
         let timeZone = zone.timeZone
         let today = CalendarDate(now, in: timeZone)
         let isOrganizer = EventRules.isOrganizer(event, myUserId: myUserId)
-        let invitation = EventRules.invitation(
+        var invitation = EventRules.invitation(
             event,
             myUserId: myUserId,
             now: now,
             zone: timeZone,
-            optimistic: interaction.optimistic,
-            failure: interaction.failure
+            optimistic: interaction.optimistic
         )
+        invitation?.failure = interaction.failure
         let join = EventRules.join(event, now: now, isBusy: interaction.joinBusy, error: interaction.joinError)
         let attendees = EventRules.attendees(
             event,

@@ -4,10 +4,6 @@
     import WaiveraData
     import WaiveraDesign
 
-    #if DEBUG
-        import WaiveraTestSupport
-    #endif
-
     /// The signed-in user's profile, from the avatar menu.
     public struct ProfileView: View {
         @Environment(\.dataEnvironment) private var data
@@ -175,20 +171,22 @@
                         ProfileSectionSlot(
                             display: ProfileSections.timeOff(state.content),
                             title: ProfileStrings.timeOffTitle,
-                            onRetry: { onRetrySection(.timeOff) }
-                        ) {
-                            if let timeOff = state.content?.timeOff { TimeOffCard(overview: timeOff) }
-                        }
+                            onRetry: { onRetrySection(.timeOff) },
+                            content: {
+                                if let timeOff = state.content?.timeOff { TimeOffCard(overview: timeOff) }
+                            }
+                        )
                         ProfileSectionSlot(
                             display: ProfileSections.files(state.content),
                             title: ProfileStrings.filesTitle,
-                            onRetry: { onRetrySection(.files) }
-                        ) {
-                            EmployeeFilesCard(
-                                files: ProfileSections.visibleFiles(state.content?.files ?? []),
-                                zone: state.timeZone
-                            )
-                        }
+                            onRetry: { onRetrySection(.files) },
+                            content: {
+                                EmployeeFilesCard(
+                                    files: ProfileSections.visibleFiles(state.content?.files ?? []),
+                                    zone: state.timeZone
+                                )
+                            }
+                        )
                         ProfileLinksSection(
                             organization: state.content?.organization,
                             onOpenOrganization: onOpenOrganization,
@@ -369,75 +367,4 @@
             }
         }
     }
-
-    private struct ProfileLinksSection: View {
-        let organization: Organization?
-        let onOpenOrganization: () -> Void
-        let onOpenSettings: () -> Void
-
-        var body: some View {
-            CardGroup {
-                Button(action: onOpenOrganization) {
-                    ListRow(
-                        title: ProfileStrings.organizationTitle,
-                        subtitle: organization?.name ?? ProfileStrings.organizationUnavailable,
-                        showsChevron: true
-                    ) {
-                        IconTile(systemImage: "building.2.fill")
-                    }
-                }
-                .buttonStyle(.press(.card))
-                Divider().padding(.leading, ControlSize.fieldDividerInset)
-                Button(action: onOpenSettings) {
-                    ListRow(
-                        title: ProfileStrings.settingsRow,
-                        subtitle: ProfileStrings.settingsRowDetail,
-                        showsChevron: true
-                    ) {
-                        IconTile(systemImage: "gearshape.fill")
-                    }
-                }
-                .buttonStyle(.press(.card))
-            }
-            .padding(.top, Spacing.small)
-        }
-    }
-
-    #if DEBUG
-        @MainActor private func previewState(_ phase: ProfileModel.Phase) -> ProfileDisplayState {
-            let data = DemoData.make()
-            return ProfileDisplayState(phase: phase, user: data.user, content: data.profile)
-        }
-
-        #Preview("Light") {
-            NavigationStack { ProfileView(onOpenOrganization: {}, onOpenSettings: {}) }
-                .fakeDataEnvironment()
-        }
-        #Preview("Dark") {
-            NavigationStack {
-                ProfileContentView(
-                    state: previewState(.loaded),
-                    onRetry: {},
-                    onOpenOrganization: {},
-                    onOpenSettings: {}
-                )
-            }
-            .preferredColorScheme(.dark)
-        }
-        #Preview("AX XXXL") {
-            NavigationStack {
-                ProfileContentView(
-                    state: previewState(.loaded),
-                    onRetry: {},
-                    onOpenOrganization: {},
-                    onOpenSettings: {}
-                )
-            }
-            .dynamicTypeSize(.accessibility5)
-        }
-        #Preview("Failed") {
-            NavigationStack { ProfileView(onOpenOrganization: {}, onOpenSettings: {}) }
-                .fakeDataEnvironment(.failing)
-        }
-    #endif
 #endif

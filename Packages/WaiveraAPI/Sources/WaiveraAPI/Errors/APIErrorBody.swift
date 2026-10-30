@@ -25,7 +25,12 @@ public struct APIErrorBody: Equatable, Sendable {
     public let errorCode: String?
 
     public init(data: Data) {
-        let text = String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let decoded = String(bytes: data, encoding: .utf8) else {
+            // Not text at all: keep it out of user-facing messages.
+            self.init(shape: .plainText, serverMessage: nil, errorCode: nil)
+            return
+        }
+        let text = decoded.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {
             self.init(shape: .empty, serverMessage: nil, errorCode: nil)
             return

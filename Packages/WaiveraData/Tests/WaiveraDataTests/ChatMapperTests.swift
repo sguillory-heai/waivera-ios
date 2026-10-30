@@ -11,9 +11,8 @@ struct ChatMapperTests {
 
     func conversations(_ fixture: String) throws -> [Conversation] {
         let rows: [ConversationResponse]
-        if let envelope = try? decodeFixture(ApiResponse<[ConversationResponse]>.self, fixture),
-            let data = envelope.data
-        {
+        let envelope = try? decodeFixture(ApiResponse<[ConversationResponse]>.self, fixture)
+        if let data = envelope?.data {
             rows = data
         } else {
             rows = try decodeFixture([ConversationResponse].self, fixture)

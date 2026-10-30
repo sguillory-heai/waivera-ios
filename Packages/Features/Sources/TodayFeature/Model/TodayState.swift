@@ -193,7 +193,7 @@ struct DirectMessageItem: Hashable, Sendable {
     var name: String?
     /// The one other person in the chat, whose photo the row shows; `nil` when there is not
     /// exactly one.
-    var otherUserId: String? = nil
+    var otherUserId: String?
     var snippet: MessageSnippet
     var unreadCount: Int
     var when: PastLabel?

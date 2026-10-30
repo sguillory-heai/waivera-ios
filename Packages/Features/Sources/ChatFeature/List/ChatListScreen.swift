@@ -130,7 +130,6 @@
                 openURL(url)
             }
         }
-
     }
 
     /// A decoded avatar. `UIImage` is immutable once created, so sharing it across the decode

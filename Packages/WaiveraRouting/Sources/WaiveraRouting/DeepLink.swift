@@ -51,7 +51,7 @@ public enum DeepLink {
 
     // One case per URL shape keeps the grammar readable next to the doc comment.
     // `URLComponents.path` is already percent-decoded; segments are never decoded twice.
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
+    // swiftlint:disable:next cyclomatic_complexity
     private static func destination(segments: [String], query: [String: String]) -> Destination? {
         let messageID = query["messageId"].flatMap(Identifier.positiveInt)
         switch segments.first?.lowercased() {
@@ -98,6 +98,18 @@ public enum DeepLink {
         case 1:
             guard let conversationID = Identifier.positiveInt(rest[0]) else { return nil }
             return .conversation(conversationID, targetMessageID: messageID)
+        default:
+            return nestedChatDestination(rest, query: query, messageID: messageID)
+        }
+    }
+
+    /// `chat/thread/<root>`, `chat/<id>/members` and `chat/<id>/thread/<root>`.
+    private static func nestedChatDestination(
+        _ rest: [String],
+        query: [String: String],
+        messageID: Int?
+    ) -> Destination? {
+        switch rest.count {
         case 2 where rest[0].lowercased() == "thread":
             guard let rootID = Identifier.positiveInt(rest[1]) else { return nil }
             let conversationID = query["conversationId"].flatMap(Identifier.positiveInt)

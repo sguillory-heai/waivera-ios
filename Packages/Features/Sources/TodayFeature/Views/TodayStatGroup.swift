@@ -8,7 +8,7 @@
         var label: String
         var spoken: String
 
-        init(_ parts: (value: String, label: String, spoken: String)) {
+        init(_ parts: StatText) {
             value = parts.value
             label = parts.label
             spoken = parts.spoken
@@ -47,14 +47,17 @@
                 stats.map {
                     TodayMeasure.widestWord(in: $0.label, style: .statLabel, size: dynamicTypeSize)
                 }.max() ?? 0
+            let metrics = StatTileMetrics(
+                gap: Double(Spacing.small),
+                tilePadding: Double(Spacing.mediumSmall),
+                stackMaxWidth: Double(ControlSize.statStackMaxWidth)
+            )
             return WordFit.statsStack(
                 widestLabelWord: Double(widest),
                 width: Double(width),
                 tiles: stats.count,
-                gap: Double(Spacing.small),
-                tilePadding: Double(Spacing.mediumSmall),
                 extraLargeText: dynamicTypeSize.isExtraLargeText,
-                stackMaxWidth: Double(ControlSize.statStackMaxWidth)
+                metrics: metrics
             )
         }
 

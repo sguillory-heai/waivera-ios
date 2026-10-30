@@ -7,7 +7,7 @@ import WaiveraData
 
 @Suite("Event rules")
 struct EventRulesTests {
-    let me = "usr_me"
+    let myId = "usr_me"
     let chicago = Zones.chicago
 
     private func invited(_ response: InvitationState = .pending, owner: String = "usr_owner") -> CalendarEvent {
@@ -34,25 +34,21 @@ struct EventRulesTests {
     @Test func invitedAttendeeBeforeTheStartCanAcceptOrDecline() {
         let invitation = EventRules.invitation(
             invited(),
-            myUserId: me,
+            myUserId: myId,
             now: beforeStart,
             zone: chicago,
-            optimistic: nil,
-            failure: nil
+            optimistic: nil
         )
         #expect(invitation?.response == .pending)
         #expect(invitation?.canChange == true)
     }
 
     @Test func ownerNeverSeesAcceptOrDecline() {
-        let owned = invited(owner: me)
-        #expect(
-            EventRules.invitation(owned, myUserId: me, now: beforeStart, zone: chicago, optimistic: nil, failure: nil)
-                == nil
-        )
-        var byId = invited(owner: me)
+        let owned = invited(owner: myId)
+        #expect(EventRules.invitation(owned, myUserId: myId, now: beforeStart, zone: chicago, optimistic: nil) == nil)
+        var byId = invited(owner: myId)
         byId.isOwner = false
-        #expect(EventRules.isOrganizer(byId, myUserId: me))
+        #expect(EventRules.isOrganizer(byId, myUserId: myId))
     }
 
     @Test func startedEventHidesTheButtonsAndJoinGoverns() {
@@ -62,11 +58,10 @@ struct EventRulesTests {
         let during = instant("2026-11-03T16:10:00Z")
         let invitation = EventRules.invitation(
             online,
-            myUserId: me,
+            myUserId: myId,
             now: during,
             zone: chicago,
-            optimistic: nil,
-            failure: nil
+            optimistic: nil
         )
         #expect(invitation?.canChange == false)
         #expect(EventRules.join(online, now: during, isBusy: false, error: nil)?.state == .open)
@@ -78,21 +73,19 @@ struct EventRulesTests {
             #expect(
                 EventRules.invitation(
                     event,
-                    myUserId: me,
+                    myUserId: myId,
                     now: beforeStart,
                     zone: chicago,
-                    optimistic: nil,
-                    failure: nil
+                    optimistic: nil
                 ) == nil
             )
         }
         let declined = EventRules.invitation(
             invited(.declined),
-            myUserId: me,
+            myUserId: myId,
             now: beforeStart,
             zone: chicago,
-            optimistic: nil,
-            failure: nil
+            optimistic: nil
         )
         #expect(declined?.response == .declined)
         #expect(declined?.canChange == true)
@@ -101,27 +94,25 @@ struct EventRulesTests {
     @Test func optimisticAnswerShowsAtOnceAndLocksWhileSaving() {
         let undo = EventRules.invitation(
             invited(),
-            myUserId: me,
+            myUserId: myId,
             now: beforeStart,
             zone: chicago,
-            optimistic: OptimisticResponse(accept: true, phase: .undoWindow),
-            failure: nil
+            optimistic: OptimisticResponse(accept: true, phase: .undoWindow)
         )
         #expect(undo?.response == .accepted)
         #expect(undo?.canChange == true)
         let saving = EventRules.invitation(
             invited(),
-            myUserId: me,
+            myUserId: myId,
             now: beforeStart,
             zone: chicago,
-            optimistic: OptimisticResponse(accept: false, phase: .saving),
-            failure: nil
+            optimistic: OptimisticResponse(accept: false, phase: .saving)
         )
         #expect(saving?.response == .declined)
         #expect(saving?.canChange == false)
         let rows = EventRules.attendees(
             invited(),
-            myUserId: me,
+            myUserId: myId,
             optimistic: OptimisticResponse(accept: false, phase: .saving),
             milestones: .empty,
             today: day(2026, 11, 3)
@@ -191,7 +182,7 @@ struct EventRulesTests {
         )
         let rows = EventRules.attendees(
             invited(),
-            myUserId: me,
+            myUserId: myId,
             optimistic: nil,
             milestones: milestones,
             today: day(2026, 11, 3)
@@ -202,11 +193,11 @@ struct EventRulesTests {
     }
 
     @Test func messageOrganizerIsOfferedToEveryoneButTheOrganizer() {
-        #expect(EventRules.canMessageOrganizer(invited(), myUserId: me))
-        #expect(!EventRules.canMessageOrganizer(invited(owner: me), myUserId: me))
+        #expect(EventRules.canMessageOrganizer(invited(), myUserId: myId))
+        #expect(!EventRules.canMessageOrganizer(invited(owner: myId), myUserId: myId))
         var ownerless = invited()
         ownerless.ownerId = nil
-        #expect(!EventRules.canMessageOrganizer(ownerless, myUserId: me))
+        #expect(!EventRules.canMessageOrganizer(ownerless, myUserId: myId))
     }
 
     @Test func detailsPlaceTheEventInTheSavedZone() {
@@ -214,7 +205,7 @@ struct EventRulesTests {
             zone: ScheduleZone.resolve(savedIdentifier: "America/Chicago"),
             deviceZone: Zones.tokyo,
             now: beforeStart,
-            myUserId: me,
+            myUserId: myId,
             milestones: .empty
         )
         let details = formatter.details(

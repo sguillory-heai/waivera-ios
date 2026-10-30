@@ -232,10 +232,9 @@ public final class CalendarEventModel {
         switch lookupResult() {
         case .found(let event, let refreshFailed):
             found = event
-            if let optimistic = interaction.optimistic, optimistic.phase == .saved,
-                event.viewerResponse == (optimistic.accept ? .accepted : .declined)
-            {
-                interaction.optimistic = nil
+            if let optimistic = interaction.optimistic, optimistic.phase == .saved {
+                let confirmed = event.viewerResponse == (optimistic.accept ? .accepted : .declined)
+                if confirmed { interaction.optimistic = nil }
             }
             let formatter = EventDetailsFormatter(
                 zone: zone,

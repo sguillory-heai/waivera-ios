@@ -67,21 +67,41 @@ extension DataEnvironment {
             clock: clock
         )
         return assemble(
-            auth: auth,
-            api: api,
-            realtime: realtime,
-            webBaseURL: dependencies.configuration.webBaseURL,
-            localStore: dependencies.localStore,
-            keyValueStore: dependencies.keyValueStore,
-            connectivity: dependencies.connectivity,
-            clock: clock,
-            deviceIdentifiers: dependencies.deviceIdentifiers
+            LiveServices(
+                auth: auth,
+                api: api,
+                realtime: realtime,
+                webBaseURL: dependencies.configuration.webBaseURL,
+                localStore: dependencies.localStore,
+                keyValueStore: dependencies.keyValueStore,
+                connectivity: dependencies.connectivity,
+                clock: clock,
+                deviceIdentifiers: dependencies.deviceIdentifiers
+            )
         )
     }
 
     /// Wires live repositories over any auth, API transport and hub. Also used by tests and by
     /// the fake server, which pass fixture-backed transports.
-    public static func assemble(
+    public static func assemble(_ services: LiveServices) -> DataEnvironment {
+        LiveWiring(services).environment()
+    }
+}
+
+/// The services the live environment is wired over: the app passes the real ones, tests and the
+/// fake server fixture-backed ones.
+public struct LiveServices {
+    public var auth: any AuthSession
+    public var api: APIClient
+    public var realtime: any RealtimeClient
+    public var webBaseURL: URL?
+    public var localStore: any LocalStore
+    public var keyValueStore: any KeyValueStore
+    public var connectivity: any ConnectivityMonitor
+    public var clock: any WaiveraClock
+    public var deviceIdentifiers: (any DeviceIdentifierStore)?
+
+    public init(
         auth: any AuthSession,
         api: APIClient,
         realtime: any RealtimeClient,
@@ -91,71 +111,85 @@ extension DataEnvironment {
         connectivity: any ConnectivityMonitor,
         clock: any WaiveraClock,
         deviceIdentifiers: (any DeviceIdentifierStore)? = nil
-    ) -> DataEnvironment {
-        let context = SessionContext()
-        let presence = ChatPresence()
-        let settings = LiveSettingsRepository(store: keyValueStore)
-        let chat = ChatEngine(
+    ) {
+        self.auth = auth
+        self.api = api
+        self.realtime = realtime
+        self.webBaseURL = webBaseURL
+        self.localStore = localStore
+        self.keyValueStore = keyValueStore
+        self.connectivity = connectivity
+        self.clock = clock
+        self.deviceIdentifiers = deviceIdentifiers
+    }
+}
+
+/// The live repositories over one set of services, and the environment that exposes them.
+private struct LiveWiring {
+    let services: LiveServices
+    let context = SessionContext()
+    let presence = ChatPresence()
+    let settings: LiveSettingsRepository
+    let chat: ChatEngine
+    let handoff: WebCallHandoff
+    let activity: LiveActivityRepository
+    let bookmarks: LiveBookmarksRepository
+    let people: LivePeopleRepository
+    let profile: LiveProfileRepository
+    let calendar: LiveCalendarRepository
+    let push: LivePushRegistrationRepository
+    let attachments: LiveAttachmentsRepository
+    let avatars: LiveAvatarRepository
+
+    init(_ services: LiveServices) {
+        self.services = services
+        let api = services.api
+        let clock = services.clock
+        let settings = LiveSettingsRepository(store: services.keyValueStore)
+        self.settings = settings
+        chat = ChatEngine(
             api: api,
-            realtime: realtime,
-            store: localStore,
+            realtime: services.realtime,
+            store: services.localStore,
             clock: clock,
             presence: presence,
             alertPreferences: { settings.currentSettings.notifications }
         )
-        let handoff = WebCallHandoff(webBaseURL: webBaseURL, api: api)
-        let activity = LiveActivityRepository(api: api, store: localStore, clock: clock)
-        let bookmarks = LiveBookmarksRepository(api: api, context: context, chat: chat, clock: clock)
-        let people = LivePeopleRepository(api: api, store: localStore, clock: clock)
-        let profile = LiveProfileRepository(api: api, context: context, store: localStore, clock: clock)
-        let calendar = LiveCalendarRepository(
+        handoff = WebCallHandoff(webBaseURL: services.webBaseURL, api: api)
+        activity = LiveActivityRepository(api: api, store: services.localStore, clock: clock)
+        bookmarks = LiveBookmarksRepository(api: api, context: context, chat: chat, clock: clock)
+        people = LivePeopleRepository(api: api, store: services.localStore, clock: clock)
+        profile = LiveProfileRepository(api: api, context: context, store: services.localStore, clock: clock)
+        calendar = LiveCalendarRepository(
             api: api,
             context: context,
-            store: localStore,
+            store: services.localStore,
             clock: clock,
             handoff: handoff
         )
-        let push = LivePushRegistrationRepository(
+        push = LivePushRegistrationRepository(
             api: api,
-            store: keyValueStore,
+            store: services.keyValueStore,
             clock: clock,
-            deviceIdentifiers: deviceIdentifiers
+            deviceIdentifiers: services.deviceIdentifiers
         )
-        let attachments = LiveAttachmentsRepository(api: api)
-        let avatars = LiveAvatarRepository(api: api, clock: clock)
-        let ingestor = RealtimeIngestor(
-            realtime: realtime,
-            chat: chat,
-            activity: activity,
-            bookmarks: bookmarks,
-            calendar: calendar
-        )
+        attachments = LiveAttachmentsRepository(api: api)
+        avatars = LiveAvatarRepository(api: api, clock: clock)
+    }
+
+    func environment() -> DataEnvironment {
+        let auth = services.auth
+        let realtime = services.realtime
+        let chat = self.chat
+        let handoff = self.handoff
         let session = LiveSessionRepository(
             auth: auth,
-            api: api,
+            api: services.api,
             context: context,
-            localStore: localStore,
-            clock: clock
+            localStore: services.localStore,
+            clock: services.clock
         )
-        let coordinator = SessionCoordinator(
-            chat: chat,
-            realtime: realtime,
-            ingestor: ingestor,
-            activity: activity,
-            bookmarks: bookmarks,
-            people: people,
-            profile: profile,
-            calendar: calendar,
-            push: push,
-            attachments: attachments,
-            avatars: avatars,
-            localStore: localStore,
-            keyValueStore: keyValueStore,
-            connectivity: connectivity,
-            settings: settings,
-            context: context,
-            clock: clock
-        )
+        let coordinator = makeCoordinator()
         return DataEnvironment(
             session: session,
             conversations: chat,
@@ -170,9 +204,9 @@ extension DataEnvironment {
             profile: profile,
             settings: settings,
             push: push,
-            realtimeStatus: LiveRealtimeStatusRepository(realtime: realtime, connectivity: connectivity),
+            realtimeStatus: LiveRealtimeStatusRepository(realtime: realtime, connectivity: services.connectivity),
             alerts: LiveChatAlertsRepository(chat: chat, presence: presence, realtime: realtime),
-            clock: clock,
+            clock: services.clock,
             callURL: { try await handoff.url(for: $0) },
             foreground: { isForeground in
                 if isForeground { await auth.reloadStoredSession() }
@@ -185,6 +219,35 @@ extension DataEnvironment {
                 await session.start()
             },
             protectedDataAvailable: { await auth.reloadStoredSession() }
+        )
+    }
+
+    private func makeCoordinator() -> SessionCoordinator {
+        let ingestor = RealtimeIngestor(
+            realtime: services.realtime,
+            chat: chat,
+            activity: activity,
+            bookmarks: bookmarks,
+            calendar: calendar
+        )
+        return SessionCoordinator(
+            chat: chat,
+            realtime: services.realtime,
+            ingestor: ingestor,
+            activity: activity,
+            bookmarks: bookmarks,
+            people: people,
+            profile: profile,
+            calendar: calendar,
+            push: push,
+            attachments: attachments,
+            avatars: avatars,
+            localStore: services.localStore,
+            keyValueStore: services.keyValueStore,
+            connectivity: services.connectivity,
+            settings: settings,
+            context: context,
+            clock: services.clock
         )
     }
 }

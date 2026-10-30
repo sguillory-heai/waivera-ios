@@ -11,10 +11,12 @@ struct PreviewPlainTextTests {
     @Test("A document under a wrapper key or encoded twice is found")
     func wrappedAndDoubleEncoded() {
         let wrapped =
-            #"{"editor": {"type": "doc", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Wrapped"}]}]}}"#
+            #"{"editor": {"type": "doc", "content": [{"type": "paragraph", "#
+            + #""content": [{"type": "text", "text": "Wrapped"}]}]}}"#
         #expect(PreviewPlainText.plainText(wrapped) == "Wrapped")
         let inner =
-            #"{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Twice\"}]}]}"#
+            #"{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\","#
+            + #"\"content\":[{\"type\":\"text\",\"text\":\"Twice\"}]}]}"#
         let twice = #"{"type": "wrapper", "doc": ""# + inner + #""}"#
         #expect(PreviewPlainText.plainText(twice) == "Twice")
     }

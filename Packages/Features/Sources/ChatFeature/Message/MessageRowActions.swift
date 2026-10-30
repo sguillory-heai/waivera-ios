@@ -1,6 +1,6 @@
 #if canImport(UIKit)
-    import Foundation
     import CoreGraphics
+    import Foundation
     import WaiveraData
 
     /// Everything a row can ask for. A `nil` callback turns that affordance off (read-only rows,

@@ -38,8 +38,6 @@ public enum HubEventDecoder {
             return typing(args)
         case Event.receiveReadReceipt.lowercased():
             return readReceipt(args)
-        case Event.receiveReaction.lowercased():
-            return reaction(args)
         default:
             return decodeSecondary(invocation.target.lowercased(), args)
         }
@@ -48,6 +46,8 @@ public enum HubEventDecoder {
     private static func decodeSecondary(_ target: String, _ args: [JSONValue]) -> ChatHubEvent? {
         typealias Event = ChatHubContract.Event
         switch target {
+        case Event.receiveReaction.lowercased():
+            return reaction(args)
         case Event.receiveBookmarkUpdate.lowercased():
             return .bookmark(object(args, BookmarkUpdateEvent.self))
         case Event.receiveMessageUpdate.lowercased():
@@ -59,8 +59,7 @@ public enum HubEventDecoder {
         case Event.conversationCallStateChanged.lowercased():
             return object(args, CallStateChangedEvent.self).map(ChatHubEvent.callStateChanged)
         case Event.removeAdHocFromConversation.lowercased():
-            if let event = object(args, RemoveAdHocEvent.self) { return .adHocRemoved(event) }
-            return args.first?.intValue.map { .adHocRemoved(RemoveAdHocEvent(conversationId: $0, roomId: nil)) }
+            return adHocRemoved(args)
         case Event.receiveNotification.lowercased(), Event.receiveNotificationWeb.lowercased():
             return object(args, EventNotificationResponse.self).map(ChatHubEvent.notification)
         case Event.receiveComment.lowercased():
@@ -68,6 +67,12 @@ public enum HubEventDecoder {
         default:
             return nil
         }
+    }
+
+    /// The removal arrives as an object or as the bare conversation id.
+    private static func adHocRemoved(_ args: [JSONValue]) -> ChatHubEvent? {
+        if let event = object(args, RemoveAdHocEvent.self) { return .adHocRemoved(event) }
+        return args.first?.intValue.map { .adHocRemoved(RemoveAdHocEvent(conversationId: $0, roomId: nil)) }
     }
 
     public static func decodeVideo(_ invocation: HubInvocation) -> VideoHubEvent? {

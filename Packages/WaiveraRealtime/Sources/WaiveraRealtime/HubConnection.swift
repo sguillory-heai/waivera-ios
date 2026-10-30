@@ -42,11 +42,8 @@ public struct HubInvocationError: Error, Equatable, Sendable {
         if text.contains("archived") { return .channelArchived }
         if text.contains("read-only") || text.contains("cannot post") { return .channelReadOnly }
         if text.contains("not authenticated") || text.contains("unauthenticated") { return .unauthorized }
-        if text.contains("not a participant") || text.contains("not an active participant")
-            || text.contains("access denied")
-        {
-            return .forbidden
-        }
+        let forbiddenPhrases = ["not a participant", "not an active participant", "access denied"]
+        if forbiddenPhrases.contains(where: text.contains) { return .forbidden }
         if text.contains("does not exist") || text.contains("unavailable") { return .notFound }
         return .invalidRequest
     }

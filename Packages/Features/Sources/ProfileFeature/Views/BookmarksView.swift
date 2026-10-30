@@ -4,10 +4,6 @@
     import WaiveraData
     import WaiveraDesign
 
-    #if DEBUG
-        import WaiveraTestSupport
-    #endif
-
     /// Saved messages. Thread bookmarks open the thread by its root id (11-pitfalls #21).
     public struct BookmarksView: View {
         @Environment(\.dataEnvironment) private var data
@@ -376,30 +372,4 @@
             )
         }
     }
-
-    #if DEBUG
-        @MainActor private func bookmarksPreview() -> BookmarksDisplayState {
-            var state = BookmarksDisplayState()
-            state.rows = BookmarkRules.rows(DemoData.make().bookmarks)
-            state.totalCount = state.rows.count
-            state.phase = state.rows.isEmpty ? .empty : .content
-            state.now = DemoData.now
-            return state
-        }
-
-        #Preview("Light") {
-            NavigationStack { BookmarksView(onOpenMessage: { _, _, _ in }) }.fakeDataEnvironment()
-        }
-        #Preview("Dark") {
-            NavigationStack { BookmarksContentView(state: bookmarksPreview(), actions: BookmarksActions()) }
-                .preferredColorScheme(.dark)
-        }
-        #Preview("AX XXXL") {
-            NavigationStack { BookmarksContentView(state: bookmarksPreview(), actions: BookmarksActions()) }
-                .dynamicTypeSize(.accessibility5)
-        }
-        #Preview("Empty") {
-            NavigationStack { BookmarksView(onOpenMessage: { _, _, _ in }) }.fakeDataEnvironment(.empty)
-        }
-    #endif
 #endif

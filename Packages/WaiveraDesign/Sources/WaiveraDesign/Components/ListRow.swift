@@ -167,8 +167,12 @@
             return CGSize(width: parts.width, height: parts.height)
         }
 
-        public func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout Void)
-        {
+        public func placeSubviews(
+            in bounds: CGRect,
+            proposal: ProposedViewSize,
+            subviews: Subviews,
+            cache: inout Void
+        ) {
             let parts = measure(proposal: ProposedViewSize(width: bounds.width, height: nil), subviews: subviews)
             if let leading = leadingView(subviews) {
                 leading.place(

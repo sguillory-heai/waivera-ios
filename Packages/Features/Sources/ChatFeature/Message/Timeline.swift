@@ -179,9 +179,8 @@ enum TimelineBuilder {
     /// newest of them sits; a day separator precedes the first row of each local day.
     static func build(
         _ input: TimelineInput,
-        richDocument: (ChatMessage) -> RichDocument? = TipTapParser.document(for:)
+        richDocument: @escaping (ChatMessage) -> RichDocument? = TipTapParser.document(for:)
     ) -> [TimelineItem] {
-        let ambiguous = ambiguousClientIds(input.messages)
         let serverClientIds = Set(input.messages.compactMap(\.nonBlankClientId))
         // While a send lands, its outbox row and server copy can both be present: keep the copy.
         let entries =
@@ -192,14 +191,19 @@ enum TimelineBuilder {
         for case .server(let message) in entries {
             if let callId = SystemMessages.callRecordId(message) { calls[callId, default: []].append(message) }
         }
+        let rows = TimelineRows(
+            input: input,
+            ambiguous: ambiguousClientIds(input.messages),
+            calls: calls,
+            richDocument: richDocument
+        )
         let callPosition = calls.mapValues { $0.last?.id }
         var items: [TimelineItem] = []
         var lastDay: ChatDay?
         for (index, entry) in entries.enumerated() {
-            var callId: Int?
-            if case .server(let message) = entry {
-                callId = SystemMessages.callRecordId(message)
-                if let callId, callPosition[callId] != message.id { continue }
+            // Call log messages show once, as a card where the newest of them sits.
+            if case .server(let message) = entry, let callId = SystemMessages.callRecordId(message) {
+                if callPosition[callId] != message.id { continue }
             }
             if input.daySeparators, let createdAt = entry.createdAt {
                 let day = ChatTime.day(createdAt, zone: input.zone)
@@ -208,68 +212,12 @@ enum TimelineBuilder {
                     lastDay = day
                 }
             }
-            let previous = index > 0 ? entries[index - 1].facts(viewerId: input.viewerId) : nil
-            let next = index + 1 < entries.count ? entries[index + 1].facts(viewerId: input.viewerId) : nil
-            let current = entry.facts(viewerId: input.viewerId)
-            switch entry {
-            case .pending(let outgoing):
-                let key = pendingKey(outgoing)
-                items.append(
-                    .pending(
-                        PendingRow(
-                            key: key,
-                            outgoing: outgoing,
-                            groupedWithPrevious: MessageGrouping.canGroup(previous, current, zone: input.zone),
-                            groupedWithNext: MessageGrouping.canGroup(current, next, zone: input.zone),
-                            isLiveArrival: input.liveArrivals.contains(key)
-                        )
-                    )
-                )
-            case .server(let message):
-                if let callId, let group = calls[callId] {
-                    items.append(
-                        .callLog(
-                            CallLogRow(
-                                key: "call-\(callId)",
-                                callRecordId: callId,
-                                messages: group,
-                                summary: CallLogs.summarize(group)
-                            )
-                        )
-                    )
-                    continue
-                }
-                let key = key(of: message, ambiguous: ambiguous)
-                let ticket = TicketCards.card(for: message, botConversation: input.botConversation)
-                if ticket == nil, SystemMessages.isSystem(message) {
-                    items.append(
-                        .system(
-                            SystemRow(
-                                key: key,
-                                message: message,
-                                text: SystemMessages.parse(CallLogs.text(of: message)).text
-                            )
-                        )
-                    )
-                    continue
-                }
-                items.append(
-                    .message(
-                        MessageRow(
-                            key: key,
-                            message: message,
-                            isMine: message.isMine || (input.viewerId != nil && message.authorId == input.viewerId),
-                            isBot: TicketCards.isBot(message, botConversation: input.botConversation),
-                            groupedWithPrevious: MessageGrouping.canGroup(previous, current, zone: input.zone),
-                            groupedWithNext: MessageGrouping.canGroup(current, next, zone: input.zone),
-                            rich: message.isDeleted || ticket != nil ? nil : richDocument(message),
-                            ticket: ticket,
-                            reactions: ReactionRules.summarize(message.reactions, viewerId: input.viewerId),
-                            isLiveArrival: input.liveArrivals.contains(key)
-                        )
-                    )
-                )
-            }
+            let neighbors = Neighbors(
+                previous: index > 0 ? entries[index - 1].facts(viewerId: input.viewerId) : nil,
+                current: entry.facts(viewerId: input.viewerId),
+                next: index + 1 < entries.count ? entries[index + 1].facts(viewerId: input.viewerId) : nil
+            )
+            items.append(rows.item(for: entry, neighbors: neighbors))
         }
         // A list id must be unique; this is the last guard if the rules above ever miss.
         var seen: Set<String> = []
@@ -298,5 +246,80 @@ extension ChatMessage {
     var nonBlankClientId: String? {
         guard let clientMessageId, !clientMessageId.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
         return clientMessageId
+    }
+}
+
+/// The grouping facts of a row and the rows on either side of it.
+private struct Neighbors {
+    var previous: GroupingFacts?
+    var current: GroupingFacts
+    var next: GroupingFacts?
+}
+
+/// Turns one timeline entry into its row: a pending send, a collapsed call log, a system line
+/// or a message.
+private struct TimelineRows {
+    let input: TimelineInput
+    let ambiguous: Set<String>
+    let calls: [Int: [ChatMessage]]
+    let richDocument: (ChatMessage) -> RichDocument?
+
+    func item(for entry: TimelineEntry, neighbors: Neighbors) -> TimelineItem {
+        switch entry {
+        case .pending(let outgoing):
+            let key = TimelineBuilder.pendingKey(outgoing)
+            return .pending(
+                PendingRow(
+                    key: key,
+                    outgoing: outgoing,
+                    groupedWithPrevious: groupsWithPrevious(neighbors),
+                    groupedWithNext: groupsWithNext(neighbors),
+                    isLiveArrival: input.liveArrivals.contains(key)
+                )
+            )
+        case .server(let message):
+            return item(for: message, neighbors: neighbors)
+        }
+    }
+
+    private func item(for message: ChatMessage, neighbors: Neighbors) -> TimelineItem {
+        if let callId = SystemMessages.callRecordId(message), let group = calls[callId] {
+            return .callLog(
+                CallLogRow(
+                    key: "call-\(callId)",
+                    callRecordId: callId,
+                    messages: group,
+                    summary: CallLogs.summarize(group)
+                )
+            )
+        }
+        let key = TimelineBuilder.key(of: message, ambiguous: ambiguous)
+        let ticket = TicketCards.card(for: message, botConversation: input.botConversation)
+        if ticket == nil, SystemMessages.isSystem(message) {
+            let text = SystemMessages.parse(CallLogs.text(of: message)).text
+            return .system(SystemRow(key: key, message: message, text: text))
+        }
+        return .message(
+            MessageRow(
+                key: key,
+                message: message,
+                isMine: message.isMine || (input.viewerId != nil && message.authorId == input.viewerId),
+                isBot: TicketCards.isBot(message, botConversation: input.botConversation),
+                groupedWithPrevious: groupsWithPrevious(neighbors),
+                groupedWithNext: groupsWithNext(neighbors),
+                rich: message.isDeleted || ticket != nil ? nil : richDocument(message),
+                ticket: ticket,
+                reactions: ReactionRules.summarize(message.reactions, viewerId: input.viewerId),
+                isLiveArrival: input.liveArrivals.contains(key)
+            )
+        )
+    }
+
+    private func groupsWithPrevious(_ neighbors: Neighbors) -> Bool {
+        MessageGrouping.canGroup(neighbors.previous, neighbors.current, zone: input.zone)
+    }
+
+    private func groupsWithNext(_ neighbors: Neighbors) -> Bool {
+        MessageGrouping.canGroup(neighbors.current, neighbors.next, zone: input.zone)
     }
 }

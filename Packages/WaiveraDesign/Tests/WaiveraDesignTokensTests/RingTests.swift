@@ -25,10 +25,8 @@ struct RingTests {
 
     @Test func sublineListsKindsInOrderAndDropsZeros() {
         let text = RingSubline.text([.ticket: 1, .message: 2, .mention: 0, .invitation: 1, .notSent: 3])
-        #expect(
-            text
-                == "3\u{00A0}not\u{00A0}sent\u{00A0}· 2\u{00A0}messages\u{00A0}· 1\u{00A0}invite\u{00A0}· 1\u{00A0}ticket"
-        )
+        let nbsp = "\u{00A0}"
+        #expect(text == "3\(nbsp)not\(nbsp)sent\(nbsp)· 2\(nbsp)messages\(nbsp)· 1\(nbsp)invite\(nbsp)· 1\(nbsp)ticket")
     }
 
     @Test func singularAndPlural() {

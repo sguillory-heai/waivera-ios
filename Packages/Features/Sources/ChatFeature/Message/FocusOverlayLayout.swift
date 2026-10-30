@@ -59,9 +59,9 @@
                 anchor: .topLeading,
                 proposal: ProposedViewSize(bubbleSize)
             )
-            if let pill, let pillSize, let at = placed.pill {
+            if let pill, let pillSize, let pillOrigin = placed.pill {
                 pill.place(
-                    at: CGPoint(x: origin.x + at.x, y: origin.y + at.y + lift.pillShift),
+                    at: CGPoint(x: origin.x + pillOrigin.x, y: origin.y + pillOrigin.y + lift.pillShift),
                     anchor: .topLeading,
                     proposal: ProposedViewSize(pillSize)
                 )

@@ -24,7 +24,7 @@ public actor LiveProfileRepository: ProfileRepository {
         self.clock = clock
     }
 
-    public nonisolated func profile() -> AsyncStream<Resource<OwnProfile>> { cell.stream() }
+    nonisolated public func profile() -> AsyncStream<Resource<OwnProfile>> { cell.stream() }
 
     public func begin() async {
         guard value == nil, let cached = await store.load(CachedProfile.self, for: .profile) else { return }

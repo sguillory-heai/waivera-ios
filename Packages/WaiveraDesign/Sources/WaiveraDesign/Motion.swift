@@ -26,10 +26,10 @@
 
         public static func animation(_ spec: TweenSpec) -> Animation {
             let curve = Animation.timingCurve(
-                spec.easing.x1,
-                spec.easing.y1,
-                spec.easing.x2,
-                spec.easing.y2,
+                spec.easing.controlX1,
+                spec.easing.controlY1,
+                spec.easing.controlX2,
+                spec.easing.controlY2,
                 duration: spec.duration
             )
             return spec.delay > 0 ? curve.delay(spec.delay) : curve
@@ -115,8 +115,8 @@
     /// call them from any isolation.
     private func shakeEasing() -> UnitCurve {
         .bezier(
-            startControlPoint: UnitPoint(x: Easing.fastOutSlowIn.x1, y: Easing.fastOutSlowIn.y1),
-            endControlPoint: UnitPoint(x: Easing.fastOutSlowIn.x2, y: Easing.fastOutSlowIn.y2)
+            startControlPoint: UnitPoint(x: Easing.fastOutSlowIn.controlX1, y: Easing.fastOutSlowIn.controlY1),
+            endControlPoint: UnitPoint(x: Easing.fastOutSlowIn.controlX2, y: Easing.fastOutSlowIn.controlY2)
         )
     }
 

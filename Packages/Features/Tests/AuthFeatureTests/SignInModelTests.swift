@@ -286,7 +286,9 @@ struct SignInModelTests {
         #expect(model.failureCount == 1)
         #expect(model.phase == .idle)
     }
+}
 
+extension SignInModelTests {
     // MARK: Legal links
 
     @Test func anUnopenableLinkSaysSoWithoutTouchingTheForm() {

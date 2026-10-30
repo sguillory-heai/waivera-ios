@@ -40,7 +40,7 @@ public struct RGBColor: Equatable, Hashable, Sendable {
     /// Linear interpolation towards `other`, `fraction` 0...1 (the skeleton pulse).
     public func interpolated(to other: RGBColor, fraction: Double) -> RGBColor {
         let amount = min(1, max(0, fraction))
-        func lerp(_ from: Double, _ to: Double) -> Double { from + (to - from) * amount }
+        func lerp(_ start: Double, _ end: Double) -> Double { start + (end - start) * amount }
         return RGBColor(
             red: lerp(red, other.red),
             green: lerp(green, other.green),
@@ -246,7 +246,6 @@ public enum ColorToken: String, CaseIterable, Sendable {
     }
 
     // Each case is one table row; splitting further would hide the palette.
-    // swiftlint:disable:next cyclomatic_complexity
     private var legacyValues: (light: RGBColor, dark: RGBColor)? {
         switch self {
         case .background: pair(0xF5F2F9, 0x120F17)
@@ -280,7 +279,6 @@ public enum ColorToken: String, CaseIterable, Sendable {
         }
     }
 
-    // swiftlint:disable:next cyclomatic_complexity
     private var extendedValues: (light: RGBColor, dark: RGBColor)? {
         switch self {
         case .raised: pair(0xFFFFFF, 0x262032)

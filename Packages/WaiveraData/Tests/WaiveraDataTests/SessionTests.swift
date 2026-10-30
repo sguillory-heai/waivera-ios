@@ -26,10 +26,15 @@ final class RecordingParticipant: SessionLifecycleParticipant, @unchecked Sendab
 struct SessionTests {
     private let loginRoute = "GET api/Authentication/login"
 
-    private func make(signedIn: Bool = true) async -> (
-        LiveSessionRepository, RoutingTransport, FakeAuth,
-        RecordingParticipant, SessionContext
-    ) {
+    private struct Made {
+        let session: LiveSessionRepository
+        let transport: RoutingTransport
+        let auth: FakeAuth
+        let participant: RecordingParticipant
+        let context: SessionContext
+    }
+
+    private func make(signedIn: Bool = true) async -> Made {
         let transport = RoutingTransport()
         await transport.set(loginRoute, .fixture("rest-auth-login"))
         await transport.set(
@@ -42,7 +47,7 @@ struct SessionTests {
         let session = LiveSessionRepository(auth: auth, api: makeAPI(transport), context: context)
         let participant = RecordingParticipant(auth: auth)
         await session.setParticipants([participant])
-        return (session, transport, auth, participant, context)
+        return Made(session: session, transport: transport, auth: auth, participant: participant, context: context)
     }
 
     private func signedInUser(_ state: SessionState) -> CurrentUser? {
@@ -51,7 +56,12 @@ struct SessionTests {
     }
 
     @Test func bootstrapsOncePerIdentityNotPerTokenRefresh() async {
-        let (session, transport, auth, participant, context) = await make()
+        let made = await make()
+        let session = made.session
+        let transport = made.transport
+        let auth = made.auth
+        let participant = made.participant
+        let context = made.context
         await session.start()
         #expect(await eventually { signedInUser(session.currentState) != nil })
         auth.emitSameIdentity()
@@ -63,7 +73,10 @@ struct SessionTests {
     }
 
     @Test func signedOutAtLaunch() async {
-        let (session, transport, _, participant, _) = await make(signedIn: false)
+        let made = await make(signedIn: false)
+        let session = made.session
+        let transport = made.transport
+        let participant = made.participant
         await session.start()
         #expect(await eventually { session.currentState == .signedOut(nil) })
         #expect(await transport.count(loginRoute) == 0)
@@ -72,12 +85,16 @@ struct SessionTests {
     }
 
     @Test func passwordChangeGateThenConfirm() async throws {
-        let (session, transport, auth, participant, _) = await make()
+        let made = await make()
+        let session = made.session
+        let transport = made.transport
+        let auth = made.auth
+        let participant = made.participant
         await transport.enqueue(
             loginRoute,
             .json(#"{"data":{"requiresPasswordChange":true,"userId":"usr_alex_rivera","requiresOnboarding":false}}"#)
         )
-        await transport.set("POST api/Authentication/confirm-password-change", .ok)
+        await transport.set("POST api/Authentication/confirm-password-change", .emptyOK)
         await session.start()
         #expect(
             await eventually {
@@ -93,7 +110,10 @@ struct SessionTests {
     }
 
     @Test func unauthorizedSignsOut() async {
-        let (session, transport, auth, _, _) = await make()
+        let made = await make()
+        let session = made.session
+        let transport = made.transport
+        let auth = made.auth
         await transport.set(loginRoute, .fixture("rest-error-apiresponse-unauthorized", status: 401))
         await session.start()
         #expect(await eventually { session.currentState == .signedOut(.unauthorized) })
@@ -101,7 +121,10 @@ struct SessionTests {
     }
 
     @Test func serverErrorKeepsFirebaseAndRetries() async {
-        let (session, transport, auth, _, _) = await make()
+        let made = await make()
+        let session = made.session
+        let transport = made.transport
+        let auth = made.auth
         await transport.enqueue(loginRoute, .fixture("rest-error-controller-500", status: 500))
         await session.start()
         #expect(
@@ -116,7 +139,11 @@ struct SessionTests {
     }
 
     @Test func signOutRunsWillEndBeforeFirebaseAndDidEndAfter() async {
-        let (session, _, auth, participant, context) = await make()
+        let made = await make()
+        let session = made.session
+        let auth = made.auth
+        let participant = made.participant
+        let context = made.context
         await session.start()
         #expect(await eventually { signedInUser(session.currentState) != nil })
         await session.signOut()
@@ -128,7 +155,10 @@ struct SessionTests {
 
     @Test("AF-04: a rejected bootstrap wipes the caches even though the session never started")
     func rejectedBootstrapRunsTheCleanup() async {
-        let (session, transport, _, participant, _) = await make()
+        let made = await make()
+        let session = made.session
+        let transport = made.transport
+        let participant = made.participant
         await transport.set(loginRoute, .fixture("rest-error-apiresponse-unauthorized", status: 401))
         await session.start()
         #expect(await eventually { session.currentState == .signedOut(.unauthorized) })
@@ -138,7 +168,9 @@ struct SessionTests {
 
     @Test("Auth request 1: the reset email goes through Firebase")
     func passwordReset() async throws {
-        let (session, _, auth, _, _) = await make(signedIn: false)
+        let made = await make(signedIn: false)
+        let session = made.session
+        let auth = made.auth
         try await session.sendPasswordReset(email: " alex.rivera@example.com ")
         #expect(auth.calls.contains("sendPasswordReset:alex.rivera@example.com"))
         await #expect(throws: WaiveraError.auth(.invalidCredentials)) {
@@ -148,8 +180,11 @@ struct SessionTests {
 
     @Test("Auth request 3: a voluntary change never leaves .signedIn")
     func voluntaryChangeStaysSignedIn() async throws {
-        let (session, transport, _, participant, _) = await make()
-        await transport.set("POST api/Authentication/confirm-password-change", .ok)
+        let made = await make()
+        let session = made.session
+        let transport = made.transport
+        let participant = made.participant
+        await transport.set("POST api/Authentication/confirm-password-change", .emptyOK)
         await session.start()
         #expect(await eventually { signedInUser(session.currentState) != nil })
         let states = LockedValue<[SessionState]>([])
@@ -169,8 +204,11 @@ struct SessionTests {
 
     @Test("Auth request 3: after Firebase took the password, a retry only repeats the confirmation")
     func changeIsResumable() async throws {
-        let (session, transport, auth, _, _) = await make()
-        await transport.enqueue("POST api/Authentication/confirm-password-change", .status(503), .ok)
+        let made = await make()
+        let session = made.session
+        let transport = made.transport
+        let auth = made.auth
+        await transport.enqueue("POST api/Authentication/confirm-password-change", .status(503), .emptyOK)
         await session.start()
         #expect(await eventually { signedInUser(session.currentState) != nil })
         await #expect(throws: WaiveraError.server(statusCode: 503)) {
@@ -183,8 +221,11 @@ struct SessionTests {
 
     @Test("A different new password after a failed confirmation goes through Firebase again")
     func differentPasswordRedoesFirebase() async throws {
-        let (session, transport, auth, _, _) = await make()
-        await transport.enqueue("POST api/Authentication/confirm-password-change", .status(503), .ok)
+        let made = await make()
+        let session = made.session
+        let transport = made.transport
+        let auth = made.auth
+        await transport.enqueue("POST api/Authentication/confirm-password-change", .status(503), .emptyOK)
         await session.start()
         #expect(await eventually { signedInUser(session.currentState) != nil })
         _ = try? await session.changePassword(current: "old", new: "first-choice")

@@ -23,9 +23,8 @@ public struct MessageDeduplicator: Sendable {
         guard let conversationId = message.conversationId else { return false }
         let key = "\(conversationId):\(message.id)"
         let hasBody = Self.hasRenderableContent(message)
-        if let previous = entries[key], now.timeIntervalSince(previous.seenAt) < Self.window,
-            previous.hadBody || !hasBody
-        {
+        let isRecent = entries[key].map { now.timeIntervalSince($0.seenAt) < Self.window } ?? false
+        if let previous = entries[key], isRecent, previous.hadBody || !hasBody {
             return false
         }
         if entries[key] == nil { order.append(key) }

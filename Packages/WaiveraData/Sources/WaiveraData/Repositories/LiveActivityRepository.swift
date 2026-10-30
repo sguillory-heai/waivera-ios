@@ -30,7 +30,7 @@ public actor LiveActivityRepository: ActivityRepository {
         self.clock = clock
     }
 
-    public nonisolated func feed() -> AsyncStream<Resource<ActivityFeed>> { cell.stream() }
+    nonisolated public func feed() -> AsyncStream<Resource<ActivityFeed>> { cell.stream() }
 
     public func begin() async {
         guard let cached = await store.load([ActivityItem].self, for: .activity), items.isEmpty else { return }

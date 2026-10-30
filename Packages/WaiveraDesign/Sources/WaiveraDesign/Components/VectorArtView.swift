@@ -16,10 +16,14 @@
                     move(to: point(x, y))
                 case .line(let x, let y):
                     addLine(to: point(x, y))
-                case .quad(let x1, let y1, let x, let y):
-                    addQuadCurve(to: point(x, y), control: point(x1, y1))
-                case .cubic(let x1, let y1, let x2, let y2, let x, let y):
-                    addCurve(to: point(x, y), control1: point(x1, y1), control2: point(x2, y2))
+                case .quad(let controlX, let controlY, let x, let y):
+                    addQuadCurve(to: point(x, y), control: point(controlX, controlY))
+                case .cubic(let control1X, let control1Y, let control2X, let control2Y, let x, let y):
+                    addCurve(
+                        to: point(x, y),
+                        control1: point(control1X, control1Y),
+                        control2: point(control2X, control2Y)
+                    )
                 case .close:
                     closeSubpath()
                 }

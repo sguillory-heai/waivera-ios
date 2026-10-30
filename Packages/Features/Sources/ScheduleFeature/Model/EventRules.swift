@@ -84,13 +84,14 @@ public enum EventRules {
         return now < event.start
     }
 
+    /// Accept and decline for an invitee. `failure` stays nil: the caller knows how the last
+    /// answer went and sets it.
     public static func invitation(
         _ event: CalendarEvent,
         myUserId: String?,
         now: Date,
         zone: TimeZone,
-        optimistic: OptimisticResponse?,
-        failure: ResponseFailure?
+        optimistic: OptimisticResponse?
     ) -> InvitationUI? {
         guard !isOrganizer(event, myUserId: myUserId), answerable.contains(event.viewerResponse) else { return nil }
         let phase = optimistic?.phase ?? .idle
@@ -99,7 +100,7 @@ public enum EventRules {
             response: shown,
             canChange: notStarted(event, now: now, zone: zone) && phase != .saving,
             phase: phase,
-            failure: failure
+            failure: nil
         )
     }
 

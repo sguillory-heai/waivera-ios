@@ -97,7 +97,7 @@ struct APIClientTests {
         let request = try #require(await transport.requests.first)
         let contentType = try #require(request.value(forHTTPHeaderField: "Content-Type"))
         #expect(contentType.hasPrefix("multipart/form-data; boundary="))
-        let body = String(decoding: request.httpBody ?? Data(), as: UTF8.self)
+        let body = String(bytes: request.httpBody ?? Data(), encoding: .utf8) ?? ""
         #expect(body.contains(#"name="file"; filename="roster.pdf""#))
     }
 

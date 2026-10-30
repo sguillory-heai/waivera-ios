@@ -38,8 +38,7 @@ public struct CalendarDate: Hashable, Comparable, Sendable, CustomStringConverti
     /// The date a given instant falls on in `timeZone`.
     public init(_ date: Date, in timeZone: TimeZone) {
         let local = date.timeIntervalSince1970 + Double(timeZone.secondsFromGMT(for: date))
-        let civil = Self.civil(fromDays: Int((local / 86_400).rounded(.down)))
-        self.init(unchecked: civil.year, month: civil.month, day: civil.day)
+        self = Self.civil(fromDays: Int((local / 86_400).rounded(.down)))
     }
 
     public var isoString: String { "\(pad(year, 4))-\(pad(month, 2))-\(pad(day, 2))" }
@@ -56,8 +55,7 @@ public struct CalendarDate: Hashable, Comparable, Sendable, CustomStringConverti
     }
 
     public func adding(days: Int) -> CalendarDate {
-        let civil = Self.civil(fromDays: daysSinceEpoch + days)
-        return CalendarDate(unchecked: civil.year, month: civil.month, day: civil.day)
+        Self.civil(fromDays: daysSinceEpoch + days)
     }
 
     public func days(until other: CalendarDate) -> Int { other.daysSinceEpoch - daysSinceEpoch }
@@ -125,7 +123,7 @@ public struct CalendarDate: Hashable, Comparable, Sendable, CustomStringConverti
         return era * 146_097 + dayOfEra - 719_468
     }
 
-    static func civil(fromDays days: Int) -> (year: Int, month: Int, day: Int) {
+    static func civil(fromDays days: Int) -> CalendarDate {
         let shifted = days + 719_468
         let era = (shifted >= 0 ? shifted : shifted - 146_096) / 146_097
         let dayOfEra = shifted - era * 146_097
@@ -134,7 +132,7 @@ public struct CalendarDate: Hashable, Comparable, Sendable, CustomStringConverti
         let monthPrime = (5 * dayOfYear + 2) / 153
         let day = dayOfYear - (153 * monthPrime + 2) / 5 + 1
         let month = monthPrime < 10 ? monthPrime + 3 : monthPrime - 9
-        return (yearOfEra + era * 400 + (month <= 2 ? 1 : 0), month, day)
+        return CalendarDate(unchecked: yearOfEra + era * 400 + (month <= 2 ? 1 : 0), month: month, day: day)
     }
 }
 

@@ -44,7 +44,7 @@ struct ChatCarryoverTests {
         #expect(unread(harness, 41) == 3)
         #expect(harness.engine.unreadCell.current == 4)
 
-        await harness.transport.set("POST api/chat/41/mark-as-read", .ok)
+        await harness.transport.set("POST api/chat/41/mark-as-read", .emptyOK)
         try await harness.engine.markRead(conversationId: 41)
         #expect(unread(harness, 41) == 0)
     }

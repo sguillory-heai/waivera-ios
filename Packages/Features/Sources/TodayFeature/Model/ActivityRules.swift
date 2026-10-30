@@ -53,9 +53,11 @@ enum ActivityRules {
     /// The API has no unread total, so the badge can only count loaded pages. When the oldest
     /// loaded page still holds unread items and more pages exist, older pages probably hold more:
     /// the screen loads them (up to a cap) and, past the cap, shows the count as a lower bound.
-    static func olderPagesMayHoldUnread(_ merged: [ActivityItem], hasMore: Bool, isRead: (ActivityItem) -> Bool)
-        -> Bool
-    {
+    static func olderPagesMayHoldUnread(
+        _ merged: [ActivityItem],
+        hasMore: Bool,
+        isRead: (ActivityItem) -> Bool
+    ) -> Bool {
         hasMore && merged.suffix(pageSize).contains { !isRead($0) }
     }
 }

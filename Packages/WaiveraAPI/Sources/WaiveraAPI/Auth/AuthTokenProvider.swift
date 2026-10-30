@@ -79,7 +79,7 @@ public actor FirebaseTokenProvider: AuthTokenProvider {
     }
 
     /// Emits the current identity, then every identity change.
-    public nonisolated func identities() -> AsyncStream<FirebaseIdentity?> {
+    nonisolated public func identities() -> AsyncStream<FirebaseIdentity?> {
         identityBroadcaster.stream()
     }
 

@@ -17,12 +17,12 @@ public enum PeopleFilter {
     /// "Is this me" uses the backend id everywhere else; here the Firebase uid is also excluded
     /// because the directory has been seen to carry either (06 §C3). Excluding never attributes
     /// anything to the wrong person, so the wider match is safe.
-    public static func apply(_ people: [DirectoryPerson], me: CurrentUser?, query: String) -> [DirectoryPerson] {
+    public static func apply(_ people: [DirectoryPerson], me viewer: CurrentUser?, query: String) -> [DirectoryPerson] {
         let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
         var seen = Set<String>()
         return people.filter { person in
             guard person.id.nonBlank != nil, person.name.nonBlank != nil else { return false }
-            if let me, person.id == me.id || person.id == me.firebaseUid { return false }
+            if let viewer, person.id == viewer.id || person.id == viewer.firebaseUid { return false }
             guard seen.insert(person.id).inserted else { return false }
             return needle.isEmpty
                 || person.name.range(of: needle, options: [.caseInsensitive, .diacriticInsensitive]) != nil
@@ -51,7 +51,7 @@ public final class PeopleModel {
     @ObservationIgnored private let calendar: any CalendarRepository
     @ObservationIgnored private let realtime: any RealtimeStatusRepository
     @ObservationIgnored private var resource = Resource<[DirectoryPerson]>()
-    @ObservationIgnored private var me: CurrentUser?
+    @ObservationIgnored private var viewer: CurrentUser?
     @ObservationIgnored private var milestones = MilestoneIndex.empty
     @ObservationIgnored private var refreshInFlight = false
 
@@ -65,7 +65,7 @@ public final class PeopleModel {
         self.session = session
         self.calendar = calendar
         self.realtime = realtime
-        me = session.currentState.user
+        viewer = session.currentState.user
     }
 
     public convenience init(environment: DataEnvironment) {
@@ -117,8 +117,8 @@ public final class PeopleModel {
     }
 
     private func apply(user: CurrentUser?) {
-        guard user != me else { return }
-        me = user
+        guard user != viewer else { return }
+        viewer = user
         derive()
     }
 
@@ -129,8 +129,8 @@ public final class PeopleModel {
 
     private func derive() {
         let all = resource.value ?? []
-        let everyone = PeopleFilter.apply(all, me: me, query: "")
-        let matches = query.nonBlank == nil ? everyone : PeopleFilter.apply(all, me: me, query: query)
+        let everyone = PeopleFilter.apply(all, me: viewer, query: "")
+        let matches = query.nonBlank == nil ? everyone : PeopleFilter.apply(all, me: viewer, query: query)
         let today = calendar.today()
         rows = matches.map {
             PersonRow(id: $0.id, name: $0.name, celebration: milestones.celebration(for: $0.id, on: today))

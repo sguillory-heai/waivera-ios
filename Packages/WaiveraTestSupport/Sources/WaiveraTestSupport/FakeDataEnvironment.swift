@@ -114,7 +114,6 @@ public struct FakeDataEnvironment: Sendable {
         calendar.milestoneResource.setControls(controls)
     }
 
-    // swiftlint:disable:next function_parameter_count
     private init(
         data: DemoData,
         clock: any WaiveraClock,

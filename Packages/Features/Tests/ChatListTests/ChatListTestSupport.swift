@@ -73,7 +73,7 @@ enum Sample {
         #"{"id": "\#(id)", "firstName": "\#(first)", "lastName": "\#(last)"}"#
     }
 
-    static let me = user(viewer, "Alex", "Rivera")
+    static let viewerUser = user(viewer, "Alex", "Rivera")
     static let priya = user("usr_priya_raman", "Priya", "Raman")
     static let jordan = user("usr_jordan_lee", "Jordan", "Lee")
     static let sam = user("usr_sam_ortiz", "Sam", "Ortiz")
@@ -104,8 +104,12 @@ final class StubConversations: ConversationsRepository {
     let createdId = LockedValue(9_000)
     private let clock: any WaiveraClock
 
-    init(_ rows: [Conversation]? = nil, updatedAt: Date? = nil, phase: ResourcePhase = .loaded, clock: any WaiveraClock)
-    {
+    init(
+        _ rows: [Conversation]? = nil,
+        updatedAt: Date? = nil,
+        phase: ResourcePhase = .loaded,
+        clock: any WaiveraClock
+    ) {
         self.clock = clock
         cell.set(Resource(value: rows, phase: phase, updatedAt: updatedAt))
     }

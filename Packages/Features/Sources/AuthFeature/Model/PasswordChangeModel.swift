@@ -171,7 +171,7 @@ public final class PasswordChangeModel {
 
 extension PasswordChangeModel: CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
     /// Never prints a password, even in a debug log, a crash report or `dump`.
-    public nonisolated var description: String { "PasswordChangeModel(redacted)" }
-    public nonisolated var debugDescription: String { description }
-    public nonisolated var customMirror: Mirror { Mirror(self, children: [], displayStyle: .class) }
+    nonisolated public var description: String { "PasswordChangeModel(redacted)" }
+    nonisolated public var debugDescription: String { description }
+    nonisolated public var customMirror: Mirror { Mirror(self, children: [], displayStyle: .class) }
 }

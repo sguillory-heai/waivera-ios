@@ -50,18 +50,19 @@
         }
 
         func testChatListStates() {
-            let states: [(String, ChatListState, Bool)] = [
-                ("rows", ChatListPreviewData.state, false),
-                ("long-names", ChatListPreviewData.longNames, false),
-                ("skeleton", ChatListPreviewData.state(.loading, connection: .connecting), true),
-                ("connecting", ChatListPreviewData.state(.empty(.noConversations), connection: .connecting), false),
-                ("caught-up", ChatListPreviewData.state(.empty(.allCaughtUp)), false),
-                ("no-matches", ChatListPreviewData.state(.empty(.noMatches)), false),
-                ("error", ChatListPreviewData.state(.error(.offline), connection: .offline), false),
+            let states: [(String, ChatListState)] = [
+                ("rows", ChatListPreviewData.state),
+                ("long-names", ChatListPreviewData.longNames),
+                ("skeleton", ChatListPreviewData.state(.loading, connection: .connecting)),
+                ("connecting", ChatListPreviewData.state(.empty(.noConversations), connection: .connecting)),
+                ("caught-up", ChatListPreviewData.state(.empty(.allCaughtUp))),
+                ("no-matches", ChatListPreviewData.state(.empty(.noMatches))),
+                ("error", ChatListPreviewData.state(.error(.offline), connection: .offline)),
             ]
-            for (name, state, skeleton) in states {
+            for (name, state) in states {
+                // Only the loading state shows its skeleton at once instead of after the delay.
                 assertVariants(
-                    ChatListContentPreview(state: state, showsSkeleton: skeleton),
+                    ChatListContentPreview(state: state, showsSkeleton: name == "skeleton"),
                     named: "chat-list-\(name)"
                 )
             }

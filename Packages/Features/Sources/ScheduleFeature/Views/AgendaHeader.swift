@@ -16,8 +16,7 @@
                 state.selectedDate,
                 axis: state.periodStep == 0 ? nil : .horizontal,
                 forward: state.periodStep >= 0
-            ) {
-                _ in
+            ) { _ in
                 HStack(spacing: Spacing.mediumSmall) {
                     IconTile(systemImage: "calendar", tone: .teal)
                     Text(dynamicTypeSize.isExtraLargeText ? state.agendaHeadingShort : state.agendaHeading)

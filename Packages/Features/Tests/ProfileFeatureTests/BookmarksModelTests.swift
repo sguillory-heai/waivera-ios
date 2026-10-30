@@ -84,14 +84,22 @@ struct BookmarkRulesTests {
 
 @MainActor
 struct BookmarksModelTests {
-    private func model(_ bookmarks: [Bookmark]) async -> (BookmarksModel, ScriptedBookmarks, FakeDataEnvironment) {
+    private struct Made {
+        let model: BookmarksModel
+        let repository: ScriptedBookmarks
+        let fake: FakeDataEnvironment
+    }
+
+    private func model(_ bookmarks: [Bookmark]) async -> Made {
         let fake = await launchedFake()
         let repository = ScriptedBookmarks(bookmarks, clock: fake.clock)
-        return (BookmarksModel(bookmarks: repository, realtime: fake.realtimeStatus), repository, fake)
+        let model = BookmarksModel(bookmarks: repository, realtime: fake.realtimeStatus)
+        return Made(model: model, repository: repository, fake: fake)
     }
 
     @Test func loadsThenShowsRows() async {
-        let (model, _, _) = await model([Bookmark(message: message(1, text: "Hello"))])
+        let made = await model([Bookmark(message: message(1, text: "Hello"))])
+        let model = made.model
         #expect(model.phase == .loading)
         await whileRunning(model.run) {
             await eventually { model.phase == .content }
@@ -101,7 +109,9 @@ struct BookmarksModelTests {
     }
 
     @Test func emptySearchAndErrorStates() async {
-        let (model, repository, _) = await model([])
+        let made = await model([])
+        let model = made.model
+        let repository = made.repository
         await whileRunning(model.run) {
             await eventually { model.phase == .empty }
             repository.resource.setValue(BookmarkList(bookmarks: [Bookmark(message: message(1, text: "Hello"))]))
@@ -111,7 +121,9 @@ struct BookmarksModelTests {
             model.query = ""
             #expect(model.phase == .content)
         }
-        let (failing, failingRepository, _) = await self.model([])
+        let failingMade = await self.model([])
+        let failing = failingMade.model
+        let failingRepository = failingMade.repository
         failingRepository.resource.setControls(FakeControls(failure: .server(statusCode: 500)))
         await whileRunning(failing.run) {
             await eventually { failing.phase == .failed(.server(statusCode: 500)) }
@@ -119,9 +131,11 @@ struct BookmarksModelTests {
     }
 
     @Test func removeIsOptimisticAndUndoSavesAgain() async {
-        let (model, repository, _) = await model([
+        let made = await model([
             Bookmark(message: message(1, text: "One")), Bookmark(message: message(2, text: "Two")),
         ])
+        let model = made.model
+        let repository = made.repository
         await whileRunning(model.run) {
             await eventually { model.rows.count == 2 }
             let row = model.rows[0]
@@ -135,7 +149,9 @@ struct BookmarksModelTests {
     }
 
     @Test func aFailedRemovePutsTheRowBack() async {
-        let (model, repository, _) = await model([Bookmark(message: message(1, text: "One"))])
+        let made = await model([Bookmark(message: message(1, text: "One"))])
+        let model = made.model
+        let repository = made.repository
         await whileRunning(model.run) {
             await eventually { model.rows.count == 1 }
             repository.toggleFailure.update { $0 = .offline }
@@ -148,9 +164,11 @@ struct BookmarksModelTests {
     }
 
     @Test func aBookmarkRemovedElsewhereDisappearsWithoutARefresh() async {
-        let (model, repository, _) = await model([
+        let made = await model([
             Bookmark(message: message(1, text: "One")), Bookmark(message: message(2, text: "Two")),
         ])
+        let model = made.model
+        let repository = made.repository
         await whileRunning(model.run) {
             await eventually { model.rows.count == 2 }
             let refreshes = repository.resource.refreshCount
@@ -161,7 +179,10 @@ struct BookmarksModelTests {
     }
 
     @Test func leavingTheScreenCancelsARefreshInFlight() async {
-        let (model, repository, fake) = await model([Bookmark(message: message(1, text: "One"))])
+        let made = await model([Bookmark(message: message(1, text: "One"))])
+        let model = made.model
+        let repository = made.repository
+        let fake = made.fake
         let clock = fake.clock as? ManualClock
         repository.resource.setControls(FakeControls(latency: .seconds(30)))
         let task = Task { await model.run() }
@@ -173,7 +194,10 @@ struct BookmarksModelTests {
     }
 
     @Test func aReconnectRefetches() async {
-        let (model, repository, fake) = await model([Bookmark(message: message(1, text: "One"))])
+        let made = await model([Bookmark(message: message(1, text: "One"))])
+        let model = made.model
+        let repository = made.repository
+        let fake = made.fake
         await whileRunning(model.run) {
             await eventually { model.phase == .content && !model.isRefreshing }
             let before = repository.resource.refreshCount
@@ -211,10 +235,11 @@ extension BookmarksModelTests {
     @Test func filtersNarrowTheListAndSayWhyItIsEmpty() async {
         var root = message(1, text: "Rota")
         root.threadReplyCount = 2
-        let (model, _, _) = await model([
+        let made = await model([
             Bookmark(message: root),
             Bookmark(message: message(2, text: "Parking")),
         ])
+        let model = made.model
         await whileRunning(model.run) {
             await eventually { model.phase == .content }
             #expect(model.showsFilterChips)
@@ -245,7 +270,8 @@ extension BookmarksModelTests {
     }
 
     @Test func chipsHideWithNothingSavedUnlessAFilterIsOn() async {
-        let (model, _, _) = await model([])
+        let made = await model([])
+        let model = made.model
         await whileRunning(model.run) {
             await eventually { model.phase == .empty }
             #expect(!model.showsFilterChips)
@@ -256,7 +282,8 @@ extension BookmarksModelTests {
     }
 
     @Test func anEmptyChipOffersShowAll() async {
-        let (model, _, _) = await model([Bookmark(message: message(1, text: "Parking"))])
+        let made = await model([Bookmark(message: message(1, text: "Parking"))])
+        let model = made.model
         await whileRunning(model.run) {
             await eventually { model.phase == .content }
             model.filter = .threads

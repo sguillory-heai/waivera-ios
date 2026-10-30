@@ -21,7 +21,7 @@ public actor LivePeopleRepository: PeopleRepository {
         self.clock = clock
     }
 
-    public nonisolated func directory() -> AsyncStream<Resource<[DirectoryPerson]>> { cell.stream() }
+    nonisolated public func directory() -> AsyncStream<Resource<[DirectoryPerson]>> { cell.stream() }
 
     public func begin() async {
         guard people == nil, let cached = await store.load([DirectoryPerson].self, for: .directory) else { return }

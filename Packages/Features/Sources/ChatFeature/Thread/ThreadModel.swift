@@ -35,7 +35,6 @@ final class ThreadModel {
     @ObservationIgnored var highlightRequested = false
     @ObservationIgnored var nextScrollId = 0
 
-    // swiftlint:disable:next function_parameter_count
     init(
         rootMessageID: Int,
         conversationID: Int?,
@@ -235,7 +234,6 @@ final class ThreadModel {
         if let root = state.root, root.message.id == messageId { return root.key }
         return state.replies.first { $0.message(messageId) != nil }?.id
     }
-
 }
 
 enum ThreadContent: Equatable, Sendable {

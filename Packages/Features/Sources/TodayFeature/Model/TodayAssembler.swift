@@ -102,24 +102,11 @@ enum TodayAssembler {
         let chats = SourceStatus(sources.conversations) { !$0.isEmpty }
         let feed = SourceStatus(sources.activity) { !$0.items.isEmpty }
         let schedule = SourceStatus(weeks: sources.schedule)
-        let primary = [chats, feed, schedule]
-        let nothingCached = !primary.contains(where: \.hasContent)
-        let stillLoading = primary.contains(where: \.isLoading)
-
         let pinned = pinnedMentions(sources, context: context)
         let events = ScheduleRules.events(in: sources.schedule.compactMap(\.value))
         let milestones = SourceStatus(sources.milestones) { !$0.milestones.isEmpty }
 
-        var state = TodayState()
-        state.accountName = context.accountName
-        state.greeting = GreetingRules.greeting(context.now, zone: context.zone, firstName: context.firstName)
-        state.date = today
-        state.timeZone = context.zone
-        state.usesFallbackTimeZone = context.usesFallbackTimeZone
-        state.isInitialLoad = nothingCached && stillLoading
-        state.loadError = nothingCached && !stillLoading ? primary.compactMap(\.error).first : nil
-        state.quietStatus = quietStatus(primary, context: context)
-        state.isRefreshing = context.local.isRefreshing
+        var state = header([chats, feed, schedule], context: context, today: today)
         let open = openItems(sources, events: events, pinned: pinned, context: context)
         state.needsYou = needsYou(open, status: chats, context: context)
         state.nextUp = NextUpSection(
@@ -142,6 +129,48 @@ enum TodayAssembler {
             excluding: Set(pinned.map(\.id)),
             summaryText: summaryText
         )
+        applyProgress(&state, open: open, today: today, context: context)
+        state.stats = DayRules.stats(
+            unreadChats: DayRules.unreadChats(chats, in: sources.conversations.value ?? []),
+            schedule: schedule,
+            events: events,
+            zone: context.zone,
+            today: today
+        )
+        state.day = DayRules.timeline(
+            events: events,
+            schedule: schedule,
+            zone: context.zone,
+            today: today,
+            now: context.now
+        )
+        return state
+    }
+
+    /// The greeting, date and load status above the sections.
+    private static func header(_ primary: [SourceStatus], context: TodayContext, today: CalendarDate) -> TodayState {
+        let nothingCached = !primary.contains(where: \.hasContent)
+        let stillLoading = primary.contains(where: \.isLoading)
+        var state = TodayState()
+        state.accountName = context.accountName
+        state.greeting = GreetingRules.greeting(context.now, zone: context.zone, firstName: context.firstName)
+        state.date = today
+        state.timeZone = context.zone
+        state.usesFallbackTimeZone = context.usesFallbackTimeZone
+        state.isInitialLoad = nothingCached && stillLoading
+        state.loadError = nothingCached && !stillLoading ? primary.compactMap(\.error).first : nil
+        state.quietStatus = quietStatus(primary, context: context)
+        state.isRefreshing = context.local.isRefreshing
+        return state
+    }
+
+    /// The handled tally, once every section it counts has loaded.
+    private static func applyProgress(
+        _ state: inout TodayState,
+        open: [NeedsYouItem],
+        today: CalendarDate,
+        context: TodayContext
+    ) {
         let complete =
             state.needsYou.isReady && !state.needsYou.failed && state.nextUp.isReady
             && state.activity.isReady && !state.activity.failed
@@ -158,22 +187,6 @@ enum TodayAssembler {
             needsYou: state.needsYou,
             observation: state.handledObservation
         )
-        state.stats = DayRules.stats(
-            conversations: chats,
-            conversationList: sources.conversations.value ?? [],
-            schedule: schedule,
-            events: events,
-            zone: context.zone,
-            today: today
-        )
-        state.day = DayRules.timeline(
-            events: events,
-            schedule: schedule,
-            zone: context.zone,
-            today: today,
-            now: context.now
-        )
-        return state
     }
 
     // MARK: Needs you
@@ -205,9 +218,11 @@ enum TodayAssembler {
             + tickets(sources, context: context)
     }
 
-    private static func needsYou(_ all: [NeedsYouItem], status: SourceStatus, context: TodayContext)
-        -> NeedsYouSection
-    {
+    private static func needsYou(
+        _ all: [NeedsYouItem],
+        status: SourceStatus,
+        context: TodayContext
+    ) -> NeedsYouSection {
         let expanded = context.local.needsYouExpanded
         let visible = expanded ? all : Array(all.prefix(NeedsYouSection.collapsedCount))
         return NeedsYouSection(
@@ -228,9 +243,11 @@ enum TodayAssembler {
     }
 
     /// Unread direct messages and pinned mentions, newest first; undated ones last.
-    private static func messages(_ sources: TodaySources, pinned: [ActivityItem], context: TodayContext)
-        -> [NeedsYouItem]
-    {
+    private static func messages(
+        _ sources: TodaySources,
+        pinned: [ActivityItem],
+        context: TodayContext
+    ) -> [NeedsYouItem] {
         let directs: [(Date?, NeedsYouItem)] = unreadConversations(sources, kind: .direct).map { conversation in
             let item = DirectMessageItem(
                 conversationId: conversation.id,

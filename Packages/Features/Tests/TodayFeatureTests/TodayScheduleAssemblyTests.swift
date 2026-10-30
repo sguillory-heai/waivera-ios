@@ -9,9 +9,10 @@ import WaiveraData
 struct TodayScheduleAssemblyTests {
     private let today = Fixture.today
 
-    private func assemble(_ sources: TodaySources = Fixture.sources(), _ context: TodayContext = Fixture.context())
-        -> TodayState
-    {
+    private func assemble(
+        _ sources: TodaySources = Fixture.sources(),
+        _ context: TodayContext = Fixture.context()
+    ) -> TodayState {
         TodayAssembler.assemble(sources, context: context)
     }
 

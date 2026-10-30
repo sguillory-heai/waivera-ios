@@ -202,7 +202,7 @@
 
         var body: some View {
             switch status {
-            case .on:
+            case .enabled:
                 EmptyView()
             case .notAsked:
                 BannerView(
@@ -273,7 +273,7 @@
             NavigationStack {
                 NotificationSettingsContent(
                     preferences: pushOff(),
-                    systemStatus: .on,
+                    systemStatus: .enabled,
                     actions: NotificationSettingsActions()
                 )
             }

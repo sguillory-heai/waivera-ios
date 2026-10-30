@@ -16,8 +16,8 @@
         static var notificationsRowDetail: String { text("settings.notifications.row.detail") }
         static var appearanceRowDetail: String { text("settings.appearance.row.detail") }
         static var signedIn: String { text("settings.account.unknown") }
-        static var on: String { text("settings.switch.on") }
-        static var off: String { text("settings.switch.off") }
+        static var switchOn: String { text("settings.switch.on") }
+        static var switchOff: String { text("settings.switch.off") }
 
         // Appearance
         static var appearanceTitle: String { text("settings.appearance.title") }

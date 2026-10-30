@@ -117,15 +117,15 @@ class ScreenshotTourBase: XCTestCase {
 }
 
 final class ScreenshotTourLight: ScreenshotTourBase {
-    override class var variant: Variant? { Variant(name: "light", appearance: "light", contentSize: nil) }
+    override static var variant: Variant? { Variant(name: "light", appearance: "light", contentSize: nil) }
 }
 
 final class ScreenshotTourDark: ScreenshotTourBase {
-    override class var variant: Variant? { Variant(name: "dark", appearance: "dark", contentSize: nil) }
+    override static var variant: Variant? { Variant(name: "dark", appearance: "dark", contentSize: nil) }
 }
 
 final class ScreenshotTourAccessibilityXXXL: ScreenshotTourBase {
-    override class var variant: Variant? {
+    override static var variant: Variant? {
         Variant(name: "ax5", appearance: "light", contentSize: "UICTContentSizeCategoryAccessibilityXXXL")
     }
 }

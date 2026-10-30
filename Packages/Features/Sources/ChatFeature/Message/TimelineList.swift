@@ -134,7 +134,6 @@
     }
 
     extension TimelineList where Header == EmptyView {
-        // swiftlint:disable:next function_parameter_count
         init(
             items: [TimelineItem],
             context: RowContext,

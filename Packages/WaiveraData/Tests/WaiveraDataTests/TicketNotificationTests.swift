@@ -14,6 +14,10 @@ struct TicketNotificationTests {
         return message
     }
 
+    private func encodedText(_ value: JSONValue) throws -> String {
+        try #require(String(bytes: try WaiveraJSON.encoder().encode(value), encoding: .utf8))
+    }
+
     private let payload: JSONValue = .object([
         "ticketId": .string("T-1042"), "title": .string("Replace badge reader"),
         "url": .string("https://tickets.example.test/T-1042"), "priority": .string("high"),
@@ -28,10 +32,10 @@ struct TicketNotificationTests {
     }
 
     @Test func unwrapsUpToThreeStringLayers() throws {
-        let once = String(decoding: try WaiveraJSON.encoder().encode(payload), as: UTF8.self)
-        let twice = String(decoding: try WaiveraJSON.encoder().encode(JSONValue.string(once)), as: UTF8.self)
-        let thrice = String(decoding: try WaiveraJSON.encoder().encode(JSONValue.string(twice)), as: UTF8.self)
-        let four = String(decoding: try WaiveraJSON.encoder().encode(JSONValue.string(thrice)), as: UTF8.self)
+        let once = try encodedText(payload)
+        let twice = try encodedText(.string(once))
+        let thrice = try encodedText(.string(twice))
+        let four = try encodedText(.string(thrice))
         #expect(bot(.string(once)).ticket != nil)
         #expect(bot(.string(thrice)).ticket != nil)
         #expect(bot(.string(four)).ticket == nil)

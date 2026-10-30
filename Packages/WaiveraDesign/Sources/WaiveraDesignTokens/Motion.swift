@@ -48,34 +48,34 @@ public struct SpringSpec: Equatable, Sendable {
 
 /// A cubic Bézier easing, as CSS `cubic-bezier` and SwiftUI `timingCurve` take it.
 public struct Easing: Equatable, Sendable {
-    public let x1: Double
-    public let y1: Double
-    public let x2: Double
-    public let y2: Double
+    public let controlX1: Double
+    public let controlY1: Double
+    public let controlX2: Double
+    public let controlY2: Double
 
     /// Material's standard curve, Compose `FastOutSlowInEasing`.
-    public static let fastOutSlowIn = Easing(x1: 0.4, y1: 0, x2: 0.2, y2: 1)
+    public static let fastOutSlowIn = Easing(controlX1: 0.4, controlY1: 0, controlX2: 0.2, controlY2: 1)
     /// Compose `LinearOutSlowInEasing`: starts at full speed, slows into place.
-    public static let linearOutSlowIn = Easing(x1: 0, y1: 0, x2: 0.2, y2: 1)
-    public static let linear = Easing(x1: 0, y1: 0, x2: 1, y2: 1)
+    public static let linearOutSlowIn = Easing(controlX1: 0, controlY1: 0, controlX2: 0.2, controlY2: 1)
+    public static let linear = Easing(controlX1: 0, controlY1: 0, controlX2: 1, controlY2: 1)
 
-    /// The eased value at time `t` (0...1), solved on the curve's x by bisection.
-    public func value(at t: Double) -> Double {
-        let time = min(1, max(0, t))
+    /// The eased value at time `progress` (0...1), solved on the curve's x by bisection.
+    public func value(at progress: Double) -> Double {
+        let time = min(1, max(0, progress))
         if self == .linear { return time }
         var low = 0.0
         var high = 1.0
         var parameter = time
         for _ in 0..<40 {
             parameter = (low + high) / 2
-            if Self.bezier(parameter, x1, x2) < time { low = parameter } else { high = parameter }
+            if Self.bezier(parameter, controlX1, controlX2) < time { low = parameter } else { high = parameter }
         }
-        return Self.bezier(parameter, y1, y2)
+        return Self.bezier(parameter, controlY1, controlY2)
     }
 
-    private static func bezier(_ t: Double, _ p1: Double, _ p2: Double) -> Double {
-        let inverse = 1 - t
-        return 3 * inverse * inverse * t * p1 + 3 * inverse * t * t * p2 + t * t * t
+    private static func bezier(_ param: Double, _ first: Double, _ second: Double) -> Double {
+        let inverse = 1 - param
+        return 3 * inverse * inverse * param * first + 3 * inverse * param * param * second + param * param * param
     }
 }
 
@@ -224,9 +224,9 @@ public enum ShakeKeyframes {
         guard time > 0 else { return 0 }
         for index in 1..<frames.count where time <= frames[index].time {
             let from = frames[index - 1]
-            let to = frames[index]
-            let progress = (time - from.time) / (to.time - from.time)
-            return from.value + (to.value - from.value) * Easing.fastOutSlowIn.value(at: progress)
+            let next = frames[index]
+            let progress = (time - from.time) / (next.time - from.time)
+            return from.value + (next.value - from.value) * Easing.fastOutSlowIn.value(at: progress)
         }
         return 0
     }
@@ -252,11 +252,11 @@ public enum MotionPolicy {
     /// cross-fade, so nothing moves and nothing blocks input.
     public static func curve(for token: MotionToken, reduceMotion: Bool) -> MotionCurve {
         switch token {
-        case .press: reduceMotion ? .none : .spring(MotionSpec.fastSpatial)
-        case .state: reduceMotion ? .tween(MotionSpec.reducedFade) : .spring(MotionSpec.fastEffects)
-        case .layout: reduceMotion ? .none : .spring(MotionSpec.defaultSpatial)
-        case .navigate: .system
-        case .celebrate: reduceMotion ? .tween(MotionSpec.reducedFade) : .spring(MotionSpec.celebrate)
+        case .press: return reduceMotion ? .none : .spring(MotionSpec.fastSpatial)
+        case .state: return reduceMotion ? .tween(MotionSpec.reducedFade) : .spring(MotionSpec.fastEffects)
+        case .layout: return reduceMotion ? .none : .spring(MotionSpec.defaultSpatial)
+        case .navigate: return .system
+        case .celebrate: return reduceMotion ? .tween(MotionSpec.reducedFade) : .spring(MotionSpec.celebrate)
         }
     }
 

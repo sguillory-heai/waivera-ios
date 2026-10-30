@@ -126,9 +126,10 @@ struct CalendarTimeZoneTests {
 struct CalendarRepositoryTests {
     private let feedRoute = "GET api/CalendarEvent/GetAllEvent"
 
-    private func repository(user: CurrentUser? = alex, clock: TestClock = TestClock())
-        -> (LiveCalendarRepository, RoutingTransport)
-    {
+    private func repository(
+        user: CurrentUser? = alex,
+        clock: TestClock = TestClock()
+    ) -> (LiveCalendarRepository, RoutingTransport) {
         let transport = RoutingTransport()
         let api = APIClient(baseURL: testBaseURL, transport: transport, tokens: FakeAuth())
         let repository = LiveCalendarRepository(

@@ -215,7 +215,7 @@ public final class SignInModel {
 
 extension SignInModel: CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
     /// Never prints the email or password, even in a debug log, a crash report or `dump`.
-    public nonisolated var description: String { "SignInModel(redacted)" }
-    public nonisolated var debugDescription: String { description }
-    public nonisolated var customMirror: Mirror { Mirror(self, children: [], displayStyle: .class) }
+    nonisolated public var description: String { "SignInModel(redacted)" }
+    nonisolated public var debugDescription: String { description }
+    nonisolated public var customMirror: Mirror { Mirror(self, children: [], displayStyle: .class) }
 }

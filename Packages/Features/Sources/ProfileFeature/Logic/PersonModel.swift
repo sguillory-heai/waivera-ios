@@ -22,7 +22,7 @@ public final class PersonModel {
     public private(set) var isOpeningChat = false
     /// "Message" failed; the person stays on the profile and sees why.
     public private(set) var messageError: WaiveraError?
-    public private(set) var me: CurrentUser?
+    public private(set) var viewer: CurrentUser?
 
     @ObservationIgnored private let people: any PeopleRepository
     @ObservationIgnored private let conversations: any ConversationsRepository
@@ -46,7 +46,7 @@ public final class PersonModel {
         self.session = session
         self.calendar = calendar
         self.realtime = realtime
-        me = session.currentState.user
+        viewer = session.currentState.user
     }
 
     public convenience init(userID: String, environment: DataEnvironment) {
@@ -69,8 +69,8 @@ public final class PersonModel {
 
     /// No chat with yourself, and none before the session is known.
     public var canMessage: Bool {
-        guard let me else { return false }
-        return me.id != userID && me.firebaseUid != userID
+        guard let viewer else { return false }
+        return viewer.id != userID && viewer.firebaseUid != userID
     }
 
     public func run() async {
@@ -89,7 +89,7 @@ public final class PersonModel {
     }
 
     private func observeSession() async {
-        for await state in session.states() { me = state.user }
+        for await state in session.states() { viewer = state.user }
     }
 
     private func observeMilestones() async {

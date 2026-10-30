@@ -181,9 +181,11 @@ enum TipTapParser {
         }
     }
 
-    private static func marks(of node: JSONValue, inherited: Set<RichMark>, inheritedHref: URL?)
-        -> (Set<RichMark>, URL?)
-    {
+    private static func marks(
+        of node: JSONValue,
+        inherited: Set<RichMark>,
+        inheritedHref: URL?
+    ) -> (Set<RichMark>, URL?) {
         var result = inherited
         var href = inheritedHref
         for mark in node["marks"]?.arrayValue ?? [] {

@@ -26,16 +26,31 @@ public enum TileTone: String, CaseIterable, Sendable {
         RGBColor(hex: isDark ? hex.darkContent : hex.lightContent)
     }
 
-    private var hex: (lightContainer: UInt32, lightContent: UInt32, darkContainer: UInt32, darkContent: UInt32) {
+    private var hex: ToneHexes {
         switch self {
-        case .brand: (0xEEE7FB, BrandPalette.violet, 0x2E2448, BrandPalette.violetDarkLink)
-        case .rose: (0xFBE6F1, 0xB4307D, 0x3A1A33, 0xFF8CC8)
-        case .amber: (0xFFF1D6, 0x8A5600, 0x3D2A2A, 0xFFD27A)
-        case .teal: (0xDDF4EF, 0x0A6B60, 0x133430, 0x6EE0CB)
-        case .neutral: (0xEEE9F4, 0x5B5169, 0x2A2434, 0xB3A9C4)
-        case .danger: (0xFCE8EC, 0xBE2E46, 0x3A1A24, 0xFF8A9B)
-        case .celebration: (0xFFF1D6, 0x8A5600, 0x3A2533, 0xFFD27A)
+        case .brand: ToneHexes(0xEEE7FB, BrandPalette.violet, 0x2E2448, BrandPalette.violetDarkLink)
+        case .rose: ToneHexes(0xFBE6F1, 0xB4307D, 0x3A1A33, 0xFF8CC8)
+        case .amber: ToneHexes(0xFFF1D6, 0x8A5600, 0x3D2A2A, 0xFFD27A)
+        case .teal: ToneHexes(0xDDF4EF, 0x0A6B60, 0x133430, 0x6EE0CB)
+        case .neutral: ToneHexes(0xEEE9F4, 0x5B5169, 0x2A2434, 0xB3A9C4)
+        case .danger: ToneHexes(0xFCE8EC, 0xBE2E46, 0x3A1A24, 0xFF8A9B)
+        case .celebration: ToneHexes(0xFFF1D6, 0x8A5600, 0x3A2533, 0xFFD27A)
         }
+    }
+}
+
+/// A tile tone's four colours, in the order the palette table lists them.
+private struct ToneHexes {
+    let lightContainer: UInt32
+    let lightContent: UInt32
+    let darkContainer: UInt32
+    let darkContent: UInt32
+
+    init(_ lightContainer: UInt32, _ lightContent: UInt32, _ darkContainer: UInt32, _ darkContent: UInt32) {
+        self.lightContainer = lightContainer
+        self.lightContent = lightContent
+        self.darkContainer = darkContainer
+        self.darkContent = darkContent
     }
 }
 

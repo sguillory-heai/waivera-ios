@@ -25,18 +25,12 @@ struct ChatRowBuilder {
         )
         let isCallLive = conversation.activeCall != nil
         let unread = isMarkedRead ? 0 : conversation.unreadCount
-        let spokenPreview: String
-        if isCallLive {
-            spokenPreview = text.callInProgress
-        } else if isSendFailed {
-            spokenPreview = text.notSent
-        } else if let typingLabel {
-            spokenPreview = typingLabel
-        } else if let sender {
-            spokenPreview = text.senderPreview(sender: sender, preview: preview.text)
-        } else {
-            spokenPreview = preview.text
-        }
+        let spokenPreview = spokenPreview(
+            isCallLive: isCallLive,
+            typingLabel: typingLabel,
+            sender: sender,
+            preview: preview.text
+        )
         let isChannel = conversation.kind == .channel
         let titleParts = ConversationPresentation.titleParts(conversation, text: text)
         return ChatRow(
@@ -69,5 +63,15 @@ struct ChatRowBuilder {
                 text: text
             )
         )
+    }
+
+    /// What VoiceOver reads for the preview line: a live call, a failed send or typing wins over
+    /// the last message.
+    private func spokenPreview(isCallLive: Bool, typingLabel: String?, sender: String?, preview: String) -> String {
+        if isCallLive { return text.callInProgress }
+        if isSendFailed { return text.notSent }
+        if let typingLabel { return typingLabel }
+        if let sender { return text.senderPreview(sender: sender, preview: preview) }
+        return preview
     }
 }

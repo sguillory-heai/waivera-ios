@@ -195,7 +195,7 @@ struct NotificationPermissionTests {
 
     @Test func settingsStatus() {
         #expect(NotificationPermissionPolicy.status(for: .notDetermined) == .notAsked)
-        #expect(NotificationPermissionPolicy.status(for: .authorized) == .on)
+        #expect(NotificationPermissionPolicy.status(for: .authorized) == .enabled)
         #expect(NotificationPermissionPolicy.status(for: .provisional) == .deliveredQuietly)
         #expect(NotificationPermissionPolicy.status(for: .denied) == .offInSystemSettings)
     }

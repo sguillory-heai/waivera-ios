@@ -18,9 +18,9 @@ public struct LegalLinks: Equatable, Sendable {
 
     /// `nil` when the build has no web base or it is not an https address, so the screen shows
     /// no dead links and never a cleartext page at the moment someone is about to sign in (the
-    /// AS-05 rule that `WaiveraConfiguration` applies to the same key, PS-02). Pages resolve against the base as a browser would (Android's
-    /// `HttpUrl.resolve`): a base ending in "/" keeps its path, otherwise its last segment is
-    /// replaced.
+    /// AS-05 rule that `WaiveraConfiguration` applies to the same key, PS-02). Pages resolve
+    /// against the base as a browser would (Android's `HttpUrl.resolve`): a base ending in "/"
+    /// keeps its path, otherwise its last segment is replaced.
     public static func from(webBase: URL?) -> LegalLinks? {
         guard let webBase, let scheme = webBase.scheme?.lowercased(), scheme == "https",
             webBase.host?.isEmpty == false

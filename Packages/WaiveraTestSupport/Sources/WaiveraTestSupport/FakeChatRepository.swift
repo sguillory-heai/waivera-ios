@@ -21,9 +21,9 @@ public actor FakeChatRepository {
     nonisolated let failedSendsCell = StateCell<Set<Int>>([])
     nonisolated let timelineCells = CellRegistry<Int, Resource<MessageTimeline>>(initial: Resource())
     nonisolated let threadCells = CellRegistry<Int, Resource<ThreadTimeline>>(initial: Resource())
-    public nonisolated let calls = CallLog()
+    nonisolated public let calls = CallLog()
     /// On-screen conversations, as the live engine tracks them for unread counts and alerts.
-    public nonisolated let presence: ChatPresence
+    nonisolated public let presence: ChatPresence
 
     let viewer: CurrentUser
     let clock: any WaiveraClock
@@ -58,8 +58,8 @@ public actor FakeChatRepository {
     // MARK: Controls
 
     public func setSendOutcome(_ outcome: SendOutcome) { sendOutcome = outcome }
-    public nonisolated func setTimelineControls(_ controls: FakeControls) { timelineControls.update { $0 = controls } }
-    public nonisolated func setInboxControls(_ controls: FakeControls) { inbox.setControls(controls) }
+    nonisolated public func setTimelineControls(_ controls: FakeControls) { timelineControls.update { $0 = controls } }
+    nonisolated public func setInboxControls(_ controls: FakeControls) { inbox.setControls(controls) }
     /// Reactions are hub-only; `false` behaves like a disconnected hub (gap G-01).
     public func setReactionsAvailable(_ available: Bool) { reactionsAvailable = available }
     /// `markRead` restores the unread count and throws this, as a failed server call would.
@@ -70,7 +70,7 @@ public actor FakeChatRepository {
         for id in loadedTimelines { publishTimeline(id) }
     }
 
-    public nonisolated func setTyping(_ userIds: [String], in conversationId: Int) {
+    nonisolated public func setTyping(_ userIds: [String], in conversationId: Int) {
         typingCell.update { $0[conversationId] = userIds.isEmpty ? nil : userIds }
     }
 
@@ -175,10 +175,10 @@ public actor FakeChatRepository {
 }
 
 extension FakeChatRepository: ConversationsRepository {
-    public nonisolated func conversations() -> AsyncStream<Resource<[Conversation]>> { inbox.stream() }
-    public nonisolated func typing() -> AsyncStream<[Int: [String]]> { typingCell.stream() }
-    public nonisolated func totalUnread() -> AsyncStream<Int> { unreadCell.stream() }
-    public nonisolated func failedSends() -> AsyncStream<Set<Int>> { failedSendsCell.stream() }
+    nonisolated public func conversations() -> AsyncStream<Resource<[Conversation]>> { inbox.stream() }
+    nonisolated public func typing() -> AsyncStream<[Int: [String]]> { typingCell.stream() }
+    nonisolated public func totalUnread() -> AsyncStream<Int> { unreadCell.stream() }
+    nonisolated public func failedSends() -> AsyncStream<Set<Int>> { failedSendsCell.stream() }
 
     public func refresh() async {
         calls.record("refreshInbox")

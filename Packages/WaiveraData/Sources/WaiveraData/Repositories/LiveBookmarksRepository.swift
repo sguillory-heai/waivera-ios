@@ -26,7 +26,7 @@ public actor LiveBookmarksRepository: BookmarksRepository {
         self.clock = clock
     }
 
-    public nonisolated func bookmarks() -> AsyncStream<Resource<BookmarkList>> { cell.stream() }
+    nonisolated public func bookmarks() -> AsyncStream<Resource<BookmarkList>> { cell.stream() }
 
     public func reset() {
         generation += 1

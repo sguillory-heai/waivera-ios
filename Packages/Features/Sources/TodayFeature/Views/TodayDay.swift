@@ -62,11 +62,11 @@
                 let inset = ControlSize.timelineBlockInset
                 ZStack(alignment: .topLeading) {
                     Palette.surfaceMuted
-                    ForEach(Array(day.ticks.enumerated()), id: \.offset) { _, at in
+                    ForEach(Array(day.ticks.enumerated()), id: \.offset) { _, tick in
                         Rectangle()
                             .fill(Palette.border)
                             .frame(width: Spacing.hairline, height: height)
-                            .offset(x: width * CGFloat(at))
+                            .offset(x: width * CGFloat(tick))
                     }
                     ForEach(day.blocks, id: \.eventId) { block in
                         let left = width * CGFloat(block.start)
@@ -117,8 +117,8 @@
                 )
             }
             let widths = texts.map { TodayMeasure.width(of: $0, style: .axisLabel, size: dynamicTypeSize) }
-            let xs = AxisLabelPlacement.place(
-                centers: day.labels.map(\.at),
+            let offsets = AxisLabelPlacement.place(
+                centers: day.labels.map(\.position),
                 widths: widths.map(Double.init),
                 total: Double(width),
                 gap: Double(Spacing.small)
@@ -126,7 +126,7 @@
             ZStack(alignment: .topLeading) {
                 Text(verbatim: " ").waiveraTextStyle(.axisLabel).hidden()
                 ForEach(Array(texts.enumerated()), id: \.offset) { index, text in
-                    if width > 0, let x = xs[index] {
+                    if width > 0, let x = offsets[index] {
                         Text(text)
                             .waiveraTextStyle(.axisLabel)
                             .foregroundStyle(Palette.textSecondary)

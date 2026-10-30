@@ -74,7 +74,7 @@
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(title))
             .accessibilityHint(subtitle.map { Text($0) } ?? Text(verbatim: ""))
-            .accessibilityValue(Text(isOn ? SettingsStrings.on : SettingsStrings.off))
+            .accessibilityValue(Text(isOn ? SettingsStrings.switchOn : SettingsStrings.switchOff))
             .accessibilityAddTraits(.isToggle)
             .accessibilityAction { flip() }
             .accessibilityRespondsToUserInteraction(isEnabled)

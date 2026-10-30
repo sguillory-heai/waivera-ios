@@ -139,8 +139,11 @@
                 trailing: { EmptyView() },
                 below: {
                     HStack(spacing: Spacing.small) {
-                        WaiveraButton(TodayStrings.text("today.invitation.decline"), variant: .tonal, fillsWidth: true)
-                        {
+                        WaiveraButton(
+                            TodayStrings.text("today.invitation.decline"),
+                            variant: .tonal,
+                            fillsWidth: true
+                        ) {
                             onRespond(item.eventId, false)
                         }
                         .accessibilityLabel(Text(TodayStrings.format("today.invitation.decline.label", title)))

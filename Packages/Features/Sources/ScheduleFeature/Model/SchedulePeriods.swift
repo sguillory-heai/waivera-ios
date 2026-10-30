@@ -65,9 +65,11 @@ public enum SchedulePeriods {
     }
 
     /// The fetched range: the whole rendered grid, so month spill days get their dots (07 §2 fix).
-    public static func fetchInterval(_ view: CalendarPeriod, containing date: CalendarDate, in zone: TimeZone)
-        -> DateInterval
-    {
+    public static func fetchInterval(
+        _ view: CalendarPeriod,
+        containing date: CalendarDate,
+        in zone: TimeZone
+    ) -> DateInterval {
         view.fetchInterval(containing: date, in: zone)
     }
 

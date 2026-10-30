@@ -156,7 +156,6 @@
             ChatListState(content: content, rows: [], connection: connection)
         }
 
-        // swiftlint:disable:next function_parameter_count
         private static func row(
             id: Int,
             title: String,

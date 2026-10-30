@@ -55,22 +55,26 @@ enum TicketCards {
     static func date(preferred: String?, iso: String?) -> TicketDate {
         let label = preferred.flatMap { $0.isEmpty || $0 == "--" ? nil : $0 }
         guard let value = label ?? iso.flatMap({ $0.isEmpty ? nil : $0 }) else { return .notSet }
-        let usParts = value.split(separator: "/")
-        if usParts.count == 3, value.count == 10, let month = Int(usParts[0]), let day = Int(usParts[1]),
-            let year = Int(usParts[2])
-        {
-            return validDay(year: year, month: month, day: day).map(TicketDate.onDate) ?? .raw(value)
+        if let usDate = dateNumbers(value, separator: "/") {
+            return validDay(year: usDate[2], month: usDate[0], day: usDate[1]).map(TicketDate.onDate) ?? .raw(value)
         }
-        let isoParts = value.split(separator: "-")
-        if value.count == 10, isoParts.count == 3, let year = Int(isoParts[0]), let month = Int(isoParts[1]),
-            let day = Int(isoParts[2]), let valid = validDay(year: year, month: month, day: day)
-        {
+        let isoDate = dateNumbers(value, separator: "-")
+        if let isoDate, let valid = validDay(year: isoDate[0], month: isoDate[1], day: isoDate[2]) {
             return .onDate(valid)
         }
         if let instant = WaiveraInstant.parse(value), let utc = TimeZone(identifier: "UTC") {
             return .onDate(ChatTime.day(instant, zone: utc))
         }
         return .raw(value)
+    }
+
+    /// The three numbers of a 10-character date split on `separator`, in written order; nil
+    /// when the value has another shape or any part is not a number.
+    private static func dateNumbers(_ value: String, separator: Character) -> [Int]? {
+        let parts = value.split(separator: separator)
+        guard value.count == 10, parts.count == 3 else { return nil }
+        let numbers = parts.compactMap { Int($0) }
+        return numbers.count == 3 ? numbers : nil
     }
 
     private static func validDay(year: Int, month: Int, day: Int) -> ChatDay? {

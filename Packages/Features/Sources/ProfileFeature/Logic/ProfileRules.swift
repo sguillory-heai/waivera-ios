@@ -171,10 +171,9 @@ struct ReconnectDetector: Sendable {
 @MainActor
 func onReconnect(_ realtime: any RealtimeStatusRepository, _ action: @MainActor () async -> Void) async {
     var detector = ReconnectDetector()
-    for await status in realtime.statuses() {
-        if detector.isReconnect(RealtimeStatusSnapshot(isConnected: status.isConnected, epoch: status.epoch)) {
-            await action()
-        }
+    for await status in realtime.statuses()
+    where detector.isReconnect(RealtimeStatusSnapshot(isConnected: status.isConnected, epoch: status.epoch)) {
+        await action()
     }
 }
 

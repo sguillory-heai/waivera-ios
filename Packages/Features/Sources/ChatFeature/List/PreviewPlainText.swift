@@ -41,14 +41,17 @@ enum PreviewPlainText {
             }
             return nil
         case .string(let raw):
-            let inner = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard inner.hasPrefix("{"), inner.contains("\"doc\""), let data = inner.data(using: .utf8),
-                let decoded = try? JSONDecoder().decode(JSONValue.self, from: data)
-            else { return nil }
-            return findDocument(decoded, depth: depth + 1)
+            return encodedDocument(raw).flatMap { findDocument($0, depth: depth + 1) }
         default:
             return nil
         }
+    }
+
+    /// A document encoded as a JSON string inside the payload.
+    private static func encodedDocument(_ raw: String) -> JSONValue? {
+        let inner = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard inner.hasPrefix("{"), inner.contains("\"doc\""), let data = inner.data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode(JSONValue.self, from: data)
     }
 
     private static let entities = [
@@ -71,10 +74,12 @@ enum PreviewPlainText {
 
 /// Strips the `{[TIMESTAMP- 08/10/2026 02:20:12]}` token from system text (03 §16).
 enum SystemText {
+    private static let timestampToken =
+        #"\s*-?\s*\{\[\s*TIMESTAMP\s*[-·:]\s*\d{1,2}/\d{1,2}/\d{4}\s+\d{1,2}:\d{2}:\d{2}\s*\]\}\s*"#
+
     static func clean(_ value: String) -> String {
         let withoutToken = value.replacingOccurrences(
-            of:
-                "\\s*-?\\s*\\{\\[\\s*TIMESTAMP\\s*[-·:]\\s*\\d{1,2}/\\d{1,2}/\\d{4}\\s+\\d{1,2}:\\d{2}:\\d{2}\\s*\\]\\}\\s*",
+            of: timestampToken,
             with: " ",
             options: [.regularExpression, .caseInsensitive]
         )

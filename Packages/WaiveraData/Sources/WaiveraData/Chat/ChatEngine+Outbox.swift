@@ -9,9 +9,12 @@ extension ChatEngine {
     /// Longest wait between tries while the device is offline (IF-04).
     static let maxOfflineBackoff: Duration = .seconds(60)
 
-    func enqueue(text: String, attachment: Attachment?, conversationId: Int, parentMessageId: Int?) async
-        -> OutgoingMessage?
-    {
+    func enqueue(
+        text: String,
+        attachment: Attachment?,
+        conversationId: Int,
+        parentMessageId: Int?
+    ) async -> OutgoingMessage? {
         guard let viewer else { return nil }
         let outgoing = RichText.outgoingDocument(for: text)
         guard outgoing != nil || attachment != nil else { return nil }
@@ -36,9 +39,12 @@ extension ChatEngine {
         return entry
     }
 
-    public func sendAndWait(text: String, conversationId: Int, threadRootMessageId: Int?, timeout: Duration) async
-        -> OutboxOutcome
-    {
+    public func sendAndWait(
+        text: String,
+        conversationId: Int,
+        threadRootMessageId: Int?,
+        timeout: Duration
+    ) async -> OutboxOutcome {
         await throttle.stop(conversationId: conversationId)
         guard
             let entry = await enqueue(
@@ -211,6 +217,7 @@ extension ChatEngine {
             guard generation == current, var entry = outbox[clientMessageId] else { return }
             outboxTasks[clientMessageId] = nil
             let failure = WaiveraError.from(error)
+            let onlineAttempts = entry.attempts - offlineTries[clientMessageId, default: 0]
             if Self.isWaitingForNetwork(failure) {
                 // Offline is not a failure the user can act on: keep it queued and keep trying,
                 // backing off, until the network or a reconnect resumes it (IF-04).
@@ -219,13 +226,10 @@ extension ChatEngine {
                 entry.state = .queued(attempt: entry.attempts)
                 outbox[clientMessageId] = entry
                 startAttempt(clientMessageId, after: Self.offlineBackoff(afterTries: tries))
-            } else if failure.isTransient,
-                entry.attempts - offlineTries[clientMessageId, default: 0] < Self.maxAutomaticAttempts
-            {
-                let online = entry.attempts - offlineTries[clientMessageId, default: 0]
+            } else if failure.isTransient, onlineAttempts < Self.maxAutomaticAttempts {
                 entry.state = .queued(attempt: entry.attempts)
                 outbox[clientMessageId] = entry
-                startAttempt(clientMessageId, after: .seconds(1 << (online - 1)))
+                startAttempt(clientMessageId, after: .seconds(1 << (onlineAttempts - 1)))
             } else {
                 entry.state = .failed(failure)
                 outbox[clientMessageId] = entry

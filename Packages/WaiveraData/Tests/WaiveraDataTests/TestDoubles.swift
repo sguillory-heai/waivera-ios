@@ -25,7 +25,7 @@ actor RoutingTransport: HTTPTransport {
             Reply(status: status, body: (try? Fixture.data(name)) ?? Data())
         }
         static func status(_ status: Int, _ body: String = "") -> Reply { Reply(status: status, body: Data(body.utf8)) }
-        static let ok = Reply(status: 200, body: Data())
+        static let emptyOK = Reply(status: 200, body: Data())
     }
 
     private var standing: [String: Reply] = [:]

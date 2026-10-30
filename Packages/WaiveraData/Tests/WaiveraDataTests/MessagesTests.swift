@@ -21,7 +21,7 @@ struct MessagesTests {
     private func prepared() async -> ChatHarness {
         let harness = ChatHarness()
         await harness.transport.set("PUT api/chat/7/read-through", .fixture("rest-chat-read-through"))
-        await harness.transport.set("POST api/chat/7/mark-as-read", .ok)
+        await harness.transport.set("POST api/chat/7/mark-as-read", .emptyOK)
         await harness.begin()
         return harness
     }

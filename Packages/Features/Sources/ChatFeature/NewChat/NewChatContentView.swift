@@ -182,7 +182,7 @@
         }
 
         var body: some View {
-            Expand(isExpanded: count > 0) {
+            Expand(isExpanded: count >= 1) {
                 SwapView(shown, axis: .vertical, forward: rising) { value in
                     SelectedCountText(count: value)
                 }

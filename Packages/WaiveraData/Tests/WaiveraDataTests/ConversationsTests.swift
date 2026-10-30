@@ -101,7 +101,7 @@ struct ConversationsTests {
         await harness.transport.set(allRoute, .fixture("rest-chat-get-all"))
         await harness.transport.set("GET api/chat/7/messages/pagination", .fixture("rest-chat-get-messages-pagination"))
         await harness.transport.set("PUT api/chat/7/read-through", .fixture("rest-chat-read-through"))
-        await harness.transport.set("POST api/chat/7/mark-as-read", .ok)
+        await harness.transport.set("POST api/chat/7/mark-as-read", .emptyOK)
         await harness.begin()
         await harness.engine.refresh()
         await harness.engine.handle(.message(message(9401, in: 41, author: viewerId, text: "mine")))

@@ -13,9 +13,9 @@ struct ChatListRowRulesTests {
     let text = EnglishText()
 
     static let group = Sample.conversation(
-        #"{"id": 63, "participants": [\#(Sample.me), \#(Sample.priya), \#(Sample.jordan), \#(Sample.sam)]}"#
+        #"{"id": 63, "participants": [\#(Sample.viewerUser), \#(Sample.priya), \#(Sample.jordan), \#(Sample.sam)]}"#
     )
-    static let direct = Sample.conversation(#"{"id": 7, "participants": [\#(Sample.me), \#(Sample.priya)]}"#)
+    static let direct = Sample.conversation(#"{"id": 7, "participants": [\#(Sample.viewerUser), \#(Sample.priya)]}"#)
 
     private func row(_ conversation: Conversation, typing: [String] = [], failed: Bool = false) -> ChatRow {
         ChatRowBuilder(
@@ -65,7 +65,8 @@ struct ChatListRowRulesTests {
     @Test("An emoji or accented name splits on characters, not UTF-16 units")
     func typingSplitByCharacter() {
         let conversation = Sample.conversation(
-            #"{"id": 9, "participants": [\#(Sample.me), {"id": "usr_sun", "firstName": "🌻 José", "lastName": "Núñez"}]}"#
+            #"{"id": 9, "participants": [\#(Sample.viewerUser), "#
+                + #"{"id": "usr_sun", "firstName": "🌻 José", "lastName": "Núñez"}]}"#
         )
         let typing = row(conversation, typing: ["usr_sun"])
         #expect(typing.typingParts?.names == "🌻 José Núñez")
