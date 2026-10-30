@@ -4,18 +4,34 @@ import WaiveraDesign
 import WaiveraRouting
 
 /// Bottom tabs Today / Chat / Schedule, one `NavigationStack` per tab bound to the router.
+///
+/// The tabs keep the system `TabView` for its per-tab state, but its bar is hidden and the
+/// shell draws `WaiveraTabBar` (the sliding pill and the icon pop, Android
+/// `WaiveraNavigationBar`). As on Android the bar shows on tab roots only: a pushed screen gets
+/// the full height and the bar slides away under it.
 struct MainTabView: View {
     @Bindable var model: AppModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         TabView(selection: selection) {
             ForEach(AppTab.allCases, id: \.self) { tab in
                 TabStack(model: model, tab: tab)
-                    .tabItem { Label(tab.title, systemImage: tab.systemImage) }
                     .tag(tab)
             }
         }
-        .modifier(LiquidGlassTabBar())
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if showsTabBar {
+                WaiveraTabBar(
+                    selected: model.navigation.selectedTab,
+                    unreadTotal: model.unreadTotal,
+                    onSelect: { model.select($0) }
+                )
+                .transition(Motion.transition(edge: .bottom, reduceMotion: reduceMotion))
+            }
+        }
+        .animation(Motion.animation(.layout, reduceMotion: reduceMotion), value: showsTabBar)
+        .environment(\.waiveraAccountMenu, accountMenu)
         .modifier(ShellBanners(model: model))
         .sheet(item: sheet) { presented in
             switch presented {
@@ -28,6 +44,19 @@ struct MainTabView: View {
                 }
             }
         }
+        .sheet(isPresented: $model.isAccountMenuPresented) {
+            AccountMenuSheet(accountName: model.userDisplayName) { model.openFromAccountMenu($0) }
+                .waiveraSheetPresentation()
+        }
+    }
+
+    /// Tab roots only, as on Android.
+    private var showsTabBar: Bool {
+        model.navigation.path(for: model.navigation.selectedTab).isEmpty
+    }
+
+    private var accountMenu: AccountMenuEntry {
+        AccountMenuEntry(name: model.userDisplayName) { model.presentAccountMenu() }
     }
 
     private var selection: Binding<AppTab> {
@@ -46,26 +75,17 @@ private struct TabStack: View {
     var body: some View {
         NavigationStack(path: path) {
             TabRootView(model: model, tab: tab)
+                .toolbar(.hidden, for: .tabBar)
                 .navigationDestination(for: AppRoute.self) { route in
+                    // Every screen hides the system bar; the shell draws its own on tab roots.
                     RouteDestinationView(model: model, route: route)
+                        .toolbar(.hidden, for: .tabBar)
                 }
         }
     }
 
     private var path: Binding<[AppRoute]> {
         Binding(get: { model.navigation.path(for: tab) }, set: { model.navigation.setPath($0, for: tab) })
-    }
-}
-
-/// iOS 26 Liquid Glass: the tab bar already adopts glass when built with the iOS 26 SDK; this
-/// adds the minimize-on-scroll behaviour. Older systems keep the standard tab bar.
-private struct LiquidGlassTabBar: ViewModifier {
-    func body(content: Content) -> some View {
-        if #available(iOS 26, *) {
-            content.tabBarMinimizeBehavior(.onScrollDown)
-        } else {
-            content
-        }
     }
 }
 

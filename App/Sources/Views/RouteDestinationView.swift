@@ -30,7 +30,14 @@ struct RouteDestinationView: View {
                         .thread(rootMessageID: rootID, conversationID: conversationID, targetMessageID: messageID)
                     )
                 },
-                onOpenPerson: { model.push(.person(userID: $0)) }
+                onOpenPerson: { model.push(.person(userID: $0)) },
+                onOpenMembers: { model.push(.groupMembers(conversationID: conversationID)) }
+            )
+        case .groupMembers(let conversationID):
+            GroupMembersView(
+                channelID: conversationID,
+                onOpenPerson: { model.push(.person(userID: $0)) },
+                onOpenConversation: { model.push(.conversation(conversationID: $0, targetMessageID: nil)) }
             )
         case .thread(let rootMessageID, let conversationID, let targetMessageID):
             ThreadView(
@@ -69,7 +76,8 @@ struct RouteDestinationView: View {
             SettingsView(
                 onOpenNotifications: { model.push(.notificationSettings) },
                 onOpenAppearance: { model.push(.appearanceSettings) },
-                onOpenAccount: { model.push(.accountSettings) }
+                onOpenChangePassword: { model.push(.changePassword) },
+                onSignOut: { model.signOut() }
             )
         case .notificationSettings:
             NotificationSettingsView(
@@ -79,11 +87,6 @@ struct RouteDestinationView: View {
             )
         case .appearanceSettings:
             AppearanceSettingsView()
-        case .accountSettings:
-            AccountSettingsView(
-                onChangePassword: { model.push(.changePassword) },
-                onSignOut: { model.signOut() }
-            )
         case .changePassword:
             PasswordChangeView(onDone: { model.pop() })
         }
