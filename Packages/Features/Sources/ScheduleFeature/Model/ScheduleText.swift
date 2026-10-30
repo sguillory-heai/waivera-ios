@@ -57,6 +57,8 @@ final class ScheduleText {
     func monthYear(_ date: CalendarDate) -> String { format(date, pattern: "MMMM yyyy") }
     /// "Tue, October 27".
     func weekdayMonthDay(_ date: CalendarDate) -> String { format(date, pattern: "EEE, MMMM d") }
+    /// "Sun, Nov 1": the Day title and agenda heading at the largest text sizes (UI10-09).
+    func weekdayShortMonthDay(_ date: CalendarDate) -> String { format(date, pattern: "EEE, MMM d") }
     /// "October 25".
     func monthDay(_ date: CalendarDate) -> String { format(date, pattern: "MMMM d") }
     /// "Sunday, November 1": the agenda heading and a cell's spoken name.
@@ -122,6 +124,12 @@ final class ScheduleText {
 
 /// Text rules that do not depend on a zone.
 enum ScheduleCopy {
+    /// The trimmed value, or nil when it is missing or blank.
+    static func nonBlank(_ raw: String?) -> String? {
+        guard let value = raw?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else { return nil }
+        return value
+    }
+
     /// "APPROVED" → "Approved", "CANCELLATION_PENDING" → "Cancellation pending".
     static func sentenceCase(_ raw: String?) -> String? {
         guard let words = raw?.trimmingCharacters(in: .whitespaces), !words.isEmpty else { return nil }

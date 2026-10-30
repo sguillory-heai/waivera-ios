@@ -6,7 +6,7 @@
         let details: EventDetailsUI
 
         var body: some View {
-            VStack(alignment: .leading, spacing: Spacing.small) {
+            SurfaceCard {
                 HStack(alignment: .firstTextBaseline, spacing: Spacing.small) {
                     if let color = details.ownerColor {
                         Circle()
@@ -15,13 +15,13 @@
                             .accessibilityHidden(true)
                     }
                     Text(details.title)
-                        .font(WaiveraFont.screenTitle)
+                        .waiveraTextStyle(.headlineSmall)
                         .foregroundStyle(Palette.text)
                         .accessibilityAddTraits(.isHeader)
                 }
                 if let notice = details.zoneNotice {
                     Label(notice, systemImage: "globe")
-                        .font(WaiveraFont.caption)
+                        .waiveraTextStyle(.labelMedium)
                         .foregroundStyle(Palette.textSecondary)
                 }
             }

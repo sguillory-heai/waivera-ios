@@ -115,6 +115,22 @@ public enum ProfileText {
         return fallback?.nonBlank ?? person?.email?.nonBlank
     }
 
+    /// Who your own celebration greets: the profile's first name, the session's, else the first
+    /// word of the shown name.
+    public static func firstName(profile: EmployeeProfile?, user: CurrentUser?, shownName: String?) -> String? {
+        profile?.firstName?.nonBlank ?? user?.firstName?.nonBlank ?? firstName(of: shownName)
+    }
+
+    /// The first word of a name, for a celebration note right under the full name.
+    public static func firstName(of name: String?) -> String? {
+        name?.nonBlank?.split(whereSeparator: \.isWhitespace).first.map(String.init)
+    }
+
+    /// Which emoji tile a celebration takes: the cake for a birthday alone, else the party.
+    public static func celebrationEmojiKind(_ kind: Celebration.Kind) -> Celebration.Kind {
+        kind == .birthday ? .birthday : .anniversary
+    }
+
     /// The first position doubles as the job title under the name.
     public static func jobTitle(_ profile: EmployeeProfile?) -> String? {
         profile?.positions.first?.nonBlank

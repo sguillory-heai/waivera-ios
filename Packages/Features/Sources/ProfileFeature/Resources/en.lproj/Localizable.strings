@@ -112,3 +112,34 @@
 "profile.bookmarks.search.photo" = "photo";
 "profile.bookmarks.search.file" = "file";
 "profile.count.filtered %lld %lld" = "%1$lld of %2$lld shown";
+
+/* Hero celebration notes: the emoji sits in its own tile, so the sentence carries none. */
+"profile.celebration.emoji.birthday" = "🎂";
+"profile.celebration.emoji.anniversary" = "🎉";
+"profile.celebration.teammate" = "Teammate";
+"profile.celebration.hero.birthday %@" = "Happy birthday, %@!";
+"profile.celebration.hero.anniversary %@ %lld" = "Happy %2$lld-year work anniversary, %1$@!";
+"profile.celebration.hero.both %@ %lld" = "Happy birthday and %2$lld-year work anniversary, %1$@!";
+"profile.celebration.self.both %@" = "Happy birthday and work anniversary, %@!";
+"profile.celebration.self.unnamed.birthday" = "Happy birthday!";
+"profile.celebration.self.unnamed.anniversary %lld" = "Happy %lld-year work anniversary!";
+"profile.celebration.self.unnamed.both" = "Happy birthday and work anniversary!";
+
+/* Person actions */
+"profile.person.sendWishes" = "Send wishes";
+"profile.person.sendWishes.a11y %@" = "Send wishes to %@";
+"profile.person.openingChat" = "Opening chat…";
+
+/* Bookmark filters and cards */
+"profile.bookmarks.filter.label" = "Show";
+"profile.bookmarks.filter.all" = "All";
+"profile.bookmarks.filter.messages" = "Messages";
+"profile.bookmarks.filter.threads" = "Threads";
+"profile.bookmarks.threadRoot" = "Thread";
+"profile.bookmarks.search.thread" = "thread";
+"profile.bookmarks.empty.threads.title" = "No saved threads yet";
+"profile.bookmarks.empty.threads.message" = "Bookmark a message that has replies, or a reply itself, and it shows up here.";
+"profile.bookmarks.empty.messages.title" = "No saved messages here";
+"profile.bookmarks.empty.messages.message" = "Everything you’ve saved is part of a thread. You’ll find it under Threads.";
+"profile.bookmarks.showAll" = "Show all bookmarks";
+"profile.bookmarks.removing" = "Removing bookmark";

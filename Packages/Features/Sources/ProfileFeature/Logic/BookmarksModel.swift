@@ -19,26 +19,56 @@ public struct BookmarkRow: Identifiable, Hashable, Sendable {
     /// Where a thread reply opens: the thread root, never the direct parent (11-pitfalls #21).
     public var threadRootID: Int?
     public var author: String?
+    /// Whose avatar leads the card.
+    public var authorID: String? = nil
     public var createdAt: Date?
     public var preview: BookmarkPreview
+    /// A top-level message that has replies: it opens as itself, and files under Threads.
+    public var isThreadRoot = false
 
     public var isThreadReply: Bool { threadRootID != nil }
+    /// Threads holds replies and messages with replies; Messages holds everything else.
+    public var isInThread: Bool { isThreadReply || isThreadRoot }
+}
+
+/// The bookmark list's filter chips.
+public enum BookmarkFilter: CaseIterable, Hashable, Sendable {
+    case all, messages, threads
+
+    public func includes(_ row: BookmarkRow) -> Bool {
+        switch self {
+        case .all: true
+        case .messages: !row.isInThread
+        case .threads: row.isInThread
+        }
+    }
+}
+
+/// Why a list with saved bookmarks shows none.
+public enum BookmarksEmptyReason: Hashable, Sendable {
+    /// The search hides them all.
+    case noMatch
+    /// The filter holds none of them; "Show all" brings them back.
+    case noneInFilter(BookmarkFilter)
 }
 
 /// Localised words a search can match besides the message itself ("thread reply", "photo").
 public struct BookmarkSearchWords: Hashable, Sendable {
     public var threadReply: String
+    public var thread: String
     public var message: String
     public var photo: String
     public var file: String
 
     public init(
         threadReply: String = "thread reply",
+        thread: String = "thread",
         message: String = "message",
         photo: String = "photo",
         file: String = "file"
     ) {
         self.threadReply = threadReply
+        self.thread = thread
         self.message = message
         self.photo = photo
         self.file = file
@@ -73,8 +103,10 @@ public enum BookmarkRules {
             conversationID: message.conversationId,
             threadRootID: threadRoot,
             author: message.author?.fullName,
+            authorID: message.authorId ?? message.author?.id,
             createdAt: message.createdAt,
-            preview: preview(message)
+            preview: preview(message),
+            isThreadRoot: threadRoot == nil && message.threadReplyCount > 0
         )
     }
 
@@ -90,7 +122,10 @@ public enum BookmarkRules {
     public static func matches(_ row: BookmarkRow, query: String, words: BookmarkSearchWords) -> Bool {
         let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !needle.isEmpty else { return true }
-        var haystack = [row.author ?? "", row.isThreadReply ? words.threadReply : words.message]
+        var haystack = [
+            row.author ?? "",
+            row.isThreadReply ? words.threadReply : row.isThreadRoot ? words.thread : words.message,
+        ]
         switch row.preview {
         case .text(let text): haystack.append(text)
         case .photo: haystack.append(words.photo)
@@ -122,6 +157,10 @@ public final class BookmarksModel {
         didSet { if searchWords != oldValue { derive() } }
     }
 
+    public var filter = BookmarkFilter.all {
+        didSet { if filter != oldValue { derive() } }
+    }
+
     public private(set) var rows: [BookmarkRow] = []
     public private(set) var totalCount = 0
     public private(set) var phase = ListPhase.loading
@@ -131,6 +170,16 @@ public final class BookmarksModel {
     public private(set) var usedFallback = false
     /// Undo could not save the message again.
     public private(set) var restoreError: WaiveraError?
+    /// Whether the shown count last went up (or held), so the count line rolls the right way.
+    public private(set) var countRose = true
+    /// Set while nothing shows although bookmarks are saved; `nil` otherwise.
+    public private(set) var emptyReason: BookmarksEmptyReason?
+
+    /// The search or a filter narrows the list, so the count reads "x of y".
+    public var isFiltered: Bool { query.nonBlank != nil || filter != .all }
+
+    /// The chips show once something is saved, and stay while a filter is on.
+    public var showsFilterChips: Bool { filter != .all || totalCount > 0 }
 
     @ObservationIgnored private let bookmarks: any BookmarksRepository
     @ObservationIgnored private let realtime: any RealtimeStatusRepository
@@ -217,8 +266,19 @@ public final class BookmarksModel {
 
     private func derive() {
         let all = BookmarkRules.rows(resource.value?.bookmarks ?? []).filter { !hidden.contains($0.messageID) }
-        let shown = all.filter { BookmarkRules.matches($0, query: query, words: searchWords) }
+        let inFilter = all.filter(filter.includes)
+        let shown = inFilter.filter { BookmarkRules.matches($0, query: query, words: searchWords) }
+        if shown.count != rows.count { countRose = shown.count > rows.count }
         rows = shown
+        emptyReason =
+            if all.isEmpty || !shown.isEmpty {
+                nil
+            } else if query.nonBlank != nil {
+                // A search miss wins over an empty chip: clearing the search is the way back.
+                .noMatch
+            } else {
+                .noneInFilter(filter)
+            }
         totalCount = all.count
         usedFallback = resource.value?.usedFallback ?? false
         refreshError = resource.value == nil ? nil : resource.error

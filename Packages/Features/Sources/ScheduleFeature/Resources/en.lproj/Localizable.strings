@@ -39,6 +39,19 @@
 "schedule.withDetail" = "%@ · %@";
 "schedule.allDay" = "All day";
 "schedule.until" = "Until %@";
+"schedule.untilKicker" = "Until";
+"schedule.owner" = "Organized by %@";
+"schedule.now" = "Now · %@";
+"schedule.now.a11y" = "Now, %@";
+"schedule.ended" = "Ended";
+"schedule.sendWishes" = "Send wishes";
+"schedule.sendWishes.a11y" = "Send wishes to %@";
+"schedule.openingChat" = "Opening chat…";
+"schedule.wishesFailed" = "We couldn't open the chat. Try again in a moment.";
+"schedule.jumpToToday" = "Jump to today";
+"schedule.refresh" = "Refresh";
+"schedule.feedFailed.title" = "Couldn't refresh";
+"schedule.accountMenu" = "Account";
 "schedule.dayTime" = "%@ %@";
 "schedule.dateTime" = "%@, %@";
 "schedule.openEvent" = "Opens the event details.";
@@ -48,6 +61,9 @@
 
 /* Celebrations (07 §4) */
 "schedule.celebration.nameFallback" = "This employee";
+"schedule.celebration.emoji.birthday" = "🎂";
+"schedule.celebration.emoji.anniversary" = "🎉";
+"schedule.celebration.emoji.both" = "🎉";
 "schedule.celebration.compact.both" = "Birthday + %d-yr anniversary";
 "schedule.celebration.compact.birthday" = "Birthday today";
 "schedule.celebration.compact.anniversary" = "%d-year anniversary";
@@ -87,8 +103,9 @@
 "schedule.response.tentative" = "You said maybe.";
 "schedule.response.saving" = "Saving your response…";
 "schedule.response.started" = "This event has started, so the invitation can no longer be answered.";
-"schedule.accept" = "Accept";
-"schedule.decline" = "Decline";
+"schedule.accept" = "Going";
+"schedule.decline" = "Not going";
+"schedule.response.failed.title" = "Response not saved";
 "schedule.response.failed" = "Response not saved. %@";
 "schedule.undo.accepted" = "You accepted the invitation";
 "schedule.undo.declined" = "You declined the invitation";

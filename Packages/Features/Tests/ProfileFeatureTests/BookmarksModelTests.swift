@@ -183,3 +183,87 @@ struct BookmarksModelTests {
         }
     }
 }
+
+extension BookmarkRulesTests {
+    @Test func threadRootsAndRepliesFileUnderThreads() {
+        var root = message(1, text: "Rota", author: "Priya Raman")
+        root.threadReplyCount = 3
+        root.authorId = "usr_priya"
+        let rootRow = BookmarkRules.row(root)
+        #expect(rootRow.isThreadRoot)
+        #expect(rootRow.isInThread)
+        #expect(rootRow.authorID == "usr_priya")
+        let reply = BookmarkRules.row(message(2, parent: 1, author: "Jordan Lee"))
+        #expect(!reply.isThreadRoot)
+        #expect(reply.isInThread)
+        #expect(reply.authorID == "u-Jordan Lee")
+        let plain = BookmarkRules.row(message(3))
+        #expect(!plain.isInThread)
+        #expect(BookmarkFilter.messages.includes(plain))
+        #expect(!BookmarkFilter.messages.includes(rootRow))
+        #expect(BookmarkFilter.threads.includes(reply))
+        #expect(BookmarkFilter.all.includes(plain))
+        #expect(BookmarkRules.matches(rootRow, query: "thread", words: BookmarkSearchWords()))
+    }
+}
+
+extension BookmarksModelTests {
+    @Test func filtersNarrowTheListAndSayWhyItIsEmpty() async {
+        var root = message(1, text: "Rota")
+        root.threadReplyCount = 2
+        let (model, _, _) = await model([
+            Bookmark(message: root),
+            Bookmark(message: message(2, text: "Parking")),
+        ])
+        await whileRunning(model.run) {
+            await eventually { model.phase == .content }
+            #expect(model.showsFilterChips)
+            #expect(!model.isFiltered)
+            model.filter = .messages
+            #expect(model.rows.map(\.messageID) == [2])
+            model.filter = .all
+            #expect(model.emptyReason == nil)
+            model.filter = .threads
+            #expect(model.rows.map(\.messageID) == [1])
+            #expect(!model.countRose)
+            #expect(model.isFiltered)
+            #expect(model.totalCount == 2)
+            model.query = "parking"
+            #expect(model.phase == .noMatches)
+            // A search miss wins over the chip.
+            #expect(model.emptyReason == .noMatch)
+            model.filter = .all
+            #expect(model.emptyReason == nil)
+            #expect(model.rows.map(\.messageID) == [2])
+            #expect(model.countRose)
+            model.query = ""
+            model.filter = .messages
+            #expect(model.rows.map(\.messageID) == [2])
+            model.filter = .threads
+            #expect(model.rows.map(\.messageID) == [1])
+        }
+    }
+
+    @Test func chipsHideWithNothingSavedUnlessAFilterIsOn() async {
+        let (model, _, _) = await model([])
+        await whileRunning(model.run) {
+            await eventually { model.phase == .empty }
+            #expect(!model.showsFilterChips)
+            #expect(model.emptyReason == nil)
+            model.filter = .messages
+            #expect(model.showsFilterChips)
+        }
+    }
+
+    @Test func anEmptyChipOffersShowAll() async {
+        let (model, _, _) = await model([Bookmark(message: message(1, text: "Parking"))])
+        await whileRunning(model.run) {
+            await eventually { model.phase == .content }
+            model.filter = .threads
+            #expect(model.phase == .noMatches)
+            #expect(model.emptyReason == .noneInFilter(.threads))
+            model.filter = .all
+            #expect(model.phase == .content)
+        }
+    }
+}

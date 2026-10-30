@@ -44,14 +44,24 @@ public final class ScheduleModel {
     private var feedSnapshot: (key: FeedKey, resource: Resource<CalendarFeed>)?
     private var milestoneResource = Resource<MilestoneIndex>()
     private var isOffline = false
+    private var myUserId: String?
+    /// The celebrant whose chat "Send wishes" is opening; one at a time.
+    private var openingWishesFor: String?
+    /// The chat "Send wishes" opened, for the view to navigate to once.
+    public private(set) var wishesRequest: WishesRequest?
+    /// "Send wishes" could not open the chat; the view shows a snackbar with Retry.
+    public private(set) var wishesFailure: WishesFailure?
 
     @ObservationIgnored private var milestoneCalendar = MilestoneCalendar.empty
     @ObservationIgnored private var text: ScheduleText
     @ObservationIgnored private var refreshTask: Task<Void, Never>?
+    @ObservationIgnored private var wishesTask: Task<Void, Never>?
+    @ObservationIgnored private var requestCount = 0
 
     private let calendar: any CalendarRepository
     private let session: any SessionRepository
     private let realtime: any RealtimeStatusRepository
+    private let conversations: (any ConversationsRepository)?
     private let clock: any WaiveraClock
     private let deviceZone: @Sendable () -> TimeZone
     private let locale: Locale
@@ -60,6 +70,7 @@ public final class ScheduleModel {
         calendar: any CalendarRepository,
         session: any SessionRepository,
         realtime: any RealtimeStatusRepository,
+        conversations: (any ConversationsRepository)? = nil,
         clock: any WaiveraClock = SystemClock(),
         deviceZone: @escaping @Sendable () -> TimeZone = { TimeZone.current },
         locale: Locale = .autoupdatingCurrent
@@ -67,12 +78,15 @@ public final class ScheduleModel {
         self.calendar = calendar
         self.session = session
         self.realtime = realtime
+        self.conversations = conversations
         self.clock = clock
         self.deviceZone = deviceZone
         self.locale = locale
         let zone = ScheduleZone.resolve(savedIdentifier: session.currentState.user?.timeZoneIdentifier)
         let text = ScheduleText(zone: zone.timeZone, locale: locale)
         let now = clock.now
+        let me = session.currentState.user?.id
+        myUserId = me
         self.zone = zone
         self.text = text
         self.now = now
@@ -86,13 +100,24 @@ public final class ScheduleModel {
             feed: nil,
             milestones: .empty,
             milestonesFailed: false,
-            isOffline: false
+            isOffline: false,
+            now: now,
+            myUserId: me
         ).build(text: text)
     }
 
     public convenience init(data: DataEnvironment) {
-        self.init(calendar: data.calendar, session: data.session, realtime: data.realtimeStatus, clock: data.clock)
+        self.init(
+            calendar: data.calendar,
+            session: data.session,
+            realtime: data.realtimeStatus,
+            conversations: data.conversations,
+            clock: data.clock
+        )
     }
+
+    /// "Send wishes" can open a chat only with a conversations repository.
+    public var canSendWishes: Bool { conversations != nil }
 
     // MARK: Derived
 
@@ -205,9 +230,51 @@ public final class ScheduleModel {
         refreshTask = Task { await calendar.refreshMilestones() }
     }
 
+    /// "Send wishes" on a celebration card: opens (or creates) the direct chat. The button is
+    /// busy from the tap until the chat opens or fails; a second tap meanwhile is ignored.
+    public func sendWishes(to userId: String) {
+        guard let conversations, openingWishesFor == nil, userId != myUserId else { return }
+        openingWishesFor = userId
+        wishesFailure = nil
+        rebuild()
+        wishesTask = Task {
+            let result: Result<Int, WaiveraError>
+            do {
+                result = .success(try await conversations.openDirectConversation(with: userId).id)
+            } catch {
+                result = .failure(WaiveraError.from(error))
+            }
+            guard !Task.isCancelled else { return }
+            self.finishWishes(userId: userId, result: result)
+        }
+    }
+
+    /// The view navigated to `request`; it is not offered again.
+    public func wishesHandled(_ request: WishesRequest) {
+        if wishesRequest == request { wishesRequest = nil }
+    }
+
+    public func dismissWishesFailure() {
+        wishesFailure = nil
+    }
+
+    private func finishWishes(userId: String, result: Result<Int, WaiveraError>) {
+        openingWishesFor = nil
+        requestCount += 1
+        switch result {
+        case .success(let id): wishesRequest = WishesRequest(id: requestCount, conversationId: id)
+        case .failure: wishesFailure = WishesFailure(id: requestCount, userId: userId)
+        }
+        rebuild()
+    }
+
     // MARK: Inputs
 
     private func sessionChanged(_ state: SessionState) {
+        if state.user?.id != myUserId {
+            myUserId = state.user?.id
+            rebuild()
+        }
         let resolved = ScheduleZone.resolve(savedIdentifier: state.user?.timeZoneIdentifier)
         guard resolved != zone else { return }
         zone = resolved
@@ -258,7 +325,8 @@ public final class ScheduleModel {
     private func rebuild() {
         let key = feedKey
         let feed = feedSnapshot.flatMap { $0.key == key ? $0.resource : nil }
-        state = ScheduleStateBuilder(
+        let previous = state
+        var next = ScheduleStateBuilder(
             view: view,
             selectedDate: selectedDate,
             today: today,
@@ -267,7 +335,27 @@ public final class ScheduleModel {
             feed: feed,
             milestones: milestoneCalendar,
             milestonesFailed: milestoneResource.error != nil,
-            isOffline: isOffline
+            isOffline: isOffline,
+            now: now,
+            myUserId: myUserId,
+            openingWishesFor: openingWishesFor
         ).build(text: text)
+        // A rebuild that keeps the period (a feed update, a tick) keeps the last direction, so a
+        // slide already under way is not turned around.
+        next.periodStep =
+            next.period == previous.period ? previous.periodStep : next.period.stepDirection(from: previous.period)
+        state = next
     }
+}
+
+/// A chat opened from "Send wishes"; `id` tells two requests for the same chat apart.
+public struct WishesRequest: Sendable, Hashable {
+    public let id: Int
+    public let conversationId: Int
+}
+
+/// "Send wishes" failed for `userId`; Retry sends it again.
+public struct WishesFailure: Sendable, Hashable {
+    public let id: Int
+    public let userId: String
 }

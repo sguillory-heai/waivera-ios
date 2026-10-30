@@ -2,66 +2,88 @@
     import SwiftUI
     import WaiveraDesign
 
-    /// Your answer, Decline / Accept, and the failure banner with Retry for the same answer.
+    /// Your answer: the kicker, what you said, "Not going" and "Going" as one single choice, and
+    /// the failure banner with Retry for the same answer. The chosen answer is the selected
+    /// button with a check that pops in; the other is the quiet unselected outline. Above 130%
+    /// the pair stacks in the same order and drops the check so the labels stay whole. Saving
+    /// shows on the chosen button, at its size, and blocks a second tap. Undo is the snackbar.
     struct InvitationCard: View {
         let details: EventDetailsUI
         let actions: EventActions
 
+        @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
         var body: some View {
-            VStack(alignment: .leading, spacing: Spacing.smallPlus) {
+            VStack(alignment: .leading, spacing: Spacing.small) {
                 Text(ScheduleStrings.text("schedule.response.heading"))
-                    .font(WaiveraFont.sectionTitle)
-                    .foregroundStyle(Palette.text)
+                    .waiveraTextStyle(.kicker)
+                    .foregroundStyle(Palette.textSecondary)
                     .accessibilityAddTraits(.isHeader)
                 if let status = details.invitationStatus {
-                    Text(status)
-                        .font(WaiveraFont.body)
-                        .foregroundStyle(Palette.textSecondary)
+                    SwapView(status) { text in
+                        Text(text)
+                            .waiveraTextStyle(.bodyMedium)
+                            .foregroundStyle(Palette.text)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
-                if let invitation = details.invitation, invitation.canChange {
-                    ViewThatFits(in: .horizontal) {
-                        HStack(spacing: Spacing.smallPlus) { buttons(invitation) }
-                        VStack(spacing: Spacing.small) { buttons(invitation) }
+                if let invitation = details.invitation, invitation.canChange || invitation.phase == .saving {
+                    if dynamicTypeSize.isLargeText {
+                        VStack(spacing: Spacing.small) { buttons(invitation, check: false) }
+                    } else {
+                        HStack(spacing: Spacing.small) { buttons(invitation, check: true) }
                     }
                 }
                 if let failure = details.invitationFailure {
                     BannerView(
                         .error,
+                        title: ScheduleStrings.text("schedule.response.failed.title"),
                         message: failure,
                         actionTitle: ScheduleStrings.text("schedule.retry"),
                         action: { actions.retryResponse() }
                     )
                 }
             }
-            .padding(Spacing.medium)
+            .padding(Spacing.mediumSmall + Spacing.xxSmall)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Palette.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            .agendaSurface()
             .waiveraAnimation(.state, value: details.invitation)
         }
 
-        /// The chosen answer is the filled button; saving shows on it and blocks a second tap.
-        @ViewBuilder private func buttons(_ invitation: InvitationUI) -> some View {
+        @ViewBuilder private func buttons(_ invitation: InvitationUI, check: Bool) -> some View {
+            choice(invitation, accept: false, check: check)
+            choice(invitation, accept: true, check: check)
+        }
+
+        private func choice(_ invitation: InvitationUI, accept: Bool, check: Bool) -> some View {
+            let style = ResponseChoiceStyle.of(response: invitation.response, accept: accept)
             let saving = invitation.phase == .saving
-            WaiveraButton(
-                ScheduleStrings.text("schedule.decline"),
-                variant: invitation.response == .declined ? .primary : .secondary,
-                systemImage: "xmark",
-                isLoading: saving && invitation.response == .declined
+            let chosen = style == .selected
+            return WaiveraButton(
+                ScheduleStrings.text(accept ? "schedule.accept" : "schedule.decline"),
+                variant: style.variant,
+                size: .compact,
+                systemImage: chosen && check ? "checkmark" : nil,
+                isLoading: saving && chosen,
+                loadingTitle: ScheduleStrings.text("schedule.response.saving"),
+                fillsWidth: true
             ) {
-                actions.respond(false)
+                actions.respond(accept)
             }
+            .popOnChange(of: chosen)
             .disabled(saving)
-            .accessibilityAddTraits(invitation.response == .declined ? .isSelected : [])
-            WaiveraButton(
-                ScheduleStrings.text("schedule.accept"),
-                variant: invitation.response == .accepted ? .primary : .secondary,
-                systemImage: "checkmark",
-                isLoading: saving && invitation.response == .accepted
-            ) {
-                actions.respond(true)
+            .accessibilityAddTraits(chosen ? .isSelected : [])
+        }
+    }
+
+    extension ResponseChoiceStyle {
+        var variant: WaiveraButtonVariant {
+            switch self {
+            case .primary: .primary
+            case .tonal: .tonal
+            case .selected: .selected
+            case .unselected: .unselected
             }
-            .disabled(saving)
-            .accessibilityAddTraits(invitation.response == .accepted ? .isSelected : [])
         }
     }
 #endif

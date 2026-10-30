@@ -4,63 +4,114 @@
     import WaiveraData
     import WaiveraDesign
 
-    /// A titled card holding detail rows.
+    /// A titled group, as every grouped list is set: the section header above one surface card.
     struct SectionCard<Content: View>: View {
-        let title: String
+        let title: String?
         @ViewBuilder let content: Content
 
+        init(title: String? = nil, @ViewBuilder content: () -> Content) {
+            self.title = title
+            self.content = content()
+        }
+
         var body: some View {
-            VStack(alignment: .leading, spacing: Spacing.small) {
-                Text(title)
-                    .font(WaiveraFont.sectionTitle)
-                    .foregroundStyle(Palette.text)
-                    .accessibilityAddTraits(.isHeader)
-                    .padding(.horizontal, Spacing.medium)
-                VStack(alignment: .leading, spacing: 0) {
-                    content
+            VStack(alignment: .leading, spacing: 0) {
+                if let title { SectionHeader(title) }
+                CardGroup {
+                    VStack(alignment: .leading, spacing: 0) {
+                        content
+                    }
+                    .padding(.vertical, Spacing.extraSmall)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Palette.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                        .strokeBorder(Palette.border, lineWidth: Spacing.hairline)
-                )
             }
         }
     }
 
-    /// An uppercase label over a value. A missing value shows "—" and is spoken as "not provided".
+    /// One read-only field on its leading brand tile: a muted label over a bold value, so the
+    /// value carries the row. A missing value shows "—" and is spoken as "not provided"; the
+    /// tile is decoration. The tile centres on a two-line row and pins to the first line once
+    /// the value wraps.
     struct DetailRow: View {
+        @Environment(\.dynamicTypeSize) private var dynamicTypeSize
         let label: String
         let value: String?
+        let systemImage: String
 
         var body: some View {
-            VStack(alignment: .leading, spacing: Spacing.extraSmall) {
-                Text(label.uppercased())
-                    .font(WaiveraFont.eyebrow)
-                    .tracking(TypographyMetrics.eyebrowTracking)
-                    .foregroundStyle(Palette.textSecondary)
-                Text(value ?? ProfileStrings.missing)
-                    .font(WaiveraFont.body)
-                    .foregroundStyle(value == nil ? Palette.textSecondary : Palette.text)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+            let shown = value?.nonBlank
+            LeadingPinLayout(spacing: ControlSize.fieldTileGap, standardHeight: standardHeight) {
+                IconTile(
+                    systemImage: systemImage,
+                    tone: .brand,
+                    size: ControlSize.fieldTile,
+                    glyphSize: ControlSize.fieldTileGlyph
+                )
+                VStack(alignment: .leading, spacing: Spacing.xxSmall) {
+                    Text(label)
+                        .waiveraTextStyle(.fieldLabel)
+                        .foregroundStyle(Palette.textSecondary)
+                    Text(shown ?? ProfileStrings.missing)
+                        .waiveraTextStyle(.fieldValue)
+                        .foregroundStyle(Palette.text)
+                        .textSelection(.enabled)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .leadingPinContent()
             }
-            .padding(.vertical, Spacing.smallPlus)
+            .padding(.vertical, Spacing.small)
             .padding(.horizontal, Spacing.medium)
             .frame(minHeight: ControlSize.minHitTarget)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(label))
-            .accessibilityValue(Text(value ?? ProfileStrings.missingSpoken))
+            .accessibilityValue(Text(shown ?? ProfileStrings.missingSpoken))
+        }
+
+        private var standardHeight: CGFloat {
+            LeadingPinLayout.standardHeight(
+                title: .fieldLabel,
+                subtitle: .fieldValue,
+                gap: Spacing.xxSmall,
+                dynamicTypeSize: dynamicTypeSize
+            )
         }
     }
 
-    /// A hairline between rows inside a `SectionCard`.
+    /// A hairline between rows inside a `SectionCard`. Between field rows it starts under the
+    /// label, not under the tile.
     struct RowDivider: View {
+        var underTile = false
+
         var body: some View {
             Divider()
                 .overlay(Palette.border)
-                .padding(.leading, Spacing.medium)
+                .padding(.leading, Spacing.medium + (underTile ? ControlSize.fieldDividerInset : 0))
+                .padding(.trailing, underTile ? Spacing.medium : 0)
+        }
+    }
+
+    /// Today's celebration on a profile hero (Android `WaiveraHeroCelebration`): the emoji beside
+    /// the sentence on the hero's glass tile, in the hero inks. The sentence keeps to two lines.
+    struct HeroCelebrationNote: View {
+        let emoji: String
+        let text: String
+
+        var body: some View {
+            HStack(spacing: Spacing.small) {
+                Text(emoji)
+                    .waiveraTextStyle(.heroTitle)
+                    .accessibilityHidden(true)
+                NameText(text, style: .titleSmall, lines: NameLines.celebration)
+                    .foregroundStyle(HeroPalette.onHeader)
+            }
+            .padding(.horizontal, Spacing.mediumSmall)
+            .padding(.vertical, Spacing.small)
+            .background(HeroPalette.tile, in: RoundedRectangle(cornerRadius: Radius.statTile, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.statTile, style: .continuous)
+                    .strokeBorder(HeroPalette.tileBorder, lineWidth: Spacing.hairline)
+            )
+            .accessibilityElement(children: .combine)
         }
     }
 
@@ -170,10 +221,11 @@
         var body: some View {
             VStack(alignment: .leading, spacing: Spacing.large) {
                 HStack(spacing: Spacing.medium) {
+                    // The same soft square as the avatar it stands in for, never a circle.
                     SkeletonBlock(
                         width: ControlSize.avatarLarge,
                         height: ControlSize.avatarLarge,
-                        cornerRadius: ControlSize.avatarLarge / 2
+                        cornerRadius: AvatarGeometry.cornerRadius(size: ControlSize.avatarLarge)
                     )
                     VStack(alignment: .leading, spacing: Spacing.small) {
                         SkeletonBlock()

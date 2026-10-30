@@ -152,7 +152,7 @@
                         } label: {
                             PersonListRow(row: row)
                         }
-                        .buttonStyle(.pressScale)
+                        .buttonStyle(.press(.card))
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Palette.surface)
                         .accessibilityIdentifier("people.row.\(row.id)")
@@ -163,7 +163,7 @@
                             ? ProfileStrings.filteredCount(state.rows.count, of: state.totalCount)
                             : ProfileStrings.peopleCount(state.totalCount)
                     )
-                    .font(WaiveraFont.captionEmphasis)
+                    .waiveraTextStyle(.labelMedium)
                     .foregroundStyle(Palette.textSecondary)
                     .textCase(nil)
                 }
@@ -181,6 +181,7 @@
             ListRow(
                 title: row.name,
                 subtitle: row.celebration.map(ProfileStrings.celebrationCompact),
+                titleKind: .personName,
                 showsChevron: true
             ) {
                 PersonAvatar(userID: row.id, name: row.name, celebration: row.celebration)

@@ -185,3 +185,22 @@ struct ProfileTextTests {
         #expect(ProfileSections.files(profile) == .content)
     }
 }
+
+extension ProfileTextTests {
+    @Test func celebrationNotesGreetTheFirstName() {
+        var profile = EmployeeProfile(employeeId: "e1")
+        profile.firstName = "  Alex "
+        #expect(ProfileText.firstName(profile: profile, user: nil, shownName: "Alexandra Rivera") == "Alex")
+        let user = CurrentUser(id: "u1", firebaseUid: "f1", firstName: "Sam")
+        #expect(ProfileText.firstName(profile: nil, user: user, shownName: "Samuel Ortiz") == "Sam")
+        #expect(ProfileText.firstName(profile: nil, user: nil, shownName: "  Priya  Raman ") == "Priya")
+        #expect(ProfileText.firstName(of: "   ") == nil)
+        #expect(ProfileText.firstName(of: nil) == nil)
+    }
+
+    @Test func onlyABirthdayAloneTakesTheCake() {
+        #expect(ProfileText.celebrationEmojiKind(.birthday) == .birthday)
+        #expect(ProfileText.celebrationEmojiKind(.both) == .anniversary)
+        #expect(ProfileText.celebrationEmojiKind(.anniversary) == .anniversary)
+    }
+}
