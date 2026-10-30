@@ -37,7 +37,7 @@
         private var content: some View {
             Group {
                 if let rich = model.rich {
-                    RichTextView(document: rich)
+                    RichTextView(document: rich, inMyBubble: model.isMine)
                 } else {
                     PlainMessageText(text: bodyText)
                 }

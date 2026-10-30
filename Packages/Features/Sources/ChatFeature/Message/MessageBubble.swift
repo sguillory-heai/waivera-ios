@@ -142,7 +142,7 @@
             } else if let ticket = row.ticket {
                 TicketCardView(ticket: ticket, onOpen: actions.openTicket)
             } else if let rich = row.rich {
-                RichTextView(document: rich)
+                RichTextView(document: rich, inMyBubble: row.isMine)
             } else if message.hasBody {
                 PlainMessageText(text: message.copyableText)
             }
