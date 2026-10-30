@@ -39,6 +39,8 @@
             .background(Palette.background)
             .navigationTitle(ProfileStrings.personTitle)
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarBackground(.hidden, for: .navigationBar)
         }
     }
 
@@ -46,6 +48,8 @@
         @State private var model: PersonModel
         @State private var messageRequest = 0
         @State private var retryRequest = 0
+        /// Which button opened the chat, so only that one says "Opening chat…".
+        @State private var wishesTapped = false
         let onOpenConversation: (_ conversationID: Int) -> Void
 
         init(model: PersonModel, onOpenConversation: @escaping (_ conversationID: Int) -> Void) {
@@ -55,9 +59,16 @@
 
         var body: some View {
             PersonContentView(
-                state: PersonDisplayState(model: model),
+                state: PersonDisplayState(model: model, wishesTapped: wishesTapped),
                 onRetry: { retryRequest += 1 },
-                onMessage: { messageRequest += 1 },
+                onMessage: {
+                    wishesTapped = false
+                    messageRequest += 1
+                },
+                onSendWishes: {
+                    wishesTapped = true
+                    messageRequest += 1
+                },
                 onDismissError: { model.dismissMessageError() }
             )
             .refreshable { await model.load() }
@@ -82,109 +93,86 @@
         var celebration: Celebration?
         var canMessage: Bool
         var isOpeningChat = false
+        var wishesTapped = false
         var messageError: WaiveraError?
 
         @MainActor
-        init(model: PersonModel) {
+        init(model: PersonModel, wishesTapped: Bool = false) {
             phase = model.phase
             userID = model.userID
             name = model.displayName
             celebration = model.celebration
             canMessage = model.canMessage
             isOpeningChat = model.isOpeningChat
+            self.wishesTapped = wishesTapped
             messageError = model.messageError
         }
 
-        init(phase: PersonModel.Phase, userID: String, name: String?, canMessage: Bool = true) {
+        init(
+            phase: PersonModel.Phase,
+            userID: String,
+            name: String?,
+            canMessage: Bool = true,
+            celebration: Celebration? = nil
+        ) {
             self.phase = phase
             self.userID = userID
             self.name = name
             self.canMessage = canMessage
+            self.celebration = celebration
+        }
+
+        var email: String? {
+            if case .loaded(let person) = phase { return person.email?.nonBlank }
+            return nil
         }
     }
 
+    /// The person page for one state. Stateless: previews and snapshots build it directly.
     struct PersonContentView: View {
         let state: PersonDisplayState
         let onRetry: () -> Void
         let onMessage: () -> Void
+        var onSendWishes: () -> Void = {}
         let onDismissError: () -> Void
 
         var body: some View {
             ScrollView {
-                VStack(alignment: .leading, spacing: Spacing.large) {
-                    hero
-                    if state.canMessage {
-                        WaiveraButton(
-                            ProfileStrings.personMessage,
-                            systemImage: "bubble.left.fill",
-                            isLoading: state.isOpeningChat,
-                            action: onMessage
-                        )
-                        .disabled(state.isOpeningChat)
-                        .accessibilityLabel(Text(ProfileStrings.personMessageSpoken(name)))
-                        .accessibilityIdentifier("person.message")
+                VStack(alignment: .leading, spacing: 0) {
+                    // The bar names the screen and the hero names the person, so the name is
+                    // not said twice.
+                    HeroSection(trail: .none) {
+                        EmptyView()
+                    } content: {
+                        PersonHero(state: state)
                     }
-                    if state.messageError != nil {
-                        BannerView(
-                            .error,
-                            message: ProfileStrings.personMessageFailed + " " + (state.messageError?.userMessage ?? ""),
-                            onDismiss: onDismissError
-                        )
+                    VStack(alignment: .leading, spacing: Spacing.mediumSmall) {
+                        if state.canMessage {
+                            PersonActions(
+                                name: name,
+                                celebrating: state.celebration != nil,
+                                isOpeningChat: state.isOpeningChat,
+                                wishesTapped: state.wishesTapped,
+                                onMessage: onMessage,
+                                onSendWishes: onSendWishes
+                            )
+                        }
+                        if let error = state.messageError {
+                            BannerView(
+                                .error,
+                                message: ProfileStrings.personMessageFailed + " " + error.userMessage,
+                                onDismiss: onDismissError
+                            )
+                        }
+                        details
                     }
-                    details
+                    .padding(.horizontal, Spacing.medium)
+                    .padding(.bottom, Spacing.large)
                 }
-                .padding(Spacing.medium)
             }
         }
 
         private var name: String { state.name ?? ProfileStrings.unknownPerson }
-
-        private var hero: some View {
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: Spacing.medium) {
-                    avatar; identity
-                }
-                VStack(alignment: .leading, spacing: Spacing.smallPlus) {
-                    avatar; identity
-                }
-            }
-        }
-
-        private var avatar: some View {
-            PersonAvatar(
-                userID: state.userID,
-                name: name,
-                size: ControlSize.avatarLarge,
-                celebration: state.celebration
-            )
-        }
-
-        private var identity: some View {
-            VStack(alignment: .leading, spacing: Spacing.extraSmall) {
-                if state.name == nil, state.phase == .loading {
-                    SkeletonBlock().frame(maxWidth: Spacing.huge * 4)
-                } else {
-                    Text(name)
-                        .font(WaiveraFont.screenTitle)
-                        .foregroundStyle(Palette.text)
-                        .accessibilityAddTraits(.isHeader)
-                }
-                if case .loaded(let person) = state.phase, let email = person.email {
-                    Text(email)
-                        .font(WaiveraFont.subtitle)
-                        .foregroundStyle(Palette.textSecondary)
-                        .textSelection(.enabled)
-                }
-                if let celebration = state.celebration {
-                    Label(
-                        ProfileStrings.celebrationSentence(celebration, name: state.name),
-                        systemImage: "party.popper.fill"
-                    )
-                    .font(WaiveraFont.captionEmphasis)
-                    .foregroundStyle(Palette.milestone)
-                }
-            }
-        }
 
         @ViewBuilder private var details: some View {
             switch state.phase {
@@ -192,7 +180,7 @@
                 LoadingContent(isLoading: true) {
                     EmptyView()
                 } skeleton: {
-                    SkeletonBlock(height: ControlSize.buttonHeight * 3, cornerRadius: Radius.card)
+                    SkeletonBlock(height: ControlSize.buttonHeight * 3, cornerRadius: Radius.listCard)
                 }
             case .failed(let error):
                 EmptyStateView.error(
@@ -201,23 +189,133 @@
                     onRetry: onRetry
                 )
             case .loaded(let person):
-                // Absent values render nothing here (06 §C2); the own profile uses "—" instead.
-                let candidates: [(String, String?)] = [
-                    (ProfileStrings.organizationTitle, person.organizationName),
-                    (ProfileStrings.personRoles, ProfileText.joined(person.roles)),
-                    (ProfileStrings.phone, person.phoneNumber),
+                // Absent values are left out here (06 §C2): this card describes someone else, not
+                // a form to fill. The own profile shows "—" instead.
+                let candidates: [(String, String?, String)] = [
+                    (ProfileStrings.organizationTitle, person.organizationName, "building.2"),
+                    (ProfileStrings.personRoles, ProfileText.joined(person.roles), "person.text.rectangle"),
+                    (ProfileStrings.phone, person.phoneNumber?.nonBlank, "phone"),
                 ]
-                let rows: [(String, String)] = candidates.compactMap { pair in pair.1.map { (pair.0, $0) } }
+                let rows = candidates.compactMap { row in row.1.map { (label: row.0, value: $0, image: row.2) } }
                 if !rows.isEmpty {
-                    VStack(alignment: .leading, spacing: 0) {
+                    SectionCard {
                         ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
-                            if index > 0 { RowDivider() }
-                            DetailRow(label: row.0, value: row.1)
+                            if index > 0 { RowDivider(underTile: true) }
+                            DetailRow(label: row.label, value: row.value, systemImage: row.image)
                         }
                     }
-                    .background(Palette.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                 }
             }
+        }
+    }
+
+    /// The person on the plum hero, centred: the large avatar, their name and address, and
+    /// today's celebration greeting them by first name.
+    private struct PersonHero: View {
+        @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+        let state: PersonDisplayState
+
+        var body: some View {
+            let name = state.name ?? ProfileStrings.unknownPerson
+            VStack(spacing: Spacing.small) {
+                PersonAvatar(
+                    userID: state.userID,
+                    name: name,
+                    size: CGFloat(
+                        dynamicTypeSize.isLargeText ? HeroMetrics.profileAvatarCompact : HeroMetrics.profileAvatar
+                    ),
+                    celebration: state.celebration
+                )
+                .accessibilityHidden(true)
+                if state.name == nil, state.phase == .loading {
+                    SkeletonBlock(width: Spacing.huge * 4)
+                } else {
+                    NameText(name, style: .heroGreetingCompact, lines: NameLines.hero(dynamicTypeSize.category))
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(HeroPalette.onHeader)
+                        .accessibilityAddTraits(.isHeader)
+                        .accessibilityIdentifier("person.hero.name")
+                }
+                if let email = state.email {
+                    Text(email)
+                        .waiveraTextStyle(.bodyMedium)
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(HeroPalette.onHeaderSecondary)
+                        .textSelection(.enabled)
+                }
+                if let celebration = state.celebration {
+                    // The name is right above, so the note says only the first name.
+                    HeroCelebrationNote(
+                        emoji: ProfileStrings.celebrationEmoji(celebration),
+                        text: ProfileStrings.celebrationHero(
+                            celebration,
+                            firstName: ProfileText.firstName(of: state.name)
+                        )
+                    )
+                    .padding(.top, Spacing.extraSmall)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, Spacing.medium)
+            .padding(.bottom, Spacing.medium)
+        }
+    }
+
+    /// Message, always the primary, so the screen's action is the same whether or not it is their
+    /// day. On their birthday or anniversary "Send wishes" sits beside it as the raised secondary;
+    /// both open the same direct chat and the one tapped shows the busy label. Above 130% text
+    /// the two stack, so neither label wraps.
+    private struct PersonActions: View {
+        @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+        let name: String
+        let celebrating: Bool
+        let isOpeningChat: Bool
+        let wishesTapped: Bool
+        let onMessage: () -> Void
+        let onSendWishes: () -> Void
+
+        var body: some View {
+            if !celebrating {
+                message
+            } else if dynamicTypeSize.isLargeText {
+                VStack(spacing: Spacing.small) {
+                    message
+                    wishes
+                }
+            } else {
+                HStack(spacing: Spacing.small) {
+                    message
+                    wishes
+                }
+            }
+        }
+
+        private var message: some View {
+            WaiveraButton(
+                ProfileStrings.personMessage,
+                systemImage: "bubble.left.fill",
+                isLoading: isOpeningChat && !wishesTapped,
+                loadingTitle: ProfileStrings.personOpeningChat,
+                fillsWidth: true,
+                action: onMessage
+            )
+            .disabled(isOpeningChat)
+            .accessibilityLabel(Text(ProfileStrings.personMessageSpoken(name)))
+            .accessibilityIdentifier("person.message")
+        }
+
+        private var wishes: some View {
+            WaiveraButton(
+                ProfileStrings.personSendWishes,
+                variant: .secondary,
+                isLoading: isOpeningChat && wishesTapped,
+                loadingTitle: ProfileStrings.personOpeningChat,
+                fillsWidth: true,
+                action: onSendWishes
+            )
+            .disabled(isOpeningChat)
+            .accessibilityLabel(Text(ProfileStrings.personSendWishesSpoken(name)))
+            .accessibilityIdentifier("person.sendWishes")
         }
     }
 

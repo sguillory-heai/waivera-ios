@@ -221,13 +221,29 @@
                 case .unavailable, .loaded:
                     if let organization {
                         SectionCard(title: organization.name ?? ProfileStrings.organizationTitle) {
-                            DetailRow(label: ProfileStrings.organizationName, value: organization.name)
-                            RowDivider()
-                            DetailRow(label: ProfileStrings.organizationAbbreviation, value: organization.abbreviation)
-                            RowDivider()
-                            DetailRow(label: ProfileStrings.organizationAddress, value: organization.address)
-                            RowDivider()
-                            DetailRow(label: ProfileStrings.organizationContact, value: organization.contactNumber)
+                            DetailRow(
+                                label: ProfileStrings.organizationName,
+                                value: organization.name,
+                                systemImage: "building.2"
+                            )
+                            RowDivider(underTile: true)
+                            DetailRow(
+                                label: ProfileStrings.organizationAbbreviation,
+                                value: organization.abbreviation,
+                                systemImage: "textformat"
+                            )
+                            RowDivider(underTile: true)
+                            DetailRow(
+                                label: ProfileStrings.organizationAddress,
+                                value: organization.address,
+                                systemImage: "mappin.and.ellipse"
+                            )
+                            RowDivider(underTile: true)
+                            DetailRow(
+                                label: ProfileStrings.organizationContact,
+                                value: organization.contactNumber,
+                                systemImage: "phone"
+                            )
                         }
                         .padding(Spacing.medium)
                     } else {

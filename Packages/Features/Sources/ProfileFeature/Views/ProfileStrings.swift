@@ -55,6 +55,36 @@
             }
         }
 
+        static func celebrationEmoji(_ celebration: Celebration) -> String {
+            ProfileText.celebrationEmojiKind(celebration.kind) == .birthday
+                ? text("profile.celebration.emoji.birthday")
+                : text("profile.celebration.emoji.anniversary")
+        }
+
+        /// The note under someone's hero name: "Happy birthday, Priya!".
+        static func celebrationHero(_ celebration: Celebration, firstName: String?) -> String {
+            let who = firstName?.nonBlank ?? text("profile.celebration.teammate")
+            switch (celebration.isBirthday, celebration.anniversaryYears) {
+            case (true, .some(let years)): return text("profile.celebration.hero.both \(who) \(years)")
+            case (true, .none): return text("profile.celebration.hero.birthday \(who)")
+            case (false, .some(let years)): return text("profile.celebration.hero.anniversary \(who) \(years)")
+            case (false, .none): return ""
+            }
+        }
+
+        /// Your own celebration on your profile, to you by first name; the same wording as Today.
+        static func celebrationSelf(_ celebration: Celebration, firstName: String?) -> String {
+            switch (celebration.isBirthday, celebration.anniversaryYears, firstName?.nonBlank) {
+            case (true, .some, let name?): text("profile.celebration.self.both \(name)")
+            case (true, .some, nil): text("profile.celebration.self.unnamed.both")
+            case (true, .none, let name?): text("profile.celebration.hero.birthday \(name)")
+            case (true, .none, nil): text("profile.celebration.self.unnamed.birthday")
+            case (false, .some(let years), let name?): text("profile.celebration.hero.anniversary \(name) \(years)")
+            case (false, .some(let years), nil): text("profile.celebration.self.unnamed.anniversary \(years)")
+            case (false, .none, _): ""
+            }
+        }
+
         static func celebrationCompact(_ celebration: Celebration) -> String {
             switch (celebration.isBirthday, celebration.anniversaryYears) {
             case (true, .some(let years)): return text("profile.celebration.both.compact \(years)")
@@ -119,6 +149,9 @@
         static func personMessageSpoken(_ name: String) -> String { text("profile.person.message.a11y \(name)") }
         static var personMessageFailed: String { text("profile.person.messageFailed") }
         static var personRoles: String { text("profile.person.roles") }
+        static var personSendWishes: String { text("profile.person.sendWishes") }
+        static func personSendWishesSpoken(_ name: String) -> String { text("profile.person.sendWishes.a11y \(name)") }
+        static var personOpeningChat: String { text("profile.person.openingChat") }
         static var personErrorTitle: String { text("profile.person.error.title") }
 
         // Bookmarks
@@ -144,6 +177,28 @@
         static var bookmarksRestoreFailed: String { text("profile.bookmarks.restoreFailed") }
         static var bookmarksThreadReply: String { text("profile.bookmarks.threadReply") }
         static var bookmarksSaved: String { text("profile.bookmarks.saved") }
+        static var bookmarksThreadRoot: String { text("profile.bookmarks.threadRoot") }
+        static var bookmarksFilterLabel: String { text("profile.bookmarks.filter.label") }
+        static var bookmarksShowAll: String { text("profile.bookmarks.showAll") }
+        static var bookmarksRemoving: String { text("profile.bookmarks.removing") }
+
+        static func filter(_ filter: BookmarkFilter) -> String {
+            switch filter {
+            case .all: text("profile.bookmarks.filter.all")
+            case .messages: text("profile.bookmarks.filter.messages")
+            case .threads: text("profile.bookmarks.filter.threads")
+            }
+        }
+
+        static func noneInFilterTitle(_ filter: BookmarkFilter) -> String {
+            filter == .threads
+                ? text("profile.bookmarks.empty.threads.title") : text("profile.bookmarks.empty.messages.title")
+        }
+
+        static func noneInFilterMessage(_ filter: BookmarkFilter) -> String {
+            filter == .threads
+                ? text("profile.bookmarks.empty.threads.message") : text("profile.bookmarks.empty.messages.message")
+        }
 
         static func preview(_ preview: BookmarkPreview) -> String {
             switch preview {
@@ -158,6 +213,7 @@
         static var searchWords: BookmarkSearchWords {
             BookmarkSearchWords(
                 threadReply: bookmarksThreadReply,
+                thread: text("profile.bookmarks.search.thread"),
                 message: text("profile.bookmarks.search.message"),
                 photo: text("profile.bookmarks.search.photo"),
                 file: text("profile.bookmarks.search.file")

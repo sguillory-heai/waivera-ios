@@ -160,90 +160,128 @@
 
         private var loaded: some View {
             ScrollView {
-                VStack(alignment: .leading, spacing: Spacing.large) {
-                    if state.refreshError != nil {
-                        RefreshFailedNotice(message: ProfileStrings.refreshFailed, onRetry: onRetry)
+                VStack(alignment: .leading, spacing: 0) {
+                    HeroSection(trail: .none) {
+                        EmptyView()
+                    } content: {
+                        ProfileHeroIdentity(state: state)
                     }
-                    ProfileIdentityCard(state: state)
-                    ProfilePersonalSection(state: state)
-                    ProfileProfessionalSection(profile: state.content?.profile)
-                    ProfileSectionSlot(
-                        display: ProfileSections.timeOff(state.content),
-                        title: ProfileStrings.timeOffTitle,
-                        onRetry: { onRetrySection(.timeOff) }
-                    ) {
-                        if let timeOff = state.content?.timeOff { TimeOffCard(overview: timeOff) }
-                    }
-                    ProfileSectionSlot(
-                        display: ProfileSections.files(state.content),
-                        title: ProfileStrings.filesTitle,
-                        onRetry: { onRetrySection(.files) }
-                    ) {
-                        EmployeeFilesCard(
-                            files: ProfileSections.visibleFiles(state.content?.files ?? []),
-                            zone: state.timeZone
+                    VStack(alignment: .leading, spacing: Spacing.mediumSmall) {
+                        if state.refreshError != nil {
+                            RefreshFailedNotice(message: ProfileStrings.refreshFailed, onRetry: onRetry)
+                        }
+                        ProfilePersonalSection(state: state)
+                        ProfileProfessionalSection(profile: state.content?.profile)
+                        ProfileSectionSlot(
+                            display: ProfileSections.timeOff(state.content),
+                            title: ProfileStrings.timeOffTitle,
+                            onRetry: { onRetrySection(.timeOff) }
+                        ) {
+                            if let timeOff = state.content?.timeOff { TimeOffCard(overview: timeOff) }
+                        }
+                        ProfileSectionSlot(
+                            display: ProfileSections.files(state.content),
+                            title: ProfileStrings.filesTitle,
+                            onRetry: { onRetrySection(.files) }
+                        ) {
+                            EmployeeFilesCard(
+                                files: ProfileSections.visibleFiles(state.content?.files ?? []),
+                                zone: state.timeZone
+                            )
+                        }
+                        ProfileLinksSection(
+                            organization: state.content?.organization,
+                            onOpenOrganization: onOpenOrganization,
+                            onOpenSettings: onOpenSettings
                         )
                     }
-                    ProfileLinksSection(
-                        organization: state.content?.organization,
-                        onOpenOrganization: onOpenOrganization,
-                        onOpenSettings: onOpenSettings
-                    )
+                    .padding(.horizontal, Spacing.medium)
+                    .padding(.bottom, Spacing.large)
                 }
-                .padding(Spacing.medium)
             }
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarBackground(.hidden, for: .navigationBar)
         }
     }
 
-    private struct ProfileIdentityCard: View {
+    /// Your own identity on the plum hero: the large avatar, your name, role and address in the
+    /// hero inks, and today's celebration under them. Above 130% text a column beside the avatar
+    /// is too narrow for a name or an address, so the smaller avatar moves above the text.
+    private struct ProfileHeroIdentity: View {
+        @Environment(\.dynamicTypeSize) private var dynamicTypeSize
         let state: ProfileDisplayState
 
         var body: some View {
             let name = state.displayName ?? ProfileStrings.unknownPerson
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .center, spacing: Spacing.medium) {
-                    avatar(name); identity(name)
+            VStack(alignment: .leading, spacing: Spacing.medium) {
+                if dynamicTypeSize.isLargeText {
+                    VStack(alignment: .leading, spacing: Spacing.mediumSmall) {
+                        avatar(name)
+                        identity(name)
+                    }
+                } else {
+                    HStack(alignment: .center, spacing: Spacing.medium) {
+                        avatar(name)
+                        identity(name)
+                    }
                 }
-                VStack(alignment: .leading, spacing: Spacing.smallPlus) {
-                    avatar(name); identity(name)
+                if let celebration = state.celebration {
+                    HeroCelebrationNote(
+                        emoji: ProfileStrings.celebrationEmoji(celebration),
+                        text: ProfileStrings.celebrationSelf(
+                            celebration,
+                            firstName: ProfileText.firstName(
+                                profile: state.content?.profile,
+                                user: state.user,
+                                shownName: state.displayName
+                            )
+                        )
+                    )
                 }
             }
-            .padding(Spacing.medium)
+            .padding(.leading, Spacing.medium + Spacing.extraSmall)
+            .padding(.trailing, Spacing.medium)
+            .padding(.top, Spacing.small)
+            .padding(.bottom, Spacing.medium)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Palette.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
         }
 
         private func avatar(_ name: String) -> some View {
             PersonAvatar(
                 userID: state.user?.id,
                 name: name,
-                size: ControlSize.avatarLarge,
+                size: CGFloat(
+                    dynamicTypeSize.isLargeText ? HeroMetrics.profileAvatarCompact : HeroMetrics.profileAvatar
+                ),
                 celebration: state.celebration
             )
+            .accessibilityHidden(true)
         }
 
         private func identity(_ name: String) -> some View {
-            VStack(alignment: .leading, spacing: Spacing.extraSmall) {
-                Text(name)
-                    .font(WaiveraFont.screenTitle)
-                    .foregroundStyle(Palette.text)
+            VStack(alignment: .leading, spacing: Spacing.xxSmall) {
+                NameText(name, style: .heroGreetingCompact, lines: NameLines.hero(dynamicTypeSize.category))
+                    .foregroundStyle(HeroPalette.onHeader)
                     .accessibilityAddTraits(.isHeader)
-                if let title = ProfileText.jobTitle(state.content?.profile) {
-                    Text(title)
-                        .font(WaiveraFont.subtitle)
-                        .foregroundStyle(Palette.textSecondary)
+                    .accessibilityIdentifier("profile.hero.name")
+                let jobTitle = ProfileText.jobTitle(state.content?.profile)
+                if let jobTitle {
+                    Text(jobTitle)
+                        .waiveraTextStyle(.bodyMedium)
+                        .foregroundStyle(HeroPalette.onHeaderSecondary)
                 }
-                if let email = state.content?.profile?.email ?? state.user?.email {
+                if let email = (state.content?.profile?.email ?? state.user?.email)?.nonBlank {
+                    // A little air under the role, so a wrapped role and a wrapped address read
+                    // as two lines of information, not one paragraph.
                     Text(email)
-                        .font(WaiveraFont.caption)
-                        .foregroundStyle(Palette.textSecondary)
-                }
-                if let celebration = state.celebration {
-                    Label(ProfileStrings.celebrationSentence(celebration, name: name), systemImage: "party.popper.fill")
-                        .font(WaiveraFont.captionEmphasis)
-                        .foregroundStyle(Palette.milestone)
+                        .waiveraTextStyle(.bodyMedium)
+                        .foregroundStyle(HeroPalette.onHeaderSecondary)
+                        .textSelection(.enabled)
+                        .padding(.top, jobTitle == nil ? 0 : Spacing.extraSmall)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .combine)
         }
     }
 
@@ -253,13 +291,21 @@
         var body: some View {
             let profile = state.content?.profile
             SectionCard(title: ProfileStrings.personal) {
-                DetailRow(label: ProfileStrings.email, value: profile?.email ?? state.user?.email)
-                RowDivider()
-                DetailRow(label: ProfileStrings.phone, value: profile?.phoneNumber)
-                RowDivider()
-                DetailRow(label: ProfileStrings.address, value: profile?.address)
-                RowDivider()
-                DetailRow(label: ProfileStrings.timeZone, value: zoneText)
+                DetailRow(
+                    label: ProfileStrings.email,
+                    value: profile?.email ?? state.user?.email,
+                    systemImage: "envelope"
+                )
+                RowDivider(underTile: true)
+                DetailRow(
+                    label: ProfileStrings.phone,
+                    value: profile?.phoneNumber,
+                    systemImage: "phone"
+                )
+                RowDivider(underTile: true)
+                DetailRow(label: ProfileStrings.address, value: profile?.address, systemImage: "mappin.and.ellipse")
+                RowDivider(underTile: true)
+                DetailRow(label: ProfileStrings.timeZone, value: zoneText, systemImage: "globe")
             }
         }
 
@@ -279,25 +325,47 @@
             SectionCard(title: ProfileStrings.professional) {
                 DetailRow(
                     label: ProfileStrings.hireDate,
-                    value: (profile?.hireDate ?? profile?.joinDate).map { ProfileFormat.date($0) }
+                    value: (profile?.hireDate ?? profile?.joinDate).map { ProfileFormat.date($0) },
+                    systemImage: "calendar"
                 )
-                RowDivider()
-                DetailRow(label: ProfileStrings.positions, value: ProfileText.joined(profile?.positions ?? []))
-                RowDivider()
-                DetailRow(label: ProfileStrings.officeLocations, value: ProfileText.joined(profile?.regions ?? []))
-                RowDivider()
-                DetailRow(label: ProfileStrings.reportsTo, value: ProfileText.joined(profile?.managers ?? []))
-                RowDivider()
-                DetailRow(label: ProfileStrings.birthday, value: profile?.birthday.map { ProfileFormat.birthday($0) })
-                RowDivider()
-                DetailRow(label: ProfileStrings.scId, value: profile?.scId)
-                RowDivider()
+                RowDivider(underTile: true)
+                DetailRow(
+                    label: ProfileStrings.positions,
+                    value: ProfileText.joined(profile?.positions ?? []),
+                    systemImage: "person.text.rectangle"
+                )
+                RowDivider(underTile: true)
+                DetailRow(
+                    label: ProfileStrings.officeLocations,
+                    value: ProfileText.joined(profile?.regions ?? []),
+                    systemImage: "mappin.and.ellipse"
+                )
+                RowDivider(underTile: true)
+                DetailRow(
+                    label: ProfileStrings.agencies,
+                    value: ProfileText.joined(profile?.agencies ?? []),
+                    systemImage: "building.2"
+                )
+                RowDivider(underTile: true)
                 DetailRow(
                     label: ProfileStrings.waiverFamilies,
-                    value: ProfileText.joined(profile?.waiverFamilies ?? [])
+                    value: ProfileText.joined(profile?.waiverFamilies ?? []),
+                    systemImage: "person.2"
                 )
-                RowDivider()
-                DetailRow(label: ProfileStrings.agencies, value: ProfileText.joined(profile?.agencies ?? []))
+                RowDivider(underTile: true)
+                DetailRow(label: ProfileStrings.scId, value: profile?.scId, systemImage: "person.text.rectangle")
+                RowDivider(underTile: true)
+                DetailRow(
+                    label: ProfileStrings.birthday,
+                    value: profile?.birthday.map { ProfileFormat.birthday($0) },
+                    systemImage: "birthday.cake"
+                )
+                RowDivider(underTile: true)
+                DetailRow(
+                    label: ProfileStrings.reportsTo,
+                    value: ProfileText.joined(profile?.managers ?? []),
+                    systemImage: "person.crop.square"
+                )
             }
         }
     }
@@ -308,7 +376,7 @@
         let onOpenSettings: () -> Void
 
         var body: some View {
-            VStack(spacing: 0) {
+            CardGroup {
                 Button(action: onOpenOrganization) {
                     ListRow(
                         title: ProfileStrings.organizationTitle,
@@ -318,8 +386,8 @@
                         IconTile(systemImage: "building.2.fill")
                     }
                 }
-                .buttonStyle(.pressScale)
-                RowDivider()
+                .buttonStyle(.press(.card))
+                Divider().padding(.leading, ControlSize.fieldDividerInset)
                 Button(action: onOpenSettings) {
                     ListRow(
                         title: ProfileStrings.settingsRow,
@@ -329,9 +397,9 @@
                         IconTile(systemImage: "gearshape.fill")
                     }
                 }
-                .buttonStyle(.pressScale)
+                .buttonStyle(.press(.card))
             }
-            .background(Palette.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            .padding(.top, Spacing.small)
         }
     }
 
