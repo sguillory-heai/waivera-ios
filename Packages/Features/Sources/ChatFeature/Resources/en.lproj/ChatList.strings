@@ -12,23 +12,27 @@
 /* VoiceOver label of the connection pill. %@ is the status, e.g. Online. */
 "chat.list.status.description" = "Chat status: %@";
 
-"chat.list.search.prompt" = "Search conversations";
+/* The search field's spoken name; the placeholder below is only a hint. */
+"chat.list.search.label" = "Search conversations";
+"chat.list.search.clear" = "Clear search";
+"chat.list.search.prompt" = "Search by name or message";
 "chat.list.filter.all" = "All";
 "chat.list.filter.unread" = "Unread";
 "chat.list.filter.channels" = "Channels";
 
-"chat.list.empty.search.title" = "No matches";
-"chat.list.empty.search" = "No conversations match your search.";
+"chat.list.empty.search.title" = "No chats found";
+"chat.list.empty.search" = "Try a different name or word.";
 "chat.list.empty.unread.title" = "All caught up";
-"chat.list.empty.unread" = "You're all caught up.";
-"chat.list.empty.channels.title" = "No channels";
-"chat.list.empty.channels" = "No channels found.";
-"chat.list.empty.title" = "No conversations yet";
-"chat.list.empty" = "No conversations yet.";
+"chat.list.empty.unread" = "Nice work. New messages will land here.";
+"chat.list.empty.channels.title" = "No channels yet";
+"chat.list.empty.channels" = "Channels your team adds will show up here.";
+"chat.list.empty.title" = "No chats yet";
+"chat.list.empty" = "Say hello to a coworker. Your chats will live here.";
 "chat.list.empty.action" = "Start a chat";
-"chat.list.error.title" = "Unable to load conversations.";
-/* Banner when a refresh failed but saved rows are shown. %@ is the reason. */
-"chat.list.refreshFailed" = "Showing saved conversations. %@";
+"chat.list.error.title" = "Conversations didn’t load";
+/* Banner title and message when a refresh failed but saved rows are shown. */
+"chat.list.refreshFailed.title" = "Couldn’t refresh your chats";
+"chat.list.refreshFailed.message" = "Showing saved conversations.";
 "chat.list.retry" = "Retry";
 /* Pill shown while scrolled down when newer activity is waiting. */
 "chat.list.newActivity" = "New activity";
@@ -53,9 +57,11 @@
 "chat.list.typing.several" = "Several people are typing…";
 "chat.list.call.join" = "Call in progress · Join";
 "chat.list.call.joinAction" = "Join call";
+/* The call pill at large text, or when the full line would be cut: the verb stays. */
+"chat.list.call.joinShort" = "Join call";
 "chat.list.call.opening" = "Opening call";
-"chat.list.call.failed" = "Unable to open the video call. Try again.";
-"chat.list.markRead.failed" = "Couldn't mark the chat as read. Try again.";
+"chat.list.call.failed" = "Couldn’t open the video call. Try again.";
+"chat.list.markRead.failed" = "Couldn’t mark this chat as read.";
 
 "chat.list.time.now" = "Now";
 "chat.list.time.yesterday" = "Yesterday";
@@ -65,6 +71,11 @@
 "chat.list.icon.archived" = "Archived channel";
 "chat.list.icon.group" = "Group conversation";
 "chat.list.readOnly" = "Read only";
+/* In place of the preview when a message of mine in this chat never went out. */
+"chat.list.notSent" = "Not sent";
+/* VoiceOver name of a row's long press. %@ is the chat's title. */
+"chat.list.actions" = "More actions for %@";
+"chat.list.loading" = "Loading conversations";
 "chat.list.attachment" = "Attachment";
 "chat.list.action.open" = "Open conversation";
 "chat.list.action.markRead" = "Mark as read";
@@ -72,11 +83,18 @@
 "chat.list.dismiss" = "Dismiss";
 
 "chat.new.title" = "New chat";
-"chat.new.subtitle" = "Select one person for a direct message or several for a group.";
-"chat.new.search.prompt" = "Search staff";
+"chat.new.subtitle" = "Pick one person to message, or a few to start a group.";
+"chat.new.search.label" = "Search people";
+"chat.new.search.prompt" = "Search by name";
 "chat.new.empty.title" = "No one found";
-"chat.new.empty" = "No staff members match.";
-"chat.new.error.title" = "Couldn't load staff";
+"chat.new.empty" = "Check the spelling or try another name.";
+"chat.new.error.title" = "Coworkers didn’t load";
 "chat.new.open" = "Open chat";
-"chat.new.createGroup" = "Create group chat";
+"chat.new.createGroup" = "Start group chat";
+/* The submit button while it works. */
+"chat.new.opening" = "Opening chat…";
+"chat.new.creating" = "Starting your group…";
+/* A person's row state, spoken after the name. */
+"chat.new.selectedState" = "Selected";
+"chat.new.notSelectedState" = "Not selected";
 "chat.new.close" = "Close";

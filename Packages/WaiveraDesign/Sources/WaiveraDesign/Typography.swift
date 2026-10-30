@@ -61,6 +61,11 @@
             Font.custom(spec.weight.postScriptName, size: spec.size, relativeTo: base.fontTextStyle)
         }
 
+        /// The style's font in another face (unread names), scaling like `font`.
+        func font(weight: FontWeightToken?) -> Font {
+            Font.custom(spec.weighted(weight).weight.postScriptName, size: spec.size, relativeTo: base.fontTextStyle)
+        }
+
         /// The same font as a `UIFont` at the current (or given) Dynamic Type size, for measuring.
         func uiFont(compatibleWith traits: UITraitCollection? = nil) -> UIFont {
             let base =
@@ -110,20 +115,27 @@
         /// Font, tracking and line height of a type-scale style. Prefer this over `.font` for
         /// multi-line text so line height matches Android.
         func waiveraTextStyle(_ style: TextStyleToken) -> some View {
-            modifier(TextStyleModifier(style: style))
+            modifier(TextStyleModifier(style: style, weight: nil))
+        }
+
+        /// The style in another face: `.waiveraTextStyle(.titleSmall, weight: .extraBold)`. Use
+        /// it instead of `.fontWeight`, which may not switch a custom font's face.
+        func waiveraTextStyle(_ style: TextStyleToken, weight: FontWeightToken?) -> some View {
+            modifier(TextStyleModifier(style: style, weight: weight))
         }
     }
 
     private struct TextStyleModifier: ViewModifier {
         @Environment(\.dynamicTypeSize) private var dynamicTypeSize
         let style: TextStyleToken
+        let weight: FontWeightToken?
 
         func body(content: Content) -> some View {
             let traits = UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(dynamicTypeSize))
             let font = style.uiFont(compatibleWith: traits)
             let lineSpacing = max(0, style.scaledLineHeight(compatibleWith: traits) - font.lineHeight)
             content
-                .font(style.font)
+                .font(style.font(weight: weight))
                 .tracking(style.spec.tracking)
                 .lineSpacing(lineSpacing)
         }

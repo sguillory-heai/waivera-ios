@@ -11,6 +11,8 @@ struct ChatRowBuilder {
     let isMarkedRead: Bool
     let isOpeningCall: Bool
     let arrivalKey: Int?
+    /// A message of mine in this conversation never went out.
+    var isSendFailed = false
 
     func row(_ conversation: Conversation) -> ChatRow {
         let preview = ConversationPresentation.preview(conversation.lastMessage, text: text)
@@ -26,6 +28,8 @@ struct ChatRowBuilder {
         let spokenPreview: String
         if isCallLive {
             spokenPreview = text.callInProgress
+        } else if isSendFailed {
+            spokenPreview = text.notSent
         } else if let typingLabel {
             spokenPreview = typingLabel
         } else if let sender {
@@ -34,14 +38,20 @@ struct ChatRowBuilder {
             spokenPreview = preview.text
         }
         let isChannel = conversation.kind == .channel
+        let titleParts = ConversationPresentation.titleParts(conversation, text: text)
         return ChatRow(
             id: conversation.id,
             title: title,
+            titleName: titleParts?.name,
+            titleCompactCount: titleParts?.compact,
             leading: ConversationPresentation.leading(conversation),
             preview: preview.text,
             previewKind: preview.kind,
             senderPrefix: sender,
             typingLabel: typingLabel,
+            typingNamesEnd: typingLabel == nil
+                ? nil
+                : ConversationPresentation.typingNamesEnd(conversation, typingUserIds: typingUserIds, text: text),
             timeLabel: timeLabel,
             unreadCount: unread,
             hasAttachment: conversation.lastMessage.map { $0.attachment != nil && !$0.isDeleted } ?? false,
@@ -50,6 +60,7 @@ struct ChatRowBuilder {
             isCallLive: isCallLive,
             isOpeningCall: isOpeningCall,
             arrivalKey: arrivalKey,
+            isSendFailed: isSendFailed,
             accessibilityText: ConversationPresentation.accessibilityText(
                 title: title,
                 previewLine: spokenPreview,

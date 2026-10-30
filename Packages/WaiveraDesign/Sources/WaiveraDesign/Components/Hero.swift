@@ -167,13 +167,29 @@
         }
     }
 
+    /// An icon button in the hero bar, before the avatar (Chats' "+" for a new chat).
+    public struct HeroBarAction: Identifiable {
+        public let id: String
+        public let systemImage: String
+        public let accessibilityLabel: String
+        public let action: () -> Void
+
+        public init(id: String, systemImage: String, accessibilityLabel: String, action: @escaping () -> Void) {
+            self.id = id
+            self.systemImage = systemImage
+            self.accessibilityLabel = accessibilityLabel
+            self.action = action
+        }
+    }
+
     /// The hero bar (Android `WaiveraHeroTopBar`): the mark, the screen title (the heading, two
-    /// lines at most) and the signed-in person's avatar on the glass, which opens the account menu.
-    /// Without an account of its own it shows the one the app shell provides
-    /// (`\.waiveraAccountMenu`).
+    /// lines at most), any icon actions and the signed-in person's avatar on the glass, which
+    /// opens the account menu. Without an account of its own it shows the one the app shell
+    /// provides (`\.waiveraAccountMenu`).
     public struct HeroTopBar: View {
         @Environment(\.waiveraAccountMenu) private var accountMenu
         private let title: String
+        private let actions: [HeroBarAction]
         private let accountName: String?
         private let accountImage: Image?
         private let accountLabel: String?
@@ -181,12 +197,14 @@
 
         public init(
             title: String,
+            actions: [HeroBarAction] = [],
             accountName: String? = nil,
             accountImage: Image? = nil,
             accountLabel: String? = nil,
             onAccount: (() -> Void)? = nil
         ) {
             self.title = title
+            self.actions = actions
             self.accountName = accountName
             self.accountImage = accountImage
             self.accountLabel = accountLabel
@@ -203,6 +221,18 @@
                     .lineLimit(2)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityAddTraits(.isHeader)
+                ForEach(actions) { item in
+                    Button(action: item.action) {
+                        Image(systemName: item.systemImage)
+                            .font(.system(size: ControlSize.icon, weight: .semibold))
+                            .foregroundStyle(HeroPalette.onHeader)
+                            .frame(width: ControlSize.iconButton, height: ControlSize.iconButton)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.press(.compact))
+                    .accessibilityLabel(Text(item.accessibilityLabel))
+                    .accessibilityIdentifier("heroBar.\(item.id)")
+                }
                 if let accountName = accountName ?? accountMenu?.name,
                     let onAccount = onAccount ?? accountMenu?.openMenu
                 {

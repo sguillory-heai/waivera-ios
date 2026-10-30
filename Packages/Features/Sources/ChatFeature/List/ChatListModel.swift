@@ -2,6 +2,7 @@ import Foundation
 import Observation
 import WaiveraAPI
 import WaiveraData
+import WaiveraDesign
 
 /// The inbox's state and actions (02). Free of SwiftUI so it is tested on Linux over the
 /// WaiveraTestSupport fakes; `ConversationListView` owns one.
@@ -17,6 +18,8 @@ final class ChatListModel {
     static let staleAfter: TimeInterval = 60
     /// Arrival wash length: 180 ms in, 180 ms hold, 900 ms out (02 §4 "Arrival pulse").
     static let arrivalDuration: Duration = .milliseconds(1_260)
+    /// How long a row marked read under Unread shows its cleared badge before it leaves.
+    nonisolated static let removalBeat: TimeInterval = MotionTiming.removalBeat
     /// How many rows from the top get their avatars warmed (02 §4b).
     static let avatarRows = 30
 
@@ -33,6 +36,7 @@ final class ChatListModel {
     var filter = ChatListFilter.all {
         didSet {
             guard filter != oldValue else { return }
+            leavingRead = []
             orderHold.rebase(liveOrderIds())
             rebuild()
         }
@@ -46,12 +50,18 @@ final class ChatListModel {
     @ObservationIgnored private let session: any SessionRepository
     @ObservationIgnored private let realtimeStatus: any RealtimeStatusRepository
     @ObservationIgnored private let callURL: @Sendable (Conversation) async throws -> URL
+    @ObservationIgnored private let failedSendsSource: @Sendable () -> AsyncStream<Set<Int>>
     @ObservationIgnored private let text: any ChatListText
     @ObservationIgnored private let clock: any WaiveraClock
     @ObservationIgnored private let timeFormatter: RelativeTimeFormatter
 
     @ObservationIgnored private var resource = Resource<[Conversation]>()
     @ObservationIgnored private var typing: [Int: [String]] = [:]
+    /// Conversations with a message of mine that never went out (the outbox's failed sends).
+    @ObservationIgnored private var failedSends: Set<Int> = []
+    /// Rows just marked read under the Unread filter: they stay for the removal beat, so the
+    /// badge is seen to clear before the row leaves.
+    @ObservationIgnored private var leavingRead: Set<Int> = []
     @ObservationIgnored private var user: CurrentUser?
     @ObservationIgnored private var banner = ConnectionBanner.hidden
     @ObservationIgnored private var isHubConnected = false
@@ -76,6 +86,7 @@ final class ChatListModel {
         session: any SessionRepository,
         realtimeStatus: any RealtimeStatusRepository,
         callURL: @escaping @Sendable (Conversation) async throws -> URL,
+        failedSends: @escaping @Sendable () -> AsyncStream<Set<Int>> = ChatListModel.noFailedSends,
         text: any ChatListText,
         clock: any WaiveraClock,
         locale: Locale = .current
@@ -85,6 +96,7 @@ final class ChatListModel {
         self.session = session
         self.realtimeStatus = realtimeStatus
         self.callURL = callURL
+        failedSendsSource = failedSends
         self.text = text
         self.clock = clock
         timeFormatter = RelativeTimeFormatter(text: text, locale: locale)
@@ -104,6 +116,11 @@ final class ChatListModel {
         )
     }
 
+    /// Until the data layer publishes the outbox's failed sends, no row says "Not sent".
+    nonisolated static let noFailedSends: @Sendable () -> AsyncStream<Set<Int>> = {
+        AsyncStream { $0.finish() }
+    }
+
     // MARK: Lifecycle
 
     /// Subscribes to every stream until the calling task is cancelled (the view's `.task`).
@@ -116,6 +133,7 @@ final class ChatListModel {
             group.addTask { await self.observeSession() }
             group.addTask { await self.observeBanner() }
             group.addTask { await self.observeStatuses() }
+            group.addTask { await self.observeFailedSends() }
             group.addTask { await self.tick() }
         }
     }
@@ -177,6 +195,7 @@ final class ChatListModel {
         else { return }
         optimisticRead[conversationId] = conversation.lastMessage?.id ?? 0
         if state.notice?.kind == .markReadFailed(conversationId: conversationId) { state.notice = nil }
+        if filter == .unread { holdLeavingRow(conversationId) }
         rebuild()
         let messages = messages
         Task {
@@ -186,6 +205,21 @@ final class ChatListModel {
                 self.markReadFailed(conversationId: conversationId)
             }
         }
+    }
+
+    /// The removal beat (`MotionTiming.removalBeat`): the read row shows its cleared badge, then leaves.
+    private func holdLeavingRow(_ conversationId: Int) {
+        leavingRead.insert(conversationId)
+        let clock = clock
+        Task { [weak self] in
+            try? await clock.sleep(for: .milliseconds(Int(Self.removalBeat * 1_000)))
+            self?.releaseLeavingRow(conversationId)
+        }
+    }
+
+    private func releaseLeavingRow(_ conversationId: Int) {
+        guard leavingRead.remove(conversationId) != nil else { return }
+        rebuild()
     }
 
     private func markReadFailed(conversationId: Int) {
@@ -239,6 +273,13 @@ extension ChatListModel {
     private func observeTyping() async {
         for await next in conversations.typing() {
             typing = next
+            rebuild()
+        }
+    }
+
+    private func observeFailedSends() async {
+        for await next in failedSendsSource() {
+            failedSends = next
             rebuild()
         }
     }
@@ -372,7 +413,9 @@ extension ChatListModel {
         }
         let zone = user?.scheduleTimeZone ?? .current
         let built = all.sorted(by: ConversationPresentation.inboxOrder).map { row($0, zone: zone) }
-            .filter { ConversationPresentation.matches($0, filter: filter, query: query) }
+            .filter {
+                ConversationPresentation.matches($0, filter: filter, query: query) || leavingRead.contains($0.id)
+            }
         let arranged = orderHold.arrange(built.map(\.id))
         let builtById = Dictionary(built.map { ($0.id, $0) }) { first, _ in first }
         next.rows = arranged.order.compactMap { builtById[$0] }
@@ -394,7 +437,8 @@ extension ChatListModel {
             timeLabel: timeFormatter.label(for: conversation.lastMessage?.createdAt, now: now, timeZone: zone),
             isMarkedRead: optimisticRead[conversation.id] != nil,
             isOpeningCall: openingCallId == conversation.id,
-            arrivalKey: arrivals[conversation.id]
+            arrivalKey: arrivals[conversation.id],
+            isSendFailed: failedSends.contains(conversation.id)
         ).row(conversation)
     }
 }
