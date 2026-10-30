@@ -77,7 +77,7 @@ Run the narrowest test target that covers the change first, then the full scheme
 
 ## Design, motion, and feedback
 
-- Use `WaiveraDesign` tokens only. Primary purple `#7E57C2` (dark mode accent `#A78BFA`). No inline hex colors or magic spacing numbers.
+- Use `WaiveraDesign` tokens only. Primary purple `#6A3DC4` (dark mode accent `#B79CFF`, dark solid fill `#8048E6`), matching the approved Android palette. No inline hex colors or magic spacing numbers.
 - Support Dynamic Type through accessibility sizes, VoiceOver labels on every control, and 44×44pt minimum hit targets.
 - Motion: spring animations from `WaiveraDesign.Motion`; respect `accessibilityReduceMotion`. Animations explain state changes; they never delay the user.
 - Haptics through the shared `Haptics` helper (success, warning, selection) only at meaningful moments: send, receive while visible, errors, toggles.
