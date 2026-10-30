@@ -16,6 +16,20 @@
 
         func body(content: Content) -> some View {
             content
+                .modifier(PopKeyframes(pops: pops))
+                .onChange(of: key) {
+                    if !reduceMotion { pops += 1 }
+                }
+        }
+    }
+
+    /// The pop itself, kept out of the generic `PopOnChange` so the keyframe closures (which
+    /// SwiftUI runs as `@Sendable`) never capture the non-Sendable `Key` metatype.
+    private struct PopKeyframes: ViewModifier {
+        let pops: Int
+
+        func body(content: Content) -> some View {
+            content
                 .keyframeAnimator(initialValue: 1.0, trigger: pops) { view, scale in
                     view.scaleEffect(scale)
                 } keyframes: { _ in
@@ -30,9 +44,6 @@
                             )
                         )
                     }
-                }
-                .onChange(of: key) {
-                    if !reduceMotion { pops += 1 }
                 }
         }
     }

@@ -91,6 +91,20 @@
 
         func body(content: Content) -> some View {
             content
+                .modifier(ShakeAnimation(runs: runs))
+                .onChange(of: trigger) {
+                    if MotionPolicy.shakes(reduceMotion: reduceMotion) { runs += 1 }
+                }
+        }
+    }
+
+    /// The shake itself, kept out of the generic `ShakeModifier` so the keyframe closures (which
+    /// SwiftUI runs as `@Sendable`) never capture the non-Sendable `Trigger` metatype.
+    private struct ShakeAnimation: ViewModifier {
+        let runs: Int
+
+        func body(content: Content) -> some View {
+            content
                 .keyframeAnimator(initialValue: 0.0, trigger: runs) { view, value in
                     view.offset(x: CGFloat(value) * Spacing.shakeAmplitude)
                 } keyframes: { _ in
@@ -104,9 +118,6 @@
                         LinearKeyframe(shakeStep(4).value, duration: shakeStep(4).duration, timingCurve: shakeEasing())
                         LinearKeyframe(shakeStep(5).value, duration: shakeStep(5).duration, timingCurve: shakeEasing())
                     }
-                }
-                .onChange(of: trigger) {
-                    if MotionPolicy.shakes(reduceMotion: reduceMotion) { runs += 1 }
                 }
         }
     }
