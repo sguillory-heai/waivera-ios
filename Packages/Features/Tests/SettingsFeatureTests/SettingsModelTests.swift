@@ -48,6 +48,16 @@ struct NotificationSwitchesTests {
         NotificationSwitches.set(.digest, to: false, in: &preferences)
         #expect(preferences == NotificationPreferences())
     }
+
+    @Test func dependentSwitchesAreLiveOnlyWhenANotificationCanArrive() {
+        #expect(NotificationSwitches.block(pushEnabled: true, system: .on) == nil)
+        #expect(NotificationSwitches.block(pushEnabled: true, system: .deliveredQuietly) == nil)
+        #expect(NotificationSwitches.block(pushEnabled: true, system: .notAsked) == nil)
+        #expect(NotificationSwitches.block(pushEnabled: false, system: .on) == .pushOff)
+        // iOS blocking the app is the reason to fix first, whatever the push switch says.
+        #expect(NotificationSwitches.block(pushEnabled: true, system: .offInSystemSettings) == .systemOff)
+        #expect(NotificationSwitches.block(pushEnabled: false, system: .offInSystemSettings) == .systemOff)
+    }
 }
 
 @MainActor
@@ -124,13 +134,28 @@ struct AccountModelTests {
         model.requestSignOut()
         #expect(model.isConfirmingSignOut)
         #expect(model.confirmSignOut())
-        await fake.session.signOut()
+        #expect(model.isConfirmingSignOut, "the sheet stays up, busy, until the session signs out")
+        #expect(model.isSigningOut)
+        model.setConfirmingSignOut(false)
+        #expect(model.isConfirmingSignOut, "it cannot be swiped away mid sign-out")
         #expect(!model.confirmSignOut(), "a second sign-out is a no-op")
+        await fake.session.signOut()
         #expect(fake.push.unregisterCount.get() == 1)
         #expect(fake.session.currentState == .signedOut(nil))
         await eventually { model.account == nil }
+        #expect(!model.isConfirmingSignOut)
         model.requestSignOut()
         #expect(!model.isConfirmingSignOut)
+    }
+
+    @Test func dismissingTheQuestionSignsNothingOut() async {
+        let fake = await launchedFake()
+        let model = AccountModel(environment: fake.environment)
+        model.requestSignOut()
+        model.setConfirmingSignOut(false)
+        #expect(!model.isConfirmingSignOut)
+        #expect(!model.isSigningOut)
+        #expect(fake.session.currentState.isSignedIn)
     }
 
     @Test func summaryUsesTheNameAndOrganization() {

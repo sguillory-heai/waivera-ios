@@ -15,8 +15,9 @@
         static var accountSection: String { text("settings.section.account") }
         static var notificationsRowDetail: String { text("settings.notifications.row.detail") }
         static var appearanceRowDetail: String { text("settings.appearance.row.detail") }
-        static var accountRowDetail: String { text("settings.account.row.detail") }
         static var signedIn: String { text("settings.account.unknown") }
+        static var on: String { text("settings.switch.on") }
+        static var off: String { text("settings.switch.off") }
 
         // Appearance
         static var appearanceTitle: String { text("settings.appearance.title") }
@@ -37,6 +38,7 @@
         static var notificationsTitle: String { text("settings.notifications.title") }
         static var statusNotAsked: String { text("settings.notifications.status.notAsked") }
         static var statusQuiet: String { text("settings.notifications.status.quiet") }
+        static var statusOffTitle: String { text("settings.notifications.status.off.title") }
         static var statusOff: String { text("settings.notifications.status.off") }
         static var turnOn: String { text("settings.notifications.turnOn") }
         static var turnOnAlerts: String { text("settings.notifications.turnOnAlerts") }
@@ -46,6 +48,7 @@
         static var pushSubtitle: String { text("settings.push.subtitle") }
         static var categoriesSection: String { text("settings.categories.section") }
         static var categoriesFooter: String { text("settings.categories.footer") }
+        static var categoriesSystemOff: String { text("settings.categories.systemOff") }
         static var privacySection: String { text("settings.privacy.section") }
         static var previewsTitle: String { text("settings.previews.title") }
         static var previewsSubtitle: String { text("settings.previews.subtitle") }
@@ -57,6 +60,7 @@
         static var systemSection: String { text("settings.system.section") }
         static var systemExplainer: String { text("settings.system.explainer") }
         static var systemOpen: String { text("settings.system.open") }
+        static var systemOpenHint: String { text("settings.system.open.hint") }
 
         static func category(_ meaning: NotificationMeaning) -> (title: String, detail: String) {
             switch meaning {
@@ -74,19 +78,14 @@
         }
 
         // Account
-        static var accountTitle: String { text("settings.account.title") }
-        static var accountName: String { text("settings.account.name") }
-        static var accountEmail: String { text("settings.account.email") }
-        static var accountOrganization: String { text("settings.account.organization") }
         static var securitySection: String { text("settings.account.security") }
         static var changePassword: String { text("settings.account.changePassword") }
         static var changePasswordDetail: String { text("settings.account.changePassword.detail") }
         static var signOut: String { text("settings.account.signOut") }
+        static var signingOut: String { text("settings.account.signingOut") }
         static var signOutDetail: String { text("settings.account.signOut.detail") }
         static var signOutConfirmTitle: String { text("settings.account.signOut.confirmTitle") }
         static var signOutConfirmMessage: String { text("settings.account.signOut.confirmMessage") }
-        static var diagnostics: String { text("settings.account.diagnostics") }
-        static var diagnosticsCopied: String { text("settings.account.diagnostics.copied") }
 
         // Change password
         static var passwordTitle: String { text("settings.password.title") }

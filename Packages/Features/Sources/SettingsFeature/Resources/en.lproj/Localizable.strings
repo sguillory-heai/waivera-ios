@@ -4,35 +4,39 @@
 "settings.section.account" = "Account";
 "settings.notifications.row.detail" = "Messages, group activity and alerts";
 "settings.appearance.row.detail" = "Theme and haptics";
-"settings.account.row.detail" = "Password and sign out";
 "settings.account.unknown" = "Signed in";
+/* A switch row's state, as VoiceOver reads it. */
+"settings.switch.on" = "On";
+"settings.switch.off" = "Off";
 
 /* Appearance */
 "settings.appearance.title" = "Appearance";
 "settings.theme.section" = "Theme";
 "settings.theme.system" = "System";
-"settings.theme.system.detail" = "Match your device's light or dark setting";
+"settings.theme.system.detail" = "Match your device’s light or dark setting";
 "settings.theme.light" = "Light";
 "settings.theme.light.detail" = "Always use the light theme";
 "settings.theme.dark" = "Dark";
 "settings.theme.dark.detail" = "Always use the dark theme";
 "settings.feedback.section" = "Feedback";
 "settings.haptics.title" = "Haptics";
-"settings.haptics.subtitle" = "Gentle taps when you send a message, flip a switch or something goes wrong.";
+"settings.haptics.subtitle" = "One short vibration when a message fails to send or a sign-in is not accepted. Nothing else vibrates.";
 
 /* Notifications */
 "settings.notifications.title" = "Notifications";
 "settings.notifications.status.notAsked" = "Notifications are not turned on yet.";
 "settings.notifications.status.quiet" = "Notifications arrive quietly in Notification Center, without alerts or sounds.";
-"settings.notifications.status.off" = "Notifications are off for Waivera in iOS Settings. You won't hear about new messages or schedule changes.";
+"settings.notifications.status.off.title" = "Notifications are off for Waivera";
+"settings.notifications.status.off" = "iOS is blocking notifications from Waivera, so nothing below will reach you until you turn them on.";
 "settings.notifications.turnOn" = "Turn on";
 "settings.notifications.turnOnAlerts" = "Turn on alerts";
 "settings.notifications.openSettings" = "Open Settings";
 "settings.push.section" = "Push notifications";
 "settings.push.title" = "Push notifications";
-"settings.push.subtitle" = "Get notified when Waivera isn't open.";
+"settings.push.subtitle" = "Hear from Waivera even when the app is closed.";
 "settings.categories.section" = "Notify me about";
-"settings.categories.footer" = "Turn push notifications on to choose what reaches you.";
+"settings.categories.footer" = "Turn on push notifications to choose what you hear about.";
+"settings.categories.systemOff" = "Turn notifications on in iOS Settings to use these.";
 "settings.category.messages" = "Direct messages and mentions";
 "settings.category.messages.detail" = "Messages sent to you, times someone mentions you, and calls.";
 "settings.category.group_activity" = "Group chat activity";
@@ -45,30 +49,26 @@
 "settings.category.digest.detail" = "Milestones, announcements and other low-priority updates.";
 "settings.privacy.section" = "Privacy";
 "settings.previews.title" = "Show message previews";
-"settings.previews.subtitle" = "When off, notifications say you have a new message without showing what it says.";
-"settings.inApp.section" = "While you're using Waivera";
+"settings.previews.subtitle" = "When this is off, notifications say you have a new message but not what it says.";
+"settings.inApp.section" = "While you’re using Waivera";
 "settings.inAppBanners.title" = "In-app banners";
-"settings.inAppBanners.subtitle" = "Show a banner for new messages outside the conversation you're viewing.";
+"settings.inAppBanners.subtitle" = "Show a banner for new messages outside the conversation you’re viewing.";
 "settings.inAppSound.title" = "Sound";
 "settings.inAppSound.subtitle" = "Play a sound with those banners.";
 "settings.system.section" = "Sounds, banners and lock screen";
 "settings.system.explainer" = "iOS decides how each alert looks and sounds. Change the style, sounds and lock screen previews in the Settings app.";
 "settings.system.open" = "Open iOS notification settings";
+"settings.system.open.hint" = "Opens the Settings app";
 
 /* Account */
-"settings.account.title" = "Account";
-"settings.account.name" = "Name";
-"settings.account.email" = "Email";
-"settings.account.organization" = "Organization";
 "settings.account.security" = "Security";
 "settings.account.changePassword" = "Change password";
-"settings.account.changePassword.detail" = "Choose a new password for Waivera.";
+"settings.account.changePassword.detail" = "Update the password you use to sign in";
 "settings.account.signOut" = "Sign out";
+"settings.account.signingOut" = "Signing out…";
 "settings.account.signOut.detail" = "Signing out stops notifications for this account on this device.";
 "settings.account.signOut.confirmTitle" = "Sign out of Waivera?";
-"settings.account.signOut.confirmMessage" = "You'll stop getting notifications on this device until you sign in again.";
-"settings.account.diagnostics" = "Copy diagnostics";
-"settings.account.diagnostics.copied" = "Diagnostics copied";
+"settings.account.signOut.confirmMessage" = "You’ll stop getting notifications on this device until you sign in again.";
 
 /* Change password */
 "settings.password.title" = "Change password";

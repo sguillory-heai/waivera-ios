@@ -7,8 +7,9 @@
         import WaiveraTestSupport
     #endif
 
-    /// System / Light / Dark, and the Haptics switch. The app root applies both from the same
-    /// settings stream, so a change shows at once and System follows the device live.
+    /// System / Light / Dark, and the Haptics switch (Android `AppearanceScreen`). The app root
+    /// applies both from the same settings stream, so a change shows at once and System follows
+    /// the device live.
     public struct AppearanceSettingsView: View {
         @Environment(\.dataEnvironment) private var data
 
@@ -27,8 +28,8 @@
                     )
                 }
             }
-            .background(Palette.background)
             .navigationTitle(SettingsStrings.appearanceTitle)
+            .accessibilityIdentifier("screen.settings-appearance")
         }
     }
 
@@ -57,60 +58,37 @@
         let onHaptics: (Bool) -> Void
 
         var body: some View {
-            List {
-                Section(SettingsStrings.themeSection) {
-                    ForEach(AppearancePreference.allCases, id: \.self) { preference in
-                        ThemeRow(preference: preference, isSelected: preference == appearance) {
+            SettingsPage {
+                SectionHeader(SettingsStrings.themeSection)
+                CardGroup {
+                    ForEach(Array(AppearancePreference.allCases.enumerated()), id: \.element) { index, preference in
+                        if index > 0 {
+                            SettingsRowDivider()
+                        }
+                        let copy = SettingsStrings.theme(preference)
+                        SettingsRadioRow(
+                            title: copy.title,
+                            subtitle: copy.detail,
+                            isSelected: preference == appearance
+                        ) {
                             onSelect(preference)
                         }
+                        .accessibilityIdentifier("appearance.\(preference.rawValue)")
                     }
                 }
-                Section(SettingsStrings.feedbackSection) {
-                    ToggleRow(
-                        SettingsStrings.hapticsTitle,
+                SectionHeader(SettingsStrings.feedbackSection)
+                CardGroup {
+                    // The Notifications rows' tile language; it goes neutral when off, as there.
+                    SettingsToggleRow(
+                        title: SettingsStrings.hapticsTitle,
                         subtitle: SettingsStrings.hapticsSubtitle,
-                        isOn: Binding(get: { hapticsEnabled }, set: onHaptics)
+                        systemImage: "iphone.radiowaves.left.and.right",
+                        tone: hapticsEnabled ? .rose : .neutral,
+                        isOn: hapticsEnabled,
+                        onChange: onHaptics
                     )
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Palette.surface)
                     .accessibilityIdentifier("appearance.haptics")
                 }
-            }
-            .listStyle(.insetGrouped)
-            .scrollContentBackground(.hidden)
-        }
-    }
-
-    /// A radio-style row: spoken as a selected or unselected button, with a check mark.
-    private struct ThemeRow: View {
-        let preference: AppearancePreference
-        let isSelected: Bool
-        let action: () -> Void
-
-        var body: some View {
-            let copy = SettingsStrings.theme(preference)
-            Button(action: action) {
-                ListRow(title: copy.title, subtitle: copy.detail) {
-                    IconTile(systemImage: symbol)
-                } trailing: {
-                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                        .font(WaiveraFont.sectionTitle)
-                        .foregroundStyle(isSelected ? Palette.accent : Palette.textSecondary)
-                        .accessibilityHidden(true)
-                }
-            }
-            .buttonStyle(.pressScale)
-            .listRowInsets(EdgeInsets())
-            .listRowBackground(Palette.surface)
-            .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
-            .accessibilityIdentifier("appearance.\(preference.rawValue)")
-        }
-
-        private var symbol: String {
-            switch preference {
-            case .system: "circle.lefthalf.filled"
-            case .light: "sun.max.fill"
-            case .dark: "moon.fill"
             }
         }
     }
@@ -125,7 +103,7 @@
             }
             .preferredColorScheme(.dark)
         }
-        #Preview("AX XXXL") {
+        #Preview("AX5") {
             NavigationStack {
                 AppearanceContent(appearance: .system, hapticsEnabled: true, onSelect: { _ in }, onHaptics: { _ in })
             }
