@@ -127,5 +127,6 @@
 "schedule.chat.failed" = "Couldn't open the chat. %@";
 "schedule.event.notFound.title" = "Event not found";
 "schedule.event.notFound.message" = "This event isn't on your schedule anymore, or it's outside the dates that can be looked up.";
-"schedule.event.refreshFailed" = "Couldn't refresh this event. Showing what was saved.";
+"schedule.event.refreshFailed" = "Showing what was saved.";
+"schedule.event.refreshFailed.title" = "Couldn't refresh this event";
 "schedule.close" = "Close";

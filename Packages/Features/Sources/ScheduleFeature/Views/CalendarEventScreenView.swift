@@ -28,7 +28,7 @@
                 EmptyView()
             case .notFound:
                 EmptyStateView(
-                    systemImage: "calendar.badge.exclamationmark",
+                    illustration: .schedule,
                     title: ScheduleStrings.text("schedule.event.notFound.title"),
                     message: ScheduleStrings.text("schedule.event.notFound.message")
                 )

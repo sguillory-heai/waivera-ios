@@ -2,17 +2,26 @@
     import SwiftUI
     import WaiveraDesign
 
-    /// Shaped like the loaded screen: title, organizer, time card and invitation.
+    /// Shaped like the loaded event (Android `EventBodySkeleton`): the title and two shorter
+    /// lines, then rows like the attendees'. Spoken once as "Loading event…".
     struct EventSkeleton: View {
+        private static let lineFractions: [CGFloat] = [0.7, 0.5, 0.35]
+
         var body: some View {
-            VStack(alignment: .leading, spacing: Spacing.medium) {
-                SkeletonBlock(height: ControlSize.skeletonLine * 2).padding(.trailing, Spacing.huge)
-                SkeletonBlock(height: ControlSize.iconTile, cornerRadius: Radius.card)
-                SkeletonBlock(height: ControlSize.iconTile * 2, cornerRadius: Radius.card)
-                SkeletonBlock(height: ControlSize.buttonHeight, cornerRadius: Radius.button)
+            VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: Spacing.mediumSmall) {
+                    ForEach(Array(Self.lineFractions.enumerated()), id: \.offset) { _, fraction in
+                        SkeletonBlock(height: ControlSize.skeletonLine)
+                            .containerRelativeFrame(.horizontal, alignment: .leading) { width, _ in
+                                (width - 2 * Spacing.gutter) * fraction
+                            }
+                    }
+                }
+                .padding([.horizontal, .top], Spacing.gutter)
+                SkeletonList(rows: 3)
             }
-            .padding(Spacing.medium)
-            .accessibilityElement()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(ScheduleStrings.text("schedule.event.loading")))
         }
     }
