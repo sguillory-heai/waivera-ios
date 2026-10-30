@@ -94,6 +94,27 @@ struct ChatListRowRulesTests {
         #expect(await eventually { harness.row(7)?.isSendFailed == false })
     }
 
+    @Test("Built from the data environment, the list follows the outbox's failed sends")
+    func failedSendsFromTheDataEnvironment() async throws {
+        let harness = ListHarness()
+        // English copy, not the bundle's: Linux Foundation's bundle lookup is not safe across
+        // the parallel test run.
+        let model = ChatListModel(
+            environment: harness.fakes.environment,
+            text: EnglishText(),
+            locale: Locale(identifier: "en_US")
+        )
+        await harness.fakes.environment.launch()
+        let task = Task { await model.start() }
+        defer { task.cancel() }
+        #expect(await eventually { model.state.rows.first { $0.id == 7 }?.isSendFailed == true })
+        await harness.fakes.chat.open(conversationId: 7)
+        var timelines = harness.fakes.chat.timeline(conversationId: 7).makeAsyncIterator()
+        let failed = try #require(await timelines.next()?.value?.pending.first)
+        await harness.fakes.chat.retry(clientMessageId: failed.clientMessageId)
+        #expect(await eventually { model.state.rows.first { $0.id == 7 }?.isSendFailed == false })
+    }
+
     @Test("Under Unread, a row marked read shows its cleared badge for the removal beat, then leaves")
     func removalBeat() async {
         let harness = ListHarness()

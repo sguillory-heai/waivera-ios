@@ -151,6 +151,20 @@ struct TodayModelTests {
 
     // MARK: Invitations
 
+    @Test func aFailedSendFromTheOutboxLeadsNeedsYouUntilItGoesOut() async throws {
+        let harness = TodayHarness()
+        let model = harness.todayModel()
+        try await running(model) {
+            #expect(await eventually { model.state.needsYou.items.first?.id == "not-sent-7" })
+            #expect(model.state.needsYou.kinds[.notSent] == 1)
+            await harness.fakes.chat.open(conversationId: 7)
+            let timeline = await latest(harness.fakes.chat.timeline(conversationId: 7))?.value
+            let failed = try #require(timeline?.pending.first)
+            await harness.fakes.chat.retry(clientMessageId: failed.clientMessageId)
+            #expect(await eventually { !model.state.needsYou.items.contains { $0.id == "not-sent-7" } })
+        }
+    }
+
     @Test func invitationAnsweringHidesItAtOnceAndAFailureBringsItBack() async throws {
         let invite = Fixture.event("evt_review", "2026-11-02T15:00:00Z", "2026-11-02T16:00:00Z", response: .pending)
         let harness = TodayHarness(events: [invite])

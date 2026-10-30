@@ -9,8 +9,8 @@ struct TodaySources: Sendable {
     var activity = Resource<ActivityFeed>()
     var schedule: [Resource<CalendarFeed>] = []
     var milestones = Resource<MilestoneIndex>()
-    /// Conversations with a message of mine the outbox gave up on. The data layer does not
-    /// publish these yet, so production passes none and Not sent rows stay hidden.
+    /// Conversations with a message of mine the outbox gave up on
+    /// (`ConversationsRepository.failedSends()`), which lead Needs you as Not sent rows.
     var failedSends: Set<Int> = []
 }
 

@@ -104,19 +104,27 @@ final class ChatListModel {
         user = session.currentState.user
     }
 
-    convenience init(environment: DataEnvironment) {
+    /// The screen's model over the data layer. `text` and `locale` are the device's own unless a
+    /// test pins them.
+    convenience init(
+        environment: DataEnvironment,
+        text: any ChatListText = LocalizedChatListText(),
+        locale: Locale = .current
+    ) {
         self.init(
             conversations: environment.conversations,
             messages: environment.messages,
             session: environment.session,
             realtimeStatus: environment.realtimeStatus,
             callURL: environment.callURL,
-            text: LocalizedChatListText(),
-            clock: environment.clock
+            failedSends: { [conversations = environment.conversations] in conversations.failedSends() },
+            text: text,
+            clock: environment.clock,
+            locale: locale
         )
     }
 
-    /// Until the data layer publishes the outbox's failed sends, no row says "Not sent".
+    /// For tests and previews with no outbox: no row says "Not sent".
     nonisolated static let noFailedSends: @Sendable () -> AsyncStream<Set<Int>> = {
         AsyncStream { $0.finish() }
     }

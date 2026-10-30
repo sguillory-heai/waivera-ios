@@ -73,6 +73,7 @@ final class TodayModel {
         }
         await withDiscardingTaskGroup { group in
             group.addTask { await self.observeConversations() }
+            group.addTask { await self.observeFailedSends() }
             group.addTask { await self.activity.observe() }
             group.addTask { await self.observeMilestones() }
             group.addTask { await self.observeConnection() }
@@ -158,6 +159,14 @@ final class TodayModel {
     private func observeConversations() async {
         for await value in environment.conversations.conversations() {
             sources.conversations = value
+            rebuild()
+        }
+    }
+
+    /// The outbox's failed sends, for the Not sent rows and the hero's "not sent" count.
+    private func observeFailedSends() async {
+        for await value in environment.conversations.failedSends() where value != sources.failedSends {
+            sources.failedSends = value
             rebuild()
         }
     }
