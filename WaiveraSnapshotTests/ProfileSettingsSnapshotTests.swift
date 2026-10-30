@@ -109,9 +109,7 @@
             var noMatches = people
             noMatches.rows = []
             noMatches.isSearching = true
-            noMatches.isFiltered = true
             noMatches.phase = .noMatches
-            noMatches.emptyReason = .noMatch
             assertScreen(peopleView(noMatches), named: "people_noMatches")
             var empty = PeopleDisplayState()
             empty.phase = .empty
@@ -201,7 +199,7 @@
             assertScreen(
                 NotificationSettingsContent(
                     preferences: NotificationPreferences(),
-                    systemStatus: .on,
+                    systemStatus: .enabled,
                     actions: NotificationSettingsActions()
                 ),
                 named: "settingsNotifications_on"
@@ -211,7 +209,7 @@
             assertScreen(
                 NotificationSettingsContent(
                     preferences: pushOff,
-                    systemStatus: .on,
+                    systemStatus: .enabled,
                     actions: NotificationSettingsActions()
                 ),
                 named: "settingsNotifications_pushOff"
