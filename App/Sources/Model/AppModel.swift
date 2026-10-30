@@ -356,8 +356,9 @@ extension AppModel {
 
     func handle(url: URL) {
         guard let destination = DeepLink.destination(from: url) else {
-            // The stack stays where it is, but the tap is acknowledged.
-            unopenableLink = UUID()
+            // The stack stays where it is, but the tap is acknowledged. Signed out there is no
+            // one to tell: the notice would wait for whoever signs in next (PS-05).
+            if session.isSignedIn { unopenableLink = UUID() }
             return
         }
         // Links are not deduplicated: the same link tapped twice should work twice.

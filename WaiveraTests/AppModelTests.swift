@@ -371,6 +371,16 @@ struct AppModelNavigationTests {
         #expect(harness.model.unopenableLink == nil)
     }
 
+    @Test func anUnopenableLinkWhileSignedOutIsNotShownToWhoeverSignsInNext() async throws {
+        let harness = AppModelHarness(scenario: .signedOut)
+        harness.model.start()
+        await harness.settle()
+        harness.model.handle(url: try link("waivera://nowhere"))
+        #expect(harness.model.unopenableLink == nil)
+        try await harness.signIn()
+        #expect(harness.model.unopenableLink == nil)
+    }
+
     @Test func chatAlertBannerOpensItsThreadAndClears() async {
         let harness = AppModelHarness()
         await harness.startSignedIn()
