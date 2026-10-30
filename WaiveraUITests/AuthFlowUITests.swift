@@ -20,20 +20,27 @@ final class AuthFlowUITests: XCTestCase {
     @MainActor
     func testWrongPasswordShowsAMappedErrorThenTheRightOneSignsIn() {
         let app = launch(scenario: "signedOut")
-        let email = app.textFields["Email"]
+        let email = app.textFields["signIn.email"]
         XCTAssertTrue(email.waitForExistence(timeout: 15))
-        let signIn = app.buttons["Sign in"]
-        XCTAssertFalse(signIn.isEnabled, "disabled until both fields have text")
+        // As on Android, Sign in stays enabled with empty fields: a tap explains what is missing
+        // under each field instead of a dimmed button that says nothing.
+        let signIn = app.buttons["signIn.submit"]
+        XCTAssertTrue(signIn.isEnabled)
+        signIn.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["screen.sign-in"].exists)
+        XCTAssertFalse(app.waiveraTabBar.exists)
 
         email.tap()
         email.typeText("  alex.rivera@example.org ")
-        let password = app.secureTextFields["Password"]
+        let password = app.secureTextFields["signIn.password"]
         password.tap()
         password.typeText("not the password")
-        XCTAssertTrue(signIn.isEnabled)
         signIn.tap()
 
-        let error = app.staticTexts["That email and password don't match. Please try again."]
+        let message = "That email and password don't match. Please try again."
+        let error = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@", message))
+            .firstMatch
         XCTAssertTrue(error.waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'Firebase'")).firstMatch.exists)
 
@@ -43,14 +50,14 @@ final class AuthFlowUITests: XCTestCase {
         password.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
         password.typeText(demoPassword)
         XCTAssertFalse(error.exists)
-        app.buttons["Sign in"].tap()
+        signIn.tap()
         XCTAssertTrue(app.waiveraTabBar.waitForExistence(timeout: 10))
     }
 
     @MainActor
     func testRequiredPasswordChangeBlocksTheTabsUntilDone() throws {
         let app = launch(scenario: "passwordChange")
-        let current = app.secureTextFields["Current password"]
+        let current = app.secureTextFields["passwordChange.current"]
         XCTAssertTrue(current.waitForExistence(timeout: 15))
         XCTAssertFalse(app.waiveraTabBar.exists)
 
@@ -62,13 +69,13 @@ final class AuthFlowUITests: XCTestCase {
 
         current.tap()
         current.typeText(demoPassword)
-        let new = app.secureTextFields["New password"]
+        let new = app.secureTextFields["passwordChange.new"]
         new.tap()
         new.typeText("a brand new phrase")
-        let confirmation = app.secureTextFields["Confirm new password"]
+        let confirmation = app.secureTextFields["passwordChange.confirmation"]
         confirmation.tap()
         confirmation.typeText("a brand new phrase")
-        app.buttons["Update password"].tap()
+        app.buttons["passwordChange.submit"].tap()
         XCTAssertTrue(app.waiveraTabBar.waitForExistence(timeout: 10))
     }
 }

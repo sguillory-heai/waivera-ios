@@ -23,9 +23,16 @@ final class LaunchTests: XCTestCase {
         XCTAssertTrue(app.waiveraTabBar.waitForExistence(timeout: 15))
         let url = try XCTUnwrap(URL(string: "waivera://chats/7?messageId=9312"))
         app.open(url)
+        // The conversation is pushed on the Chat tab; the tab bar shows on tab roots only.
+        XCTAssertTrue(app.descendants(matching: .any)["composer.field"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.waiveraTabBar.exists)
+        // A push or link opened chat backs out to the inbox, with the Chat tab selected.
+        let back = app.navigationBars.buttons
+            .matching(NSPredicate(format: "identifier == 'BackButton' OR label == 'Chats'"))
+            .firstMatch
+        XCTAssertTrue(back.waitForExistence(timeout: 5))
+        back.tap()
         XCTAssertTrue(app.waiveraTab("chat").waitForExistence(timeout: 5))
         XCTAssertTrue(app.waiveraTab("chat").isSelected)
-        // A push or link opened chat backs out to the inbox (the "Chats" list).
-        XCTAssertTrue(app.navigationBars.buttons["Chats"].waitForExistence(timeout: 5))
     }
 }
