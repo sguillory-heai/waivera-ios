@@ -206,6 +206,9 @@ struct TodayHarness {
         )
     }
 
+    /// The handled tally's storage, in memory so tests never touch the device's defaults.
+    let handledStore = KeyValueHandledTallyStore(store: InMemoryKeyValueStore())
+
     /// The calendar in use: the demo one, or one built from the events passed in.
     let calendar: FakeCalendarRepository
 
@@ -214,7 +217,12 @@ struct TodayHarness {
     @MainActor
     func todayModel() -> TodayModel {
         let uptime = uptime
-        return TodayModel(environment: environment, clock: clock, uptime: { uptime.now })
+        return TodayModel(
+            environment: environment,
+            clock: clock,
+            uptime: { uptime.now },
+            handledStore: handledStore
+        )
     }
 
     @MainActor

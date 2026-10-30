@@ -8,9 +8,17 @@ struct TodayFormatter {
     private let time: DateFormatter
     private let day: DateFormatter
     private let longDay: DateFormatter
+    private let hour: DateFormatter
+    private let bareHour: DateFormatter
+    private let clock: DateFormatter
+    private let meridiem: DateFormatter
 
     init(locale: Locale = .autoupdatingCurrent) {
         time = Self.formatter("h:mm a", locale: locale)
+        hour = Self.formatter("h a", locale: locale)
+        bareHour = Self.formatter("h", locale: locale)
+        clock = Self.formatter("h:mm", locale: locale)
+        meridiem = Self.formatter("a", locale: locale)
         day = Self.formatter("EEE, MMM d", locale: locale)
         longDay = Self.formatter("EEEE, MMMM d", locale: locale)
     }
@@ -25,7 +33,20 @@ struct TodayFormatter {
     }
 
     func time(_ value: ClockTime) -> String {
-        time.string(from: Date(timeIntervalSince1970: TimeInterval(value.hour * 3_600 + value.minute * 60)))
+        time.string(from: Self.utcClock(value))
+    }
+
+    /// A whole hour on the day track: "8 AM", or the bare "10" between the ends and noon.
+    func hour(_ value: ClockTime, withPeriod: Bool) -> String {
+        (withPeriod ? hour : bareHour).string(from: Self.utcClock(value))
+    }
+
+    /// The two parts of a display clock: "11:00" set large and "AM" set small beside it.
+    func clock(_ value: ClockTime) -> String { clock.string(from: Self.utcClock(value)) }
+    func meridiem(_ value: ClockTime) -> String { meridiem.string(from: Self.utcClock(value)) }
+
+    private static func utcClock(_ value: ClockTime) -> Date {
+        Date(timeIntervalSince1970: TimeInterval(value.hour * 3_600 + value.minute * 60))
     }
 
     func day(_ value: CalendarDate) -> String {

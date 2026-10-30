@@ -9,6 +9,9 @@ struct TodaySources: Sendable {
     var activity = Resource<ActivityFeed>()
     var schedule: [Resource<CalendarFeed>] = []
     var milestones = Resource<MilestoneIndex>()
+    /// Conversations with a message of mine the outbox gave up on. The data layer does not
+    /// publish these yet, so production passes none and Not sent rows stay hidden.
+    var failedSends: Set<Int> = []
 }
 
 /// What the activity list has done locally on top of the cached feed: chips, search, paging
@@ -40,6 +43,12 @@ struct TodayLocalState: Equatable, Sendable {
 
 /// Who, where and when the screen is rendered for.
 struct TodayContext: Sendable {
+    /// The signed-in person's name for the hero bar, their backend id and who the greeting names.
+    var accountName = ""
+    var myUserId: String?
+    var firstName: String?
+    /// The saved handled-today tally; `nil` before the first one.
+    var handled: HandledTally?
     var zone: TimeZone
     var usesFallbackTimeZone = false
     var now: Date
@@ -100,6 +109,8 @@ enum TodayAssembler {
         let milestones = SourceStatus(sources.milestones) { !$0.milestones.isEmpty }
 
         var state = TodayState()
+        state.accountName = context.accountName
+        state.greeting = GreetingRules.greeting(context.now, zone: context.zone, firstName: context.firstName)
         state.date = today
         state.timeZone = context.zone
         state.usesFallbackTimeZone = context.usesFallbackTimeZone
@@ -107,13 +118,18 @@ enum TodayAssembler {
         state.loadError = nothingCached && !stillLoading ? primary.compactMap(\.error).first : nil
         state.quietStatus = quietStatus(primary, context: context)
         state.isRefreshing = context.local.isRefreshing
-        state.needsYou = needsYou(sources, status: chats, events: events, pinned: pinned, context: context)
+        let open = openItems(sources, events: events, pinned: pinned, context: context)
+        state.needsYou = needsYou(open, status: chats, context: context)
         state.nextUp = NextUpSection(
             items: schedule.isReady ? ScheduleRules.nextUp(events, now: context.now, zone: context.zone) : [],
             isReady: schedule.isReady,
             failed: schedule.failed
         )
-        state.celebrations = ScheduleRules.celebrations(sources.milestones.value ?? .empty, on: today)
+        state.celebrations = ScheduleRules.celebrations(sources.milestones.value ?? .empty, on: today).map {
+            var item = $0
+            item.isMe = item.userId == context.myUserId
+            return item
+        }
         state.celebrationsFailed = milestones.error != nil && !milestones.hasContent
         state.activity = ActivityAssembler.section(
             sources.activity,
@@ -122,6 +138,37 @@ enum TodayAssembler {
             zone: context.zone,
             excluding: Set(pinned.map(\.id)),
             summaryText: summaryText
+        )
+        let complete =
+            state.needsYou.isReady && !state.needsYou.failed && state.nextUp.isReady
+            && state.activity.isReady && !state.activity.failed
+        state.handledObservation = HandledRules.observation(
+            userId: context.myUserId,
+            today: today,
+            openItems: open,
+            complete: complete
+        )
+        state.progress = HandledRules.progress(
+            saved: context.handled,
+            userId: context.myUserId,
+            today: today,
+            needsYou: state.needsYou,
+            observation: state.handledObservation
+        )
+        state.stats = DayRules.stats(
+            conversations: chats,
+            conversationList: sources.conversations.value ?? [],
+            schedule: schedule,
+            events: events,
+            zone: context.zone,
+            today: today
+        )
+        state.day = DayRules.timeline(
+            events: events,
+            schedule: schedule,
+            zone: context.zone,
+            today: today,
+            now: context.now
         )
         return state
     }
@@ -137,29 +184,44 @@ enum TodayAssembler {
         }
     }
 
-    private static func needsYou(
+    /// Everything that needs the person, in Needs you order: failed sends (only I can fix
+    /// them), chats and mentions, invitations, then ticket updates.
+    private static func openItems(
         _ sources: TodaySources,
-        status: SourceStatus,
         events: [CalendarEvent],
         pinned: [ActivityItem],
         context: TodayContext
-    ) -> NeedsYouSection {
+    ) -> [NeedsYouItem] {
         let invitations = ScheduleRules.invitations(
             events,
             now: context.now,
             zone: context.zone,
             answered: context.local.answeredInvitations
         ).map(NeedsYouItem.invitation)
-        let all = messages(sources, pinned: pinned, context: context) + invitations + tickets(sources, context: context)
+        return notSent(sources) + messages(sources, pinned: pinned, context: context) + invitations
+            + tickets(sources, context: context)
+    }
+
+    private static func needsYou(_ all: [NeedsYouItem], status: SourceStatus, context: TodayContext)
+        -> NeedsYouSection
+    {
         let expanded = context.local.needsYouExpanded
         let visible = expanded ? all : Array(all.prefix(NeedsYouSection.collapsedCount))
         return NeedsYouSection(
             items: visible,
+            totalCount: all.count,
             hiddenCount: all.count - visible.count,
             isExpanded: expanded && all.count > NeedsYouSection.collapsedCount,
             isReady: status.isReady,
-            failed: status.failed
+            failed: status.failed,
+            kinds: NeedsYouItem.kinds(all)
         )
+    }
+
+    private static func notSent(_ sources: TodaySources) -> [NeedsYouItem] {
+        (sources.conversations.value ?? []).filter { sources.failedSends.contains($0.id) }.map { conversation in
+            .notSent(NotSentItem(conversationId: conversation.id, name: TodayStrings.conversationName(conversation)))
+        }
     }
 
     /// Unread direct messages and pinned mentions, newest first; undated ones last.
@@ -180,6 +242,7 @@ enum TodayAssembler {
             let item = MentionItem(
                 activityId: activity.id,
                 destination: activity.destination,
+                actorName: activity.actorDisplayName?.trimmedNonEmpty,
                 summary: ActivityRules.summary(activity),
                 when: past(activity.createdAt, context: context)
             )

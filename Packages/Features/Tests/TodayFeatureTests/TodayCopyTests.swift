@@ -37,9 +37,9 @@ struct TodayCopyTests {
 
     @Test func celebrationsReadAsOneSentence() {
         let both = CelebrationItem(userId: "u1", name: "Jordan Lee", isBirthday: true, anniversaryYears: 5)
-        #expect(TodayStrings.celebration(both) == "It's Jordan Lee's birthday and 5-year work anniversary!")
+        #expect(TodayStrings.celebration(both) == "Happy birthday and 5-year work anniversary, Jordan Lee!")
         let anniversary = CelebrationItem(userId: "u2", name: nil, isBirthday: false, anniversaryYears: 1)
-        #expect(TodayStrings.celebration(anniversary) == "Celebrating This employee's 1-year work anniversary!")
+        #expect(TodayStrings.celebration(anniversary) == "Happy 1-year work anniversary, Teammate!")
     }
 
     @Test func snippetsNeverShowRawPlaceholders() {
@@ -109,5 +109,26 @@ struct TodayCopyTests {
         #expect(TodayNotice.invitationAnswered(accept: false).message == "Invitation declined")
         #expect(!TodayNotice.invitationAnswered(accept: true).offersRetry)
         #expect(TodayNotice.markReadFailed(activityId: 1).offersRetry)
+    }
+
+    @Test func theDisplayClockSplitsTheTimeFromItsPeriodAndTheTrackHoursDropTheirs() {
+        let eleven = ClockTime(hour: 11, minute: 0)
+        let afternoon = ClockTime(hour: 14, minute: 30)
+        #expect(formatter.clock(eleven) == "11:00")
+        #expect(formatter.meridiem(eleven) == "AM")
+        #expect(formatter.clock(afternoon) == "2:30")
+        #expect(formatter.meridiem(afternoon) == "PM")
+        #expect(formatter.hour(ClockTime(hour: 8, minute: 0), withPeriod: true) == "8 AM")
+        #expect(formatter.hour(ClockTime(hour: 10, minute: 0), withPeriod: false) == "10")
+        #expect(formatter.hour(ClockTime(hour: 0, minute: 0), withPeriod: true) == "12 AM")
+    }
+
+    @Test func theRewardBurstPlaysOncePerDay() {
+        #expect(RewardBurst.plays(today: "2026-11-01", lastPlayed: ""))
+        #expect(!RewardBurst.plays(today: "2026-11-01", lastPlayed: "2026-11-01"))
+        #expect(RewardBurst.plays(today: "2026-11-02", lastPlayed: "2026-11-01"))
+        #expect(!RewardBurst.plays(today: "", lastPlayed: ""), "no day yet: nothing to celebrate")
+        #expect(RewardBurst.seed(nil) == 0)
+        #expect(RewardBurst.seed(Fixture.date(2026, 11, 2)) == RewardBurst.seed(Fixture.date(2026, 11, 1)) + 1)
     }
 }

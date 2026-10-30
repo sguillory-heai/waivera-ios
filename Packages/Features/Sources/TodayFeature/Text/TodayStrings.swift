@@ -1,5 +1,6 @@
 import Foundation
 import WaiveraData
+import WaiveraDesign
 
 /// User-facing copy for Today and Activity. Values live in `Localizable.strings`; this file
 /// is Foundation-only so the copy rules are unit tested on Linux.
@@ -142,5 +143,121 @@ enum TodayStrings {
     /// Parts of a spoken label joined with commas, skipping empty ones.
     static func spoken(_ parts: String?...) -> String {
         parts.compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ", ")
+    }
+
+    /// "1 thing" / "3 things": picks the `.one` or `.other` key for `count`.
+    static func plural(_ key: String, _ count: Int, _ more: String...) -> String {
+        fill(text(count == 1 ? "\(key).one" : "\(key).other"), [String(count)] + more)
+    }
+
+    // MARK: Hero
+
+    static func greeting(_ greeting: Greeting) -> String {
+        let key: String =
+            switch greeting.part {
+            case .morning: "today.greeting.morning"
+            case .afternoon: "today.greeting.afternoon"
+            case .evening: "today.greeting.evening"
+            }
+        guard let name = greeting.firstName else { return text(key) }
+        return format("\(key).named", name)
+    }
+
+    /// "5 of 9 handled today": what VoiceOver reads for the count-only ring.
+    static func ring(_ progress: TodayProgress) -> String {
+        format("today.ring.label", String(progress.handled), String(progress.total))
+    }
+
+    /// "4 things need you", or "Nothing needs you right now".
+    static func needsYouHeadline(open: Int) -> String {
+        open > 0 ? plural("today.needsYouCount", open) : text("today.needsYouCount.none")
+    }
+
+    /// What is waiting, by kind ("2 messages · 1 invite · 1 ticket"); `nil` when nothing is.
+    static func subline(_ kinds: [NeedsYouKind: Int]) -> String? {
+        RingSubline.text(kinds) { kind, count in plural(kindKey(kind), count) }
+    }
+
+    private static func kindKey(_ kind: NeedsYouKind) -> String {
+        switch kind {
+        case .notSent: "today.kind.notSent"
+        case .message: "today.kind.messages"
+        case .mention: "today.kind.mentions"
+        case .invitation: "today.kind.invites"
+        case .ticket: "today.kind.tickets"
+        }
+    }
+
+    /// The reward hero's line under the headline; the name is the greeting's first name.
+    static func caughtUp(handled: Int, firstName: String?) -> String {
+        guard handled > 0 else { return text("today.caughtUp.message") }
+        guard let firstName else { return plural("today.caughtUp.count", handled) }
+        return plural("today.caughtUp.named", handled, firstName)
+    }
+
+    /// A stat tile: its number, its label and what VoiceOver reads; a dash until it loads.
+    static func stat(_ value: Int?, label key: String) -> (value: String, label: String, spoken: String) {
+        let label = text(value == 1 ? "\(key).one" : "\(key).other")
+        guard let value else { return (text("today.stat.unknown"), label, format("today.stat.loading", label)) }
+        return (String(value), label, format("today.stat.label", String(value), label))
+    }
+
+    /// The reward hero's "5/5 handled" tile.
+    static func handledStat(_ progress: TodayProgress?) -> (value: String, label: String, spoken: String) {
+        let label = text("today.stat.handled")
+        guard let progress else { return (text("today.stat.unknown"), label, format("today.stat.loading", label)) }
+        return (format("today.stat.fraction", String(progress.handled), String(progress.total)), label, ring(progress))
+    }
+
+    // MARK: Your day
+
+    /// "3 events · 2 hr scheduled", or "Your day is wide open."
+    static func daySummary(_ day: DayTimeline) -> String {
+        guard day.eventCount > 0 else { return text("today.day.open") }
+        return joined(plural("today.day.events", day.eventCount), scheduled(day.scheduled))
+    }
+
+    static func scheduled(_ interval: TimeInterval) -> String? {
+        let minutesTotal = Int(interval / 60)
+        let hours = minutesTotal / 60
+        let minutes = minutesTotal % 60
+        switch (hours > 0, minutes > 0) {
+        case (true, true): return format("today.day.hoursMinutes", String(hours), String(minutes))
+        case (true, false): return format("today.day.hours", String(hours))
+        case (false, true): return format("today.day.minutes", String(minutes))
+        case (false, false): return nil
+        }
+    }
+
+    // MARK: Needs you
+
+    /// How a conversation is named in a Not sent card.
+    static func conversationName(_ conversation: Conversation) -> String {
+        switch conversation.title {
+        case .person(let name?): return name
+        case .group(let first?, let others): return format("today.notSent.group", first, String(others))
+        case .channel(let name?): return format("today.notSent.channel", name)
+        default: return text("today.notSent.fallback")
+        }
+    }
+
+    /// A mention card's headline: the summary's own lead, else who mentioned the person.
+    static func mentionHeadline(lead: String?, actor: String?) -> String {
+        if let lead { return lead }
+        if let actor { return format("today.mentionedYou", actor) }
+        return text("today.mentionedYou.unknown")
+    }
+
+    /// Keeps a ticket key ("WAIV-2527") as one word on screen: its hyphens do not break.
+    static func nonBreakingHyphens(_ value: String) -> String {
+        value.replacingOccurrences(of: "-", with: "\u{2011}")
+    }
+
+    static func celebrationLabel(_ item: CelebrationItem) -> String {
+        switch (item.isBirthday, item.anniversaryYears) {
+        case (true, .some): text("today.celebration.label.both")
+        case (true, nil): text("today.celebration.label.birthday")
+        default: text("today.celebration.label.anniversary")
+        }
     }
 }

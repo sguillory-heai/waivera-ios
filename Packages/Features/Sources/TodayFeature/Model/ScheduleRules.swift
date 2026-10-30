@@ -84,7 +84,8 @@ enum ScheduleRules {
             end: timed && event.end > event.start ? ClockTime(event.end, in: zone) : nil,
             endsOnLaterDay: timed && endsOnLaterDay(event, zone: zone),
             location: event.location?.trimmedNonEmpty,
-            isOnline: event.isOnline
+            isOnline: event.isOnline,
+            startsToday: firstDay(event, zone: zone, today: today) == today
         )
     }
 

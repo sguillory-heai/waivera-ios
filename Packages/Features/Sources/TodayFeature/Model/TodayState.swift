@@ -1,6 +1,7 @@
 import Foundation
 import WaiveraAPI
 import WaiveraData
+import WaiveraDesign
 
 /// A wall-clock time in the employee's saved zone. Kept apart from `Date` so a label always
 /// says what the clock on the wall says there, whatever zone the device is in.
@@ -88,6 +89,10 @@ enum QuietStatus: Hashable, Sendable {
 /// Everything the Today screen draws, in priority order: what needs the person now, the next
 /// three schedule items, today's celebrations, then the activity feed.
 struct TodayState: Equatable, Sendable {
+    /// The signed-in person's name, for the hero bar's account avatar.
+    var accountName = ""
+    /// "Good morning, Alex", in the employee's zone; `nil` until the clock and zone are known.
+    var greeting: Greeting?
     /// Today's date in the employee's saved zone.
     var date: CalendarDate?
     /// The zone every time on the screen is in, and whether it fell back to America/Chicago.
@@ -104,6 +109,14 @@ struct TodayState: Equatable, Sendable {
     var celebrations: [CelebrationItem] = []
     var celebrationsFailed = false
     var activity = ActivitySection()
+    /// The hero ring: handled today (tallied on this device) and still open; `nil` until Needs you loads.
+    var progress: TodayProgress?
+    var stats = TodayStats()
+    /// "Your day": today's timed events on a track; `nil` until the schedule loads.
+    var day: DayTimeline?
+    /// What needs the person right now, for the on-device tally; `nil` while any source behind
+    /// Needs you is loading or failed, so a missing source never reads as everything handled.
+    var handledObservation: HandledObservation?
 
     /// The one "All caught up" moment: nothing needs the person and no activity is unread.
     var isAllCaughtUp: Bool {
@@ -113,17 +126,27 @@ struct TodayState: Equatable, Sendable {
 }
 
 struct NeedsYouSection: Equatable, Sendable {
-    static let collapsedCount = 5
+    /// Folds after three rows, so the day's first cards still show on a short phone.
+    static let collapsedCount = 3
 
     var items: [NeedsYouItem] = []
+    /// Every open item, including the ones folded out of `items`: the hero counts these.
+    var totalCount = 0
     /// Rows beyond `collapsedCount` are hidden until the person expands the section.
     var hiddenCount = 0
     var isExpanded = false
     var isReady = false
     var failed = false
+    /// Every open item counted by kind, folded ones included: the hero's "what is waiting" line.
+    var kinds: [NeedsYouKind: Int] = [:]
 }
 
+/// The kinds of thing that can need the person, in the order the hero names them.
+typealias NeedsYouKind = RingSubline.Kind
+
 enum NeedsYouItem: Hashable, Sendable, Identifiable {
+    /// A message of mine the outbox gave up on; Retry lives in the chat.
+    case notSent(NotSentItem)
     case directMessage(DirectMessageItem)
     case mention(MentionItem)
     case invitation(InvitationItem)
@@ -132,12 +155,34 @@ enum NeedsYouItem: Hashable, Sendable, Identifiable {
 
     var id: String {
         switch self {
+        case .notSent(let item): "not-sent-\(item.conversationId)"
         case .directMessage(let item): "dm-\(item.conversationId)"
         case .mention(let item): "mention-\(item.activityId)"
         case .invitation(let item): "invite-\(item.eventId)"
         case .ticket(let item): "ticket-\(item.conversationId)"
         }
     }
+
+    /// Which kind this item counts as. A direct message counts once per conversation, as its row does.
+    var kind: NeedsYouKind {
+        switch self {
+        case .notSent: .notSent
+        case .directMessage: .message
+        case .mention: .mention
+        case .invitation: .invitation
+        case .ticket: .ticket
+        }
+    }
+
+    /// The open items counted by kind.
+    static func kinds(_ items: [NeedsYouItem]) -> [NeedsYouKind: Int] {
+        items.reduce(into: [:]) { counts, item in counts[item.kind, default: 0] += 1 }
+    }
+}
+
+struct NotSentItem: Hashable, Sendable {
+    var conversationId: Int
+    var name: String
 }
 
 struct DirectMessageItem: Hashable, Sendable {
@@ -152,6 +197,8 @@ struct DirectMessageItem: Hashable, Sendable {
 struct MentionItem: Hashable, Sendable {
     var activityId: Int64
     var destination: ChatDestination
+    /// Who mentioned the person, for a headline when the summary has no lead of its own.
+    var actorName: String?
     var summary: ActivitySummary
     var when: PastLabel?
 }
@@ -179,6 +226,16 @@ struct NextUpSection: Equatable, Sendable {
     var items: [NextUpItem] = []
     var isReady = false
     var failed = false
+
+    /// The item the large Up next card and the hero's Next row feature: the first with a start
+    /// time, since an all-day item is nothing to get to; else the first.
+    var featured: NextUpItem? { items.first { $0.start != nil } ?? items.first }
+
+    /// Every item but `featured`, in order, for the rows under the card.
+    var others: [NextUpItem] {
+        guard let featured else { return [] }
+        return items.filter { $0.eventId != featured.eventId }
+    }
 }
 
 struct NextUpItem: Hashable, Sendable, Identifiable {
@@ -191,6 +248,8 @@ struct NextUpItem: Hashable, Sendable, Identifiable {
     var endsOnLaterDay: Bool
     var location: String?
     var isOnline: Bool
+    /// It shows on today's track: it starts today (or is on now) in the employee's zone.
+    var startsToday = false
 
     var id: String { eventId }
 
@@ -212,6 +271,8 @@ struct CelebrationItem: Hashable, Sendable, Identifiable {
     var isBirthday: Bool
     /// Set when today is a work anniversary of one year or more.
     var anniversaryYears: Int?
+    /// The signed-in person's own day.
+    var isMe = false
 
     var id: String { userId }
 }
