@@ -25,6 +25,17 @@
         }
     }
 
+    /// The FCM registration-token calls the app relies on. Firebase 13 deprecates them in favour
+    /// of installation-ID registration, which sprout_api cannot send to yet: it delivers to FCM
+    /// registration tokens (docs/architecture/app-shell.md, Firebase). Calling them through this
+    /// protocol keeps that decision in one place; drop it when the API moves to installation IDs.
+    nonisolated protocol FCMRegistrationTokens {
+        func token() async throws -> String
+        func deleteToken() async throws
+    }
+
+    nonisolated extension Messaging: FCMRegistrationTokens {}
+
     /// FCM registration tokens: the current one at start-up and every rotation.
     /// Never logs the token (AGENTS.md safety rules).
     final class FirebaseTokenSource: NSObject, PushTokenSource, MessagingDelegate {
@@ -39,8 +50,9 @@
             super.init()
         }
 
-        /// Call after `FirebaseBootstrap.configureIfPossible`.
-        func activate() {
+        /// Call after `FirebaseBootstrap.configureIfPossible`. Main actor because the bootstrap
+        /// flag is main-actor state; the class itself is nonisolated for `PushTokenSource`.
+        @MainActor func activate() {
             guard FirebaseBootstrap.isConfigured else { return }
             Messaging.messaging().delegate = self
         }
@@ -53,8 +65,9 @@
         /// asks for a fresh one, which the coordinator holds until the next sign-in.
         nonisolated func invalidate() async throws {
             guard await MainActor.run(body: { FirebaseBootstrap.isConfigured }) else { return }
-            try await Messaging.messaging().deleteToken()
-            let fresh = try await Messaging.messaging().token()
+            let tokens: some FCMRegistrationTokens = Messaging.messaging()
+            try await tokens.deleteToken()
+            let fresh = try await tokens.token()
             if !fresh.isEmpty { continuation.yield(fresh) }
         }
 
