@@ -40,7 +40,7 @@ public final class ChangePasswordModel {
     public private(set) var failure: WaiveraError?
     public private(set) var isSubmitting = false
     public private(set) var didSucceed = false
-    /// Counts rejected submits (validation or server), so the screen can play the failure haptic.
+    /// Counts rejected submits (validation or server).
     public private(set) var submitFailures = 0
 
     @ObservationIgnored private let session: any SessionRepository

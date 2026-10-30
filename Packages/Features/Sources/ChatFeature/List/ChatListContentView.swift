@@ -92,7 +92,6 @@
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
             .skeletonGate(isLoading: state.content == .loading, isVisible: $isSkeletonVisible)
-            .waiveraHaptic(.failure, trigger: state.notice?.id) { _, new in new != nil }
         }
 
         private var header: some View {

@@ -78,7 +78,6 @@
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
-            .waiveraHaptic(.selection, trigger: appearance)
         }
     }
 

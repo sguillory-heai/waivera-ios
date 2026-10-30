@@ -55,7 +55,6 @@
                         .accessibilityHint(Text(ScheduleStrings.text("schedule.today.hint")))
                 }
             }
-            .waiveraHaptic(.selection, trigger: state.selectedDate)
             .waiveraAnimation(.state, value: state.selectedDate)
         }
 

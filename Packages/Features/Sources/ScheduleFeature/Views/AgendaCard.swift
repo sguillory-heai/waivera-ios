@@ -68,11 +68,11 @@
                     size: CalendarMetrics.agendaAvatar
                 )
             case .holiday:
-                IconTile(systemImage: "calendar", tint: Palette.holiday)
+                IconTile(systemImage: "calendar", tone: .teal)
             case .timeOff:
-                IconTile(systemImage: "beach.umbrella.fill", tint: Palette.success)
+                IconTile(systemImage: "beach.umbrella.fill", tone: .teal)
             case .event:
-                IconTile(systemImage: "clock")
+                IconTile(systemImage: "clock", tone: .teal)
             }
         }
 

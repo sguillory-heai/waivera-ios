@@ -126,7 +126,7 @@
 
     extension View {
         /// Shows the feedback's toast at the bottom, announces it, clears it after the toast
-        /// timeout (longer with VoiceOver), and plays the success and failure haptics.
+        /// timeout (longer with VoiceOver).
         func todayFeedback(_ feedback: TodayFeedback, onRetry: @escaping (TodayToast) -> Void) -> some View {
             modifier(TodayFeedbackModifier(feedback: feedback, onRetry: onRetry))
         }
@@ -158,8 +158,6 @@
                     }
                 }
                 .animation(Motion.animation(.layout, reduceMotion: reduceMotion), value: feedback.toast)
-                .waiveraHaptic(.success, trigger: feedback.successCount)
-                .waiveraHaptic(.failure, trigger: feedback.failureCount)
         }
     }
 #endif

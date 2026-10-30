@@ -135,7 +135,6 @@
                 }
                 .padding(Spacing.medium)
             }
-            .waiveraHaptic(.failure, trigger: state.messageError) { _, new in new != nil }
         }
 
         private var name: String { state.name ?? ProfileStrings.unknownPerson }

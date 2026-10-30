@@ -172,7 +172,7 @@
             case .bot:
                 IconTile(systemImage: "bell.badge.fill")
             case .group:
-                IconTile(systemImage: "person.2.fill", tint: Palette.textSecondary)
+                IconTile(systemImage: "person.2.fill", tone: .neutral)
             case .direct(_, let name):
                 AvatarView(name: name, image: avatar, size: ControlSize.iconTile)
                     .accessibilityHidden(true)

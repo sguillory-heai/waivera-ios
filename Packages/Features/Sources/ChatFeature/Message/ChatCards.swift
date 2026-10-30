@@ -126,7 +126,7 @@
             HStack(spacing: Spacing.small) {
                 IconTile(
                     systemImage: summary.isMissed ? "phone.down.fill" : "video.fill",
-                    tint: summary.isMissed ? Palette.danger : Palette.accent
+                    tone: summary.isMissed ? .danger : .brand
                 )
                 VStack(alignment: .leading, spacing: Spacing.hairline) {
                     Text(ConversationStrings.callTitle(summary.outcome))

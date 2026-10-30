@@ -72,7 +72,7 @@ final class ComponentSnapshotTests: XCTestCase {
                     CountBadge(count: 120)
                 }
                 ListRow(title: "Jordan Lee", subtitle: "Birthday today") {
-                    AvatarView(name: "Jordan Lee", rounded: true, milestoneLabel: "Birthday today")
+                    AvatarView(name: "Jordan Lee", milestoneLabel: "Birthday today")
                 } trailing: {
                     StatusBadge("Saved", systemImage: "bookmark.fill")
                 }

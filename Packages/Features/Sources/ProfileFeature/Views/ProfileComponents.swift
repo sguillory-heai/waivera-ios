@@ -80,7 +80,6 @@
                 name: name,
                 image: image,
                 size: size,
-                rounded: true,
                 milestoneLabel: celebration.map(ProfileStrings.celebrationCompact)
             )
             .task(id: userID) {

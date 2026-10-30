@@ -142,7 +142,6 @@
                             .foregroundStyle(Palette.accent)
                             .frame(minHeight: ControlSize.minHitTarget)
                             .listRowBackground(Palette.surface)
-                            .waiveraHaptic(.success, trigger: diagnosticsCopied)
                         }
                     }
                 #endif

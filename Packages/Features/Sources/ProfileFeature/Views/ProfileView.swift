@@ -192,7 +192,6 @@
                 }
                 .padding(Spacing.medium)
             }
-            .waiveraHaptic(.failure, trigger: state.refreshError) { _, new in new != nil }
         }
     }
 

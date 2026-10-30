@@ -43,8 +43,8 @@ struct TodayToast: Identifiable, Hashable, Sendable {
     }
 }
 
-/// The toast on screen and the haptic triggers (success / failure from the feedback map). The
-/// view plays a haptic whenever a counter changes.
+/// The toast on screen and the success and failure counters. Both are silent (haptics policy,
+/// 2026-10-29); the toast says what happened.
 @MainActor
 @Observable
 final class TodayFeedback {

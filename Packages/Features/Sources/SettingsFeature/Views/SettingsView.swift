@@ -126,7 +126,7 @@
         var body: some View {
             let name = account.name ?? account.email ?? SettingsStrings.signedIn
             HStack(spacing: Spacing.smallPlus) {
-                AvatarView(name: name, rounded: true)
+                AvatarView(name: name)
                 VStack(alignment: .leading, spacing: Spacing.extraSmall) {
                     Text(name)
                         .font(WaiveraFont.bodyEmphasis)

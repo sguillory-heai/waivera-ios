@@ -142,8 +142,6 @@
             .autocorrectionDisabled()
             .safeAreaInset(edge: .bottom) { footer }
             .skeletonGate(isLoading: state.content == .loading, isVisible: $isSkeletonVisible)
-            .waiveraHaptic(.selection, trigger: state.selectedCount)
-            .waiveraHaptic(.failure, trigger: state.error) { _, new in new != nil }
         }
 
         @ViewBuilder private var content: some View {

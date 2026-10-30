@@ -90,7 +90,7 @@
                     .buttonStyle(.pressScale)
                     .accessibilityLabel(ConversationStrings.format("open.profile", name))
                 } else {
-                    AvatarView(name: name, size: ControlSize.avatarSmall, rounded: true)
+                    AvatarView(name: name, size: ControlSize.avatarSmall)
                         .accessibilityHidden(true)
                 }
             }
@@ -126,7 +126,7 @@
         @State private var image: Image?
 
         var body: some View {
-            AvatarView(name: name, image: image, size: size, rounded: true)
+            AvatarView(name: name, image: image, size: size)
                 .task(id: userId) {
                     guard let data = await loader(userId), let decoded = UIImage(data: data) else { return }
                     image = Image(uiImage: decoded)

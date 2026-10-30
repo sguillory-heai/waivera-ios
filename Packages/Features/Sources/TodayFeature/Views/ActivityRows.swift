@@ -69,8 +69,6 @@
             }
             .accessibilityElement(children: .contain)
             .accessibilityLabel(Text(TodayStrings.text("today.filter.label")))
-            .waiveraHaptic(.selection, trigger: filter)
-            .waiveraHaptic(.toggle, trigger: unreadOnly)
         }
     }
 
@@ -97,7 +95,7 @@
                 leading: {
                     IconTile(
                         systemImage: Self.icon(row.kind),
-                        tint: row.isRead ? Palette.textSecondary : Palette.accent
+                        tone: row.isRead ? .neutral : .brand
                     )
                 },
                 trailing: {

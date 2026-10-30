@@ -221,7 +221,6 @@
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .scrollDismissesKeyboard(.immediately)
-            .waiveraHaptic(.failure, trigger: state.actionError) { _, new in new != nil }
         }
 
         @ViewBuilder private var notices: some View {

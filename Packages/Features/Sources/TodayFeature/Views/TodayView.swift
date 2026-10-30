@@ -62,7 +62,7 @@
         }
     }
 
-    /// Binds the model to the stateless content, the toast and the haptics.
+    /// Binds the model to the stateless content and the toast.
     private struct TodayScreen: View {
         let model: TodayModel
         let open: (TodayDestination) -> Void

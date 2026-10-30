@@ -165,7 +165,7 @@
                         ReactionRules.reactorName(reaction, viewerId: viewerId, names: names)
                     )
                     HStack(spacing: Spacing.smallPlus) {
-                        AvatarView(name: name, size: ControlSize.avatarSmall, rounded: true)
+                        AvatarView(name: name, size: ControlSize.avatarSmall)
                             .accessibilityHidden(true)
                         Text(name).font(WaiveraFont.body).foregroundStyle(Palette.text)
                     }

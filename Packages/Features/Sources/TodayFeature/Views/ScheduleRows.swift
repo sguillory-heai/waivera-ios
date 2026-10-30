@@ -32,7 +32,7 @@
                 leading: {
                     IconTile(
                         systemImage: item.isAllDay ? "sun.max" : "clock",
-                        tint: item.isSoon ? Palette.accent : Palette.textSecondary
+                        tone: item.isSoon ? .teal : .neutral
                     )
                 }
             )
@@ -53,7 +53,7 @@
                 accessibilityHintText: TodayStrings.text("today.hint.openSchedule"),
                 action: onOpen,
                 leading: {
-                    AvatarView(name: name, size: ControlSize.iconTile, rounded: true, milestoneLabel: sentence)
+                    AvatarView(name: name, size: ControlSize.iconTile, milestoneLabel: sentence)
                 }
             )
         }

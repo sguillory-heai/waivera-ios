@@ -45,9 +45,6 @@
                 model.conversationHandled(request)
             }
             .onDisappear { model.disappear() }
-            .waiveraHaptic(.selection, trigger: model.choiceTicks)
-            .waiveraHaptic(.success, trigger: model.successTicks)
-            .waiveraHaptic(.failure, trigger: model.failureTicks)
         }
 
         /// The toast shows the model's current offer. When the toast times out (or is replaced)

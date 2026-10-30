@@ -35,8 +35,6 @@
                     .padding(Spacing.medium)
                 }
                 .scrollDismissesKeyboard(.interactively)
-                .waiveraHaptic(.success, trigger: model.didSucceed) { _, new in new }
-                .waiveraHaptic(.failure, trigger: model.submitFailures) { old, new in new > old }
                 .background(Palette.background)
                 .navigationTitle(SettingsStrings.passwordTitle)
                 .navigationBarTitleDisplayMode(.inline)

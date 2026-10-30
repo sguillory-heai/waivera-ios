@@ -171,7 +171,6 @@
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .scrollDismissesKeyboard(.immediately)
-            .waiveraHaptic(.failure, trigger: state.refreshError) { _, new in new != nil }
         }
     }
 
