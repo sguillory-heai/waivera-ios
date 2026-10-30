@@ -1,5 +1,6 @@
 import Foundation
 import WaiveraAPI
+import WaiveraData
 
 /// The part of the day the greeting names.
 enum DayPart: Hashable, Sendable {
@@ -66,7 +67,7 @@ struct TodayStats: Hashable, Sendable {
 /// The reward hero's confetti plays once per day in the employee's zone, remembered across
 /// launches, so a relaunch or a return to the tab the same day stays still.
 enum RewardBurst {
-    static let storageKey = "waivera.today.rewardBurstDay"
+    static let storageKey = StorageKey.todayRewardBurstDay
 
     /// Whether the burst plays now: it has not played yet on `today` (an ISO date).
     static func plays(today: String, lastPlayed: String) -> Bool {

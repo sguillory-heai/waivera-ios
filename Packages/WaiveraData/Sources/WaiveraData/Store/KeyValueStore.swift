@@ -31,6 +31,15 @@ public enum StorageKey {
     /// Set on the first launch after an install; its absence means the Keychain may still hold
     /// a previous install's session (IS-01).
     public static let installMarker = "waivera.install.marker"
+    /// Today's handled tally: which waiting items this person cleared today. Cleared at sign-out
+    /// with the cache, since it is a per-person record of chats and events (PS-03).
+    public static let todayHandled = "waivera.today.handled"
+    /// The day Today's reward last burst. Cleared at sign-out, so the next person who signs in
+    /// on the same device that day still gets their own celebration (PS-04).
+    public static let todayRewardBurstDay = "waivera.today.rewardBurstDay"
+
+    /// Device-local values that belong to the signed-in person and go at sign-out.
+    public static let personal = [cacheOwner, accountSince, todayHandled, todayRewardBurstDay]
 }
 
 public final class InMemoryKeyValueStore: KeyValueStore {

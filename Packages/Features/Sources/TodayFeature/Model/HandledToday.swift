@@ -111,10 +111,10 @@ protocol HandledTallyStore: Sendable {
 }
 
 /// The tally in a `KeyValueStore`. A value an older build wrote in another shape reads as no
-/// tally yet, never as a crash. Another person signing in starts from zero (the tally names its
-/// user), so it is safe to leave across sign-out.
+/// tally yet, never as a crash. The tally names its user, so another person starts from zero
+/// even before sign-out removes it with the rest of the person's data (`StorageKey.personal`).
 struct KeyValueHandledTallyStore: HandledTallyStore {
-    static let key = "waivera.today.handled"
+    static let key = StorageKey.todayHandled
     let store: any KeyValueStore
 
     func load() -> HandledTally? { store.value(HandledTally.self, forKey: Self.key) }

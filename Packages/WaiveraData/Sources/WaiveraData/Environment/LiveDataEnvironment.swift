@@ -310,8 +310,7 @@ actor SessionCoordinator: SessionLifecycleParticipant {
         await attachments.clear()
         await avatars.clear()
         await localStore.removeAll()
-        keyValueStore.set(nil, forKey: StorageKey.cacheOwner)
-        keyValueStore.set(nil, forKey: StorageKey.accountSince)
+        for key in StorageKey.personal { keyValueStore.set(nil, forKey: key) }
         context.setAccountSince(nil)
     }
 }

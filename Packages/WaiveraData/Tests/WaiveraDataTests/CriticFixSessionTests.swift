@@ -180,6 +180,19 @@ struct CriticFixSessionTests {
         #expect(keyValues.data(forKey: StorageKey.accountSince) == nil)
     }
 
+    @Test("PS-03, PS-04: Today's handled tally and reward day go at sign-out")
+    func todaysPersonalValuesAreClearedAtSignOut() async {
+        let keyValues = InMemoryKeyValueStore()
+        let rig = await signedInRig(keyValues: keyValues)
+        keyValues.set(Data(#"{"userId":"usr_alex_rivera","day":"2026-10-30","handled":2,"open":["dm-7"]}"#.utf8), forKey: StorageKey.todayHandled)
+        keyValues.set(Data("2026-10-30".utf8), forKey: StorageKey.todayRewardBurstDay)
+        keyValues.set(Data("kept".utf8), forKey: StorageKey.pushInstallationId)
+        await rig.environment.session.signOut()
+        #expect(keyValues.data(forKey: StorageKey.todayHandled) == nil)
+        #expect(keyValues.data(forKey: StorageKey.todayRewardBurstDay) == nil)
+        #expect(keyValues.data(forKey: StorageKey.pushInstallationId) != nil, "the install id survives sign-out")
+    }
+
     // MARK: IS-03
 
     @Test("IS-03: a Keychain locked at launch never signs out, and the session loads after unlock")
