@@ -60,7 +60,8 @@ final class ThreadModel {
             bookmarks: data?.bookmarks,
             attachments: data?.attachments,
             platform: platform,
-            isConnected: { context.isConnected }
+            isConnected: { context.isConnected },
+            wait: { try? await clock.sleep(seconds: $0) }
         )
     }
 

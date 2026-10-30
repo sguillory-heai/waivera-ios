@@ -134,8 +134,9 @@ struct ConversationModelTests {
         model.draft = "Hello"
         await model.send()
         #expect(await eventually { model.state.sendError == .offline })
-        #expect(harness.recorder.haptics.contains(.sendFailed))
-        #expect(harness.recorder.haptics.allSatisfy { $0 == .sendFailed })
+        // One failure vibrates exactly once, and it is the only haptic chat plays.
+        try? await Task.sleep(for: .milliseconds(100))
+        #expect(harness.recorder.haptics == [.sendFailed])
         model.draft = "Hello again"
         model.draftChanged()
         #expect(model.state.sendError == nil)
@@ -296,7 +297,7 @@ extension ConversationModelTests {
         let task = Task { await model.run() }
         #expect(await eventually { model.isReady })
         let mine = try #require(model.messageRows.first { $0.isMine }?.message)
-        model.interactions.requestDelete(messageId: mine.id)
+        await model.interactions.requestDelete(messageId: mine.id)
         #expect(model.interactions.sheet == .confirmDelete(messageId: mine.id))
         #expect(harness.fakes.chat.calls.count("delete:") == 0)
         await model.interactions.confirmDelete(messageId: mine.id)
@@ -323,7 +324,7 @@ extension ConversationModelTests {
         task.cancel()
     }
 
-    @Test func copyKeepsTheSheetOpenAndMarksItCopied() async throws {
+    @Test func copyKeepsTheOverlayOpenMarkedCopiedThenCloses() async throws {
         let harness = await ModelHarness()
         let model = harness.conversation()
         let task = Task { await model.run() }
@@ -332,11 +333,12 @@ extension ConversationModelTests {
         model.openActions(message)
         model.interactions.copy(message)
         #expect(harness.recorder.copied == [message.copyableText])
-        guard case .actions(let sheet) = model.interactions.sheet else {
-            Issue.record("Sheet closed")
-            return
-        }
-        #expect(sheet.copied)
+        let focus = try #require(model.interactions.focus)
+        #expect(focus.copied)
+        #expect(model.interactions.sheet == nil)
+        model.interactions.finishCopy(messageId: message.id)
+        #expect(model.interactions.focus == nil)
+        #expect(harness.recorder.haptics.isEmpty)
         task.cancel()
     }
 

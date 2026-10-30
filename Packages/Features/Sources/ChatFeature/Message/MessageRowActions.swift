@@ -1,5 +1,6 @@
 #if canImport(UIKit)
     import Foundation
+    import CoreGraphics
     import WaiveraData
 
     /// Everything a row can ask for. A `nil` callback turns that affordance off (read-only rows,
@@ -7,6 +8,8 @@
     struct MessageRowActions {
         var toggleTimestamp: @MainActor (_ key: String) -> Void = { _ in }
         var longPress: (@MainActor (ChatMessage) -> Void)?
+        /// Records where a bubble was when its long press fired, just before `longPress`.
+        var recordAnchor: @MainActor (_ messageId: Int, _ bounds: CGRect?) -> Void = { _, _ in }
         var react: (@MainActor (_ messageId: Int, _ emoji: String) -> Void)?
         var reactionDetails: (@MainActor (_ messageId: Int, _ emoji: String) -> Void)?
         var openThread: (@MainActor (ChatMessage) -> Void)?

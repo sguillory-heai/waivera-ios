@@ -57,6 +57,7 @@ extension ThreadModel {
     }
 
     func startEdit(_ message: ChatMessage) {
+        interactions.closeFocus()
         interactions.dismissSheet()
         state.editingMessageID = message.id
         draft = message.copyableText
@@ -82,6 +83,7 @@ extension ThreadModel {
     }
 
     func replyFromSheet() {
+        interactions.closeFocus()
         interactions.dismissSheet()
         state.focusRequest += 1
     }

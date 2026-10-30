@@ -5,11 +5,14 @@ import WaiveraData
 import WaiveraDesign
 
 /// The message actions both the conversation and the thread offer (04 §1: threads get the full
-/// set). Owns the open sheet, the toast and prepared files. Every action is `async` so a test
-/// can await it; views call them from a `Task`.
+/// set). Owns the long-press focus overlay, the open sheet, the toast and prepared files. Every
+/// action is `async` so a test can await it; views call them from a `Task`.
 @MainActor
 @Observable
 final class MessageInteractions {
+    /// The message lifted in the long-press focus overlay (spec §9.1). It replaces the old actions
+    /// sheet, whose actions a long message pushed out of reach (wave 28 B1).
+    var focus: MessageActionsModel?
     var sheet: ChatSheet?
     var toast: ChatToast?
     /// A downloaded attachment waiting for the share sheet or "Save to Files".
@@ -21,6 +24,7 @@ final class MessageInteractions {
     @ObservationIgnored private let platform: ChatPlatform
     @ObservationIgnored private let conversationId: Int
     @ObservationIgnored private let isConnected: @MainActor () -> Bool
+    @ObservationIgnored private let wait: @MainActor (TimeInterval) async -> Void
     @ObservationIgnored private var nextToastId = 0
 
     init(
@@ -29,7 +33,8 @@ final class MessageInteractions {
         bookmarks: (any BookmarksRepository)?,
         attachments: (any AttachmentsRepository)?,
         platform: ChatPlatform,
-        isConnected: @escaping @MainActor () -> Bool
+        isConnected: @escaping @MainActor () -> Bool,
+        wait: @escaping @MainActor (TimeInterval) async -> Void = { try? await Task.sleep(for: .seconds($0)) }
     ) {
         self.conversationId = conversationId
         self.actions = actions
@@ -37,10 +42,17 @@ final class MessageInteractions {
         self.attachments = attachments
         self.platform = platform
         self.isConnected = isConnected
+        self.wait = wait
     }
 
+    /// Lifts the message into the focus overlay. Silent: no haptic (spec §3).
     func openActions(_ model: MessageActionsModel) {
-        sheet = .actions(model)
+        focus = model
+    }
+
+    /// Closes the focus overlay: a scrim tap, back, or an action that leads elsewhere.
+    func closeFocus() {
+        focus = nil
     }
 
     func dismissSheet() {
@@ -48,19 +60,27 @@ final class MessageInteractions {
         preparedFile = nil
     }
 
-    /// The sheet stays open and the row reads "Copied to clipboard" (03 §14).
+    /// The overlay stays open and the row pops into a check reading "Copied"; the overlay then
+    /// closes on its own after `ChatMetrics.focusCopiedHold`.
     func copy(_ message: ChatMessage) {
         let text = message.copyableText
         guard !text.isEmpty else { return }
         platform.copy(text)
-        if case .actions(var model) = sheet {
+        if var model = focus, model.message.id == message.id {
             model.copied = true
-            sheet = .actions(model)
+            focus = model
         }
+    }
+
+    /// Called by the overlay once "Copied" has shown for its beat.
+    func finishCopy(messageId: Int) {
+        guard let model = focus, model.message.id == messageId, model.copied else { return }
+        focus = nil
     }
 
     /// Reversible, so it offers Undo instead of asking first.
     func toggleBookmark(messageId: Int) async {
+        focus = nil
         sheet = nil
         guard let bookmarks else { return }
         do {
@@ -80,7 +100,15 @@ final class MessageInteractions {
         }
     }
 
-    func requestDelete(messageId: Int) {
+    /// The overlay closes first; the confirmation follows once it has gone
+    /// (`MotionTiming.focusCloseWait`), so the two never present over each other.
+    func requestDelete(messageId: Int) async {
+        let fromFocus = focus != nil
+        focus = nil
+        if fromFocus {
+            await wait(MotionTiming.focusCloseWait)
+            guard focus == nil, sheet == nil else { return }
+        }
         sheet = .confirmDelete(messageId: messageId)
     }
 
@@ -96,7 +124,7 @@ final class MessageInteractions {
 
     /// Hub only (G-01): without a live connection nothing changes locally.
     func react(messageId: Int, emoji: String) async {
-        if case .actions = sheet { sheet = nil }
+        if focus?.message.id == messageId { focus = nil }
         guard isConnected() else {
             needsConnection()
             return
