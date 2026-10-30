@@ -83,7 +83,7 @@
                     systemImage: model.isOffline ? "wifi.slash" : "exclamationmark.icloud.fill",
                     title: model.isOffline ? AuthStrings.bootstrapOfflineTitle : AuthStrings.bootstrapFailedTitle,
                     message: model.error.map(AuthStrings.failure) ?? fallbackMessage,
-                    tint: model.isOffline ? Palette.warning : Palette.danger
+                    tone: model.isOffline ? .amber : .danger
                 )
                 Text(AuthStrings.bootstrapHelp)
                     .font(WaiveraFont.body)
@@ -97,7 +97,6 @@
                         .accessibilityIdentifier("bootstrap.signOut")
                 }
             }
-            .authFeedback(failures: model.failureCount, successes: 0)
         }
     }
 
@@ -121,7 +120,7 @@
                     systemImage: "wrench.and.screwdriver.fill",
                     title: AuthStrings.configurationTitle,
                     message: AuthStrings.configurationMessage,
-                    tint: Palette.warning
+                    tone: .amber
                 )
                 if !report.missingKeys.isEmpty {
                     Text(AuthStrings.configurationDetails(report.missingKeys))
@@ -218,7 +217,6 @@
                 }
             }
             .waiveraAnimation(.layout, value: model.status)
-            .authFeedback(failures: model.failureCount, successes: 0)
         }
 
         private func checkAgain() {

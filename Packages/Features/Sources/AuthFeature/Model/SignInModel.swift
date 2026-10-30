@@ -37,10 +37,14 @@ public final class SignInModel {
     public private(set) var isConnecting = false
     /// `false` when the build has no server or Firebase settings; the form is then disabled.
     public private(set) var isConfigured: Bool
-    /// Bumped on every failure, for the error haptic.
+    /// Bumped on every failure.
     public private(set) var failureCount = 0
-    /// Bumped when a reset link is sent, for the success haptic.
+    /// Bumped when a reset link is sent.
     public private(set) var successCount = 0
+    /// Bumped only when the credentials were rejected: the one sign-in moment that vibrates and
+    /// shakes the form (haptics policy, 2026-10-29). Field errors, network and offline failures
+    /// and reset failures show their message and nothing else.
+    public private(set) var rejectionCount = 0
 
     @ObservationIgnored private var session: (any SessionRepository)?
 
@@ -154,9 +158,11 @@ public final class SignInModel {
             case let state: apply(state)
             }
         } catch {
+            let mapped = WaiveraError.from(error)
             phase = .idle
-            notice = .failed(WaiveraError.from(error))
+            notice = .failed(mapped)
             failureCount += 1
+            if mapped == .auth(.invalidCredentials) { rejectionCount += 1 }
         }
     }
 

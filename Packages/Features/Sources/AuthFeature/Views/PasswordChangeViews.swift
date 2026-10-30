@@ -122,7 +122,6 @@
             }
             .waiveraAnimation(.layout, value: model.phase)
             .waiveraAnimation(.layout, value: model.error)
-            .authFeedback(failures: model.failureCount, successes: model.successCount)
             .onChange(of: model.focusRequest) { _, field in
                 guard let field else { return }
                 focus = field

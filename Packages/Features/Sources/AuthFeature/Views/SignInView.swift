@@ -69,6 +69,7 @@
                     fields
                     buttons
                 }
+                .rejectShake(trigger: model.rejectionCount)
                 Text(AuthStrings.footer)
                     .font(WaiveraFont.caption)
                     .foregroundStyle(Palette.textSecondary)
@@ -76,7 +77,7 @@
                     .frame(maxWidth: .infinity)
             }
             .waiveraAnimation(.layout, value: model.notice)
-            .authFeedback(failures: model.failureCount, successes: model.successCount)
+            .signInRejectedFeedback(rejections: model.rejectionCount)
             .onChange(of: model.emailIssue) { _, issue in
                 if issue != nil { focus = .email }
             }

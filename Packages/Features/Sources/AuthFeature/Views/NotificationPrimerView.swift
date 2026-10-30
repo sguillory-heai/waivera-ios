@@ -58,7 +58,7 @@
     private struct SampleNotification: View {
         var body: some View {
             HStack(alignment: .top, spacing: Spacing.smallPlus) {
-                AvatarView(name: AuthStrings.primerSampleSender, size: ControlSize.avatarSmall, rounded: true)
+                AvatarView(name: AuthStrings.primerSampleSender, size: ControlSize.avatarSmall)
                 VStack(alignment: .leading, spacing: Spacing.extraSmall) {
                     Text(AuthStrings.primerSampleSender)
                         .font(WaiveraFont.captionEmphasis)

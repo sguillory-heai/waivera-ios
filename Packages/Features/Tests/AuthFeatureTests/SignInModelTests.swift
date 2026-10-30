@@ -41,6 +41,7 @@ struct SignInModelTests {
         #expect(model.emailIssue == .emailInvalid)
         #expect(model.passwordIssue == .passwordRequired)
         #expect(model.failureCount == 1)
+        #expect(model.rejectionCount == 0, "a field error never vibrates")
         #expect(session.calls.isEmpty)
     }
 
@@ -80,7 +81,18 @@ struct SignInModelTests {
         #expect(model.email == email)
         #expect(model.password == "wrong", "fields retain values after a credential error (01 §3)")
         #expect(model.failureCount == 1)
+        #expect(model.rejectionCount == 1, "rejected credentials vibrate and shake once")
         #expect(model.fieldsEnabled)
+    }
+
+    @Test func aNetworkFailureIsNotARejection() async {
+        let session = ScriptedSession()
+        session.signInOutcome.set(.fail(.offline))
+        let model = filled(session)
+        await model.submit()
+        #expect(model.notice == .failed(.offline))
+        #expect(model.failureCount == 1)
+        #expect(model.rejectionCount == 0, "a network failure is not the person's mistake")
     }
 
     @Test func unknownFailuresNeverCarryProviderText() async {

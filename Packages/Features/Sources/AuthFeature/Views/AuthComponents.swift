@@ -26,11 +26,11 @@
         let systemImage: String
         let title: String
         let message: String
-        var tint: Color = Palette.accent
+        var tone: TileTone = .brand
 
         var body: some View {
             VStack(alignment: .leading, spacing: Spacing.smallPlus) {
-                IconTile(systemImage: systemImage, tint: tint)
+                IconTile(systemImage: systemImage, tone: tone)
                 Text(title)
                     .font(WaiveraFont.screenTitle)
                     .foregroundStyle(Palette.text)
@@ -79,10 +79,10 @@
     }
 
     extension View {
-        /// The haptic map for auth outcomes: a validation or request failure, and a success.
-        func authFeedback(failures: Int, successes: Int) -> some View {
-            waiveraHaptic(.failure, trigger: failures)
-                .waiveraHaptic(.success, trigger: successes)
+        /// Rejected credentials: the one auth outcome that vibrates (the form also shakes once,
+        /// `rejectShake`). Every other failure and every success is silent; its message is enough.
+        func signInRejectedFeedback(rejections: Int) -> some View {
+            waiveraHaptic(.signInRejected, trigger: rejections) { old, new in new > old }
         }
 
         /// Fades and slides a notice in and out with the state motion token.
