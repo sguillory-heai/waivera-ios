@@ -218,4 +218,34 @@ struct NewChatModelTests {
         #expect(opened != nil)
         #expect(opened != 7)
     }
+
+    @Test("Reconnect: a directory refetch keeps the people already picked and the search")
+    func selectionSurvivesRefetch() async {
+        let harness = NewChatHarness()
+        await harness.start()
+        defer { harness.stop() }
+        #expect(await eventually { harness.model.state.content == .people })
+        harness.model.toggle("usr_priya_raman")
+        harness.model.query = "pri"
+        let before = harness.fakes.people.resource.refreshCount
+        await harness.fakes.people.refresh()
+        #expect(await eventually { harness.fakes.people.resource.refreshCount == before + 1 })
+        await settle()
+        #expect(harness.names == ["Priya Raman"])
+        #expect(harness.model.state.people.first?.isSelected == true)
+        #expect(harness.model.state.selectedCount == 1)
+        #expect(harness.model.state.content == .people)
+    }
+
+    @Test("Picking keeps the list in place: rows keep their order and only the picked one changes")
+    func pickingKeepsOrder() async {
+        let harness = NewChatHarness()
+        await harness.start()
+        defer { harness.stop() }
+        #expect(await eventually { harness.model.state.content == .people })
+        let order = harness.names
+        harness.model.toggle("usr_sam_ortiz")
+        #expect(harness.names == order)
+        #expect(harness.model.state.people.map(\.isSelected) == [false, false, true])
+    }
 }

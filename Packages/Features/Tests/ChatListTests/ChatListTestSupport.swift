@@ -23,10 +23,13 @@ struct EnglishText: ChatListText {
     let now = "Now"
     let yesterday = "Yesterday"
     let callInProgress = "Call in progress · Join"
+    let notSent = "Not sent"
 
     func groupTitle(first: String, others: Int) -> String {
         "\(first) & \(others) \(others == 1 ? "other" : "others")"
     }
+
+    func compactGroupCount(_ others: Int) -> String { "+\(others)" }
 
     func typing(name: String) -> String { "\(name) is typing…" }
     func minutesAgo(_ minutes: Int) -> String { "\(minutes)m" }

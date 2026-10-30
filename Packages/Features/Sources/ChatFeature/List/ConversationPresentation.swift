@@ -22,6 +22,13 @@ enum ConversationPresentation {
         }
     }
 
+    /// A group title's cuttable name and its short count ("+2"); `nil` for other titles, which
+    /// shrink and then end in "…" as a whole (v7 follow-up, item 4).
+    static func titleParts(_ conversation: Conversation, text: any ChatListText) -> (name: String, compact: String?)? {
+        guard case .group(let first, let others) = conversation.title else { return nil }
+        return (first ?? text.unknownPerson, others > 0 ? text.compactGroupCount(others) : nil)
+    }
+
     static func leading(_ conversation: Conversation) -> RowLeading {
         switch conversation.kind {
         case .channel: .channel(archived: conversation.isArchived || conversation.channel?.isArchived == true)
@@ -83,8 +90,24 @@ enum ConversationPresentation {
         let ids = Set(typingUserIds).subtracting([conversation.viewerId])
         guard let only = ids.first else { return nil }
         if ids.count > 1 { return text.severalTyping }
-        let name = conversation.participants.first { $0.id == only }?.fullName
-        return text.typing(name: name ?? text.someone)
+        return text.typing(name: typingName(conversation, userId: only, text: text))
+    }
+
+    /// Where the one typing person's name ends in `typingLabel` ("Priya Raman" in "Priya Raman is
+    /// typing…"), in characters, so a one-line row cuts the name and keeps "is typing…" whole.
+    /// `nil` when no name shows (several people) or the copy has none.
+    static func typingNamesEnd(_ conversation: Conversation, typingUserIds: [String], text: any ChatListText) -> Int? {
+        let ids = Set(typingUserIds).subtracting([conversation.viewerId])
+        guard ids.count == 1, let only = ids.first else { return nil }
+        let name = typingName(conversation, userId: only, text: text)
+        let line = text.typing(name: name)
+        guard !name.isEmpty, let range = line.range(of: name, options: .backwards) else { return nil }
+        return line.distance(from: line.startIndex, to: range.upperBound)
+    }
+
+    private static func typingName(_ conversation: Conversation, userId: String, text: any ChatListText) -> String {
+        let name = conversation.participants.first { $0.id == userId }?.fullName
+        return (name?.isEmpty == false ? name : nil) ?? text.someone
     }
 
     // MARK: Order, filter, search

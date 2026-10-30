@@ -19,8 +19,12 @@ protocol ChatListText: Sendable {
     var now: String { get }
     var yesterday: String { get }
     var callInProgress: String { get }
+    /// In place of the preview when a message of mine here never went out.
+    var notSent: String { get }
 
     func groupTitle(first: String, others: Int) -> String
+    /// A group title's count in short ("+4"), for a row too narrow for "& 4 others".
+    func compactGroupCount(_ others: Int) -> String
     func typing(name: String) -> String
     func minutesAgo(_ minutes: Int) -> String
     /// "Jordan: running late" as one string, for VoiceOver and search-free display.
@@ -46,9 +50,14 @@ struct LocalizedChatListText: ChatListText {
     var now: String { ChatListStrings.string("chat.list.time.now") }
     var yesterday: String { ChatListStrings.string("chat.list.time.yesterday") }
     var callInProgress: String { ChatListStrings.string("chat.list.call.join") }
+    var notSent: String { ChatListStrings.string("chat.list.notSent") }
 
     func groupTitle(first: String, others: Int) -> String {
         ChatListStrings.format("chat.list.title.group", first, others)
+    }
+
+    func compactGroupCount(_ others: Int) -> String {
+        ChatListStrings.format("chat.list.title.countCompact", others)
     }
 
     func typing(name: String) -> String { ChatListStrings.format("chat.list.typing.one", name) }

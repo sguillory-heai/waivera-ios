@@ -18,6 +18,7 @@ final class ListHarness {
     init(
         _ scenario: FakeDataEnvironment.Scenario = .demo,
         conversations: (any ConversationsRepository)? = nil,
+        failedSends: StateCell<Set<Int>>? = nil,
         webBaseURL: URL? = URL(string: "https://app.waivera.example")
     ) {
         let clock = ManualClock()
@@ -30,10 +31,16 @@ final class ListHarness {
             session: fakes.session,
             realtimeStatus: fakes.realtimeStatus,
             callURL: fakes.environment.callURL,
+            failedSends: Self.source(failedSends),
             text: EnglishText(),
             clock: clock,
             locale: Locale(identifier: "en_US")
         )
+    }
+
+    private static func source(_ cell: StateCell<Set<Int>>?) -> @Sendable () -> AsyncStream<Set<Int>> {
+        guard let cell else { return ChatListModel.noFailedSends }
+        return { cell.stream() }
     }
 
     func start() async {

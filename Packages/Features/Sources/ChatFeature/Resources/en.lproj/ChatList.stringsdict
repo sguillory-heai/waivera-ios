@@ -18,6 +18,22 @@
             <string>%ld others</string>
         </dict>
     </dict>
+    <key>chat.list.title.countCompact</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@others@</string>
+        <key>others</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>ld</string>
+            <key>one</key>
+            <string>+%ld</string>
+            <key>other</key>
+            <string>+%ld</string>
+        </dict>
+    </dict>
     <key>chat.list.time.minutes</key>
     <dict>
         <key>NSStringLocalizedFormatKey</key>
