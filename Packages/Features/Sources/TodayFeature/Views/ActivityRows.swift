@@ -88,18 +88,13 @@
                 headline: summary,
                 supporting: TodayStrings.joined(kind, row.when.map(formatter.past)),
                 emphasized: !row.isRead,
-                showsChevron: true,
                 accessibilityText: row.isRead ? spoken : TodayStrings.format("today.activity.unreadPrefix", spoken),
                 accessibilityHintText: TodayStrings.text("today.hint.openMessage"),
                 action: onOpen,
-                leading: {
-                    IconTile(
-                        systemImage: Self.icon(row.kind),
-                        tone: row.isRead ? .neutral : .brand
-                    )
-                },
+                leading: { IconTile(systemImage: Self.icon(row.kind), tone: Self.tone(row)) },
                 trailing: {
-                    if !row.isRead {
+                    // Opening the row marks it read: the dot shrinks away instead of dropping.
+                    PopVisibility(isVisible: !row.isRead) {
                         UnreadDot(accessibilityLabel: TodayStrings.text("today.activity.unread"))
                     }
                 }
@@ -116,6 +111,16 @@
                 if !row.isRead {
                     Button(TodayStrings.text("today.activity.markRead"), action: onMarkRead)
                 }
+            }
+        }
+
+        /// Read rows fall back to the neutral tint so unread ones stand out; replies are the
+        /// brand's, mentions and reactions are about you (rose). Tiles never hold the emoji.
+        static func tone(_ row: ActivityRow) -> TileTone {
+            if row.isRead { return .neutral }
+            switch row.kind {
+            case .threadReply, .unknown: return .brand
+            case .mention, .reaction: return .rose
             }
         }
 
@@ -146,8 +151,7 @@
                     )
                     .padding(.horizontal, Spacing.medium)
                 } else if section.isLoadingMore {
-                    ProgressView()
-                        .tint(Palette.accent)
+                    BusyIndicator()
                         .frame(maxWidth: .infinity, minHeight: ControlSize.minHitTarget)
                         .accessibilityLabel(Text(TodayStrings.text("today.activity.loadingMore")))
                 } else {

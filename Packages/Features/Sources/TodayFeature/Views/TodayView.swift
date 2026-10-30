@@ -7,14 +7,17 @@
         import WaiveraTestSupport
     #endif
 
-    /// The Today tab root: what needs me now, the next three schedule items in my saved time
-    /// zone, today's celebrations, then the activity feed. Opens from the cache, then refreshes.
+    /// The Today tab root: the plum hero (greeting, what needs me, the count-only ring, stats),
+    /// then what needs me now, my day, the next schedule items in my saved time zone, today's
+    /// celebrations and the activity feed. Opens from the cache, then refreshes. The hero draws
+    /// its own bar, so the navigation bar is hidden here.
     public struct TodayView: View {
         let onOpenConversation: (_ conversationID: Int, _ targetMessageID: Int?) -> Void
         let onOpenThread: (_ rootMessageID: Int, _ conversationID: Int?, _ targetMessageID: Int?) -> Void
         let onOpenEvent: (_ eventID: String) -> Void
         let onOpenSchedule: () -> Void
         let onOpenActivity: () -> Void
+        let onOpenAccount: (() -> Void)?
 
         @Environment(\.dataEnvironment) private var data
         @State private var model: TodayModel?
@@ -24,25 +27,28 @@
             onOpenThread: @escaping (_ rootMessageID: Int, _ conversationID: Int?, _ targetMessageID: Int?) -> Void,
             onOpenEvent: @escaping (_ eventID: String) -> Void,
             onOpenSchedule: @escaping () -> Void,
-            onOpenActivity: @escaping () -> Void
+            onOpenActivity: @escaping () -> Void,
+            onOpenAccount: (() -> Void)? = nil
         ) {
             self.onOpenConversation = onOpenConversation
             self.onOpenThread = onOpenThread
             self.onOpenEvent = onOpenEvent
             self.onOpenSchedule = onOpenSchedule
             self.onOpenActivity = onOpenActivity
+            self.onOpenAccount = onOpenAccount
         }
 
         public var body: some View {
             Group {
                 if let model {
-                    TodayScreen(model: model, open: open)
+                    TodayScreen(model: model, open: open, openAccount: onOpenAccount)
                 } else {
                     Palette.background
                 }
             }
             .background(Palette.background)
             .navigationTitle(TodayStrings.text("today.title"))
+            .toolbar(.hidden, for: .navigationBar)
             .task {
                 let current = model ?? data.map { TodayModel(environment: $0, clock: $0.clock) }
                 if model == nil { model = current }
@@ -66,6 +72,7 @@
     private struct TodayScreen: View {
         let model: TodayModel
         let open: (TodayDestination) -> Void
+        let openAccount: (() -> Void)?
 
         var body: some View {
             TodayContent(state: model.state, actions: actions, onRefresh: { [model] in await model.refresh() })
@@ -78,10 +85,12 @@
                 open: { destination, activityId in
                     if let allowed = model.navigate(to: destination, markingRead: activityId) { open(allowed) }
                 },
+                openAccount: openAccount,
                 respond: { model.respond(toEventId: $0, accept: $1) },
                 toggleNeedsYou: { model.toggleNeedsYouExpanded() },
                 setFilter: { model.setFilter($0) },
                 toggleUnreadOnly: { model.toggleUnreadOnly() },
+                clearFilters: { model.clearActivityFilters() },
                 markRead: { model.markRead($0) },
                 markAllRead: { model.markAllRead() },
                 loadMore: { model.loadMoreActivity() },
@@ -105,38 +114,30 @@
         }
 
         #Preview("Dark, populated") {
-            NavigationStack {
-                TodayContent(state: TodayPreviewStates.populated(), actions: TodayActions(), onRefresh: {})
-                    .navigationTitle(TodayStrings.text("today.title"))
-            }
-            .preferredColorScheme(.dark)
+            TodayContent(state: TodayPreviewStates.populated(), actions: TodayActions(), onRefresh: {})
+                .preferredColorScheme(.dark)
         }
 
-        #Preview("AX XXXL, populated") {
-            NavigationStack {
-                TodayContent(state: TodayPreviewStates.populated(), actions: TodayActions(), onRefresh: {})
-                    .navigationTitle(TodayStrings.text("today.title"))
-            }
-            .dynamicTypeSize(.accessibility5)
+        #Preview("AX5, long content") {
+            TodayContent(state: TodayPreviewStates.longContent(), actions: TodayActions(), onRefresh: {})
+                .dynamicTypeSize(.accessibility5)
         }
 
-        #Preview("All caught up") {
-            NavigationStack {
-                TodayContent(state: TodayPreviewStates.caughtUp(), actions: TodayActions(), onRefresh: {})
-            }
+        #Preview("All caught up, long name") {
+            TodayContent(state: TodayPreviewStates.caughtUpLongName(), actions: TodayActions(), onRefresh: {})
+        }
+
+        #Preview("Loading") {
+            TodayContent(state: TodayPreviewStates.loading(), actions: TodayActions(), onRefresh: {})
         }
 
         #Preview("Offline, stale") {
-            NavigationStack {
-                TodayContent(state: TodayPreviewStates.offline(), actions: TodayActions(), onRefresh: {})
-            }
-            .preferredColorScheme(.dark)
+            TodayContent(state: TodayPreviewStates.offline(), actions: TodayActions(), onRefresh: {})
+                .preferredColorScheme(.dark)
         }
 
         #Preview("Error") {
-            NavigationStack {
-                TodayContent(state: TodayPreviewStates.failed(), actions: TodayActions(), onRefresh: {})
-            }
+            TodayContent(state: TodayPreviewStates.failed(), actions: TodayActions(), onRefresh: {})
         }
 
         #Preview("Failing scenario") {

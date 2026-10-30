@@ -148,7 +148,7 @@
             let section = state.section
             if section.isEmpty {
                 EmptyStateView(
-                    systemImage: "checkmark.circle",
+                    illustration: .activity,
                     title: TodayStrings.text("today.activity.caughtUp.title"),
                     message: TodayStrings.text("today.activity.empty.message")
                 )
@@ -165,7 +165,7 @@
                 ActivityMetaRow(section: section, onMarkAllRead: actions.markAllRead).todayListRow()
                 if section.isFilteredEmpty {
                     EmptyStateView(
-                        systemImage: "magnifyingglass",
+                        illustration: .search,
                         title: TodayStrings.text("today.activity.filtered.title"),
                         message: TodayStrings.text("today.activity.filtered.searchMessage"),
                         actionTitle: TodayStrings.text("today.activity.clearFilters"),
