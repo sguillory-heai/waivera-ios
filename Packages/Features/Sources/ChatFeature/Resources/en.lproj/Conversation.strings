@@ -78,6 +78,7 @@
 "edit.failed" = "Edit failed";
 "composer.placeholder" = "Message";
 "composer.reply.placeholder" = "Reply";
+"composer.edit.placeholder" = "Edit your message…";
 "attach.image" = "Attach image";
 "send" = "Send message";
 "send.reply" = "Send reply";
