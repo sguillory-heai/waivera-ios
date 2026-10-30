@@ -39,8 +39,11 @@ final class PrivacyCoverController {
                 object: nil,
                 queue: .main
             ) { [weak self] notification in
+                // Only the scene (a main-actor, so Sendable, type) crosses into the main actor;
+                // the non-Sendable notification stays in the observer's own context.
+                let scene = notification.object as? UIWindowScene
                 MainActor.assumeIsolated {
-                    guard let scene = notification.object as? UIWindowScene else { return }
+                    guard let scene else { return }
                     self?.cover(scene)
                 }
             }
@@ -51,8 +54,11 @@ final class PrivacyCoverController {
                 object: nil,
                 queue: .main
             ) { [weak self] notification in
+                // Only the scene (a main-actor, so Sendable, type) crosses into the main actor;
+                // the non-Sendable notification stays in the observer's own context.
+                let scene = notification.object as? UIWindowScene
                 MainActor.assumeIsolated {
-                    guard let scene = notification.object as? UIWindowScene else { return }
+                    guard let scene else { return }
                     self?.uncover(scene)
                 }
             }
