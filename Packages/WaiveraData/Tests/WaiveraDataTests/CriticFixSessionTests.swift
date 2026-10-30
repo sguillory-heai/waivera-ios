@@ -184,7 +184,10 @@ struct CriticFixSessionTests {
     func todaysPersonalValuesAreClearedAtSignOut() async {
         let keyValues = InMemoryKeyValueStore()
         let rig = await signedInRig(keyValues: keyValues)
-        keyValues.set(Data(#"{"userId":"usr_alex_rivera","day":"2026-10-30","handled":2,"open":["dm-7"]}"#.utf8), forKey: StorageKey.todayHandled)
+        keyValues.set(
+            Data(#"{"userId":"usr_alex_rivera","day":"2026-10-30","handled":2,"open":["dm-7"]}"#.utf8),
+            forKey: StorageKey.todayHandled
+        )
         keyValues.set(Data("2026-10-30".utf8), forKey: StorageKey.todayRewardBurstDay)
         keyValues.set(Data("kept".utf8), forKey: StorageKey.pushInstallationId)
         await rig.environment.session.signOut()

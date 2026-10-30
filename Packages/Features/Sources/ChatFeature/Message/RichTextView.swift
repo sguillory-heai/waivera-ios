@@ -105,7 +105,11 @@
             }
         }
 
-        private func inline(_ inlines: [RichInline], style: TextStyleToken, weight: FontWeightToken? = nil) -> some View {
+        private func inline(
+            _ inlines: [RichInline],
+            style: TextStyleToken,
+            weight: FontWeightToken? = nil
+        ) -> some View {
             Text(RichTextStyler.styled(inlines, inMyBubble: inMyBubble))
                 .waiveraTextStyle(style, weight: weight)
                 .foregroundStyle(color)

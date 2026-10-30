@@ -167,7 +167,11 @@
         var body: some View {
             MessageBones(rows: 2, width: width)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+                .onGeometryChange(for: CGFloat.self) {
+                    $0.size.width
+                } action: {
+                    width = $0
+                }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(ConversationStrings.text("older.loading"))
         }

@@ -124,7 +124,8 @@ extension ChatEngine: ConversationsRepository {
     private func adopt(_ dto: ConversationResponse, startedIn requestGeneration: Int) throws -> Conversation {
         guard generation == requestGeneration, let mapper else { throw WaiveraError.signedOut }
         guard let conversation = mapper.conversation(dto) else { throw WaiveraError.invalidResponse }
-        guard conversation.participants.isEmpty || conversation.participants.contains(where: { $0.id == mapper.viewerId })
+        guard
+            conversation.participants.isEmpty || conversation.participants.contains(where: { $0.id == mapper.viewerId })
         else { throw WaiveraError.invalidResponse }
         insert(conversation, keepUnread: true)
         publishConversations()

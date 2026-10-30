@@ -22,14 +22,19 @@
                     .frame(width: CGFloat(badge.glyphSize), height: CGFloat(badge.glyphSize))
                 if let years = badge.years {
                     Text(verbatim: "\(years)")
-                        .font(.custom(FontWeightToken.extraBold.postScriptName, fixedSize: CGFloat(badge.yearsFontSize)))
+                        .font(
+                            .custom(FontWeightToken.extraBold.postScriptName, fixedSize: CGFloat(badge.yearsFontSize))
+                        )
                         .lineLimit(1)
                         .fixedSize()
                 }
             }
             .foregroundStyle(ink)
             .padding(.horizontal, badge.years == nil ? 0 : Spacing.xxSmall)
-            .frame(minWidth: edge - 2 * ControlSize.milestoneBadgeBorder, minHeight: edge - 2 * ControlSize.milestoneBadgeBorder)
+            .frame(
+                minWidth: edge - 2 * ControlSize.milestoneBadgeBorder,
+                minHeight: edge - 2 * ControlSize.milestoneBadgeBorder
+            )
             .background(fill, in: Capsule())
             .padding(ControlSize.milestoneBadgeBorder)
             .background(Palette.background, in: Capsule())
