@@ -18,6 +18,7 @@ public actor FakeChatRepository {
     nonisolated let inbox: FakeResource<[Conversation]>
     nonisolated let typingCell = StateCell<[Int: [String]]>([:])
     nonisolated let unreadCell = StateCell(0)
+    nonisolated let failedSendsCell = StateCell<Set<Int>>([])
     nonisolated let timelineCells = CellRegistry<Int, Resource<MessageTimeline>>(initial: Resource())
     nonisolated let threadCells = CellRegistry<Int, Resource<ThreadTimeline>>(initial: Resource())
     public nonisolated let calls = CallLog()
@@ -50,6 +51,7 @@ public actor FakeChatRepository {
         messages = data.messages
         threadsById = data.threads
         for entry in data.pending { pending[entry.clientMessageId] = entry }
+        failedSendsCell.set(Set(data.pending.filter(\.isFailed).map(\.conversationId)))
         unreadCell.set(data.conversations.reduce(0) { $0 + $1.unreadCount })
     }
 
@@ -95,6 +97,7 @@ public actor FakeChatRepository {
     // MARK: Publishing
 
     func publishTimeline(_ conversationId: Int, phase: ResourcePhase? = nil) {
+        publishFailedSends()
         let isLoaded = loadedTimelines.contains(conversationId)
         let rows = pending.values.filter { $0.conversationId == conversationId && $0.parentMessageId == nil }
             .sorted { $0.createdAt < $1.createdAt }
@@ -113,11 +116,18 @@ public actor FakeChatRepository {
     }
 
     func publishThread(_ rootId: Int, phase: ResourcePhase? = nil) {
+        publishFailedSends()
         guard var thread = threadsById[rootId] else { return }
         thread.pending = pending.values.filter { $0.parentMessageId == rootId }.sorted { $0.createdAt < $1.createdAt }
         let cell = threadCells.cell(rootId)
         let value = loadedThreads.contains(rootId) ? thread : cell.current.value
         cell.set(Resource(value: value, phase: phase ?? cell.current.phase, updatedAt: clock.now))
+    }
+
+    /// Conversations with a failed send, as the live engine publishes them.
+    func publishFailedSends() {
+        let failed = Set(pending.values.filter(\.isFailed).map(\.conversationId))
+        if failed != failedSendsCell.current { failedSendsCell.set(failed) }
     }
 
     func updateConversation(_ id: Int, _ change: (inout Conversation) -> Void) {
@@ -168,6 +178,7 @@ extension FakeChatRepository: ConversationsRepository {
     public nonisolated func conversations() -> AsyncStream<Resource<[Conversation]>> { inbox.stream() }
     public nonisolated func typing() -> AsyncStream<[Int: [String]]> { typingCell.stream() }
     public nonisolated func totalUnread() -> AsyncStream<Int> { unreadCell.stream() }
+    public nonisolated func failedSends() -> AsyncStream<Set<Int>> { failedSendsCell.stream() }
 
     public func refresh() async {
         calls.record("refreshInbox")

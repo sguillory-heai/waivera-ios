@@ -6,6 +6,7 @@ extension ChatEngine: ConversationsRepository {
     public nonisolated func conversations() -> AsyncStream<Resource<[Conversation]>> { conversationsCell.stream() }
     public nonisolated func typing() -> AsyncStream<[Int: [String]]> { typingTracker.cell.stream() }
     public nonisolated func totalUnread() -> AsyncStream<Int> { unreadCell.stream() }
+    public nonisolated func failedSends() -> AsyncStream<Set<Int>> { failedSendsCell.stream() }
 
     /// Concurrent callers share one request.
     public func refresh() async {

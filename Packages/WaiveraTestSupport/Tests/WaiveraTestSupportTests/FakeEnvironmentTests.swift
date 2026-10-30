@@ -143,6 +143,18 @@ struct FakeChatTests {
         #expect(await timeline()?.messages.last?.clientMessageId == failed.clientMessageId)
     }
 
+    @Test func failedSendsFollowTheOutbox() async throws {
+        #expect(await latest(fakes.chat.failedSends()) == [7])
+        await fakes.chat.open(conversationId: 7)
+        let failed = try #require(await timeline()?.pending.first)
+        await fakes.chat.retry(clientMessageId: failed.clientMessageId)
+        #expect(await latest(fakes.chat.failedSends()) == [])
+        await fakes.chat.open(conversationId: 63)
+        await fakes.chat.setSendOutcome(.fail(.server(statusCode: 500)))
+        _ = await fakes.chat.send(text: "Again", attachment: nil, conversationId: 63)
+        #expect(await latest(fakes.chat.failedSends()) == [63])
+    }
+
     @Test func sendOutcomes() async throws {
         await fakes.chat.open(conversationId: 63)
         await fakes.chat.setSendOutcome(.hold)

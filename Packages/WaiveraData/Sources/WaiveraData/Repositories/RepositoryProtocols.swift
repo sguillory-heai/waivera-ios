@@ -42,10 +42,23 @@ public protocol ConversationsRepository: Sendable {
     /// Typing users per conversation, already excluding the viewer and expired entries.
     func typing() -> AsyncStream<[Int: [String]]>
     func totalUnread() -> AsyncStream<Int>
+    /// Conversations holding a message of mine that the outbox gave up on (failed, waiting for
+    /// Retry or Discard), so the inbox and Today can say "Not sent" without opening the chat.
+    func failedSends() -> AsyncStream<Set<Int>>
     /// Get-or-create the 1:1 conversation with `userId`.
     func openDirectConversation(with userId: String) async throws -> Conversation
     func createConversation(participantIds: [String]) async throws -> Conversation
     func leave(conversationId: Int) async throws
+}
+
+extension ConversationsRepository {
+    /// For sources without an outbox: nothing ever failed to send.
+    public func failedSends() -> AsyncStream<Set<Int>> {
+        AsyncStream { continuation in
+            continuation.yield([])
+            continuation.finish()
+        }
+    }
 }
 
 /// Actions on any message, from the conversation or a thread.

@@ -315,6 +315,15 @@ extension ChatEngine {
         } else {
             publishTimeline(entry.conversationId)
         }
+        publishFailedSends()
+    }
+
+    /// Every conversation with a failed send, a thread reply included, as the conversation's own
+    /// "Not sent" rows show it. Sending and queued entries are still on their way, so they do
+    /// not count (Android `observeFailedSends`). Published only when the set changes.
+    func publishFailedSends() {
+        let failed = Set(outbox.values.filter(\.isFailed).map(\.conversationId))
+        if failed != failedSendsCell.current { failedSendsCell.set(failed) }
     }
 
     /// The pending sends for a conversation, failed ones included (Retry in both places).

@@ -80,6 +80,8 @@ public actor ChatEngine {
     var openThreads: [Int: Int] = [:]
 
     var outbox: [String: OutgoingMessage] = [:]
+    /// Conversations holding a send of mine that needs Retry, for "Not sent" outside the chat.
+    nonisolated let failedSendsCell = StateCell<Set<Int>>([])
     var outboxTasks: [String: Task<Void, Never>] = [:]
     /// Tries that failed only because the device was offline; they never spend the automatic
     /// budget (IF-04). In memory: a relaunch starts counting again.
@@ -139,6 +141,7 @@ public actor ChatEngine {
             let mine = pending.filter { $0.authorId == user.id }
             for message in mine { outbox[message.clientMessageId] = message }
             if mine.count != pending.count { persistOutbox() }
+            publishFailedSends()
             resumeOutbox()
         }
     }
@@ -159,6 +162,7 @@ public actor ChatEngine {
         timelines.removeAll()
         threads.removeAll()
         outbox.removeAll()
+        publishFailedSends()
         lastReadThrough.removeAll()
         openConversations.removeAll()
         openThreads.removeAll()
