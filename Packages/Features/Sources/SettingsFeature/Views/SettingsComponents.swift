@@ -57,7 +57,7 @@
 
         var body: some View {
             Button {
-                withAnimation(Motion.animation(.state, reduceMotion: reduceMotion)) { onChange(!isOn) }
+                flip()
             } label: {
                 ListRow(title: title, subtitle: subtitle) {
                     IconTile(systemImage: systemImage, tone: isEnabled ? tone : .neutral)
@@ -70,14 +70,23 @@
                 }
             }
             .buttonStyle(.press(.row))
-            .disabled(!isEnabled)
             .opacity(isEnabled ? 1 : Emphasis.disabled)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(title))
             .accessibilityHint(subtitle.map { Text($0) } ?? Text(verbatim: ""))
             .accessibilityValue(Text(isOn ? SettingsStrings.on : SettingsStrings.off))
             .accessibilityAddTraits(.isToggle)
-            .accessibilityAction { onChange(!isOn) }
+            .accessibilityAction { flip() }
+            .accessibilityRespondsToUserInteraction(isEnabled)
+            // After the accessibility element, so VoiceOver hears the row as dimmed too and its
+            // default action is covered, not only the button inside it.
+            .disabled(!isEnabled)
+        }
+
+        /// A blocked row keeps its stored value, whichever way the flip arrives.
+        private func flip() {
+            guard isEnabled else { return }
+            withAnimation(Motion.animation(.state, reduceMotion: reduceMotion)) { onChange(!isOn) }
         }
     }
 
