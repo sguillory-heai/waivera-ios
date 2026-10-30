@@ -56,6 +56,7 @@ public enum RouteCatalog {
         ("conversation", "waivera://chats/7"),
         ("conversation-target", "waivera://chats/7?messageId=9312"),
         ("thread", "waivera://chats/thread/9330?conversationId=7"),
+        ("group-members", "waivera://chats/11/members"),
         ("schedule", "waivera://schedule"),
         ("calendar-event", "waivera://calendar/evt_8f2b19c4"),
         ("profile", "waivera://profile"),
@@ -66,8 +67,7 @@ public enum RouteCatalog {
         ("settings", "waivera://settings"),
         ("settings-notifications", "waivera://settings/notifications"),
         ("settings-appearance", "waivera://settings/appearance"),
-        ("settings-account", "waivera://settings/account"),
-        ("settings-change-password", "waivera://settings/account/password"),
+        ("settings-change-password", "waivera://settings/password"),
         ("conversation-bot", "waivera://chats/90"),
         ("calendar-event-invite", "waivera://calendar/evt_demo_invite"),
         ("calendar-event-checkin", "waivera://calendar/evt_demo_checkin"),
@@ -79,8 +79,8 @@ public enum RouteCatalog {
     /// Screens whose content depends on loaded data, shown once per state scenario:
     /// empty lists, failed loads and the skeletons of a slow server.
     public static let stateRoutes = [
-        "today", "activity", "chat", "conversation", "thread", "schedule", "calendar-event", "profile",
-        "organization", "people", "person", "bookmarks", "settings-notifications", "settings-account",
+        "today", "activity", "chat", "conversation", "thread", "group-members", "schedule", "calendar-event",
+        "profile", "organization", "people", "person", "bookmarks", "settings-notifications",
     ]
 
     /// Named state variants: `<route>-<scenario>`, for example `today-empty`. Each opens its

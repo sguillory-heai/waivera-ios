@@ -14,6 +14,9 @@ public enum AppRoute: Codable, Hashable, Sendable {
     // Chat
     case conversation(conversationID: Int, targetMessageID: Int?)
     case thread(rootMessageID: Int, conversationID: Int?, targetMessageID: Int?)
+    /// A group's members, opened from the "N members" line in its header. Pushed over the
+    /// conversation it belongs to.
+    case groupMembers(conversationID: Int)
     // Schedule
     case calendarEvent(eventID: String)
     // Avatar menu
@@ -25,11 +28,11 @@ public enum AppRoute: Codable, Hashable, Sendable {
     case settings
     case notificationSettings
     case appearanceSettings
-    case accountSettings
-    /// The voluntary password change, pushed from Settings → Account.
+    /// The voluntary password change, pushed from Settings → Security.
     case changePassword
 
-    /// The conversation this screen shows, used by the foreground presentation rule.
+    /// The conversation this screen shows, used by the foreground presentation rule. The members
+    /// screen shows no messages, so a message there still raises its alert.
     public var conversationID: Int? {
         switch self {
         case .conversation(let conversationID, _): conversationID
@@ -80,6 +83,17 @@ public struct Destination: Equatable, Sendable {
             .thread(rootMessageID: rootMessageID, conversationID: conversationID, targetMessageID: targetMessageID)
         )
         return Destination(tab: .chat, path: path)
+    }
+
+    /// A group's members over its conversation, so back goes members → conversation → inbox.
+    public static func groupMembers(_ conversationID: Int) -> Destination {
+        Destination(
+            tab: .chat,
+            path: [
+                .conversation(conversationID: conversationID, targetMessageID: nil),
+                .groupMembers(conversationID: conversationID),
+            ]
+        )
     }
 
     public static func calendarEvent(_ eventID: String) -> Destination {

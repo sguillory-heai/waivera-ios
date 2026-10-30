@@ -71,13 +71,34 @@ struct DeepLinkTests {
         #expect(
             parse("waivera://settings/appearance") == Destination(tab: nil, path: [.settings, .appearanceSettings])
         )
-        #expect(parse("waivera://settings/account") == Destination(tab: nil, path: [.settings, .accountSettings]))
+        // Account lives on Settings itself; older account links land there.
+        #expect(parse("waivera://settings/account") == Destination(tab: nil, path: [.settings]))
+        #expect(parse("waivera://settings/password") == Destination(tab: nil, path: [.settings, .changePassword]))
         #expect(
-            parse("waivera://settings/account/password")
-                == Destination(tab: nil, path: [.settings, .accountSettings, .changePassword])
+            parse("waivera://settings/account/password") == Destination(tab: nil, path: [.settings, .changePassword])
         )
         #expect(parse("waivera://settings/account/billing") == nil)
         #expect(parse("waivera://settings/notifications/password") == nil)
+    }
+
+    @Test func groupMembersSitOverTheirConversation() {
+        #expect(
+            parse("waivera://chats/7/members")
+                == Destination(
+                    tab: .chat,
+                    path: [.conversation(conversationID: 7, targetMessageID: nil), .groupMembers(conversationID: 7)]
+                )
+        )
+        #expect(parse("waivera://chats/7/Members") == .groupMembers(7))
+        #expect(parse("waivera://chats/0/members") == nil)
+        #expect(parse("waivera://chats/-7/members") == nil)
+        #expect(parse("waivera://chats/abc/members") == nil)
+        #expect(parse("waivera://chats/7/members/3") == nil)
+        #expect(DeepLink.destination(fromPath: "/chats/7/members") == .groupMembers(7))
+    }
+
+    @Test func membersScreenIsNotAConversationForAlerts() {
+        #expect(AppRoute.groupMembers(conversationID: 7).conversationID == nil)
     }
 
     @Test func pathOnlyFallbackFromPushURL() {
