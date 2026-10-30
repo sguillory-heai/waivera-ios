@@ -1,72 +1,52 @@
-/// Moments that may produce a haptic, from the UX research "Waivera feedback map".
-/// Plain taps on buttons and rows have no entry on purpose: the press scale is the feedback.
-public enum HapticEvent: String, CaseIterable, Sendable {
-    /// A switch flips.
-    case toggle
-    /// Chips, segmented controls, pickers.
-    case selection
-    /// A swipe action crosses its threshold.
-    case swipeThreshold
-    /// A message leaves the device.
-    case messageSent
-    /// Task done, a retried send succeeded, a ticket accepted, diagnostics copied.
-    case success
-    /// Validation or send failure.
-    case failure
-    /// Destructive confirmation, going offline.
-    case warning
-    /// A long press opens a menu.
-    case longPress
-    /// Someone else's message arrives live while its conversation or thread is on screen.
-    /// AGENTS.md lists "receive while visible" as a haptic moment and Android plays one (AF-13),
-    /// so both platforms give the lightest tick; bursts are throttled by `HapticGate` (IF-09).
-    case messageReceivedWhileVisible
+/// The only moments in the whole app that vibrate (the owner's haptics policy, 2026-10-29: "avoid
+/// vibrations where possible"). Everything else is silent and motion carries the feedback: taps,
+/// long presses, toggles, selection, swipe thresholds, successes (copy, save, accept, bookmark, a
+/// message that sends), warnings (destructive confirms, going offline), incoming messages, and
+/// every other error or failed validation. A new vibration needs a new case here and a policy
+/// change from the owner, never a call site.
+public enum HapticMoment: String, CaseIterable, Sendable {
+    /// A message or reply failed to send. Once per failure, never for a send that works.
+    case sendFailed
+    /// Sign-in credentials were rejected; the form shakes with it. Never for a network failure.
+    case signInRejected
 }
 
-/// The system haptic a moment plays. Mirrors SwiftUI `SensoryFeedback` without importing it.
+/// The one system signal a moment plays. Mirrors SwiftUI `SensoryFeedback` without importing it.
 public enum HapticPattern: Equatable, Sendable {
-    case selection
-    case impactLight
-    case impactMedium
-    case success
-    case warning
+    /// `SensoryFeedback.error` / `UINotificationFeedbackGenerator` `.error`: Android's `Reject`.
     case error
 }
 
 public enum HapticMap {
-    public static func pattern(for event: HapticEvent) -> HapticPattern? {
-        switch event {
-        case .toggle, .selection, .messageReceivedWhileVisible: .selection
-        case .swipeThreshold, .messageSent: .impactLight
-        case .success: .success
-        case .failure: .error
-        case .warning: .warning
-        case .longPress: .impactMedium
+    public static func pattern(for moment: HapticMoment) -> HapticPattern {
+        switch moment {
+        case .sendFailed, .signInRejected: .error
         }
     }
 }
 
-/// Decides whether a haptic actually plays: honours the Settings switch and stops a burst of
-/// identical events (rapid sends) from stacking into a buzz.
+/// Decides whether a haptic actually plays: honours the Settings switch and drops a repeat of the
+/// same moment inside `minimumRepeatInterval`, so a burst of failures does not stack into a buzz.
 public struct HapticGate: Sendable {
-    /// Minimum gap between two plays of the same pattern.
-    public static let burstInterval = 0.25
+    /// Android's `MIN_REPEAT_MILLIS`.
+    public static let minimumRepeatInterval = 0.150
 
     public var isEnabled: Bool
-    private var lastPlayed: [String: Double] = [:]
+    private var lastMoment: HapticMoment?
+    private var lastPlayed: Double?
 
     public init(isEnabled: Bool = true) {
         self.isEnabled = isEnabled
     }
 
     /// Returns the pattern to play now, or `nil`. `now` is seconds on a monotonic clock.
-    public mutating func pattern(for event: HapticEvent, now: Double) -> HapticPattern? {
-        guard isEnabled, let pattern = HapticMap.pattern(for: event) else { return nil }
-        let key = String(describing: pattern)
-        if let last = lastPlayed[key], now - last < Self.burstInterval {
+    public mutating func pattern(for moment: HapticMoment, now: Double) -> HapticPattern? {
+        guard isEnabled else { return nil }
+        if moment == lastMoment, let lastPlayed, now - lastPlayed < Self.minimumRepeatInterval {
             return nil
         }
-        lastPlayed[key] = now
-        return pattern
+        lastMoment = moment
+        lastPlayed = now
+        return HapticMap.pattern(for: moment)
     }
 }
