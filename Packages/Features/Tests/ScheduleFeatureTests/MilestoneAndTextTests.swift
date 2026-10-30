@@ -81,6 +81,21 @@ struct MilestoneCalendarTests {
         #expect(MilestoneBadge.size(forAvatar: 76) == 33)
     }
 
+    @Test func theBadgeGlyphYearsAndOffsetAreSizedFromItsEdgeAsOnAndroid() {
+        let anniversary = ScheduleCelebration(userId: "b", displayName: "Sam", kind: .anniversary, years: 5)
+        // A 44pt avatar: edge round(44 × 0.43) = 19.
+        let badge = MilestoneBadge(celebration: anniversary, avatarSize: 44)
+        #expect(badge.size == 19)
+        #expect(abs(badge.glyphSize - 19 * 0.52) < 0.0001)
+        #expect(abs(badge.yearsFontSize - 19 * 0.42) < 0.0001)
+        #expect(badge.offset.x == 5)
+        #expect(badge.offset.y == -5)
+        // The floor holds on the smallest avatars.
+        let small = MilestoneBadge(celebration: anniversary, avatarSize: 24)
+        #expect(small.size == 17)
+        #expect(abs(small.glyphSize - 17 * 0.52) < 0.0001)
+    }
+
     @Test func monthGridLookupDoesNotScanEveryMilestonePerCell() {
         // 400 employees spread over the year: each cell evaluates only that day's people.
         let milestones = (0..<400).map { index in

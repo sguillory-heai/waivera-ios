@@ -1,4 +1,5 @@
 import Foundation
+import WaiveraDesign
 
 /// The three labels a celebration has (07 §4 table). `name` falls back to "This employee".
 public struct CelebrationText: Sendable, Hashable {
@@ -86,13 +87,34 @@ public struct MilestoneBadge: Sendable, Hashable {
             case .anniversary: .award
             case .both: .party
             }
-        years = celebration.kind == .anniversary && avatarSize >= 40 ? celebration.years : nil
+        years =
+            celebration.kind == .anniversary && avatarSize >= Double(ControlSize.milestoneYearsMinAvatar)
+            ? celebration.years : nil
         size = Self.size(forAvatar: avatarSize)
         accessibilityLabel = CelebrationText(celebration, name: name).accessible
     }
 
+    /// The badge's edge, as a share of the avatar's (Android `BADGE_RATIO`).
+    public static let edgeRatio = 0.43
+    /// The glyph, as a share of the badge's edge.
+    public static let glyphRatio = 0.52
+    /// The anniversary's year count, as a share of the badge's edge.
+    public static let yearsRatio = 0.42
+    /// How far the badge sits out past the avatar's top trailing corner, as shares of its edge.
+    public static let offsetXRatio = 0.28
+    public static let offsetYRatio = 0.25
+
     /// `max(17, round(size * 0.43))`.
     public static func size(forAvatar avatarSize: Double) -> Double {
-        max(17, (avatarSize * 0.43).rounded())
+        max(Double(ControlSize.milestoneBadgeMin), (avatarSize * edgeRatio).rounded())
+    }
+
+    /// The glyph's size inside the badge.
+    public var glyphSize: Double { size * Self.glyphRatio }
+    /// The year count's font size: fixed from the badge, since the badge is a fixed-size image.
+    public var yearsFontSize: Double { size * Self.yearsRatio }
+    /// The badge's offset from the avatar's top trailing corner, in whole points.
+    public var offset: (x: Double, y: Double) {
+        ((size * Self.offsetXRatio).rounded(), -(size * Self.offsetYRatio).rounded())
     }
 }

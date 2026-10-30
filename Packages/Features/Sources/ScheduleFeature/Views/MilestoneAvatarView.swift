@@ -21,7 +21,7 @@
                 .overlay(alignment: .topTrailing) {
                     if let badge {
                         MilestoneBadgeView(badge: badge)
-                            .offset(x: badge.size * 0.28, y: -badge.size * 0.25)
+                            .offset(x: badge.offset.x, y: badge.offset.y)
                     }
                 }
                 .accessibilityElement(children: .ignore)
