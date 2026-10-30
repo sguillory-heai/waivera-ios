@@ -7,6 +7,7 @@ import WaiveraRouting
 /// Picking a row closes the sheet and opens the screen over the current tab.
 struct AccountMenuSheet: View {
     let accountName: String
+    var accountImage: Image?
     let onSelect: (AppRoute) -> Void
 
     var body: some View {
@@ -19,7 +20,7 @@ struct AccountMenuSheet: View {
                         titleKind: .personName,
                         showsChevron: true
                     ) {
-                        AvatarView(name: accountName)
+                        AvatarView(name: accountName, image: accountImage)
                     }
                 }
                 MenuRow(title: AppStrings.menuPeople, systemImage: "person.2.fill", identifier: "menu.people") {

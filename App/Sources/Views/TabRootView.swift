@@ -5,8 +5,9 @@ import TodayFeature
 import WaiveraDesign
 import WaiveraRouting
 
-/// Each tab's root screen. Their hero bars show the signed-in avatar and open the account menu
-/// through `waiveraAccountMenu`, which `MainTabView` provides above the tabs.
+/// Each tab's root screen. Every root draws the hero bar with the signed-in avatar, which opens
+/// the account menu: the shell passes `presentAccountMenu` to each one, and `MainTabView` also
+/// provides it through `waiveraAccountMenu` (with the avatar photo) for any bar not given one.
 struct TabRootView: View {
     @Bindable var model: AppModel
     let tab: AppTab
@@ -19,16 +20,25 @@ struct TabRootView: View {
                 onOpenThread: { model.push(.thread(rootMessageID: $0, conversationID: $1, targetMessageID: $2)) },
                 onOpenEvent: { model.push(.calendarEvent(eventID: $0)) },
                 onOpenSchedule: { model.select(.schedule) },
-                onOpenActivity: { model.push(.activity) }
+                onOpenActivity: { model.push(.activity) },
+                onOpenAccount: { model.presentAccountMenu() }
             )
         case .chat:
             ConversationListView(
                 onOpenConversation: { model.push(.conversation(conversationID: $0, targetMessageID: nil)) },
                 onOpenPerson: { model.push(.person(userID: $0)) },
-                onNewChat: { model.presentNewChat() }
+                // The hero bar's "+".
+                onNewChat: { model.presentNewChat() },
+                accountName: model.userDisplayName,
+                onAccount: { model.presentAccountMenu() }
             )
         case .schedule:
-            ScheduleView(onOpenEvent: { model.push(.calendarEvent(eventID: $0)) })
+            ScheduleView(
+                onOpenEvent: { model.push(.calendarEvent(eventID: $0)) },
+                // "Send wishes" on a celebration card opens the chat it started.
+                onOpenConversation: { model.push(.conversation(conversationID: $0, targetMessageID: nil)) },
+                onOpenAccount: { model.presentAccountMenu() }
+            )
         }
     }
 }

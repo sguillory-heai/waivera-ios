@@ -1,5 +1,7 @@
 import ChatFeature
 import SwiftUI
+import UIKit
+import WaiveraData
 import WaiveraDesign
 import WaiveraRouting
 
@@ -12,6 +14,9 @@ import WaiveraRouting
 struct MainTabView: View {
     @Bindable var model: AppModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dataEnvironment) private var data
+    /// The signed-in person's photo for the hero bars and the account menu; initials until it loads.
+    @State private var accountImage: Image?
 
     var body: some View {
         TabView(selection: selection) {
@@ -45,9 +50,20 @@ struct MainTabView: View {
             }
         }
         .sheet(isPresented: $model.isAccountMenuPresented) {
-            AccountMenuSheet(accountName: model.userDisplayName) { model.openFromAccountMenu($0) }
-                .waiveraSheetPresentation()
+            AccountMenuSheet(accountName: model.userDisplayName, accountImage: accountImage) {
+                model.openFromAccountMenu($0)
+            }
+            .waiveraSheetPresentation()
         }
+        .task(id: model.session.user?.id) { await loadAccountImage() }
+    }
+
+    private func loadAccountImage() async {
+        accountImage = nil
+        guard let data, let id = model.session.user?.id, let bytes = await data.avatars.avatar(userId: id),
+            let image = UIImage(data: bytes)
+        else { return }
+        accountImage = Image(uiImage: image)
     }
 
     /// Tab roots only, as on Android.
@@ -56,7 +72,7 @@ struct MainTabView: View {
     }
 
     private var accountMenu: AccountMenuEntry {
-        AccountMenuEntry(name: model.userDisplayName) { model.presentAccountMenu() }
+        AccountMenuEntry(name: model.userDisplayName, image: accountImage) { model.presentAccountMenu() }
     }
 
     private var selection: Binding<AppTab> {

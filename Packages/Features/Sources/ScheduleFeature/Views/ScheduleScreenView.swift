@@ -172,9 +172,14 @@
         let account: ScheduleAccount?
         let onToday: () -> Void
 
+        @Environment(\.waiveraAccountMenu) private var shellAccount
+
         var body: some View {
             HStack(spacing: 0) {
+                // The avatar is drawn below, after "Jump to today", so the bar's own fallback
+                // to the shell's account is turned off here; one avatar, never two.
                 HeroTopBar(title: ScheduleStrings.title)
+                    .environment(\.waiveraAccountMenu, nil)
                 PopVisibility(isVisible: showsJumpToToday) {
                     Button(action: onToday) {
                         Image(systemName: "calendar.badge.clock")
@@ -187,11 +192,11 @@
                     .accessibilityLabel(Text(ScheduleStrings.text("schedule.jumpToToday")))
                     .accessibilityHint(Text(ScheduleStrings.text("schedule.today.hint")))
                 }
-                if let account {
+                if let account = resolvedAccount {
                     Button(action: account.open) {
                         AvatarView(
                             name: account.name,
-                            image: account.image,
+                            image: account.image ?? shellAccount?.image,
                             size: CGFloat(HeroMetrics.barAvatar),
                             fill: .hero
                         )
@@ -203,6 +208,11 @@
                     .padding(.trailing, Spacing.small)
                 }
             }
+        }
+
+        /// The screen's own account, else the one the app shell provides.
+        private var resolvedAccount: ScheduleAccount? {
+            account ?? shellAccount.map { ScheduleAccount(name: $0.name, image: $0.image, open: $0.openMenu) }
         }
     }
 

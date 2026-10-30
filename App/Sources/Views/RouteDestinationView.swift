@@ -31,7 +31,7 @@ struct RouteDestinationView: View {
                     )
                 },
                 onOpenPerson: { model.push(.person(userID: $0)) },
-                onOpenMembers: { model.push(.groupMembers(conversationID: conversationID)) }
+                onOpenMembers: { model.push(.groupMembers(conversationID: $0)) }
             )
         case .groupMembers(let conversationID):
             GroupMembersView(
