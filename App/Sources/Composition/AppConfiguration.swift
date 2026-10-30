@@ -55,9 +55,13 @@ struct AppConfiguration: Sendable {
         return FirebaseMessaging(apiKey: apiKey, appID: appID, senderID: senderID, projectID: projectID)
     }
 
-    /// Web app root for call and meeting links; optional.
+    /// Web app root for the legal links and the demo's call links; optional. HTTPS only, the same
+    /// rule `WaiveraConfiguration` applies to this key (AS-05, PS-02): anything else is missing.
     var webBaseURL: URL? {
-        value(.webBaseURL).flatMap(URL.init(string:))
+        guard let url = value(.webBaseURL).flatMap(URL.init(string:)), url.scheme?.lowercased() == "https",
+            url.host?.isEmpty == false
+        else { return nil }
+        return url
     }
 
     /// Raw Info.plist dictionary for `WaiveraConfiguration.load(from:)`.

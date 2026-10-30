@@ -28,4 +28,9 @@ struct LegalLinksTests {
         #expect(LegalLinks.from(webBase: URL(string: "file:///tmp/terms")) == nil)
         #expect(LegalLinks.from(webBase: URL(string: "javascript:alert(1)")) == nil)
     }
+
+    @Test func aCleartextBaseMeansNoLinks() {
+        #expect(LegalLinks.from(webBase: URL(string: "http://app.waivera.test")) == nil)
+        #expect(LegalLinks.from(webBase: URL(string: "HTTP://app.waivera.test/")) == nil)
+    }
 }
