@@ -13,6 +13,8 @@
         public var retry: @MainActor @Sendable () -> Void
         public var retryMilestones: @MainActor @Sendable () -> Void
         public var openEvent: @MainActor @Sendable (String) -> Void
+        /// "Send wishes" on a celebration card, with the celebrant's user id.
+        public var sendWishes: @MainActor @Sendable (String) -> Void
 
         public init(
             selectView: @escaping @MainActor @Sendable (CalendarPeriod) -> Void = { _ in },
@@ -21,7 +23,8 @@
             goToToday: @escaping @MainActor @Sendable () -> Void = {},
             retry: @escaping @MainActor @Sendable () -> Void = {},
             retryMilestones: @escaping @MainActor @Sendable () -> Void = {},
-            openEvent: @escaping @MainActor @Sendable (String) -> Void = { _ in }
+            openEvent: @escaping @MainActor @Sendable (String) -> Void = { _ in },
+            sendWishes: @escaping @MainActor @Sendable (String) -> Void = { _ in }
         ) {
             self.selectView = selectView
             self.selectDate = selectDate
@@ -30,6 +33,7 @@
             self.retry = retry
             self.retryMilestones = retryMilestones
             self.openEvent = openEvent
+            self.sendWishes = sendWishes
         }
     }
 #endif
