@@ -104,17 +104,28 @@ extension ChatEngine: ConversationsRepository {
     }
 
     public func openDirectConversation(with userId: String) async throws -> Conversation {
-        try await adopt(api.privateConversation(with: userId))
+        guard mapper != nil else { throw WaiveraError.signedOut }
+        let current = generation
+        let dto = try await api.privateConversation(with: userId)
+        return try adopt(dto, startedIn: current)
     }
 
     public func createConversation(participantIds: [String]) async throws -> Conversation {
-        try await adopt(api.createConversation(participantIds: participantIds))
+        guard mapper != nil else { throw WaiveraError.signedOut }
+        let current = generation
+        let dto = try await api.createConversation(participantIds: participantIds)
+        return try adopt(dto, startedIn: current)
     }
 
     /// The get-or-create endpoints fill only `id` and `participants`; merge into the cache.
-    private func adopt(_ dto: ConversationResponse) async throws -> Conversation {
-        guard let mapper else { throw WaiveraError.signedOut }
+    /// A reply that lands after a sign-out, or after someone else signed in, belongs to the
+    /// session that asked, so it is dropped rather than written into the next person's inbox
+    /// (PS-01). A chat the signed-in person is not in is never cached either.
+    private func adopt(_ dto: ConversationResponse, startedIn requestGeneration: Int) throws -> Conversation {
+        guard generation == requestGeneration, let mapper else { throw WaiveraError.signedOut }
         guard let conversation = mapper.conversation(dto) else { throw WaiveraError.invalidResponse }
+        guard conversation.participants.isEmpty || conversation.participants.contains(where: { $0.id == mapper.viewerId })
+        else { throw WaiveraError.invalidResponse }
         insert(conversation, keepUnread: true)
         publishConversations()
         persistConversations()
