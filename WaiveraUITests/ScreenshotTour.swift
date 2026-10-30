@@ -8,7 +8,7 @@ import XCTest
 /// Gate screens (sign-in, primer, …) need a fresh launch each (`-WaiveraRoute <name>`); tab
 /// routes reuse one launch per variant and switch with `waivera://` links, which keeps the tour
 /// fast. State variants (`today-empty`, `profile-failing`, …) reuse one launch per fake
-/// scenario. Subclasses run in parallel, one per appearance / text-size variant.
+/// scenario. Each subclass is one appearance / text-size variant.
 class ScreenshotTourBase: XCTestCase {
     struct Variant {
         let name: String
@@ -24,15 +24,21 @@ class ScreenshotTourBase: XCTestCase {
         continueAfterFailure = true
     }
 
+    // One test per group, so a stuck screen fails its own group and the others still record.
+
     @MainActor
-    func testTour() throws {
+    func testGateScreens() {
         guard let variant = Self.variant else { return }
-        let device = Self.deviceSlug
         for entry in RouteCatalog.gates {
             let app = launch(variant: variant, route: entry.name)
-            capture(app, name: "\(entry.name)__\(device)-\(variant.name)")
+            capture(app, name: screenshotName(of: entry, variant: variant))
             app.terminate()
         }
+    }
+
+    @MainActor
+    func testLinkedScreens() {
+        guard let variant = Self.variant else { return }
         let app = launch(variant: variant, route: "today")
         for entry in RouteCatalog.links {
             guard case .link(let link) = entry.target, let url = URL(string: link) else {
@@ -40,20 +46,37 @@ class ScreenshotTourBase: XCTestCase {
                 continue
             }
             app.open(url)
-            capture(app, name: "\(entry.name)__\(device)-\(variant.name)")
+            capture(app, name: screenshotName(of: entry, variant: variant))
         }
         app.terminate()
-        for scenario in RouteCatalog.stateScenarios {
-            let states = RouteCatalog.states.filter { $0.scenario == scenario }
-            guard let first = states.first else { continue }
-            let stateApp = launch(variant: variant, route: first.name, scenario: scenario)
-            for entry in states {
-                guard case .link(let link) = entry.target, let url = URL(string: link) else { continue }
-                stateApp.open(url)
-                capture(stateApp, name: "\(entry.name)__\(device)-\(variant.name)")
-            }
-            stateApp.terminate()
+    }
+
+    @MainActor
+    func testEmptyStates() { tourStates(scenario: "empty") }
+
+    @MainActor
+    func testFailingStates() { tourStates(scenario: "failing") }
+
+    @MainActor
+    func testSlowStates() { tourStates(scenario: "slow") }
+
+    @MainActor
+    private func tourStates(scenario: String) {
+        guard let variant = Self.variant else { return }
+        XCTAssertTrue(RouteCatalog.stateScenarios.contains(scenario), "Unknown scenario \(scenario)")
+        let states = RouteCatalog.states.filter { $0.scenario == scenario }
+        guard let first = states.first else { return }
+        let app = launch(variant: variant, route: first.name, scenario: scenario)
+        for entry in states {
+            guard case .link(let link) = entry.target, let url = URL(string: link) else { continue }
+            app.open(url)
+            capture(app, name: screenshotName(of: entry, variant: variant))
         }
+        app.terminate()
+    }
+
+    private func screenshotName(of entry: RouteCatalogEntry, variant: Variant) -> String {
+        "\(entry.name)__\(Self.deviceSlug)-\(variant.name)"
     }
 
     @MainActor
@@ -85,7 +108,14 @@ class ScreenshotTourBase: XCTestCase {
         attachment.name = name
         attachment.lifetime = .keepAlways
         add(attachment)
-        audit(app, screen: name)
+        if Self.audits { audit(app, screen: name) }
+    }
+
+    /// Audits run unless the runner sets `WAIVERA_AUDIT=0` (CI passes `TEST_RUNNER_WAIVERA_AUDIT`).
+    /// CI audits on the small phone only: an audit takes seconds per screen, and clipping and
+    /// contrast issues show there first.
+    private static var audits: Bool {
+        ProcessInfo.processInfo.environment["WAIVERA_AUDIT"] != "0"
     }
 
     @MainActor
