@@ -140,6 +140,7 @@ jobs:
           echo "small=$small" >> "$GITHUB_OUTPUT"
           echo "large=$large" >> "$GITHUB_OUTPUT"
       # One build for both destinations, then tests run from the built products (no rebuild).
+      # Keep building past errors so one run reports every failing module.
       - name: Build for testing
         id: build
         continue-on-error: true
@@ -149,6 +150,7 @@ jobs:
             -project Waivera.xcodeproj -scheme Waivera \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$DERIVED" \
+            -IDEBuildingContinueBuildingAfterErrors=YES \
             CODE_SIGNING_ALLOWED=NO > build.log 2>&1 || status=$?
           grep -E "error:|warning:" build.log | sort -u | head -300 || true
           tail -30 build.log
