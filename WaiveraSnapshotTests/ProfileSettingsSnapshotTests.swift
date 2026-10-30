@@ -109,7 +109,9 @@
             var noMatches = people
             noMatches.rows = []
             noMatches.isSearching = true
+            noMatches.isFiltered = true
             noMatches.phase = .noMatches
+            noMatches.emptyReason = .noMatch
             assertScreen(peopleView(noMatches), named: "people_noMatches")
             var empty = PeopleDisplayState()
             empty.phase = .empty
@@ -144,14 +146,29 @@
             state.totalCount = state.rows.count
             state.phase = .content
             state.now = DemoData.now
+            state.showsFilterChips = true
             assertScreen(bookmarksView(state), named: "bookmarks_content")
+            var threads = state
+            threads.filter = .threads
+            threads.isFiltered = true
+            threads.rows = state.rows.filter(\.isInThread)
+            assertScreen(bookmarksView(threads), named: "bookmarks_threads")
+            var noneInFilter = state
+            noneInFilter.filter = .messages
+            noneInFilter.isFiltered = true
+            noneInFilter.rows = []
+            noneInFilter.phase = .noMatches
+            noneInFilter.emptyReason = .noneInFilter(.messages)
+            assertScreen(bookmarksView(noneInFilter), named: "bookmarks_noneInFilter")
             var failedRemove = state
             failedRemove.actionError = ProfileStrings.bookmarksRemoveFailed
             assertScreen(bookmarksView(failedRemove), named: "bookmarks_removeFailed")
             var noMatches = state
             noMatches.rows = []
             noMatches.isSearching = true
+            noMatches.isFiltered = true
             noMatches.phase = .noMatches
+            noMatches.emptyReason = .noMatch
             assertScreen(bookmarksView(noMatches), named: "bookmarks_noMatches")
             var empty = BookmarksDisplayState()
             empty.phase = .empty

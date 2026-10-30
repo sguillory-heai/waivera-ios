@@ -40,6 +40,9 @@
         @State private var lastRemoved: BookmarkRow?
         @State private var toast: UndoToastItem?
         @State private var actionError: String?
+        /// The card an Undo brought back draws above its neighbours while they slide out of its
+        /// place. Cards never overlap at rest, so it keeps the raise until the next removal.
+        @State private var returningID: Int?
         let onOpenMessage: (_ conversationID: Int, _ messageID: Int, _ threadRootMessageID: Int?) -> Void
 
         init(
@@ -52,10 +55,11 @@
 
         var body: some View {
             BookmarksContentView(
-                state: BookmarksDisplayState(model: model, actionError: actionError),
+                state: BookmarksDisplayState(model: model, actionError: actionError, returningID: returningID),
                 actions: BookmarksActions(
                     retry: { refreshRequest += 1 },
                     clearSearch: { model.query = "" },
+                    selectFilter: { model.filter = $0 },
                     open: { row in onOpenMessage(row.conversationID, row.messageID, row.threadRootID) },
                     remove: { row in removeRequest = row },
                     dismissError: {
@@ -83,6 +87,7 @@
             }
             .task(id: removeRequest) {
                 guard let row = removeRequest else { return }
+                returningID = nil
                 switch await model.remove(row) {
                 case .removed:
                     lastRemoved = row
@@ -96,6 +101,7 @@
             }
             .task(id: undoRequest) {
                 guard let row = undoRequest else { return }
+                returningID = row.messageID
                 await model.undoRemove(row)
                 if model.restoreError != nil { actionError = ProfileStrings.bookmarksRestoreFailed }
                 undoRequest = nil
@@ -106,6 +112,7 @@
     struct BookmarksActions {
         var retry: () -> Void = {}
         var clearSearch: () -> Void = {}
+        var selectFilter: (BookmarkFilter) -> Void = { _ in }
         var open: (BookmarkRow) -> Void = { _ in }
         var remove: (BookmarkRow) -> Void = { _ in }
         var dismissError: () -> Void = {}
@@ -120,11 +127,17 @@
         var usedFallback = false
         var actionError: String?
         var now = Date()
+        var filter = BookmarkFilter.all
+        var isFiltered = false
+        var showsFilterChips = false
+        var emptyReason: BookmarksEmptyReason?
+        var countRose = true
+        var returningID: Int?
 
         init() {}
 
         @MainActor
-        init(model: BookmarksModel, actionError: String?) {
+        init(model: BookmarksModel, actionError: String?, returningID: Int? = nil) {
             phase = model.phase
             rows = model.rows
             totalCount = model.totalCount
@@ -132,10 +145,23 @@
             refreshError = model.refreshError
             usedFallback = model.usedFallback
             self.actionError = actionError
+            filter = model.filter
+            isFiltered = model.isFiltered
+            showsFilterChips = model.showsFilterChips
+            emptyReason = model.emptyReason
+            countRose = model.countRose
+            self.returningID = returningID
+        }
+
+        /// "3 saved messages", or "1 of 3 shown" while a search or chip narrows the list.
+        var countLine: String {
+            isFiltered
+                ? ProfileStrings.filteredCount(rows.count, of: totalCount) : ProfileStrings.bookmarksCount(totalCount)
         }
     }
 
     struct BookmarksContentView: View {
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
         let state: BookmarksDisplayState
         let actions: BookmarksActions
 
@@ -172,85 +198,97 @@
         }
 
         private var list: some View {
-            List {
-                notices
-                Section {
-                    if state.phase == .noMatches {
-                        EmptyStateView(
-                            systemImage: "magnifyingglass",
-                            title: ProfileStrings.bookmarksNoMatchTitle,
-                            message: ProfileStrings.bookmarksNoMatchMessage,
-                            actionTitle: ProfileStrings.clearSearch,
-                            action: actions.clearSearch
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: Spacing.small) {
+                    notices
+                    if state.showsFilterChips {
+                        SegmentedChips(
+                            options: BookmarkFilter.allCases.map {
+                                SegmentedChips<BookmarkFilter>.Option($0, title: ProfileStrings.filter($0))
+                            },
+                            selection: Binding(get: { state.filter }, set: actions.selectFilter)
                         )
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
+                        .padding(.horizontal, -Spacing.medium)
+                        .accessibilityLabel(Text(ProfileStrings.bookmarksFilterLabel))
+                    }
+                    if state.phase == .noMatches {
+                        emptyResult
+                    } else {
+                        // The count rolls as a bookmark goes: down when it falls, up when it grows.
+                        SwapView(state.countLine, axis: .vertical, forward: state.countRose) { line in
+                            Text(line)
+                                .waiveraTextStyle(.labelMedium)
+                                .foregroundStyle(Palette.textSecondary)
+                                .padding(.vertical, Spacing.extraSmall)
+                        }
+                        .clipped()
                     }
                     ForEach(state.rows) { row in
-                        Button {
-                            actions.open(row)
-                        } label: {
-                            BookmarkRowView(row: row, now: state.now)
-                        }
-                        .buttonStyle(.pressScale)
-                        .listRowInsets(EdgeInsets())
-                        .listRowBackground(Palette.surface)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                            Button(role: .destructive) {
-                                actions.remove(row)
-                            } label: {
-                                Label(ProfileStrings.bookmarksRemove, systemImage: "bookmark.slash")
-                            }
-                        }
-                        .accessibilityAction(named: Text(ProfileStrings.bookmarksRemoveSpoken(author(row)))) {
-                            actions.remove(row)
-                        }
+                        BookmarkCard(
+                            row: row,
+                            now: state.now,
+                            onOpen: { actions.open(row) },
+                            onRemove: { actions.remove(row) }
+                        )
+                        .zIndex(state.returningID == row.messageID ? 1 : 0)
+                        .transition(Motion.enterAfterExit(reduceMotion: reduceMotion))
                         .accessibilityIdentifier("bookmarks.row.\(row.messageID)")
                     }
-                } header: {
-                    Text(
-                        state.isSearching
-                            ? ProfileStrings.filteredCount(state.rows.count, of: state.totalCount)
-                            : ProfileStrings.bookmarksCount(state.totalCount)
-                    )
-                    .font(WaiveraFont.captionEmphasis)
-                    .foregroundStyle(Palette.textSecondary)
-                    .textCase(nil)
                 }
+                .padding(.horizontal, Spacing.medium)
+                .padding(.bottom, Spacing.medium)
+                .waiveraAnimation(.layout, value: state.rows.map(\.messageID))
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
             .scrollDismissesKeyboard(.immediately)
+        }
+
+        @ViewBuilder private var emptyResult: some View {
+            switch state.emptyReason {
+            case .noneInFilter(let filter):
+                EmptyStateView(
+                    systemImage: "bookmark",
+                    title: ProfileStrings.noneInFilterTitle(filter),
+                    message: ProfileStrings.noneInFilterMessage(filter),
+                    actionTitle: ProfileStrings.bookmarksShowAll,
+                    action: { actions.selectFilter(.all) }
+                )
+                .padding(.top, Spacing.large)
+            case .noMatch, nil:
+                EmptyStateView(
+                    systemImage: "magnifyingglass",
+                    title: ProfileStrings.bookmarksNoMatchTitle,
+                    message: ProfileStrings.bookmarksNoMatchMessage,
+                    actionTitle: ProfileStrings.clearSearch,
+                    action: actions.clearSearch
+                )
+                .padding(.top, Spacing.large)
+            }
         }
 
         @ViewBuilder private var notices: some View {
             if let actionError = state.actionError {
                 BannerView(.error, message: actionError, onDismiss: actions.dismissError)
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
             }
             if state.refreshError != nil {
                 RefreshFailedNotice(message: ProfileStrings.bookmarksRefreshFailed, onRetry: actions.retry)
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
             } else if state.usedFallback {
                 BannerView(.info, message: ProfileStrings.bookmarksFallback)
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
             }
-        }
-
-        private func author(_ row: BookmarkRow) -> String {
-            row.author ?? ProfileStrings.unknownPerson
         }
     }
 
-    private struct BookmarkRowView: View {
+    /// One saved message on a lifted sheet card, led by who wrote it. Remove answers on its own
+    /// control first: the glyph changes to the plain bookmark, and the card leaves a beat later.
+    /// If the card is still here a while after that, the removal did not hold (it failed, or was
+    /// undone at once) and the glyph goes back so it can be tapped again.
+    private struct BookmarkCard: View {
+        @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
         let row: BookmarkRow
         let now: Date
+        let onOpen: () -> Void
+        let onRemove: () -> Void
+        @State private var removing = false
 
         @MainActor private static let relative: RelativeDateTimeFormatter = {
             let formatter = RelativeDateTimeFormatter()
@@ -259,64 +297,83 @@
         }()
 
         var body: some View {
-            let author = row.author ?? ProfileStrings.unknownPerson
-            HStack(alignment: .top, spacing: Spacing.smallPlus) {
-                IconTile(systemImage: "bookmark.fill")
+            HStack(alignment: .top, spacing: Spacing.mediumSmall) {
+                Button(action: onOpen) {
+                    content
+                }
+                .buttonStyle(.press(.card))
+                .accessibilityLabel(Text(ProfileStrings.bookmarksOpen(author)))
+                .accessibilityValue(Text(ProfileStrings.preview(row.preview)))
+                removeButton
+            }
+            .padding(Spacing.mediumSmall)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Palette.surface, in: RoundedRectangle(cornerRadius: Radius.sheetCard, style: .continuous))
+            .shadow(
+                color: Palette.buttonRaise,
+                radius: Elevation.shadow(for: Elevation.card).radius,
+                x: 0,
+                y: Elevation.shadow(for: Elevation.card).y
+            )
+            .task(id: removing) {
+                guard removing else { return }
+                if !reduceMotion { try? await Task.sleep(for: .seconds(MotionTiming.removalBeat)) }
+                // Asked for even when the card left first (the screen closed), so a tap is never lost.
+                onRemove()
+                guard !Task.isCancelled else { return }
+                try? await Task.sleep(for: .seconds(MotionTiming.removalHeld))
+                guard !Task.isCancelled else { return }
+                removing = false
+            }
+        }
+
+        private var author: String { row.author?.nonBlank ?? ProfileStrings.unknownPerson }
+
+        private var content: some View {
+            HStack(alignment: .top, spacing: Spacing.mediumSmall) {
+                PersonAvatar(userID: row.authorID, name: author)
+                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: Spacing.extraSmall) {
-                    ViewThatFits(in: .horizontal) {
-                        HStack(spacing: Spacing.small) {
-                            authorText(author).frame(maxWidth: .infinity, alignment: .leading)
-                            timestamp
-                        }
-                        VStack(alignment: .leading, spacing: Spacing.extraSmall) {
-                            authorText(author)
-                            timestamp
-                        }
+                    // Capped like other message lists so a long name never takes over the card.
+                    NameText(author, style: .titleSmall, lines: NameLines.bookmarkAuthor(dynamicTypeSize.category))
+                        .foregroundStyle(Palette.text)
+                    if let createdAt = row.createdAt {
+                        Text(Self.relative.localizedString(for: createdAt, relativeTo: now))
+                            .waiveraTextStyle(.labelSmall)
+                            .foregroundStyle(Palette.textSecondary)
                     }
                     Text(ProfileStrings.preview(row.preview))
-                        .font(WaiveraFont.body)
+                        .waiveraTextStyle(.bodyMedium)
                         .foregroundStyle(Palette.text)
                         .lineLimit(2)
-                        .truncationMode(.tail)
-                    HStack(spacing: Spacing.small) {
-                        if row.isThreadReply {
-                            StatusBadge(
-                                ProfileStrings.bookmarksThreadReply,
-                                tone: .neutral,
-                                systemImage: "arrowshape.turn.up.left.fill"
-                            )
-                        }
-                        StatusBadge(ProfileStrings.bookmarksSaved, systemImage: "bookmark.fill")
+                    if row.isThreadReply {
+                        StatusBadge(ProfileStrings.bookmarksThreadReply, tone: .neutral)
+                    } else if row.isThreadRoot {
+                        StatusBadge(ProfileStrings.bookmarksThreadRoot, tone: .neutral)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                Image(systemName: "chevron.right")
-                    .font(WaiveraFont.captionEmphasis)
-                    .foregroundStyle(Palette.textSecondary)
-                    .accessibilityHidden(true)
             }
-            .padding(Spacing.smallPlus)
-            .frame(minHeight: ControlSize.minHitTarget)
             .contentShape(Rectangle())
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel(Text(ProfileStrings.bookmarksOpen(author)))
-            .accessibilityValue(Text(ProfileStrings.preview(row.preview)))
-            .accessibilityAddTraits(.isButton)
         }
 
-        private func authorText(_ author: String) -> some View {
-            Text(author)
-                .font(WaiveraFont.bodyEmphasis)
-                .foregroundStyle(Palette.text)
-                .lineLimit(1)
-        }
-
-        @ViewBuilder private var timestamp: some View {
-            if let createdAt = row.createdAt {
-                Text(Self.relative.localizedString(for: createdAt, relativeTo: now))
-                    .font(WaiveraFont.caption)
-                    .foregroundStyle(Palette.textSecondary)
+        private var removeButton: some View {
+            Button {
+                removing = true
+            } label: {
+                Image(systemName: removing ? "bookmark" : "bookmark.fill")
+                    .font(WaiveraFont.bodyEmphasis)
+                    .foregroundStyle(removing ? Palette.textSecondary : Palette.accent)
+                    .contentTransition(.symbolEffect(.replace))
+                    .frame(width: ControlSize.minHitTarget, height: ControlSize.minHitTarget)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.press(.compact))
+            .popOnChange(of: removing)
+            .disabled(removing)
+            .accessibilityLabel(
+                Text(removing ? ProfileStrings.bookmarksRemoving : ProfileStrings.bookmarksRemoveSpoken(author))
+            )
         }
     }
 
