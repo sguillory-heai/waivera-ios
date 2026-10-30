@@ -2,14 +2,12 @@
     import SwiftUI
     import UIKit
 
+    // The owner's policy (2026-10-29): only a failed send and a wrong sign-in vibrate. There is no
+    // API here for any other moment on purpose; see `HapticMoment`.
+
     public extension HapticPattern {
         var sensoryFeedback: SensoryFeedback {
             switch self {
-            case .selection: .selection
-            case .impactLight: .impact(weight: .light)
-            case .impactMedium: .impact(weight: .medium)
-            case .success: .success
-            case .warning: .warning
             case .error: .error
             }
         }
@@ -28,41 +26,37 @@
     }
 
     public extension View {
-        /// Plays the haptic mapped to `event` whenever `trigger` changes, if haptics are on.
-        func waiveraHaptic<T: Equatable>(_ event: HapticEvent, trigger: T) -> some View {
-            modifier(HapticModifier(event: event, trigger: trigger, condition: nil))
-        }
-
-        /// Plays the haptic only when `condition(old, new)` holds, e.g. when a state becomes `.failed`.
+        /// Plays `moment`'s haptic when `condition(old, new)` holds for a change of `trigger`, for
+        /// example when a send's state becomes `.failed`, if haptics are on.
         func waiveraHaptic<T: Equatable>(
-            _ event: HapticEvent,
+            _ moment: HapticMoment,
             trigger: T,
             condition: @escaping @Sendable (T, T) -> Bool
         ) -> some View {
-            modifier(HapticModifier(event: event, trigger: trigger, condition: condition))
+            modifier(HapticModifier(moment: moment, trigger: trigger, condition: condition))
         }
     }
 
     private struct HapticModifier<T: Equatable>: ViewModifier {
         @Environment(\.waiveraHapticsEnabled) private var isEnabled
-        let event: HapticEvent
+        let moment: HapticMoment
         let trigger: T
         /// `@Sendable` because `sensoryFeedback` may call its closure off the main actor.
-        let condition: (@Sendable (T, T) -> Bool)?
+        let condition: @Sendable (T, T) -> Bool
 
         func body(content: Content) -> some View {
             let enabled = isEnabled
-            let event = event
+            let pattern = HapticMap.pattern(for: moment)
             let condition = condition
             return content.sensoryFeedback(trigger: trigger) { old, new in
-                guard enabled, condition?(old, new) ?? true else { return nil }
-                return HapticMap.pattern(for: event)?.sensoryFeedback
+                guard enabled, condition(old, new) else { return nil }
+                return pattern.sensoryFeedback
             }
         }
     }
 
-    /// Imperative haptics for moments that are not tied to a view value change (a sheet button
-    /// that dismisses its own view, a model event). Shares the burst gate and the Settings switch.
+    /// Imperative haptics for the two moments when they come from a model event rather than a view
+    /// value change. Shares the burst gate and the Settings switch.
     @MainActor
     public final class HapticPlayer {
         public static let shared = HapticPlayer()
@@ -76,19 +70,9 @@
             set { gate.isEnabled = newValue }
         }
 
-        public func play(_ event: HapticEvent) {
-            guard let pattern = gate.pattern(for: event, now: ProcessInfo.processInfo.systemUptime) else { return }
+        public func play(_ moment: HapticMoment) {
+            guard let pattern = gate.pattern(for: moment, now: ProcessInfo.processInfo.systemUptime) else { return }
             switch pattern {
-            case .selection:
-                UISelectionFeedbackGenerator().selectionChanged()
-            case .impactLight:
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            case .impactMedium:
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            case .success:
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
-            case .warning:
-                UINotificationFeedbackGenerator().notificationOccurred(.warning)
             case .error:
                 UINotificationFeedbackGenerator().notificationOccurred(.error)
             }

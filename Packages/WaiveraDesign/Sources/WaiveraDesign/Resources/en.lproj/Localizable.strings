@@ -15,3 +15,7 @@
 "design.selected" = "Selected";
 /* VoiceOver label for an unread count badge. */
 "design.badge.unread %lld" = "%lld unread";
+/* VoiceOver name of the Waivera logo. */
+"design.appName" = "Waivera";
+/* VoiceOver label of the signed-in person's avatar on the hero bar, which opens the account menu. */
+"design.accountMenu" = "Account";

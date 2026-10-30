@@ -15,6 +15,8 @@
         static var showPassword: String { String(localized: "design.field.showPassword", bundle: .module) }
         static var hidePassword: String { String(localized: "design.field.hidePassword", bundle: .module) }
         static var selected: String { String(localized: "design.selected", bundle: .module) }
+        static var appName: String { String(localized: "design.appName", bundle: .module) }
+        static var accountMenu: String { String(localized: "design.accountMenu", bundle: .module) }
 
         static func unreadCount(_ count: Int) -> String {
             String(localized: "design.badge.unread \(count)", bundle: .module)
