@@ -84,3 +84,17 @@ enum TicketCards {
         return ChatDay(year: year, month: month, day: day)
     }
 }
+
+/// How a ticket meta row ("Created by", "Due") fits (wave 28 B3): the label keeps its one-line
+/// width, and the value either fits whole beside it or wraps in the room it leaves, as long as
+/// that room is at least half the row. Otherwise, or above large text, the row stacks.
+enum TicketMetaFit {
+    static let valueMinFraction: CGFloat = 0.5
+
+    /// The widest the value may be beside its label, or `nil` when the row should stack.
+    static func valueMaxWidth(pairWidth: CGFloat, gap: CGFloat, labelWidth: CGFloat, valueWidth: CGFloat) -> CGFloat? {
+        let room = pairWidth - gap - labelWidth
+        let fits = valueWidth <= room
+        return fits || room >= pairWidth * valueMinFraction ? room : nil
+    }
+}
