@@ -33,6 +33,8 @@
                     NavigationStack { view }
                     .dynamicTypeSize(variant.typeSize)
                     .environment(\.colorScheme, variant.style == .dark ? .dark : .light)
+                    // A looping pulse or spinner would land on a different frame each run.
+                    .environment(\.waiveraEndlessMotionDisabled, true)
                 // Accessibility sizes grow past one screen; snapshot more of the scroll content.
                 let height = variant.typeSize.isAccessibilitySize ? size.height * 3 : size.height
                 assertSnapshot(

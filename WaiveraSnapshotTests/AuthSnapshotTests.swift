@@ -2,6 +2,7 @@ import AuthFeature
 import SnapshotTesting
 import SwiftUI
 import UIKit
+import WaiveraDesign
 import XCTest
 
 /// Every auth screen in every state (`<screen>_<state>`), in light, dark and accessibility XXXL
@@ -30,6 +31,8 @@ final class AuthSnapshotTests: XCTestCase {
                 view
                 .dynamicTypeSize(variant.typeSize)
                 .environment(\.colorScheme, variant.style == .dark ? .dark : .light)
+                // A looping pulse or spinner would land on a different frame each run.
+                .environment(\.waiveraEndlessMotionDisabled, true)
             // Accessibility sizes grow past one screen; snapshot the whole scroll content.
             let layout: SwiftUISnapshotLayout =
                 variant.typeSize.isAccessibilitySize

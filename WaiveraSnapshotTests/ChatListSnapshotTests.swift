@@ -36,6 +36,8 @@
                     view
                     .dynamicTypeSize(variant.typeSize)
                     .environment(\.colorScheme, variant.style == .dark ? .dark : .light)
+                    // A looping pulse or spinner would land on a different frame each run.
+                    .environment(\.waiveraEndlessMotionDisabled, true)
                 assertSnapshot(
                     of: framed,
                     as: .image(
