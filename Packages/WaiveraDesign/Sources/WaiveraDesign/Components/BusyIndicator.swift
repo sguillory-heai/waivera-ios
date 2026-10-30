@@ -3,9 +3,11 @@
 
     /// The app's spinner (Android `WaiveraBusyIndicator`): an arc of `color` turning on a faint
     /// track. Under Reduce Motion it is a still ring, so nothing spins. Decorative; the control
-    /// it sits in says what is happening.
+    /// it sits in says what is happening. With endless motion disabled (UI tests) the arc stands
+    /// still where it starts.
     public struct BusyIndicator: View {
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
+        @Environment(\.waiveraEndlessMotionDisabled) private var endlessMotionDisabled
         private let color: Color
         private let trackColor: Color
         private let size: CGFloat
@@ -38,7 +40,7 @@
             }
             .padding(lineWidth / 2)
             .frame(width: size, height: size)
-            .onAppear { turning = true }
+            .onAppear { turning = !endlessMotionDisabled }
             .accessibilityHidden(true)
         }
     }

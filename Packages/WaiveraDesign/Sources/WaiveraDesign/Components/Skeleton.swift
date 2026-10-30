@@ -5,6 +5,7 @@
     /// base and highlight on a 900ms eased pulse, or holds the base under Reduce Motion.
     public struct SkeletonBlock: View {
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
+        @Environment(\.waiveraEndlessMotionDisabled) private var endlessMotionDisabled
         @ScaledMetric(relativeTo: .body) private var lineHeight = ControlSize.skeletonLine
         @State private var isLit = false
 
@@ -34,7 +35,9 @@
                 .accessibilityHidden(true)
         }
 
-        private var animates: Bool { MotionPolicy.skeletonAnimates(reduceMotion: reduceMotion) }
+        private var animates: Bool {
+            !endlessMotionDisabled && MotionPolicy.skeletonAnimates(reduceMotion: reduceMotion)
+        }
 
         private func startPulse() {
             guard animates else {

@@ -16,6 +16,8 @@ struct RootView: View {
             .environment(\.dataEnvironment, model.dataEnvironment)
             .preferredColorScheme(model.colorScheme)
             .environment(\.waiveraHapticsEnabled, model.settings.hapticsEnabled)
+            // UI tests (`-WaiveraDisableAnimations`): looping animations would keep the app busy.
+            .environment(\.waiveraEndlessMotionDisabled, model.launch.disablesAnimations)
             .tint(Palette.accent)
             .onOpenURL { url in model.handle(url: url) }
             .onChange(of: scenePhase, initial: true) { _, phase in

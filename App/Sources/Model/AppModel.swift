@@ -40,7 +40,7 @@ final class AppModel {
 
     @ObservationIgnored let dataEnvironment: DataEnvironment?
     @ObservationIgnored let environment: AppEnvironment
-    @ObservationIgnored private let launch: LaunchOptions
+    @ObservationIgnored let launch: LaunchOptions
     @ObservationIgnored let pushCoordinator: PushRegistrationCoordinator
     @ObservationIgnored var tapRouter = NotificationTapRouter()
     @ObservationIgnored private var isSceneActive = true
