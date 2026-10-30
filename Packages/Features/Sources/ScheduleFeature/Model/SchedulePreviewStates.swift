@@ -51,7 +51,9 @@
                 feed: feed,
                 milestones: variant == .empty ? .empty : MilestoneCalendar(MilestoneIndex(data.milestones)),
                 milestonesFailed: variant == .milestonesFailed,
-                isOffline: false
+                isOffline: false,
+                now: DemoData.now,
+                myUserId: data.user.id
             ).build(text: ScheduleText(zone: zone.timeZone, locale: locale))
         }
 

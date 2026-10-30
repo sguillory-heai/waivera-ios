@@ -27,6 +27,15 @@ public struct CelebrationText: Sendable, Hashable {
         }
     }
 
+    /// The emoji in the celebration card's own tile; the sentence carries none.
+    public static func emoji(_ celebration: ScheduleCelebration) -> String {
+        switch celebration.kind {
+        case .birthday: ScheduleStrings.text("schedule.celebration.emoji.birthday")
+        case .anniversary: ScheduleStrings.text("schedule.celebration.emoji.anniversary")
+        case .both: ScheduleStrings.text("schedule.celebration.emoji.both")
+        }
+    }
+
     /// The agenda card's subtitle: "Birthday" or "5-year work anniversary".
     public static func kindLabel(_ celebration: ScheduleCelebration) -> String {
         let years = celebration.years ?? 0

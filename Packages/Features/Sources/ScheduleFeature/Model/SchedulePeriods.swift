@@ -14,6 +14,32 @@ public enum PeriodTitle: Sendable, Hashable {
     case weekAcrossMonths(start: CalendarDate, end: CalendarDate)
 }
 
+public extension PeriodTitle {
+    /// The first day the title covers.
+    var startDate: CalendarDate {
+        switch self {
+        case .month(let date), .day(let date): date
+        case .weekInMonth(let start, _), .weekAcrossMonths(let start, _): start
+        }
+    }
+
+    /// Which way the period moved from `previous`: 1 forward, -1 back, 0 when the view changed
+    /// or the period stayed (a day picked in the same month swaps in place).
+    func stepDirection(from previous: PeriodTitle) -> Int {
+        guard kind == previous.kind else { return 0 }
+        let delta = startDate.daysSinceEpoch - previous.startDate.daysSinceEpoch
+        return delta == 0 ? 0 : (delta > 0 ? 1 : -1)
+    }
+
+    private var kind: Int {
+        switch self {
+        case .month: 0
+        case .day: 1
+        case .weekInMonth, .weekAcrossMonths: 2
+        }
+    }
+}
+
 /// Period maths for the schedule. Every value is a literal date in the schedule zone; instants
 /// appear only at the repository boundary (`CalendarPeriod.fetchInterval`).
 public enum SchedulePeriods {

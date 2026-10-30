@@ -14,6 +14,11 @@ struct ScheduleStateBuilder {
     var milestones: MilestoneCalendar
     var milestonesFailed: Bool
     var isOffline: Bool
+    /// The current instant, for today's "Now" line and the ended cards.
+    var now: Date? = nil
+    /// The signed-in person, whose own celebration card offers no "Send wishes".
+    var myUserId: String? = nil
+    var openingWishesFor: String? = nil
 
     func build(text: ScheduleText) -> ScheduleUIState {
         let feedValue = feed?.value ?? CalendarFeed()
@@ -38,20 +43,27 @@ struct ScheduleStateBuilder {
                 accessibilityLabel: Self.cellLabel(date, today: today, inPeriod: inPeriod, marker: marker, text: text)
             )
         }
+        let title = SchedulePeriods.title(view, for: selectedDate)
+        let content = agendaContent(feedValue, text: text)
         return ScheduleUIState(
             view: view,
             selectedDate: selectedDate,
             today: today,
             zoneIdentifier: zone.identifier,
             zoneNotice: Self.zoneNotice(zone: zone, deviceZone: deviceZone, text: text),
-            title: text.title(SchedulePeriods.title(view, for: selectedDate)),
+            title: text.title(title),
+            period: title,
+            shortTitle: view == .day ? text.weekdayShortMonthDay(selectedDate) : text.title(title),
             weekdayHeaders: text.weekdayHeaders,
             cells: cells,
             agendaHeading: text.fullDay(selectedDate),
-            agenda: agenda(feedValue, text: text),
+            agendaHeadingShort: text.weekdayShortMonthDay(selectedDate),
+            agenda: content.state,
             isRefreshing: feed?.isRefreshing ?? false,
             feedNotice: feedNotice,
-            milestonesFailed: milestonesFailed
+            milestonesFailed: milestonesFailed,
+            agendaNow: content.now,
+            openingWishesFor: openingWishesFor
         )
     }
 
@@ -60,15 +72,20 @@ struct ScheduleStateBuilder {
         return ScheduleStrings.text(isOffline ? "schedule.offline" : "schedule.refreshFailed")
     }
 
-    private func agenda(_ value: CalendarFeed, text: ScheduleText) -> AgendaState {
-        guard let feed else { return .loading }
+    private func agendaContent(_ value: CalendarFeed, text: ScheduleText) -> (state: AgendaState, now: AgendaNowMarker?)
+    {
+        guard let feed else { return (.loading, nil) }
         if feed.value == nil {
-            if let error = feed.error { return .error(error) }
-            return .loading
+            if let error = feed.error { return (.error(error), nil) }
+            return (.loading, nil)
         }
         let items = ScheduleAgenda.items(feed: value, zone: zone.timeZone, milestones: milestones, on: selectedDate)
-        let rows = items.map { AgendaRowFormatter.row($0, day: selectedDate, text: text) }
-        return rows.isEmpty ? .empty : .content(rows)
+        let rows = items.map { AgendaRowFormatter.row($0, day: selectedDate, text: text, myUserId: myUserId) }
+        guard !rows.isEmpty else { return (.empty, nil) }
+        let marker = now.flatMap {
+            AgendaNowRules.marker(items: items, now: $0, zone: zone.timeZone, day: selectedDate, text: text)
+        }
+        return (.content(rows), marker)
     }
 
     static func zoneNotice(zone: ScheduleZone, deviceZone: TimeZone, text: ScheduleText) -> String? {
@@ -98,17 +115,45 @@ struct ScheduleStateBuilder {
 
 /// Formats one agenda item (07 §3 card copy).
 enum AgendaRowFormatter {
-    static func row(_ item: AgendaItem, day: CalendarDate, text: ScheduleText) -> AgendaRow {
+    static func row(_ item: AgendaItem, day: CalendarDate, text: ScheduleText, myUserId: String? = nil) -> AgendaRow {
+        var row = baseRow(item, day: day, text: text, myUserId: myUserId)
+        row.rail = rail(item, text: text)
+        return row
+    }
+
+    /// The Day rail: celebrations, holidays and all-day items read "All day"; an item that began
+    /// the day before reads "Until" its end; anything else its start.
+    static func rail(_ item: AgendaItem, text: ScheduleText) -> AgendaRail {
+        let timing: EventTiming? =
+            switch item {
+            case .event(_, let timing), .timeOff(_, let timing): timing
+            case .celebration, .holiday: nil
+            }
+        guard case .timed(let start, let end, let startsBefore, _) = timing else {
+            return AgendaRail(time: ScheduleStrings.text("schedule.allDay"), kicker: nil)
+        }
+        if startsBefore, end > start {
+            return AgendaRail(time: text.clock(end), kicker: ScheduleStrings.text("schedule.untilKicker"))
+        }
+        return AgendaRail(time: text.clock(start), kicker: nil)
+    }
+
+    private static func baseRow(_ item: AgendaItem, day: CalendarDate, text: ScheduleText, myUserId: String?)
+        -> AgendaRow
+    {
         switch item {
         case .celebration(let celebration):
             let copy = CelebrationText(celebration)
-            return AgendaRow(
+            var row = AgendaRow(
                 id: item.id,
                 kind: .celebration(celebration),
                 title: copy.full,
                 subtitle: CelebrationText.kindLabel(celebration),
                 accessibilityLabel: copy.accessible
             )
+            row.emoji = CelebrationText.emoji(celebration)
+            row.isMine = myUserId != nil && celebration.userId == myUserId
+            return row
         case .holiday(let holiday):
             let title = holiday.title ?? ScheduleStrings.text("schedule.holiday.default")
             let subtitle = holiday.details ?? ScheduleStrings.text("schedule.holiday.subtitle")
@@ -133,14 +178,18 @@ enum AgendaRowFormatter {
             let title = event.title ?? ScheduleStrings.untitledEvent
             let when = timingText(timing, day: day, text: text)
             let subtitle = event.location.map { ScheduleStrings.format("schedule.withDetail", when, $0) } ?? when
-            return AgendaRow(
+            let owner = ScheduleCopy.nonBlank(event.ownerName).map { ScheduleStrings.format("schedule.owner", $0) }
+            var row = AgendaRow(
                 id: item.id,
                 kind: .event(id: event.id),
                 title: title,
                 subtitle: subtitle,
-                accessibilityLabel: label(title, subtitle),
+                accessibilityLabel: label(title, [subtitle, owner].compactMap { $0 }.joined(separator: ", ")),
                 ownerColor: ScheduleCopy.ownerColor(event.ownerColor)
             )
+            row.owner = owner
+            row.isOnline = event.isOnline
+            return row
         }
     }
 
@@ -181,5 +230,32 @@ enum AgendaRowFormatter {
 
     private static func label(_ title: String, _ subtitle: String) -> String {
         [title, subtitle].joined(separator: ScheduleStrings.text("schedule.list.separator"))
+    }
+}
+
+/// Where "now" falls in today's agenda (UI4-12). Everything compares instants, so a fall-back
+/// day's repeated hour cannot misplace the line.
+enum AgendaNowRules {
+    static func marker(items: [AgendaItem], now: Date, zone: TimeZone, day: CalendarDate, text: ScheduleText)
+        -> AgendaNowMarker?
+    {
+        guard CalendarDate(now, in: zone) == day else { return nil }
+        let timed = items.compactMap { item in endsAt(item).map { (item.id, $0) } }
+        guard !timed.isEmpty else { return nil }
+        // An item with no length is a moment: it has ended once its start has passed.
+        let ended = Set(timed.filter { $0.1 <= now }.map(\.0))
+        let firstOpen = timed.first { $0.1 > now }?.0
+        return AgendaNowMarker(time: text.clock(now), beforeID: firstOpen, endedIDs: ended)
+    }
+
+    /// When a timed item ends; nil for all-day items, celebrations and holidays, which never end
+    /// during the day.
+    private static func endsAt(_ item: AgendaItem) -> Date? {
+        switch item {
+        case .event(_, .timed(let start, let end, _, _)), .timeOff(_, .timed(let start, let end, _, _)):
+            max(start, end)
+        default:
+            nil
+        }
     }
 }
