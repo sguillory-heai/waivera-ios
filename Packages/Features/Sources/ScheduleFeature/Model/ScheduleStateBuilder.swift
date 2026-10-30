@@ -36,6 +36,7 @@ struct ScheduleStateBuilder {
                 date: date,
                 dayNumber: text.dayNumber(date),
                 weekday: text.weekdayShort(date),
+                weekdayNarrow: text.weekdayNarrow(date),
                 inPeriod: inPeriod,
                 isToday: date == today,
                 isSelected: date == selectedDate,
@@ -55,6 +56,7 @@ struct ScheduleStateBuilder {
             period: title,
             shortTitle: view == .day ? text.weekdayShortMonthDay(selectedDate) : text.title(title),
             weekdayHeaders: text.weekdayHeaders,
+            weekdayHeadersNarrow: text.weekdayHeadersNarrow,
             cells: cells,
             agendaHeading: text.fullDay(selectedDate),
             agendaHeadingShort: text.weekdayShortMonthDay(selectedDate),
@@ -154,6 +156,12 @@ enum AgendaRowFormatter {
             )
             row.emoji = CelebrationText.emoji(celebration)
             row.isMine = myUserId != nil && celebration.userId == myUserId
+            if row.isMine {
+                // Your own card speaks to you; it has no Send wishes either.
+                let sentence = CelebrationText.selfSentence(celebration)
+                row.title = sentence
+                row.accessibilityLabel = sentence
+            }
             return row
         case .holiday(let holiday):
             let title = holiday.title ?? ScheduleStrings.text("schedule.holiday.default")

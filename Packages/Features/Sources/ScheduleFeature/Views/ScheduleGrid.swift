@@ -10,13 +10,16 @@
         let view: CalendarPeriod
         let cells: [GridCell]
         let weekdayHeaders: [String]
+        var weekdayHeadersNarrow: [String] = []
         let onSelect: (CalendarDate) -> Void
+
+        @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
         var body: some View {
             VStack(spacing: 0) {
                 if view == .month {
                     HStack(spacing: 0) {
-                        ForEach(Array(weekdayHeaders.enumerated()), id: \.offset) { _, symbol in
+                        ForEach(Array(headers.enumerated()), id: \.offset) { _, symbol in
                             Text(symbol)
                                 .waiveraTextStyle(.eyebrow)
                                 .foregroundStyle(Palette.textSecondary)
@@ -43,6 +46,11 @@
             .dynamicTypeSize(...DynamicTypeSize.accessibility2)
             .accessibilityElement(children: .contain)
             .accessibilityLabel(Text(ScheduleStrings.text("schedule.grid.label")))
+        }
+
+        /// One letter at the accessibility sizes, where "Mon" no longer fits (Android `narrow`).
+        private var headers: [String] {
+            dynamicTypeSize.isExtraLargeText && weekdayHeadersNarrow.count == 7 ? weekdayHeadersNarrow : weekdayHeaders
         }
 
         private var weeks: [[GridCell]] {

@@ -114,6 +114,16 @@ struct ScheduleTextTests {
     @Test func weekdayHeadersStartOnSunday() {
         let text = ScheduleText(zone: Zones.chicago, locale: english)
         #expect(text.weekdayHeaders == ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])
+        #expect(text.weekdayHeadersNarrow == ["S", "M", "T", "W", "T", "F", "S"])
+    }
+
+    @Test func theWeekStripHasAOneLetterWeekdayForTheLargestText() {
+        let text = ScheduleText(zone: Zones.chicago, locale: english)
+        #expect(text.weekdayShort(day(2026, 11, 2)) == "Mon")
+        #expect(text.weekdayNarrow(day(2026, 11, 2)) == "M")
+        let state = SchedulePreviewStates.schedule(.week)
+        #expect(state.cells.allSatisfy { $0.weekdayNarrow.count == 1 })
+        #expect(state.weekdayHeadersNarrow.count == 7)
     }
 
     @Test func clocksAreTwelveHourInTheScheduleZone() {

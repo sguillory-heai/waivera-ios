@@ -18,7 +18,7 @@
             Button(action: onTap) {
                 VStack(spacing: Spacing.xxSmall) {
                     if isWeek {
-                        Text(cell.weekday)
+                        Text(weekday)
                             .waiveraTextStyle(.eyebrow)
                             .fontWeight(cell.isToday ? .heavy : nil)
                             .foregroundStyle(cell.isToday ? Palette.link : Palette.textSecondary)
@@ -71,14 +71,18 @@
             .popOnChange(of: pops)
         }
 
-        /// One circle for events and a diamond for celebrations: two shapes, so the marker is
-        /// never colour-only. The row keeps its height when empty so cells line up.
+        /// One circle per event owner colour (accent for an event without one, up to three) and a
+        /// diamond for celebrations: two shapes, so the marker is never colour-only. The dots sit
+        /// under the selected square, on the card, so they keep their owners' colours on the
+        /// selected day too. The row keeps its height when empty so cells line up.
         private var dots: some View {
             HStack(spacing: CalendarMetrics.dotGap) {
                 if cell.marker.events > 0 {
-                    Circle()
-                        .fill(Palette.accent)
-                        .frame(width: CalendarMetrics.dot, height: CalendarMetrics.dot)
+                    ForEach(Array(eventDots.enumerated()), id: \.offset) { _, color in
+                        Circle()
+                            .fill(color.map { Color(serverColor: $0) } ?? Palette.accent)
+                            .frame(width: CalendarMetrics.dot, height: CalendarMetrics.dot)
+                    }
                 }
                 if cell.marker.celebrations > 0 {
                     Rectangle()
@@ -90,6 +94,15 @@
             }
             .frame(minHeight: CalendarMetrics.milestoneDot)
             .accessibilityHidden(true)
+        }
+
+        /// One letter at the accessibility sizes, where "Sun" no longer fits.
+        private var weekday: String {
+            dynamicTypeSize.isExtraLargeText && !cell.weekdayNarrow.isEmpty ? cell.weekdayNarrow : cell.weekday
+        }
+
+        private var eventDots: [RGBColor?] {
+            cell.marker.eventColors.isEmpty ? [nil] : cell.marker.eventColors
         }
 
         private var numberColor: Color {

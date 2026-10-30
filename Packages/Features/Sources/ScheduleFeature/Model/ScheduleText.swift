@@ -70,12 +70,20 @@ final class ScheduleText {
     func dayNumber(_ date: CalendarDate) -> String { format(date, pattern: "d") }
     func year(_ date: CalendarDate) -> String { format(date, pattern: "yyyy") }
     func weekdayShort(_ date: CalendarDate) -> String { format(date, pattern: "EEE") }
+    /// "S": the week strip's weekday at the largest text sizes, where "Sun" no longer fits.
+    func weekdayNarrow(_ date: CalendarDate) -> String { format(date, pattern: "EEEEE") }
 
     /// "Sun" … "Sat": the grid always starts on Sunday.
     var weekdayHeaders: [String] {
         let formatter = formatter(for: "EEE")
         let symbols = formatter.shortWeekdaySymbols
         return symbols.count == 7 ? symbols : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    }
+
+    /// "S" … "S": the month headers at the largest text sizes (Android `TextStyle.NARROW`).
+    var weekdayHeadersNarrow: [String] {
+        let symbols = formatter(for: "EEEEE").veryShortWeekdaySymbols ?? []
+        return symbols.count == 7 ? symbols : ["S", "M", "T", "W", "T", "F", "S"]
     }
 
     func title(_ title: PeriodTitle) -> String {

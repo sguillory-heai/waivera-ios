@@ -174,5 +174,23 @@ struct AgendaNowAndRailTests {
         #expect(mineRow.emoji == "🎂")
         #expect(!theirRow.isMine)
         #expect(theirRow.emoji == "🎉")
+        // Your own card speaks to you by first name; a teammate's names them in full.
+        #expect(mineRow.title == "Happy birthday, Me!")
+        #expect(mineRow.accessibilityLabel == "Happy birthday, Me!")
+        #expect(theirRow.title == "Celebrating Jo's 5-year work anniversary!")
+    }
+
+    @Test func yourOwnCelebrationUsesTheFirstWordOfYourNameOrNone() {
+        func mine(_ name: String?, _ kind: ScheduleCelebration.Kind, _ years: Int?) -> String {
+            CelebrationText.selfSentence(
+                ScheduleCelebration(userId: "me", displayName: name, kind: kind, years: years)
+            )
+        }
+        #expect(mine("Alex Rivera", .birthday, nil) == "Happy birthday, Alex!")
+        #expect(mine("Alex Rivera", .anniversary, 3) == "Happy 3-year work anniversary, Alex!")
+        #expect(mine("Alex Rivera", .both, 3) == "Happy birthday and work anniversary, Alex!")
+        #expect(mine(nil, .birthday, nil) == "Happy birthday!")
+        #expect(mine("   ", .anniversary, 4) == "Happy 4-year work anniversary!")
+        #expect(mine(nil, .both, 2) == "Happy birthday and work anniversary!")
     }
 }

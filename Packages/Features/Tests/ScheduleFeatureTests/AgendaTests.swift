@@ -56,6 +56,31 @@ struct AgendaTests {
         #expect(second.first?.subtitle == "Tue 11:00 PM – 1:00 AM")
     }
 
+    @Test func dayDotsTakeTheFirstThreeDistinctOwnerColoursInAgendaOrder() {
+        let feed = CalendarFeed(events: [
+            event("late", "2026-10-27T15:00:00-05:00", "2026-10-27T16:00:00-05:00") { $0.ownerColor = "#00AA00" },
+            event("early", "2026-10-27T08:00:00-05:00", "2026-10-27T09:00:00-05:00") { $0.ownerColor = "FF0000" },
+            event("same", "2026-10-27T10:00:00-05:00", "2026-10-27T11:00:00-05:00") { $0.ownerColor = "#ff0000" },
+            event("none", "2026-10-27T11:00:00-05:00", "2026-10-27T12:00:00-05:00"),
+            event("fourth", "2026-10-27T17:00:00-05:00", "2026-10-27T18:00:00-05:00") { $0.ownerColor = "#0000FF" },
+            event("bad", "2026-10-28T09:00:00-05:00", "2026-10-28T10:00:00-05:00") { $0.ownerColor = "violet" },
+        ])
+        let markers = ScheduleAgenda.markers(
+            feed: feed,
+            zone: chicago,
+            milestones: .empty,
+            cells: [day(2026, 10, 27), day(2026, 10, 28), day(2026, 10, 29)]
+        )
+        let busy = markers[day(2026, 10, 27)]
+        #expect(busy?.events == 5, "the count stays whole; only the dots stop at three")
+        let red = ScheduleCopy.ownerColor("FF0000")
+        let green = ScheduleCopy.ownerColor("00AA00")
+        #expect(red != nil && green != nil)
+        #expect(busy?.eventColors == [red, nil, green])
+        #expect(markers[day(2026, 10, 28)]?.eventColors == [nil], "an unusable colour falls back to the accent")
+        #expect(markers[day(2026, 10, 29)]?.eventColors == [])
+    }
+
     @Test func eventEndingExactlyAtMidnightAppearsOnlyOnItsStartDay() {
         let feed = CalendarFeed(events: [event("eod", "2026-10-27T22:00:00-05:00", "2026-10-28T00:00:00-05:00")])
         #expect(

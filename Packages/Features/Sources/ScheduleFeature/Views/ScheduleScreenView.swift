@@ -96,6 +96,7 @@
                             view: state.view,
                             cells: state.cells,
                             weekdayHeaders: state.weekdayHeaders,
+                            weekdayHeadersNarrow: state.weekdayHeadersNarrow,
                             onSelect: { actions.selectDate($0) }
                         )
                         .padding(.bottom, Spacing.small)

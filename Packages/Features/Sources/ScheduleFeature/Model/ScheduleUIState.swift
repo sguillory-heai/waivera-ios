@@ -18,6 +18,8 @@ public struct ScheduleUIState: Sendable, Hashable {
     /// The Day title with a short month ("Sun, Nov 1"), for the largest text sizes.
     public var shortTitle: String
     public var weekdayHeaders: [String]
+    /// One-letter headers for the largest text sizes.
+    public var weekdayHeadersNarrow: [String] = []
     public var cells: [GridCell]
     public var agendaHeading: String
     /// The agenda heading with a short month, for the largest text sizes (UI10-09).
@@ -64,6 +66,8 @@ public struct GridCell: Sendable, Hashable, Identifiable {
     public var date: CalendarDate
     public var dayNumber: String
     public var weekday: String
+    /// "S": the week strip's weekday at the largest text sizes.
+    public var weekdayNarrow = ""
     public var inPeriod: Bool
     public var isToday: Bool
     public var isSelected: Bool

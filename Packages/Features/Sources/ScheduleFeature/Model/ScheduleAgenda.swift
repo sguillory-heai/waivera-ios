@@ -1,6 +1,7 @@
 import Foundation
 import WaiveraAPI
 import WaiveraData
+import WaiveraDesign
 
 /// When an event happens relative to one agenda day, already placed in the schedule zone.
 public enum EventTiming: Sendable, Hashable {
@@ -29,14 +30,21 @@ public enum AgendaItem: Sendable, Hashable, Identifiable {
 }
 
 /// What a grid cell marks. Counts rather than a bare dot, so the cell can say
-/// "2 events, 1 celebration" and the state is never colour-only.
+/// "2 events, 1 celebration" and the state is never colour-only. `eventColors` are the day's
+/// distinct event owner colours (nil for an event without a usable one), in agenda order and at
+/// most `maxEventDots`, one dot each under the date (Android `DayMarker.eventColors`).
 public struct DayMarker: Sendable, Hashable {
+    /// Three dots fit under a date at every text size; the cell's label still gives the count.
+    public static let maxEventDots = 3
+
     public var events = 0
     public var celebrations = 0
+    public var eventColors: [RGBColor?] = []
 
-    public init(events: Int = 0, celebrations: Int = 0) {
+    public init(events: Int = 0, celebrations: Int = 0, eventColors: [RGBColor?] = []) {
         self.events = events
         self.celebrations = celebrations
+        self.eventColors = eventColors
     }
 
     public var isEmpty: Bool { events == 0 && celebrations == 0 }
@@ -67,18 +75,21 @@ public enum ScheduleAgenda {
     }
 
     public static func eventsOn(_ events: [CalendarEvent], zone: TimeZone, date: CalendarDate) -> [CalendarEvent] {
-        events.filter { $0.occurs(on: date, in: zone) }
-            .sorted { lhs, rhs in
-                let left = (lhs.isAllDay ? 0 : 1, lhs.allDay?.start.daysSinceEpoch ?? 0)
-                let right = (rhs.isAllDay ? 0 : 1, rhs.allDay?.start.daysSinceEpoch ?? 0)
-                if left != right { return left < right }
-                if lhs.start != rhs.start { return lhs.start < rhs.start }
-                return (lhs.title ?? "", lhs.id) < (rhs.title ?? "", rhs.id)
-            }
+        events.filter { $0.occurs(on: date, in: zone) }.sorted(by: agendaOrder)
+    }
+
+    /// All-day first, then by start instant (never by string), then title and id.
+    static func agendaOrder(_ lhs: CalendarEvent, _ rhs: CalendarEvent) -> Bool {
+        let left = (lhs.isAllDay ? 0 : 1, lhs.allDay?.start.daysSinceEpoch ?? 0)
+        let right = (rhs.isAllDay ? 0 : 1, rhs.allDay?.start.daysSinceEpoch ?? 0)
+        if left != right { return left < right }
+        if lhs.start != rhs.start { return lhs.start < rhs.start }
+        return (lhs.title ?? "", lhs.id) < (rhs.title ?? "", rhs.id)
     }
 
     /// Event and celebration counts for each of `cells`, walking each event's days once instead
-    /// of filtering the whole feed per cell.
+    /// of filtering the whole feed per cell, with the owner colours of each day's first events
+    /// for the grid dots.
     public static func markers(
         feed: CalendarFeed,
         zone: TimeZone,
@@ -87,20 +98,30 @@ public enum ScheduleAgenda {
     ) -> [CalendarDate: DayMarker] {
         guard let first = cells.first, let last = cells.last else { return [:] }
         var events: [CalendarDate: Int] = [:]
-        for event in feed.events {
+        var colors: [CalendarDate: [RGBColor?]] = [:]
+        for event in feed.events.sorted(by: agendaOrder) {
             let span = days(of: event, zone: zone)
+            let color = ScheduleCopy.ownerColor(event.ownerColor)
             var day = max(span.lowerBound, first)
             let end = min(span.upperBound, last)
             while day <= end {
                 if event.allDay?.contains(day) ?? true {
                     events[day, default: 0] += 1
+                    let dayColors = colors[day, default: []]
+                    if dayColors.count < DayMarker.maxEventDots, !dayColors.contains(color) {
+                        colors[day, default: []].append(color)
+                    }
                 }
                 day = day.adding(days: 1)
             }
         }
         var markers: [CalendarDate: DayMarker] = [:]
         for cell in cells {
-            markers[cell] = DayMarker(events: events[cell] ?? 0, celebrations: milestones.count(on: cell))
+            markers[cell] = DayMarker(
+                events: events[cell] ?? 0,
+                celebrations: milestones.count(on: cell),
+                eventColors: colors[cell] ?? []
+            )
         }
         return markers
     }

@@ -27,6 +27,26 @@ public struct CelebrationText: Sendable, Hashable {
         }
     }
 
+    /// Your own card: to you by first name, in the second person, as Today and Profile say it
+    /// (Android `CelebrationText.self`, UI9-05). The first name is the display name's first word.
+    public static func selfSentence(_ celebration: ScheduleCelebration) -> String {
+        let first = celebration.displayName?
+            .split(whereSeparator: { $0.isWhitespace || $0.isNewline })
+            .first
+            .map(String.init)
+        let years = celebration.years ?? 0
+        switch (celebration.kind, first) {
+        case (.both, let name?): return ScheduleStrings.format("schedule.celebration.self.both", name)
+        case (.both, nil): return ScheduleStrings.text("schedule.celebration.self.unnamed.both")
+        case (.birthday, let name?): return ScheduleStrings.format("schedule.celebration.self.birthday", name)
+        case (.birthday, nil): return ScheduleStrings.text("schedule.celebration.self.unnamed.birthday")
+        case (.anniversary, let name?):
+            return ScheduleStrings.format("schedule.celebration.self.anniversary", name, years)
+        case (.anniversary, nil):
+            return ScheduleStrings.format("schedule.celebration.self.unnamed.anniversary", years)
+        }
+    }
+
     /// The emoji in the celebration card's own tile; the sentence carries none.
     public static func emoji(_ celebration: ScheduleCelebration) -> String {
         switch celebration.kind {

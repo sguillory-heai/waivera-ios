@@ -73,6 +73,13 @@
 "schedule.celebration.a11y.both" = "%@ is celebrating a birthday and %d-year work anniversary today.";
 "schedule.celebration.a11y.birthday" = "%@ is celebrating a birthday today.";
 "schedule.celebration.a11y.anniversary" = "%@ is celebrating a %d-year work anniversary today.";
+/* Your own celebration card speaks to you by first name. */
+"schedule.celebration.self.birthday" = "Happy birthday, %@!";
+"schedule.celebration.self.anniversary" = "Happy %2$d-year work anniversary, %1$@!";
+"schedule.celebration.self.both" = "Happy birthday and work anniversary, %@!";
+"schedule.celebration.self.unnamed.birthday" = "Happy birthday!";
+"schedule.celebration.self.unnamed.anniversary" = "Happy %d-year work anniversary!";
+"schedule.celebration.self.unnamed.both" = "Happy birthday and work anniversary!";
 
 /* Event screen */
 "schedule.event.title" = "Event";
