@@ -66,7 +66,7 @@
                     // Clear filters also clears the search field.
                     if model.state.section.query != query { query = model.state.section.query }
                 }
-                .todayFeedback(model.feedback) { model.retry($0) }
+                .todayFeedback(model.feedback, onAction: { model.retry($0) })
         }
 
         private var actions: ActivityActions {
