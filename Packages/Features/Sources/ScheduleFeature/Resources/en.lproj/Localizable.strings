@@ -103,8 +103,9 @@
 "schedule.response.tentative" = "You said maybe.";
 "schedule.response.saving" = "Saving your response…";
 "schedule.response.started" = "This event has started, so the invitation can no longer be answered.";
-"schedule.accept" = "Accept";
-"schedule.decline" = "Decline";
+"schedule.accept" = "Going";
+"schedule.decline" = "Not going";
+"schedule.response.failed.title" = "Response not saved";
 "schedule.response.failed" = "Response not saved. %@";
 "schedule.undo.accepted" = "You accepted the invitation";
 "schedule.undo.declined" = "You declined the invitation";

@@ -32,6 +32,11 @@ public struct ScheduleUIState: Sendable, Hashable {
     public var agendaNow: AgendaNowMarker?
     /// The celebrant whose direct chat is opening from "Send wishes".
     public var openingWishesFor: String?
+    /// The profile has no usable zone: the notice is an info banner, not a caption.
+    public var isFallbackZone = false
+    /// Which way the last change moved the period: 1 forward, -1 back, 0 for a view change or a
+    /// day picked in the same period. The grid, title and agenda heading slide this way.
+    public var periodStep = 0
 
     public var isTodaySelected: Bool { selectedDate == today }
 

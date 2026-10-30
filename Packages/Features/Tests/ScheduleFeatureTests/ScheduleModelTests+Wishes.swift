@@ -96,3 +96,23 @@ struct ScheduleModelWishesTests {
         #expect(model.state.agendaNow?.beforeID == nil)
     }
 }
+
+@MainActor
+extension ScheduleModelWishesTests {
+    @Test func stepsRecordTheirDirectionAndViewChangesFade() {
+        let (model, _) = model(conversations: nil)
+        model.step(1)
+        #expect(model.state.periodStep == 1)
+        model.step(-1)
+        model.step(-1)
+        #expect(model.state.periodStep == -1)
+        model.select(view: .week)
+        #expect(model.state.periodStep == 0)
+        // A day in the same week keeps the period, so nothing slides.
+        model.select(date: model.state.cells[0].date)
+        #expect(model.state.periodStep == 0)
+        model.step(1)
+        model.resume()
+        #expect(model.state.periodStep == 1)
+    }
+}

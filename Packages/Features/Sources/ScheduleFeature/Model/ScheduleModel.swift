@@ -325,7 +325,8 @@ public final class ScheduleModel {
     private func rebuild() {
         let key = feedKey
         let feed = feedSnapshot.flatMap { $0.key == key ? $0.resource : nil }
-        state = ScheduleStateBuilder(
+        let previous = state
+        var next = ScheduleStateBuilder(
             view: view,
             selectedDate: selectedDate,
             today: today,
@@ -339,6 +340,11 @@ public final class ScheduleModel {
             myUserId: myUserId,
             openingWishesFor: openingWishesFor
         ).build(text: text)
+        // A rebuild that keeps the period (a feed update, a tick) keeps the last direction, so a
+        // slide already under way is not turned around.
+        next.periodStep =
+            next.period == previous.period ? previous.periodStep : next.period.stepDirection(from: previous.period)
+        state = next
     }
 }
 

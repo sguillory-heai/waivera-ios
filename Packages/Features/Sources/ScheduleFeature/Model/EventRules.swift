@@ -162,3 +162,20 @@ public enum WebLinks {
         return true
     }
 }
+
+/// How one answer button looks (UI4-04, UI10-15). Before an answer "Going" leads as the primary
+/// and "Not going" is a soft tonal choice; after one, the chosen side is the heavier, selected
+/// with a check, and the other a quiet unselected outline, so the pair reads as a state.
+public enum ResponseChoiceStyle: Sendable, Hashable {
+    case primary, tonal, selected, unselected
+
+    public static func of(response: InvitationState, accept: Bool) -> ResponseChoiceStyle {
+        let chosen = accept ? response == .accepted : response == .declined
+        let answered = response == .accepted || response == .declined
+        switch (answered, chosen) {
+        case (false, _): return accept ? .primary : .tonal
+        case (true, true): return .selected
+        case (true, false): return .unselected
+        }
+    }
+}

@@ -63,7 +63,8 @@ struct ScheduleStateBuilder {
             feedNotice: feedNotice,
             milestonesFailed: milestonesFailed,
             agendaNow: content.now,
-            openingWishesFor: openingWishesFor
+            openingWishesFor: openingWishesFor,
+            isFallbackZone: zone.isFallback
         )
     }
 
