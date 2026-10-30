@@ -9,7 +9,7 @@
 "call.start" = "Start video call on web";
 "call.join" = "Join video call on web";
 "call.in.progress" = "Call in progress";
-"call.join.on.web" = "Join on web ›";
+"call.join.on.web" = "Join on web";
 "call.open.failed" = "Unable to open video call";
 "messages.loading" = "Loading messages";
 "messages.error.title" = "Messages didn't load";
