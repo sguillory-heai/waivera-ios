@@ -182,8 +182,14 @@ struct ChatListModelTests {
         #expect(harness.row(41)?.preview == "new roster")
         #expect(harness.row(41)?.unreadCount == 4)
         #expect(harness.row(41)?.arrivalKey == 20_001)
-        harness.clock.advance(by: 2)
-        #expect(await eventually { harness.row(41)?.arrivalKey == nil })
+        // The arrival's timer starts in its own task, which may not be asleep on the manual clock
+        // yet under a loaded parallel run; keep moving time until it has fired.
+        #expect(
+            await eventually {
+                harness.clock.advance(by: 2)
+                return harness.row(41)?.arrivalKey == nil
+            }
+        )
     }
 
     @Test("Scrolled down, rows hold their place and the pill offers the new order")
