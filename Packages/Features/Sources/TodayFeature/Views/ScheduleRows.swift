@@ -158,7 +158,7 @@
             VStack(alignment: .leading, spacing: 0) {
                 Button(action: onOpen) {
                     HStack(spacing: Spacing.mediumSmall) {
-                        AvatarView(name: name, size: ControlSize.avatarMedium)
+                        TodayAvatar(userId: item.userId, name: name, size: ControlSize.avatarMedium)
                         VStack(alignment: .leading, spacing: Spacing.xxSmall) {
                             Text(TodayStrings.celebrationLabel(item))
                                 .waiveraTextStyle(.labelMedium)

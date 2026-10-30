@@ -54,7 +54,7 @@
                 ),
                 accessibilityHintText: TodayStrings.text("today.hint.openConversation"),
                 action: { onOpen(.chat(.conversation(id: item.conversationId, targetMessageId: nil)), nil) },
-                leading: { AvatarView(name: name, size: ControlSize.cardTile) },
+                leading: { TodayAvatar(userId: item.otherUserId, name: name, size: ControlSize.cardTile) },
                 trailing: { CountBadge(count: item.unreadCount) }
             )
         }

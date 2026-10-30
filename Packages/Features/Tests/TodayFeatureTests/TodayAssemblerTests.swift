@@ -138,6 +138,20 @@ struct TodayAssemblerTests {
             return
         }
         #expect(item.name == nil)
+        #expect(item.otherUserId == "usr_7", "the photo still loads for the one other person")
+    }
+
+    @Test func aDirectWithMoreThanOneOtherPersonHasNoPhoto() {
+        var conversation = Fixture.direct(7)
+        conversation.participants = [ChatUser(id: Fixture.viewerId), ChatUser(id: "usr_7"), ChatUser(id: "usr_8")]
+        guard
+            case .directMessage(let item) = assemble(Fixture.sources(conversations: [conversation])).needsYou.items
+                .first
+        else {
+            Issue.record("no direct row")
+            return
+        }
+        #expect(item.otherUserId == nil)
     }
 
     // MARK: All caught up

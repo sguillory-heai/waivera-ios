@@ -235,6 +235,7 @@ enum TodayAssembler {
             let item = DirectMessageItem(
                 conversationId: conversation.id,
                 name: personName(conversation),
+                otherUserId: conversation.others.count == 1 ? conversation.others.first?.id : nil,
                 snippet: snippet(conversation.preview),
                 unreadCount: conversation.unreadCount,
                 when: past(conversation.lastMessage?.createdAt, context: context)
