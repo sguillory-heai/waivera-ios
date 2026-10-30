@@ -179,12 +179,14 @@
                 )
                 .padding(.horizontal, Spacing.gutter)
                 .padding(.bottom, Spacing.mediumSmall)
-                SegmentedChips(
+                // Android `WaiveraSegmentedControl`: the approved filter is a segmented track, not chips.
+                SegmentedControl(
                     options: ChatListFilter.allCases.map {
                         SegmentedChips<ChatListFilter>.Option($0, title: Self.title(for: $0))
                     },
                     selection: $filter
                 )
+                .padding(.horizontal, Spacing.gutter)
                 .accessibilityIdentifier("chatList.filter")
             }
             .padding(.bottom, Spacing.mediumSmall)
