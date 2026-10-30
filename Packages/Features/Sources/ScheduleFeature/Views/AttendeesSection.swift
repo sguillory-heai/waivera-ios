@@ -5,21 +5,23 @@
     struct AttendeesSection: View {
         let details: EventDetailsUI
 
+        @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
         var body: some View {
             VStack(alignment: .leading, spacing: Spacing.small) {
                 HStack(alignment: .firstTextBaseline) {
                     Text(ScheduleStrings.text("schedule.event.attendees"))
-                        .font(WaiveraFont.sectionTitle)
+                        .waiveraTextStyle(.titleMedium)
                         .foregroundStyle(Palette.text)
                         .accessibilityAddTraits(.isHeader)
                     Spacer(minLength: Spacing.small)
                     Text(details.attendeeCount)
-                        .font(WaiveraFont.caption)
+                        .waiveraTextStyle(.labelMedium)
                         .foregroundStyle(Palette.textSecondary)
                 }
                 if details.attendees.isEmpty {
                     Text(ScheduleStrings.text("schedule.event.noAttendees"))
-                        .font(WaiveraFont.body)
+                        .waiveraTextStyle(.bodyMedium)
                         .foregroundStyle(Palette.textSecondary)
                 }
                 ForEach(details.attendees) { person in
@@ -31,12 +33,15 @@
                             size: CalendarMetrics.attendeeAvatar
                         )
                         VStack(alignment: .leading, spacing: Spacing.extraSmall) {
-                            Text(person.name)
-                                .font(WaiveraFont.bodyEmphasis)
-                                .foregroundStyle(Palette.text)
+                            NameText(
+                                person.name,
+                                style: .titleSmall,
+                                lines: NameLines.listRow(dynamicTypeSize.category)
+                            )
+                            .foregroundStyle(Palette.text)
                             if let detail = person.detail {
                                 Text(detail)
-                                    .font(WaiveraFont.caption)
+                                    .waiveraTextStyle(.labelMedium)
                                     .foregroundStyle(Palette.textSecondary)
                             }
                         }

@@ -6,6 +6,8 @@
         let organizer: EventDetailsUI.Person
         let isMe: Bool
 
+        @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
         var body: some View {
             HStack(spacing: Spacing.smallPlus) {
                 MilestoneAvatarView(
@@ -16,17 +18,20 @@
                 )
                 VStack(alignment: .leading, spacing: Spacing.extraSmall) {
                     Text(ScheduleStrings.text("schedule.event.organizedBy"))
-                        .textCase(.uppercase)
-                        .font(WaiveraFont.eyebrow)
-                        .foregroundStyle(Palette.accent)
-                    Text(isMe ? ScheduleStrings.text("schedule.event.youOrganize") : organizer.name)
-                        .font(WaiveraFont.bodyEmphasis)
-                        .foregroundStyle(Palette.text)
+                        .waiveraTextStyle(.kicker)
+                        .foregroundStyle(Palette.textSecondary)
+                    NameText(
+                        isMe ? ScheduleStrings.text("schedule.event.youOrganize") : organizer.name,
+                        style: .titleSmall,
+                        lines: NameLines.listRow(dynamicTypeSize.category)
+                    )
+                    .foregroundStyle(Palette.text)
                 }
                 Spacer(minLength: 0)
             }
-            .padding(Spacing.smallPlus)
-            .background(Palette.accentSoft, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            .padding(Spacing.mediumSmall + Spacing.xxSmall)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .agendaSurface()
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(organizer.accessibilityLabel))
         }

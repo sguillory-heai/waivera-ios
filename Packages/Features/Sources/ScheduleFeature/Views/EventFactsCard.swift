@@ -29,33 +29,31 @@
                     fact(systemImage: "checklist", label: "schedule.event.linkedTask", primary: task, secondary: nil)
                 }
             }
-            .padding(Spacing.medium)
+            .padding(Spacing.mediumSmall + Spacing.xxSmall)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Palette.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    .strokeBorder(Palette.border, lineWidth: Spacing.hairline)
-            )
+            .agendaSurface()
         }
 
         private func fact(systemImage: String, label: String, primary: String, secondary: String?) -> some View {
-            HStack(alignment: .top, spacing: Spacing.smallPlus) {
-                Image(systemName: systemImage)
-                    .font(WaiveraFont.bodyEmphasis)
-                    .foregroundStyle(Palette.accent)
-                    .frame(width: ControlSize.smallIcon)
-                    .accessibilityHidden(true)
+            HStack(alignment: .top, spacing: ControlSize.fieldTileGap) {
+                IconTile(
+                    systemImage: systemImage,
+                    tone: .teal,
+                    size: ControlSize.fieldTile,
+                    glyphSize: ControlSize.fieldTileGlyph
+                )
+                .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: Spacing.extraSmall) {
                     Text(ScheduleStrings.text(label))
-                        .font(WaiveraFont.captionEmphasis)
+                        .waiveraTextStyle(.fieldLabel)
                         .foregroundStyle(Palette.textSecondary)
                     Text(primary)
-                        .font(WaiveraFont.body)
+                        .waiveraTextStyle(.fieldValue)
                         .foregroundStyle(Palette.text)
                         .textSelection(.enabled)
                     if let secondary {
                         Text(secondary)
-                            .font(WaiveraFont.caption)
+                            .waiveraTextStyle(.labelMedium)
                             .foregroundStyle(Palette.textSecondary)
                     }
                 }

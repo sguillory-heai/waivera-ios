@@ -17,7 +17,7 @@
                 .disabled(details.join?.state != .open)
                 if let note = details.joinNote {
                     Text(note)
-                        .font(WaiveraFont.caption)
+                        .waiveraTextStyle(.labelMedium)
                         .foregroundStyle(Palette.textSecondary)
                 }
                 if let error = details.joinError {
