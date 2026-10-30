@@ -1,24 +1,54 @@
 #if canImport(UIKit)
     import SwiftUI
 
-    /// Unread count badge, capped at `99+`. Hidden when the count is zero.
+    /// A count pill, capped at `99+` and hidden at zero. `attention` (the default) is something
+    /// waiting on the person, solid rose with white; `info` is a plain total, a neutral chip. It
+    /// pops in when a count arrives, pops on each change and shrinks away at zero.
     public struct CountBadge: View {
         private let count: Int
+        private let tone: CountTone
 
-        public init(count: Int) {
+        public init(count: Int, tone: CountTone = .attention) {
             self.count = count
+            self.tone = tone
         }
 
         public var body: some View {
-            if let text = BadgeFormatter.text(for: count) {
-                Text(text)
-                    .font(WaiveraFont.badge)
-                    .foregroundStyle(Palette.onDanger)
-                    .padding(.horizontal, Spacing.extraSmall)
-                    .frame(minWidth: ControlSize.badgeMinWidth, minHeight: ControlSize.badgeMinWidth)
-                    .background(Palette.danger, in: Capsule())
-                    .accessibilityLabel(Text(DesignStrings.unreadCount(count)))
+            PopVisibility(isVisible: count > 0) {
+                CountPill(
+                    text: BadgeFormatter.text(for: count) ?? "",
+                    accessibilityText: DesignStrings.unreadCount(count),
+                    tone: tone
+                )
             }
+        }
+    }
+
+    /// The count pill with caller-made copy ("30+" when only part of a feed is loaded).
+    public struct CountPill: View {
+        private let text: String
+        private let accessibilityText: String
+        private let tone: CountTone
+
+        public init(text: String, accessibilityText: String, tone: CountTone = .attention) {
+            self.text = text
+            self.accessibilityText = accessibilityText
+            self.tone = tone
+        }
+
+        public var body: some View {
+            Text(text)
+                .waiveraTextStyle(.badge)
+                .monospacedDigit()
+                .lineLimit(1)
+                .fixedSize()
+                .foregroundStyle(tone.inkColor)
+                .padding(.horizontal, Spacing.extraSmall + Spacing.xxSmall)
+                .frame(minWidth: ControlSize.badgeMinWidth, minHeight: ControlSize.badgeMinWidth)
+                .background(tone.fillColor, in: Capsule())
+                .popOnChange(of: text)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(accessibilityText))
         }
     }
 
@@ -28,9 +58,20 @@
         case success
         case warning
         case danger
+
+        var status: StatusTone {
+            switch self {
+            case .accent: .accent
+            case .neutral: .neutral
+            case .success: .success
+            case .warning: .warning
+            case .danger: .danger
+            }
+        }
     }
 
-    /// A small text label such as "Saved" or "Thread reply".
+    /// A short status label such as "Saved" or "Thread reply". Always one line; place several in
+    /// a wrapping layout so whole labels wrap. Free text that can be wider than its row ends in "…".
     public struct StatusBadge: View {
         private let title: String
         private let tone: BadgeTone
@@ -46,30 +87,23 @@
             HStack(spacing: Spacing.extraSmall) {
                 if let systemImage {
                     Image(systemName: systemImage)
+                        .imageScale(.small)
                         .accessibilityHidden(true)
                 }
                 Text(title)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
             }
-            .font(WaiveraFont.badge)
-            .foregroundStyle(tint)
+            .waiveraTextStyle(.badge)
+            .foregroundStyle(tone.status.inkColor)
             .padding(.horizontal, Spacing.small)
-            .padding(.vertical, Spacing.extraSmall)
-            .background(tint.opacity(Emphasis.bannerWash), in: Capsule())
+            .padding(.vertical, Spacing.xxSmall)
+            .background(tone.status.containerColor, in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous))
             .accessibilityElement(children: .combine)
-        }
-
-        private var tint: Color {
-            switch tone {
-            case .accent: Palette.accent
-            case .neutral: Palette.textSecondary
-            case .success: Palette.success
-            case .warning: Palette.warning
-            case .danger: Palette.danger
-            }
         }
     }
 
-    /// An unread dot with a spoken label, so unread state is not colour-only.
+    /// An unread dot in the attention rose, with a spoken label so unread is not colour-only.
     public struct UnreadDot: View {
         private let accessibilityText: String
 
@@ -85,40 +119,21 @@
         }
     }
 
-    /// A 48pt rounded tile holding an SF Symbol, used by rows and state views.
-    public struct IconTile: View {
-        private let systemImage: String
-        private let tint: Color
-
-        public init(systemImage: String, tint: Color = Palette.accent) {
-            self.systemImage = systemImage
-            self.tint = tint
-        }
-
-        public var body: some View {
-            Image(systemName: systemImage)
-                .font(WaiveraFont.sectionTitle)
-                .foregroundStyle(tint)
-                .frame(width: ControlSize.iconTile, height: ControlSize.iconTile)
-                .background(Palette.accentSoft, in: RoundedRectangle(cornerRadius: Radius.button, style: .continuous))
-                .accessibilityHidden(true)
-        }
-    }
-
     private struct BadgeGallery: View {
         var body: some View {
-            VStack(alignment: .leading, spacing: Spacing.smallPlus) {
+            VStack(alignment: .leading, spacing: Spacing.mediumSmall) {
                 HStack(spacing: Spacing.small) {
                     CountBadge(count: 3)
                     CountBadge(count: 120)
+                    CountBadge(count: 14, tone: .info)
                     UnreadDot(accessibilityLabel: "Unread")
                 }
                 HStack(spacing: Spacing.small) {
                     StatusBadge("Saved", systemImage: "bookmark.fill")
                     StatusBadge("Thread reply", tone: .neutral)
                     StatusBadge("Pending", tone: .warning)
+                    StatusBadge("Failed", tone: .danger)
                 }
-                IconTile(systemImage: "calendar")
             }
             .padding(Spacing.medium)
             .background(Palette.background)
@@ -127,5 +142,5 @@
 
     #Preview("Light") { BadgeGallery() }
     #Preview("Dark") { BadgeGallery().preferredColorScheme(.dark) }
-    #Preview("AX XXXL") { BadgeGallery().dynamicTypeSize(.accessibility5) }
+    #Preview("AX5") { BadgeGallery().dynamicTypeSize(.accessibility5) }
 #endif

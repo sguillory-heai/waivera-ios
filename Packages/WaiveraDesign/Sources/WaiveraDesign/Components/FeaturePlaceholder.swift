@@ -47,7 +47,7 @@
         NavigationStack { FeaturePlaceholder(title: "Chats", systemImage: "bubble.left.and.bubble.right") }
             .preferredColorScheme(.dark)
     }
-    #Preview("AX XXXL") {
+    #Preview("AX5") {
         NavigationStack { FeaturePlaceholder(title: "Chats", systemImage: "bubble.left.and.bubble.right") }
             .dynamicTypeSize(.accessibility5)
     }

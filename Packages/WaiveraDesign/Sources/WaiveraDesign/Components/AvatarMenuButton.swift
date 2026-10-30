@@ -40,7 +40,7 @@
                     .accessibilityIdentifier("avatarMenu.\(item.id)")
                 }
             } label: {
-                AvatarView(name: name, image: image, size: ControlSize.avatarSmall, rounded: true)
+                AvatarView(name: name, image: image, size: ControlSize.avatarSmall)
                     .frame(width: ControlSize.minHitTarget, height: ControlSize.minHitTarget)
                     .contentShape(Rectangle())
             }
@@ -72,5 +72,5 @@
 
     #Preview("Light") { AvatarMenuGallery() }
     #Preview("Dark") { AvatarMenuGallery().preferredColorScheme(.dark) }
-    #Preview("AX XXXL") { AvatarMenuGallery().dynamicTypeSize(.accessibility5) }
+    #Preview("AX5") { AvatarMenuGallery().dynamicTypeSize(.accessibility5) }
 #endif

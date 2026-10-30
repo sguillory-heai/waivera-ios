@@ -119,15 +119,18 @@
                 }
                 .padding(.leading, Spacing.smallPlus)
                 .padding(.trailing, isSecure ? 0 : Spacing.smallPlus)
-                .frame(minHeight: ControlSize.buttonHeight)
-                .background(Palette.surface, in: shape)
+                .frame(minHeight: ControlSize.fieldHeight)
+                .background(Palette.field, in: shape)
                 .overlay(
-                    shape.strokeBorder(error == nil ? Palette.border : Palette.danger, lineWidth: Spacing.hairline)
+                    shape.strokeBorder(
+                        error == nil ? Palette.fieldBorder : Palette.danger,
+                        lineWidth: ControlSize.fieldBorder
+                    )
                 )
                 if let error {
                     Label(error, systemImage: "exclamationmark.circle.fill")
                         .font(WaiveraFont.caption)
-                        .foregroundStyle(Palette.danger)
+                        .foregroundStyle(Palette.dangerText)
                         .accessibilityHidden(true)
                 }
             }
@@ -212,5 +215,5 @@
 
     #Preview("Light") { TextFieldGallery() }
     #Preview("Dark") { TextFieldGallery().preferredColorScheme(.dark) }
-    #Preview("AX XXXL") { TextFieldGallery().dynamicTypeSize(.accessibility5) }
+    #Preview("AX5") { TextFieldGallery().dynamicTypeSize(.accessibility5) }
 #endif

@@ -1,7 +1,8 @@
 #if canImport(UIKit)
     import SwiftUI
 
-    /// A settings switch row with the toggle haptic. Rows stay readable when disabled.
+    /// A settings switch row. No haptic (the owner's policy); the switch's own motion answers.
+    /// Rows stay readable when disabled.
     public struct ToggleRow: View {
         private let title: String
         private let subtitle: String?
@@ -17,20 +18,19 @@
             Toggle(isOn: $isOn) {
                 VStack(alignment: .leading, spacing: Spacing.extraSmall) {
                     Text(title)
-                        .font(WaiveraFont.bodyEmphasis)
+                        .waiveraTextStyle(.titleSmall)
                         .foregroundStyle(Palette.text)
                     if let subtitle {
                         Text(subtitle)
-                            .font(WaiveraFont.caption)
+                            .waiveraTextStyle(.bodySmall)
                             .foregroundStyle(Palette.textSecondary)
                     }
                 }
             }
-            .tint(Palette.accent)
+            .tint(Palette.accentFill)
             .padding(.vertical, Spacing.small)
             .padding(.horizontal, Spacing.medium)
-            .frame(minHeight: ControlSize.minHitTarget)
-            .waiveraHaptic(.toggle, trigger: isOn)
+            .frame(minHeight: ControlSize.listRowMinHeight)
         }
     }
 
@@ -54,5 +54,5 @@
 
     #Preview("Light") { ToggleGallery() }
     #Preview("Dark") { ToggleGallery().preferredColorScheme(.dark) }
-    #Preview("AX XXXL") { ToggleGallery().dynamicTypeSize(.accessibility5) }
+    #Preview("AX5") { ToggleGallery().dynamicTypeSize(.accessibility5) }
 #endif
