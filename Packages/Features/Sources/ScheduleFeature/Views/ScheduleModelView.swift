@@ -30,7 +30,9 @@
                     goToToday: { model.goToToday() },
                     retry: { model.retry() },
                     retryMilestones: { model.retryMilestones() },
-                    openEvent: onOpenEvent,
+                    // Wrapped so the shell's callback, which is not Sendable, is never converted
+                    // to the actions' Sendable function type (a strict-concurrency diagnostic).
+                    openEvent: { onOpenEvent($0) },
                     sendWishes: { model.sendWishes(to: $0) }
                 ),
                 account: account,
