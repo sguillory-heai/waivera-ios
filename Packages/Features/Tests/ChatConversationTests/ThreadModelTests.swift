@@ -40,13 +40,13 @@ struct ThreadModelTests {
         #expect(await eventually { harness.fakes.chat.calls.count("closeThread:9330") == 1 })
     }
 
-    @Test("IF-09: someone else's reply arriving in the open thread plays the receive cue")
-    func someoneElsesReplyPlaysTheReceiveCue() async {
+    @Test("Haptics policy: someone else's reply arriving in the open thread is silent")
+    func someoneElsesReplyIsSilent() async {
         let harness = await ModelHarness()
         let model = harness.thread()
         let task = Task { await model.run() }
         #expect(await eventually { model.state.content == .ready })
-        #expect(!harness.recorder.haptics.contains(.messageReceivedWhileVisible), "history never buzzes")
+        #expect(harness.recorder.haptics.isEmpty, "history never buzzes")
         var incoming = ChatMessage(
             id: 20_600,
             conversationId: 7,
@@ -58,7 +58,8 @@ struct ThreadModelTests {
         incoming.parentMessageId = 9330
         incoming.threadRootMessageId = 9330
         await harness.fakes.chat.receive(incoming)
-        #expect(await eventually { harness.recorder.haptics.contains(.messageReceivedWhileVisible) })
+        #expect(await eventually { !model.liveArrivals.isEmpty })
+        #expect(harness.recorder.haptics.isEmpty)
         task.cancel()
     }
 

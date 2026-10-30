@@ -193,11 +193,8 @@ final class ConversationModel {
         let entries = ArrivalTracker.entries(messages: messages, pending: pending)
         let arrivals = arrivalTracker.update(entries)
         guard !arrivals.isEmpty else { return }
+        // Someone else's message landing on screen is silent: the bubble's arrival motion says it.
         liveArrivals.formUnion(arrivals)
-        // Someone else's message landing on screen; the design system decides how it feels.
-        if isVisible, zip(messages, entries).contains(where: { !$0.0.isMine && arrivals.contains($0.1.key) }) {
-            platform.haptic(.messageReceivedWhileVisible)
-        }
         let clock = clock
         Task { [weak self] in
             try? await clock.sleep(seconds: Self.arrivalWindow)
@@ -210,9 +207,8 @@ final class ConversationModel {
         let events = sendTracker.update(pending)
         if let failure = events.newFailures.last {
             state.sendError = SendErrorKind(failure)
-            platform.haptic(.failure)
+            platform.haptic(.sendFailed)
         }
-        if events.retrySucceeded { platform.haptic(.success) }
     }
 
     /// Mark-as-read plus read-through whenever the newest message changes while the screen is

@@ -40,7 +40,6 @@ final class MessageInteractions {
     }
 
     func openActions(_ model: MessageActionsModel) {
-        platform.haptic(.longPress)
         sheet = .actions(model)
     }
 
@@ -54,7 +53,6 @@ final class MessageInteractions {
         let text = message.copyableText
         guard !text.isEmpty else { return }
         platform.copy(text)
-        platform.haptic(.success)
         if case .actions(var model) = sheet {
             model.copied = true
             sheet = .actions(model)
@@ -67,7 +65,6 @@ final class MessageInteractions {
         guard let bookmarks else { return }
         do {
             let saved = try await bookmarks.toggle(messageId: messageId, conversationId: conversationId)
-            platform.haptic(.success)
             show(saved ? .bookmarkSaved(messageId: messageId) : .bookmarkRemoved(messageId: messageId))
         } catch {
             fail(.bookmark, error)
@@ -87,7 +84,6 @@ final class MessageInteractions {
         sheet = .confirmDelete(messageId: messageId)
     }
 
-    /// The confirmation sheet already played the warning haptic.
     func confirmDelete(messageId: Int) async {
         sheet = nil
         guard let actions else { return }
@@ -105,7 +101,6 @@ final class MessageInteractions {
             needsConnection()
             return
         }
-        platform.haptic(.selection)
         guard let actions else { return }
         do {
             try await actions.toggleReaction(emoji, messageId: messageId, conversationId: conversationId)
@@ -117,7 +112,6 @@ final class MessageInteractions {
     }
 
     func openReactionDetails(messageId: Int, emoji: String) {
-        platform.haptic(.longPress)
         sheet = .reactions(messageId: messageId, initialEmoji: emoji)
     }
 
@@ -166,7 +160,6 @@ final class MessageInteractions {
         guard completed else { return }
         sheet = nil
         if file.purpose == .save {
-            platform.haptic(.success)
             show(.fileSaved(name: file.fileName))
         }
     }
@@ -184,7 +177,6 @@ final class MessageInteractions {
         }
     }
 
-    /// The success haptic waits for the row to actually send; `SendTracker` reports that.
     func retry(clientMessageId: String) async {
         await actions?.retry(clientMessageId: clientMessageId)
     }
@@ -200,14 +192,12 @@ final class MessageInteractions {
 
     func fail(_ action: ChatToast.FailedAction, _ error: (any Error)?) {
         show(.failed(action, detail: error.map(WaiveraError.from)))
-        platform.haptic(.failure)
     }
 
     func dismissToast() { toast = nil }
 
     private func needsConnection() {
         show(.failed(.reactionNeedsConnection, detail: nil))
-        platform.haptic(.failure)
     }
 
     private func show(_ kind: ChatToast.Kind) {

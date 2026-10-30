@@ -118,7 +118,8 @@ struct PreparedFile: Hashable, Sendable, Identifiable {
 /// Things only the platform can do, injected so the models stay testable on Linux.
 struct ChatPlatform {
     var copy: @MainActor (String) -> Void
-    var haptic: @MainActor (HapticEvent) -> Void
+    /// Only `HapticMoment.sendFailed` is ever played here: nothing else in chat vibrates.
+    var haptic: @MainActor (HapticMoment) -> Void
     /// In-app Safari, for message and ticket links (already checked by `SafeLinks`).
     var openInApp: @MainActor (URL) -> Void
     /// External browser, for the web call lobby (which needs the camera and microphone).
@@ -126,7 +127,7 @@ struct ChatPlatform {
 
     init(
         copy: @escaping @MainActor (String) -> Void = { _ in },
-        haptic: @escaping @MainActor (HapticEvent) -> Void = { _ in },
+        haptic: @escaping @MainActor (HapticMoment) -> Void = { _ in },
         openInApp: @escaping @MainActor (URL) -> Void = { _ in },
         openExternally: @escaping @MainActor (URL) -> Void = { _ in }
     ) {

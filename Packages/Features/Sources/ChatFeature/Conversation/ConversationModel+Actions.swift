@@ -62,7 +62,6 @@ extension ConversationModel {
         }
         guard await data.messages.send(text: text, attachment: attachment, conversationId: conversationID) != nil
         else { return }
-        platform.haptic(.messageSent)
         scroll(to: .latest)
     }
 
@@ -71,7 +70,7 @@ extension ConversationModel {
         if draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { draft = text }
         state.stagedImage = image
         state.sendError = SendErrorKind(WaiveraError.from(error))
-        platform.haptic(.failure)
+        platform.haptic(.sendFailed)
     }
 
     private func submitEdit(messageId: Int) async {
@@ -82,7 +81,6 @@ extension ConversationModel {
             try await data.messages.edit(messageId: messageId, conversationId: conversationID, text: text)
             state.editingMessageID = nil
             draft = ""
-            platform.haptic(.success)
         } catch {
             interactions.fail(.edit, error)
         }

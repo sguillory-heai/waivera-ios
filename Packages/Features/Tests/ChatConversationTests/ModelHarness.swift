@@ -9,7 +9,7 @@ import WaiveraTestSupport
 /// Records what the models ask the platform to do.
 @MainActor
 final class PlatformRecorder {
-    var haptics: [HapticEvent] = []
+    var haptics: [HapticMoment] = []
     var copied: [String] = []
     var openedInApp: [URL] = []
     var openedExternally: [URL] = []

@@ -84,12 +84,13 @@ struct ConversationModelTests {
 
     // MARK: Sending (03 §11)
 
-    @Test func someoneElsesMessageArrivingOnScreenPlaysTheReceiveCue() async {
+    /// Haptics policy (2026-10-29): an arriving message never vibrates; its arrival motion says it.
+    @Test func someoneElsesMessageArrivingOnScreenIsSilent() async {
         let harness = await ModelHarness()
         let model = harness.conversation()
         let task = Task { await model.run() }
         #expect(await eventually { model.isReady })
-        #expect(!harness.recorder.haptics.contains(.messageReceivedWhileVisible), "history never buzzes")
+        #expect(harness.recorder.haptics.isEmpty, "history never buzzes")
         var incoming = ChatMessage(
             id: 20_500,
             conversationId: 7,
@@ -99,7 +100,8 @@ struct ConversationModelTests {
         incoming.authorId = "usr_priya_raman"
         incoming.plaintext = "Running late"
         await harness.fakes.chat.receive(incoming)
-        #expect(await eventually { harness.recorder.haptics.contains(.messageReceivedWhileVisible) })
+        #expect(await eventually { !model.liveArrivals.isEmpty })
+        #expect(harness.recorder.haptics.isEmpty)
         task.cancel()
     }
 
@@ -115,7 +117,7 @@ struct ConversationModelTests {
         #expect(await eventually { model.pendingRows.contains { $0.outgoing.text == "On my way" } })
         let row = try #require(model.pendingRows.first { $0.outgoing.text == "On my way" })
         #expect(row.outgoing.state == .sending)
-        #expect(harness.recorder.haptics.contains(.messageSent))
+        #expect(harness.recorder.haptics.isEmpty, "a send that works is silent")
         await harness.fakes.chat.confirmPending()
         #expect(await eventually { model.messageRows.contains { $0.key == row.key } })
         task.cancel()
@@ -132,21 +134,22 @@ struct ConversationModelTests {
         model.draft = "Hello"
         await model.send()
         #expect(await eventually { model.state.sendError == .offline })
-        #expect(harness.recorder.haptics.contains(.failure))
+        #expect(harness.recorder.haptics.contains(.sendFailed))
+        #expect(harness.recorder.haptics.allSatisfy { $0 == .sendFailed })
         model.draft = "Hello again"
         model.draftChanged()
         #expect(model.state.sendError == nil)
         task.cancel()
     }
 
-    @Test func aRetriedSendThatLandsPlaysSuccess() async {
+    @Test func aRetriedSendThatLandsIsSilent() async {
         let harness = await ModelHarness()
         let model = harness.conversation()
         let task = Task { await model.run() }
         #expect(await eventually { model.pendingRows.contains { $0.outgoing.clientMessageId == "demo-failed-send" } })
         await model.retry(clientMessageId: "demo-failed-send")
-        #expect(await eventually { harness.recorder.haptics.contains(.success) })
-        #expect(!model.pendingRows.contains { $0.outgoing.clientMessageId == "demo-failed-send" })
+        #expect(await eventually { !model.pendingRows.contains { $0.outgoing.clientMessageId == "demo-failed-send" } })
+        #expect(harness.recorder.haptics.isEmpty)
         task.cancel()
     }
 

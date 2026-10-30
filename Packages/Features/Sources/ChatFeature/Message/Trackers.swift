@@ -10,8 +10,8 @@ struct SendEvents: Equatable, Sendable {
 }
 
 /// Watches outbox rows across emissions so the screen raises the send error banner (03 §11)
-/// only for failures that happen while it is open, and plays one success haptic when a
-/// retried message lands. Rows already failed when the screen opens show their inline Retry
+/// only for failures that happen while it is open, and notes when a retried message lands.
+/// Rows already failed when the screen opens show their inline Retry
 /// without a banner.
 struct SendTracker {
     private var initialized = false

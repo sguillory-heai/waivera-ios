@@ -39,7 +39,6 @@ extension ThreadModel {
             if draft.isEmpty { draft = text }
             return
         }
-        platform.haptic(.messageSent)
         nextScrollId += 1
         state.scrollCommand = ScrollCommand(id: nextScrollId, target: .latest)
     }
@@ -52,7 +51,6 @@ extension ThreadModel {
             try await data.threads.edit(messageId: messageId, conversationId: conversationId, text: text)
             state.editingMessageID = nil
             draft = ""
-            platform.haptic(.success)
         } catch {
             interactions.fail(.edit, error)
         }
