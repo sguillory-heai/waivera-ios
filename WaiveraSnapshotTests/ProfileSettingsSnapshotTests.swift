@@ -182,26 +182,18 @@
 
         func testSettings() {
             let account = AccountSummary(user: data.user)
+            let actions = SettingsActions(openChangePassword: {})
             assertScreen(
-                SettingsIndexContent(
-                    account: account,
-                    onOpenNotifications: {},
-                    onOpenAppearance: {},
-                    onOpenAccount: {}
-                ),
-                named: "settings_index"
+                SettingsContent(account: account, isSigningOut: false, actions: actions, requestSignOut: {}),
+                named: "settings_signedIn"
+            )
+            assertScreen(
+                SettingsContent(account: account, isSigningOut: true, actions: actions, requestSignOut: {}),
+                named: "settings_signingOut"
             )
             assertScreen(
                 AppearanceContent(appearance: .dark, hapticsEnabled: true, onSelect: { _ in }, onHaptics: { _ in }),
                 named: "settingsAppearance_dark"
-            )
-            assertScreen(
-                AccountContent(account: account, isSigningOut: false, actions: AccountActions()),
-                named: "settingsAccount_signedIn"
-            )
-            assertScreen(
-                AccountContent(account: account, isSigningOut: true, actions: AccountActions()),
-                named: "settingsAccount_signingOut"
             )
         }
 
