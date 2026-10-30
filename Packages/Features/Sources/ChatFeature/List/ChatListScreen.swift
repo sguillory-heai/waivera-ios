@@ -8,24 +8,38 @@
         import WaiveraTestSupport
     #endif
 
-    /// The Chat tab root: conversation list with search and filters (02).
+    /// The Chat tab root (Android `ChatListRoute`): the hero bar with "+" and the account avatar,
+    /// then the inbox with search and filters (02). The hero replaces the navigation bar, which
+    /// stays hidden; its title still names the back button on pushed screens.
     public struct ConversationListView: View {
         let onOpenConversation: (_ conversationID: Int) -> Void
         let onOpenPerson: (_ userID: String) -> Void
         let onNewChat: () -> Void
+        let accountName: String?
+        let accountLabel: String?
+        let onAccount: (() -> Void)?
 
         @Environment(\.dataEnvironment) private var data
         @State private var model: ChatListModel?
         @State private var avatars: AvatarPrefetcher<AvatarImage>?
 
+        /// - Parameters:
+        ///   - accountName: the signed-in person, whose avatar on the hero bar opens `onAccount`
+        ///     (the account menu). Without both, the bar shows no avatar.
         public init(
             onOpenConversation: @escaping (_ conversationID: Int) -> Void,
             onOpenPerson: @escaping (_ userID: String) -> Void,
-            onNewChat: @escaping () -> Void
+            onNewChat: @escaping () -> Void,
+            accountName: String? = nil,
+            accountLabel: String? = nil,
+            onAccount: (() -> Void)? = nil
         ) {
             self.onOpenConversation = onOpenConversation
             self.onOpenPerson = onOpenPerson
             self.onNewChat = onNewChat
+            self.accountName = accountName
+            self.accountLabel = accountLabel
+            self.onAccount = onAccount
         }
 
         public var body: some View {
@@ -34,6 +48,7 @@
                     ChatListScreen(
                         model: model,
                         avatars: avatars,
+                        account: account,
                         onOpenConversation: onOpenConversation,
                         onOpenPerson: onOpenPerson,
                         onNewChat: onNewChat
@@ -44,23 +59,17 @@
                 }
             }
             .navigationTitle(ChatListStrings.string("chat.list.title"))
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: onNewChat) {
-                        Image(systemName: "square.and.pencil")
-                            .foregroundStyle(Palette.accent)
-                            .frame(width: ControlSize.minHitTarget, height: ControlSize.minHitTarget)
-                            .contentShape(Rectangle())
-                    }
-                    .accessibilityLabel(Text(ChatListStrings.string("chat.list.newChat")))
-                    .accessibilityIdentifier("chatList.newChat")
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
             .task {
                 guard model == nil, let data else { return }
                 model = ChatListModel(environment: data)
                 avatars = AvatarPrefetcher(repository: data.avatars) { AvatarImage(data: $0) }
             }
+        }
+
+        private var account: ChatListAccount? {
+            guard let accountName, let onAccount else { return nil }
+            return ChatListAccount(name: accountName, accessibilityLabel: accountLabel, onOpen: onAccount)
         }
     }
 
@@ -68,6 +77,7 @@
     struct ChatListScreen: View {
         @Bindable var model: ChatListModel
         let avatars: AvatarPrefetcher<AvatarImage>
+        let account: ChatListAccount?
         let onOpenConversation: (Int) -> Void
         let onOpenPerson: (String) -> Void
         let onNewChat: () -> Void
@@ -80,6 +90,7 @@
                 query: $model.query,
                 filter: $model.filter,
                 avatar: { avatars.images[$0]?.image },
+                account: account,
                 actions: actions
             )
             .task { await model.start() }
@@ -137,7 +148,13 @@
 
     #if DEBUG
         @MainActor private var previewList: some View {
-            ConversationListView(onOpenConversation: { _ in }, onOpenPerson: { _ in }, onNewChat: {})
+            ConversationListView(
+                onOpenConversation: { _ in },
+                onOpenPerson: { _ in },
+                onNewChat: {},
+                accountName: "Alex Rivera",
+                onAccount: {}
+            )
         }
 
         #Preview("Light, demo data") {
@@ -151,7 +168,7 @@
                 .preferredColorScheme(.dark)
         }
 
-        #Preview("AX XXXL, failing") {
+        #Preview("AX5, failing") {
             NavigationStack { previewList }
                 .fakeDataEnvironment(.failing)
                 .dynamicTypeSize(.accessibility5)
