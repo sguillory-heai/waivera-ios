@@ -1,11 +1,12 @@
 #if canImport(UIKit)
     import SwiftUI
 
-    /// A placeholder block that pulses 0.45 ↔ 0.85, or holds a static tone under Reduce Motion.
+    /// A placeholder block (Android `WaiveraSkeleton`): its colour breathes between the skeleton
+    /// base and highlight on a 900ms eased pulse, or holds the base under Reduce Motion.
     public struct SkeletonBlock: View {
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
         @ScaledMetric(relativeTo: .body) private var lineHeight = ControlSize.skeletonLine
-        @State private var isPulsing = false
+        @State private var isLit = false
 
         private let width: CGFloat?
         private let height: CGFloat?
@@ -20,10 +21,14 @@
 
         public var body: some View {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .fill(Palette.surfaceMuted)
+                .fill(Palette.skeletonBase)
+                .overlay {
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .fill(Palette.skeletonHighlight)
+                        .opacity(isLit && animates ? 1 : 0)
+                }
                 .frame(width: width, height: height ?? lineHeight)
                 .frame(maxWidth: width == nil ? .infinity : nil, alignment: .leading)
-                .opacity(opacity)
                 .onAppear(perform: startPulse)
                 .onChange(of: reduceMotion) { startPulse() }
                 .accessibilityHidden(true)
@@ -31,20 +36,13 @@
 
         private var animates: Bool { MotionPolicy.skeletonAnimates(reduceMotion: reduceMotion) }
 
-        private var opacity: Double {
-            let range = MotionPolicy.skeletonOpacityRange
-            guard animates else { return (range.low + range.high) / 2 }
-            return isPulsing ? range.high : range.low
-        }
-
         private func startPulse() {
             guard animates else {
-                isPulsing = false
+                isLit = false
                 return
             }
-            withAnimation(.easeInOut(duration: MotionPolicy.skeletonPulseDuration).repeatForever(autoreverses: true)) {
-                isPulsing = true
-            }
+            let pulse = Motion.animation(MotionSpec.skeletonPulse).repeatForever(autoreverses: true)
+            withAnimation(pulse) { isLit = true }
         }
     }
 
@@ -59,11 +57,11 @@
         public var body: some View {
             VStack(spacing: Spacing.medium) {
                 ForEach(0..<rows, id: \.self) { index in
-                    HStack(spacing: Spacing.smallPlus) {
+                    HStack(spacing: Spacing.mediumSmall) {
                         SkeletonBlock(
                             width: ControlSize.avatarMedium,
                             height: ControlSize.avatarMedium,
-                            cornerRadius: AvatarGeometry.cornerRadius(size: ControlSize.avatarMedium, rounded: false)
+                            cornerRadius: AvatarGeometry.cornerRadius(size: ControlSize.avatarMedium)
                         )
                         VStack(alignment: .leading, spacing: Spacing.small) {
                             SkeletonBlock()
@@ -79,9 +77,11 @@
         }
     }
 
-    /// Shows `skeleton` only for loads slower than ~300ms, and keeps it at least ~300ms once shown,
-    /// so fast responses never flash a placeholder.
+    /// Shows `skeleton` only for loads slower than ~300ms and keeps it at least ~300ms once shown,
+    /// so fast responses never flash a placeholder. The skeleton hands over to the content with the
+    /// swap's fade-through (the skeleton leaves on the quick exit, the content fades in after it).
     public struct LoadingContent<Content: View, Skeleton: View>: View {
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
         private let isLoading: Bool
         private let timing: SkeletonTiming
         private let content: Content
@@ -106,8 +106,14 @@
             ZStack {
                 if showsSkeleton {
                     skeleton
+                        .transition(.opacity.animation(Motion.animation(MotionPolicy.exit(reduceMotion: reduceMotion))))
                 } else if !isLoading {
                     content
+                        .transition(
+                            .opacity.animation(
+                                Motion.animation(MotionPolicy.enterAfterExit(reduceMotion: reduceMotion))
+                            )
+                        )
                 }
             }
             .task(id: isLoading) {
@@ -130,7 +136,24 @@
         }
     }
 
-    #Preview("Light") { SkeletonList(rows: 4).background(Palette.background) }
-    #Preview("Dark") { SkeletonList(rows: 4).background(Palette.background).preferredColorScheme(.dark) }
-    #Preview("AX XXXL") { SkeletonList(rows: 4).background(Palette.background).dynamicTypeSize(.accessibility5) }
+    private struct SkeletonGallery: View {
+        @State private var loading = true
+
+        var body: some View {
+            VStack {
+                Button("Toggle load") { loading.toggle() }
+                LoadingContent(isLoading: loading) {
+                    Text(verbatim: "Loaded content")
+                        .padding(Spacing.medium)
+                } skeleton: {
+                    SkeletonList(rows: 4)
+                }
+            }
+            .background(Palette.background)
+        }
+    }
+
+    #Preview("Light") { SkeletonGallery() }
+    #Preview("Dark") { SkeletonGallery().preferredColorScheme(.dark) }
+    #Preview("AX5") { SkeletonGallery().dynamicTypeSize(.accessibility5) }
 #endif
