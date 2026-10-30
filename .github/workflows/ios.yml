@@ -84,6 +84,9 @@ jobs:
   # compiler between two runs of the same commit; 26.6 is the image default since July 2026.
   app-macos:
     runs-on: macos-26
+    # Write access only to force-push the screenshots branch (last steps); nothing else pushes.
+    permissions:
+      contents: write
     # Build about 10 minutes, tests about 35 when nothing hangs; the step limits add up to 95.
     timeout-minutes: 110
     env:
@@ -288,6 +291,55 @@ jobs:
             *.xcresult
             *.log
           if-no-files-found: warn
+      # Artifacts download from a blob storage host that some review environments cannot reach;
+      # a branch in this repo can be fetched anywhere the code can. Each run replaces the branch
+      # with one orphan commit (latest run only, so it never grows): the exported screenshots
+      # and audit reports, the recorded snapshots, and the test logs.
+      #   git fetch origin ci-screenshots && git worktree add ../ci-screenshots FETCH_HEAD
+      - name: Publish screenshots to the ci-screenshots branch
+        id: publish
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          out=$(mktemp -d)
+          # Pictures and audit reports only; failure recordings (video) would bloat the branch.
+          if [ -d screenshots ]; then
+            (cd screenshots && find . -type f \( -name '*.png' -o -name '*.txt' -o -name 'manifest.json' \) -print0 \
+              | while IFS= read -r -d '' f; do
+                  mkdir -p "$out/screenshots/$(dirname "$f")"
+                  cp "$f" "$out/screenshots/$f"
+                done)
+          fi
+          if [ -d WaiveraSnapshotTests/__Snapshots__ ]; then
+            mkdir -p "$out/snapshots"
+            cp -R WaiveraSnapshotTests/__Snapshots__/. "$out/snapshots/"
+          fi
+          mkdir -p "$out/logs"
+          for f in unit.log ui-small.log ui-large.log swiftlint.log swift-format.log; do
+            [ -f "$f" ] && cp "$f" "$out/logs/"
+          done
+          [ -f build.log ] && { grep -E "error:|warning:" build.log | sort -u > "$out/logs/build-diagnostics.log" || true; }
+          {
+            echo "run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID (attempt $GITHUB_RUN_ATTEMPT)"
+            echo "commit: $GITHUB_SHA"
+            echo "branch: $GITHUB_REF_NAME"
+            echo "small phone: ${{ steps.sim.outputs.small }}"
+            echo "large phone: ${{ steps.sim.outputs.large }}"
+            echo "outcomes: unit=${{ steps.unit.outcome }} ui_small=${{ steps.ui_small.outcome }} ui_large=${{ steps.ui_large.outcome }}"
+          } > "$out/RUN.txt"
+          cd "$out"
+          git init -q -b ci-screenshots
+          git add -A
+          git -c user.name="github-actions[bot]" \
+            -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "Screenshots from run $GITHUB_RUN_ID at ${GITHUB_SHA:0:7}"
+          auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')
+          echo "::add-mask::$auth"
+          git -c http.extraheader="AUTHORIZATION: basic $auth" \
+            push --force "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git" HEAD:refs/heads/ci-screenshots
+          echo "Published $(find . -name '*.png' -not -path './.git/*' | wc -l | tr -d ' ') PNGs to ci-screenshots"
       - name: Fail if any check failed
         if: always()
         run: |
@@ -301,5 +353,6 @@ jobs:
           [ "${{ steps.ui_small.outcome }}" = success ] || failed="$failed ui-tests-small-phone"
           [ "${{ steps.ui_large.outcome }}" = success ] || failed="$failed screenshot-tour-large-phone"
           [ "${{ steps.export.outcome }}" = success ] || failed="$failed screenshot-export"
+          [ "${{ steps.publish.outcome }}" = success ] || failed="$failed screenshot-branch"
           if [ -n "$failed" ]; then echo "Failed checks:$failed"; exit 1; fi
           echo "All checks passed"
