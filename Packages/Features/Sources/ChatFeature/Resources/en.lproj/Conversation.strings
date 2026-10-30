@@ -19,7 +19,6 @@
 "thread.error.title" = "Thread didn't load";
 "thread.empty" = "No replies yet.";
 "thread.loading" = "Loading thread";
-"older.failed" = "Older messages didn't load.";
 "older.loading" = "Loading older messages";
 "older.failed" = "Couldn't load older messages.";
 "retry" = "Retry";
