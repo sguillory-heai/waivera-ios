@@ -105,8 +105,7 @@
             HStack(spacing: Spacing.extraSmall) {
                 Text(reaction.emoji).waiveraTextStyle(.bodySmall)
                 Text(verbatim: "\(reaction.count)")
-                    .waiveraTextStyle(.labelSmall)
-                    .fontWeight(reaction.mine ? .semibold : nil)
+                    .waiveraTextStyle(.labelSmall, weight: reaction.mine ? .semibold : nil)
                     .foregroundStyle(reaction.mine ? Palette.onAccentSoft : Palette.textSecondary)
             }
             .padding(.horizontal, Spacing.small)
