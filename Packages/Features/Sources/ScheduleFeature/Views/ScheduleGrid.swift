@@ -1,5 +1,7 @@
 #if canImport(UIKit)
     import SwiftUI
+    import WaiveraAPI
+    import WaiveraData
     import WaiveraDesign
 
     /// The month grid (always 42 cells) or the week strip (07 §1 "Grid"). Each cell is one
