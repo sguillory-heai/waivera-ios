@@ -34,6 +34,9 @@ final class AppModel {
     private(set) var unreadTotal = 0
     /// The account menu sheet, opened from the avatar in a tab root's top bar.
     var isAccountMenuPresented = false
+    /// A `waivera://` link arrived that the app cannot open; the tabs say so once (Android
+    /// `unopenableLink`, UI2-22). A new value shows the snackbar again.
+    private(set) var unopenableLink: UUID?
 
     @ObservationIgnored let dataEnvironment: DataEnvironment?
     @ObservationIgnored let environment: AppEnvironment
@@ -252,6 +255,7 @@ final class AppModel {
             navigation = NavigationState()
             chatAlert = nil
             isAccountMenuPresented = false
+            unopenableLink = nil
             await pushCoordinator.didSignOut()
         }
     }
@@ -331,6 +335,11 @@ extension AppModel {
         navigation.push(route)
     }
 
+    /// The "That link can't be opened" snackbar went away.
+    func dismissUnopenableLink(_ id: UUID) {
+        if unopenableLink == id { unopenableLink = nil }
+    }
+
     func presentNewChat() {
         navigation.sheet = .newChat
     }
@@ -346,7 +355,11 @@ extension AppModel {
     }
 
     func handle(url: URL) {
-        guard let destination = DeepLink.destination(from: url) else { return }
+        guard let destination = DeepLink.destination(from: url) else {
+            // The stack stays where it is, but the tap is acknowledged.
+            unopenableLink = UUID()
+            return
+        }
         // Links are not deduplicated: the same link tapped twice should work twice.
         let key = "url:\(UUID().uuidString)"
         // A link has no delivery date: it is the current person's own tap.

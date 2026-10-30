@@ -33,6 +33,9 @@ struct RootView: View {
         case .browser:
             return .systemAction
         case .blocked:
+            // An unknown `waivera://` path gets "That link can't be opened"; other schemes are
+            // dropped quietly.
+            if url.scheme?.lowercased() == DeepLink.scheme { model.handle(url: url) }
             return .discarded
         }
     }

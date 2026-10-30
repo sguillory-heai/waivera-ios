@@ -354,6 +354,23 @@ struct AppModelNavigationTests {
         #expect(harness.model.navigation == NavigationState())
     }
 
+    @Test func anUnopenableLinkIsAcknowledgedEachTimeAndAValidOneIsNot() async throws {
+        let harness = AppModelHarness()
+        await harness.startSignedIn()
+        #expect(harness.model.unopenableLink == nil)
+        harness.model.handle(url: try link("waivera://nowhere"))
+        let first = try #require(harness.model.unopenableLink)
+        harness.model.handle(url: try link("waivera://nowhere"))
+        let second = try #require(harness.model.unopenableLink)
+        #expect(first != second, "the same bad link tapped twice is acknowledged twice")
+        harness.model.dismissUnopenableLink(first)
+        #expect(harness.model.unopenableLink == second, "a stale timeout leaves the newer one")
+        harness.model.dismissUnopenableLink(second)
+        #expect(harness.model.unopenableLink == nil)
+        harness.model.handle(url: try link("waivera://chats/7"))
+        #expect(harness.model.unopenableLink == nil)
+    }
+
     @Test func chatAlertBannerOpensItsThreadAndClears() async {
         let harness = AppModelHarness()
         await harness.startSignedIn()

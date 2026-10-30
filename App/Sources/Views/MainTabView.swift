@@ -25,6 +25,9 @@ struct MainTabView: View {
                     .tag(tab)
             }
         }
+        // Inside the tab bar's inset, so the snackbar sits above the bar.
+        .overlay(alignment: .bottom) { linkSnackbar }
+        .animation(Motion.animation(.layout, reduceMotion: reduceMotion), value: model.unopenableLink)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if showsTabBar {
                 WaiveraTabBar(
@@ -64,6 +67,24 @@ struct MainTabView: View {
             let image = UIImage(data: bytes)
         else { return }
         accountImage = Image(uiImage: image)
+    }
+
+    @ViewBuilder private var linkSnackbar: some View {
+        if let id = model.unopenableLink {
+            SnackbarView(message: AppStrings.linkUnopenable)
+                .padding(Spacing.medium)
+                .transition(Motion.transition(edge: .bottom, reduceMotion: reduceMotion))
+                .accessibilityIdentifier("snackbar.linkUnopenable")
+                .task(id: id) {
+                    UIAccessibility.post(notification: .announcement, argument: AppStrings.linkUnopenable)
+                    let lifetime =
+                        UIAccessibility.isVoiceOverRunning
+                        ? FeedbackTiming.undoToastAccessible
+                        : FeedbackTiming.undoToast
+                    try? await Task.sleep(for: .seconds(lifetime))
+                    if !Task.isCancelled { model.dismissUnopenableLink(id) }
+                }
+        }
     }
 
     /// Tab roots only, as on Android.

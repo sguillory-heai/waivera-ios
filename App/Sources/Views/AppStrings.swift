@@ -11,6 +11,7 @@ enum AppStrings {
     static var menuPeople: String { String(localized: "app.menu.people") }
     static var menuBookmarks: String { String(localized: "app.menu.bookmarks") }
     static var menuSettings: String { String(localized: "app.menu.settings") }
+    static var linkUnopenable: String { String(localized: "app.link.unopenable") }
 
     /// VoiceOver value on the Chat tab: "4 unread".
     static func tabUnread(_ count: Int) -> String {

@@ -13,6 +13,8 @@
 "app.menu.people" = "People";
 "app.menu.bookmarks" = "Bookmarks";
 "app.menu.settings" = "Settings";
+/* A waivera:// link the app does not know. */
+"app.link.unopenable" = "That link can’t be opened in Waivera.";
 /* In-app banner for a message outside the conversation on screen: "<conversation>: <preview>". */
 "app.alert.message %@ %@" = "%1$@: %2$@";
 /* Button on the in-app message banner that opens the conversation. */
