@@ -1,84 +1,109 @@
-/* Sign in */
+/* Sign in. No tagline or reassurance copy: everything on the screen helps someone sign in. */
 "auth.brand" = "Waivera";
-"auth.signIn.title" = "Welcome back.";
-"auth.signIn.subtitle" = "Stay connected to the people, conversations and work that move your organization forward.";
-"auth.signIn.card.title" = "Sign in to your account";
-"auth.signIn.card.subtitle" = "Use the same email and password you use for Waivera on the web.";
+"auth.signIn.title" = "Welcome back";
 "auth.field.email" = "Email";
 "auth.field.email.placeholder" = "you@organization.com";
 "auth.field.password" = "Password";
+"auth.field.password.placeholder" = "Your password";
 "auth.signIn.button" = "Sign in";
-/* Shown on the button while the backend login runs after Firebase accepted the password (01 §3). */
-"auth.signIn.connecting" = "Connecting to Waivera…";
-/* Announced while Firebase checks the email and password. */
-"auth.signIn.signingIn" = "Signing in…";
+/* On the busy Sign in button, from the tap until the backend login has finished. */
+"auth.signIn.connecting" = "Signing you in…";
 "auth.signIn.forgotPassword" = "Forgot password?";
-"auth.signIn.footer" = "Protected by Waivera sign-in and your organization's access policies.";
-/* %@ is the email address the person typed. Worded so it never reveals whether the account exists. */
-"auth.signIn.resetSent.message" = "If %@ has a Waivera account, we've sent it a link to reset the password.";
+"auth.signIn.resetSending" = "Sending link…";
+"auth.signIn.failed.title" = "Couldn’t sign in";
+"auth.signIn.resetSent.title" = "Check your inbox";
+/* Worded so it never reveals whether the account exists. The address follows on its own line. */
+"auth.signIn.resetSent.message" = "If there’s a Waivera account for this email, a reset link is on its way.";
+"auth.signIn.linkFailed.title" = "Couldn’t open that page";
+"auth.signIn.linkFailed.message" = "Check that a web browser is available, then try again.";
+/* The legal sentence under the form: lead, "our", Terms of Service, "and", Privacy Policy, full stop. */
+"auth.legal.lead" = "By continuing, you agree to";
+"auth.legal.termsLead" = "our";
+"auth.legal.terms" = "Terms of Service";
+"auth.legal.and" = "and";
+"auth.legal.privacy" = "Privacy Policy";
+"auth.legal.end" = ".";
+"auth.legal.openHint" = "Opens in your browser";
 /* The build has no server settings, so sign-in is turned off. */
-"auth.configuration.title" = "This build isn't set up yet";
-"auth.configuration.message" = "This copy of the app is missing its server settings, so sign-in is turned off. Ask your administrator for a supported version of Waivera.";
+"auth.configuration.title" = "This version can’t sign in";
+"auth.configuration.message" = "This version of the app is missing settings it needs, so sign-in is off. Ask your administrator for the right version of Waivera.";
 /* Debug builds only. %@ is a comma-separated list of setting names, never values. */
 "auth.configuration.details" = "Missing settings: %@";
 
 /* Validation */
 "auth.issue.emailRequired" = "Enter your email.";
-"auth.issue.emailInvalid" = "Enter an email address like name@organization.com.";
+/* Word joiners (U+2060) hold the example address together, so it never wraps at its dot. */
+"auth.issue.emailInvalid" = "That doesn’t look like an email. Try name⁠@⁠organization⁠.⁠com.";
 "auth.issue.passwordRequired" = "Enter your password.";
 "auth.issue.currentRequired" = "Enter your current password.";
-"auth.issue.currentWrong" = "That isn't your current password. Try again.";
+"auth.issue.currentWrong" = "That’s not your current password. Try again.";
 /* %lld is the minimum number of characters. */
 "auth.issue.newTooShort" = "Use at least %lld characters.";
-"auth.issue.newSame" = "Choose a password that's different from your current one.";
-"auth.issue.newWeak" = "Choose a stronger password. A longer phrase works well.";
-"auth.issue.confirmMismatch" = "These passwords don't match.";
+"auth.issue.newSame" = "Pick a password that’s different from your current one.";
+"auth.issue.newWeak" = "Pick a stronger password. A longer phrase works well.";
+"auth.issue.confirmMismatch" = "These don’t match yet. Type your new password again.";
 
 /* Password change */
-"auth.passwordChange.title" = "Change password";
-"auth.passwordChange.required.title" = "Set a new password";
-"auth.passwordChange.required.message" = "To keep your account secure, Waivera asks for a new password the first time you sign in and every six months after that.";
-"auth.passwordChange.voluntary.message" = "Enter your current password, then choose a new one. You'll stay signed in on this device.";
+"auth.passwordChange.title" = "Change your password";
+"auth.passwordChange.required.title" = "Time for a new password";
+"auth.passwordChange.required.message" = "To keep your account safe, we ask for a new password when you first sign in and every six months after that.";
+"auth.passwordChange.voluntary.message" = "Enter your current password, then pick a new one. You’ll stay signed in here.";
 "auth.field.currentPassword" = "Current password";
+"auth.field.currentPassword.placeholder" = "Your current password";
 "auth.field.newPassword" = "New password";
+"auth.field.newPassword.placeholder" = "Try a short phrase";
 /* %lld is the minimum number of characters. */
-"auth.field.newPassword.hint" = "At least %lld characters. A short phrase is easier to remember.";
+"auth.field.newPassword.hint" = "At least %lld characters. A short phrase is easy to remember.";
 "auth.field.confirmPassword" = "Confirm new password";
+"auth.field.confirmPassword.placeholder" = "Type it once more";
 "auth.passwordChange.save" = "Update password";
-"auth.passwordChange.saving" = "Updating your password…";
-"auth.passwordChange.failed.title" = "Password not updated";
-"auth.passwordChange.done.message" = "Password updated. Use your new password the next time you sign in.";
+"auth.passwordChange.saving" = "Saving your new password…";
+"auth.passwordChange.failed.title" = "Your password wasn’t changed";
+"auth.passwordChange.done.title" = "You’re all set";
+"auth.passwordChange.done.message" = "Use your new password next time you sign in.";
 "auth.signOut" = "Sign out";
 
 /* Onboarding required */
-"auth.onboarding.title" = "Finish setting up your account";
-"auth.onboarding.message" = "Your Waivera account isn't fully set up yet. Complete the setup from the invitation your organization sent you, then come back here.";
-"auth.onboarding.help" = "If you can't find the invitation, ask your administrator to send it again.";
-"auth.onboarding.check" = "I've finished, check again";
-"auth.onboarding.stillPending" = "Your account still needs setup. It can take a few minutes after you finish.";
+"auth.onboarding.title" = "You’re almost there";
+"auth.onboarding.message" = "Your account needs a few more details. Finish setting it up from the invitation your organization sent you, then come back here.";
+"auth.onboarding.help" = "Can’t find the invitation? Ask your administrator to send it again.";
+"auth.onboarding.check" = "I’m done, check again";
+"auth.onboarding.checking" = "Checking…";
+"auth.onboarding.stillPending" = "Not quite yet. It can take a few minutes after you finish setup.";
 
 /* Bootstrap failed: Firebase is signed in, the backend login failed (01 §2). */
-"auth.bootstrapFailed.title" = "We couldn't reach Waivera";
-"auth.bootstrapFailed.offline.title" = "You're offline";
-"auth.bootstrapFailed.help" = "You're signed in. We just need to finish loading your account.";
+"auth.bootstrapFailed.title" = "We couldn’t reach Waivera";
+"auth.bootstrapFailed.offline.title" = "You’re offline";
+"auth.bootstrapFailed.offline.message" = "Check your connection and try again.";
+"auth.bootstrapFailed.stillFailing.title" = "Still can’t reach Waivera";
+/* %@ is the time of the last attempt, such as 10:31 AM. */
+"auth.bootstrapFailed.stillFailing.message" = "Last tried at %@. Your place is saved, so try again in a moment.";
+"auth.bootstrapFailed.help" = "You’re signed in. We just need to finish loading your account.";
 "auth.tryAgain" = "Try again";
+"auth.retrying" = "Trying again…";
 
-/* Notification primer */
+/* Notification primer: the five categories grouped into the three kinds people recognise. */
 "auth.primer.title" = "Stay in the loop";
-"auth.primer.message" = "Turn on notifications so you know when something needs you. Here's what each kind is for.";
-"auth.primer.messages.title" = "Direct messages and mentions";
-"auth.primer.messages.body" = "When someone messages you or mentions you. These can make a sound.";
+"auth.primer.message" = "Turn on notifications so you never miss something that needs you. Here’s what you’ll get.";
+"auth.primer.messages.title" = "Messages and mentions";
+"auth.primer.messages.body" = "Direct messages and mentions can make a sound. Group chats arrive quietly.";
+"auth.primer.schedule.title" = "Your schedule";
+"auth.primer.schedule.body" = "A heads-up before shifts and events start, and when one is added, moved or cancelled.";
+"auth.primer.digest.title" = "Digest and announcements";
+"auth.primer.digest.body" = "Team celebrations and other low-key updates, delivered quietly.";
+/* Per-category copy, kept for Settings and the category ids. */
 "auth.primer.group.title" = "Group chat activity";
 "auth.primer.group.body" = "New messages in your group chats and channels.";
 "auth.primer.reminders.title" = "Schedule reminders";
-"auth.primer.reminders.body" = "Shifts and events that are about to start. These can make a sound.";
+"auth.primer.reminders.body" = "Shifts and events that are about to start.";
 "auth.primer.changes.title" = "Schedule changes";
 "auth.primer.changes.body" = "Events that were added, moved or cancelled.";
-"auth.primer.digest.title" = "Digest and announcements";
-"auth.primer.digest.body" = "Milestones and other low-priority updates, delivered quietly.";
-"auth.primer.footnote" = "You can turn each kind on or off at any time in Settings.";
+"auth.primer.footnote" = "You can change any of these anytime in Settings.";
 "auth.primer.enable" = "Turn on notifications";
+"auth.primer.requesting" = "Asking iOS…";
 "auth.primer.notNow" = "Not now";
-"auth.primer.sample.sender" = "Alex Rivera";
-"auth.primer.sample.body" = "Can you cover Friday's 2 PM visit?";
-"auth.primer.sample.accessibility" = "Example notification: Alex Rivera asks, can you cover Friday's 2 PM visit?";
+/* Example notification on the primer. Sample copy, shown as an example only. */
+"auth.primer.sample.app" = "Waivera · now";
+"auth.primer.sample.sender" = "Priya Raman";
+"auth.primer.sample.body" = "Can you cover Friday?";
+"auth.primer.sample.accessibility" = "Example notification: Priya Raman, Can you cover Friday?";

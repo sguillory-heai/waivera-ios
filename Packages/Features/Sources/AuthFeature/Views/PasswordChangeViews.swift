@@ -38,7 +38,7 @@
         }
     }
 
-    /// The voluntary password change from Settings → Account. Push it inside a
+    /// The voluntary password change from Settings → Security. Push it inside a
     /// `NavigationStack`; `onDone` runs once the new password is saved (the screen shows the
     /// confirmation first). Needs a route in the app (docs/requests/auth-feature.md, request 3).
     public struct PasswordChangeView: View {
@@ -100,24 +100,39 @@
         let onSignOut: (() -> Void)?
         let onDone: () -> Void
         @FocusState private var focus: Field?
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
         var body: some View {
-            AuthScaffold {
-                header
-                notices
-                AuthCard {
+            AuthScaffold(showsHero: model.mode == .required, compactHero: focus != nil) {
+                if model.phase == .done {
+                    // The form gives way to a success block (Android `PasswordChangeDone`).
+                    EmptyStateView(
+                        illustration: .caughtUp,
+                        title: AuthStrings.passwordChangeDoneTitle,
+                        message: AuthStrings.passwordChangeDoneMessage
+                    )
+                    .accessibilityIdentifier("passwordChange.done")
+                    .transition(Motion.enterAfterExit(reduceMotion: reduceMotion))
+                } else {
+                    header
+                    notices
                     fields
-                    WaiveraButton(AuthStrings.passwordChangeSave, isLoading: model.isSaving, action: { submit() })
-                        .disabled(!model.canSubmit && !model.isSaving)
-                        .accessibilityIdentifier("passwordChange.submit")
-                    if model.isSaving {
-                        AuthProgressCaption(text: AuthStrings.passwordChangeSaving)
-                    }
                 }
-                if let onSignOut {
-                    WaiveraButton(AuthStrings.signOut, variant: .secondary, action: onSignOut)
-                        .disabled(model.isSaving)
-                        .accessibilityIdentifier("passwordChange.signOut")
+            } actions: {
+                if model.phase != .done {
+                    WaiveraButton(
+                        AuthStrings.passwordChangeSave,
+                        isLoading: model.isSaving,
+                        loadingTitle: AuthStrings.passwordChangeSaving,
+                        action: { submit() }
+                    )
+                    // Enabled with empty fields so a tap explains what is missing.
+                    .disabled(!model.fieldsEnabled && !model.isSaving)
+                    .accessibilityIdentifier("passwordChange.submit")
+                    if let onSignOut {
+                        GateSignOut(isEnabled: !model.isSaving, action: onSignOut)
+                            .accessibilityIdentifier("passwordChange.signOut")
+                    }
                 }
             }
             .waiveraAnimation(.layout, value: model.phase)
@@ -129,8 +144,9 @@
             }
             .task(id: model.phase) {
                 // Voluntary: leave the confirmation up briefly so it is seen (and announced).
-                guard model.phase == .done, model.mode == .voluntary else { return }
+                guard model.phase == .done else { return }
                 AccessibilityNotification.Announcement(AuthStrings.passwordChangeDoneMessage).post()
+                guard model.mode == .voluntary else { return }
                 try? await Task.sleep(for: .seconds(FeedbackTiming.confirmationPill))
                 guard !Task.isCancelled else { return }
                 onDone()
@@ -141,13 +157,13 @@
             switch model.mode {
             case .required:
                 AuthHeader(
-                    systemImage: "key.fill",
+                    systemImage: "lock.fill",
                     title: AuthStrings.passwordChangeRequiredTitle,
                     message: AuthStrings.passwordChangeRequiredMessage
                 )
             case .voluntary:
                 Text(AuthStrings.passwordChangeVoluntaryMessage)
-                    .font(WaiveraFont.body)
+                    .waiveraTextStyle(.bodyLarge)
                     .foregroundStyle(Palette.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -157,32 +173,40 @@
             if let error = model.error {
                 BannerView(
                     .error,
-                    message: AuthStrings.passwordChangeFailedTitle + ". " + AuthStrings.failure(error),
+                    title: AuthStrings.passwordChangeFailedTitle,
+                    message: AuthStrings.failure(error),
                     onDismiss: { model.dismissError() }
                 )
                 .authNoticeTransition()
                 .accessibilityIdentifier("passwordChange.error")
-            }
-            if model.phase == .done {
-                BannerView(.info, message: AuthStrings.passwordChangeDoneMessage)
-                    .authNoticeTransition()
-                    .accessibilityIdentifier("passwordChange.done")
             }
         }
 
         /// Current, new and confirm. Return walks the fields; Return on the last one submits.
         /// `.newPassword` lets AutoFill suggest a strong password and save it for the username.
         @ViewBuilder private var fields: some View {
-            field(.current, label: AuthStrings.currentPasswordLabel, issue: model.issues.current, type: .password)
-                .submitLabel(.next)
-                .onSubmit { focus = .new }
+            field(
+                .current,
+                label: AuthStrings.currentPasswordLabel,
+                placeholder: AuthStrings.currentPasswordPlaceholder,
+                issue: model.issues.current,
+                type: .password
+            )
+            .submitLabel(.next)
+            .onSubmit { focus = .new }
             VStack(alignment: .leading, spacing: Spacing.extraSmall) {
-                field(.new, label: AuthStrings.newPasswordLabel, issue: model.issues.new, type: .newPassword)
-                    .submitLabel(.next)
-                    .onSubmit { focus = .confirmation }
+                field(
+                    .new,
+                    label: AuthStrings.newPasswordLabel,
+                    placeholder: AuthStrings.newPasswordPlaceholder,
+                    issue: model.issues.new,
+                    type: .newPassword
+                )
+                .submitLabel(.next)
+                .onSubmit { focus = .confirmation }
                 if model.showsNewPasswordHint {
                     Text(AuthStrings.newPasswordHint)
-                        .font(WaiveraFont.caption)
+                        .waiveraTextStyle(.bodySmall)
                         .foregroundStyle(Palette.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -190,6 +214,7 @@
             field(
                 .confirmation,
                 label: AuthStrings.confirmPasswordLabel,
+                placeholder: AuthStrings.confirmPasswordPlaceholder,
                 issue: model.issues.confirmation,
                 type: .newPassword
             )
@@ -200,6 +225,7 @@
         private func field(
             _ field: Field,
             label: String,
+            placeholder: String,
             issue: AuthFieldIssue?,
             type: UITextContentType
         ) -> some View {
@@ -208,9 +234,11 @@
                 text: Binding(get: { value(of: field) }, set: { model.set(field, to: $0) }),
                 focus: $focus,
                 field: field,
+                placeholder: placeholder,
                 error: issue.map(AuthStrings.issue),
                 isSecure: true,
                 contentType: type,
+                systemImage: "lock",
                 accessibilityIdentifier: "passwordChange.\(field)"
             )
             .disabled(!model.fieldsEnabled)
@@ -264,7 +292,7 @@
                 PasswordChangeRequiredView(model: $0) {}
             }
         }
-        #Preview("AX XXXL, offline") {
+        #Preview("AX5, offline") {
             FixturePreview {
                 await AuthFixtures.passwordChange(.offline)
             } content: {

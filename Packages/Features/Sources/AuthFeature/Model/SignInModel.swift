@@ -24,6 +24,9 @@ public final class SignInModel {
         case failed(WaiveraError)
         /// A reset link was requested for this address (shown back to the person).
         case resetSent(email: String)
+        /// A Terms of Service or Privacy Policy link found nothing that could open it. Calm, with
+        /// no haptic: the person did nothing wrong and their typing is untouched.
+        case linkUnavailable
     }
 
     public private(set) var email = ""
@@ -59,7 +62,8 @@ public final class SignInModel {
     /// "Forgot password?" needs a configured session (Firebase sends the email).
     public var canResetPassword: Bool { session != nil }
     public var fieldsEnabled: Bool { isConfigured && phase == .idle && !isConnecting }
-    /// The button stays disabled until both fields have something in them (01 §3).
+    /// Both fields have something in them (01 §3). The button itself stays enabled while
+    /// `fieldsEnabled`, so a tap with an empty field explains what is missing.
     public var canSubmit: Bool {
         fieldsEnabled && !AuthValidation.normalizedEmail(email).isEmpty && !password.isEmpty
     }
@@ -131,10 +135,16 @@ public final class SignInModel {
         notice = nil
     }
 
+    /// Nothing on the device could open a legal page.
+    public func linkUnavailable() {
+        notice = .linkUnavailable
+    }
+
     // MARK: Actions
 
-    /// Return on the password field and the button both land here. With an empty field the
-    /// field errors explain what is missing, even though the button itself stays disabled.
+    /// Return on the password field and the button both land here. The button stays enabled with
+    /// empty fields, so a tap explains what is missing (field errors) instead of a dimmed button
+    /// that says nothing (as on Android).
     public func submit() async {
         guard fieldsEnabled, let session else { return }
         let emailIssue = AuthValidation.emailIssue(email)
