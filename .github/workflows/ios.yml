@@ -84,9 +84,9 @@ jobs:
   # compiler between two runs of the same commit; 26.6 is the image default since July 2026.
   app-macos:
     runs-on: macos-26
-    timeout-minutes: 60
+    # Build about 10 minutes, tests about 35 when nothing hangs; the step limits add up to 95.
+    timeout-minutes: 110
     env:
-      RESULT: TestResults.xcresult
       DERIVED: DerivedData
     steps:
       - uses: actions/checkout@v5
@@ -123,6 +123,8 @@ jobs:
           # pinned with exactVersion in project.yml, so the manifests identify the resolution.
           key: spm-macos-${{ hashFiles('project.yml', 'Packages/*/Package.swift', '**/Package.resolved') }}
           restore-keys: spm-macos-
+      # The small phone is an iPhone SE (created when the image has the type but no device), the
+      # large one a Pro Max. Both names are printed so the screenshots can be traced to a device.
       - name: Pick simulators
         id: sim
         continue-on-error: true
@@ -132,15 +134,25 @@ jobs:
               [.devices | to_entries[] | select(.key | contains("iOS")) | .value[]
                | select(.name | test($re))] | last | .udid // empty'
           }
+          runtime=$(xcrun simctl list runtimes available -j \
+            | jq -r '[.runtimes[] | select(.platform == "iOS")] | last | .identifier // empty')
           small=$(pick '^iPhone SE')
+          if [ -z "$small" ] && [ -n "$runtime" ]; then
+            small=$(xcrun simctl create "iPhone SE (3rd generation)" \
+              com.apple.CoreSimulator.SimDeviceType.iPhone-SE-3rd-generation "$runtime" 2>/dev/null || true)
+          fi
           large=$(pick 'Pro Max$')
           [ -n "$small" ] || small=$(pick '^iPhone')
           [ -n "$large" ] || large=$(pick '^iPhone')
           test -n "$small" && test -n "$large"
+          xcrun simctl list devices | grep -E "$small|$large"
           echo "small=$small" >> "$GITHUB_OUTPUT"
           echo "large=$large" >> "$GITHUB_OUTPUT"
+          # Boot the small phone now so its boot time is not charged to the first test.
+          xcrun simctl boot "$small" || true
+          xcrun simctl bootstatus "$small" -b
       # One build for both destinations, then tests run from the built products (no rebuild).
-      # Keep building past errors so one run reports every failing module.
+      # Keep building past errors so one run reports every module.
       - name: Build for testing
         id: build
         continue-on-error: true
@@ -155,42 +167,104 @@ jobs:
           grep -E "error:|warning:" build.log | sort -u | head -300 || true
           tail -30 build.log
           exit $status
-      # Package tests already ran on Linux; macOS runs only what needs a simulator.
-      - name: Shell tests, UI tests, screenshot tour and component snapshots (SE + Pro Max)
-        id: test
+      # Package tests already ran on Linux; macOS runs only what needs a simulator. Tests run one
+      # device at a time, without parallel clones (the runner has 3 cores), each step with its
+      # own result bundle so a stuck step cannot take the others' results with it. xcodebuild's
+      # own per-test time limit fires before the step's, so the bundle is always closed cleanly.
+      # Every test's pass/fail line streams to this log as it finishes.
+      #
+      # Component and screen snapshots are drawn at a fixed iPhone SE width and @2x, so they run
+      # on the small phone only. A missing reference is recorded and fails that test once (first
+      # recording); the recorded PNGs are uploaded below.
+      - name: Shell tests and snapshots (small phone)
+        id: unit
         if: steps.build.outcome == 'success'
         continue-on-error: true
-        timeout-minutes: 35
+        timeout-minutes: 20
         run: |
-          status=0
+          set +e
           xcodebuild test-without-building \
             -project Waivera.xcodeproj -scheme Waivera \
             -destination "id=${{ steps.sim.outputs.small }}" \
+            -derivedDataPath "$DERIVED" \
+            -only-testing:WaiveraTests -only-testing:WaiveraSnapshotTests \
+            -parallel-testing-enabled NO \
+            -test-timeouts-enabled YES \
+            -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 300 \
+            -resultBundlePath Unit.xcresult \
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tee unit.log \
+            | grep --line-buffered -iE "test case .*(passed|failed|skipped)|recorded|error:|\*\* TEST"
+          exit ${PIPESTATUS[0]}
+      - name: UI tests, screenshot tour and accessibility audits (small phone)
+        id: ui_small
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 45
+        run: |
+          set +e
+          xcodebuild test-without-building \
+            -project Waivera.xcodeproj -scheme Waivera \
+            -destination "id=${{ steps.sim.outputs.small }}" \
+            -derivedDataPath "$DERIVED" \
+            -only-testing:WaiveraUITests \
+            -parallel-testing-enabled NO \
+            -test-timeouts-enabled YES \
+            -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 900 \
+            -resultBundlePath UISmall.xcresult \
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tee ui-small.log \
+            | grep --line-buffered -iE "test case .*(passed|failed|skipped)|error:|\*\* TEST"
+          exit ${PIPESTATUS[0]}
+      # Screenshots only: TEST_RUNNER_ variables reach the test runner without the prefix.
+      - name: Screenshot tour (large phone)
+        id: ui_large
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 30
+        env:
+          TEST_RUNNER_WAIVERA_AUDIT: "0"
+        run: |
+          set +e
+          xcrun simctl shutdown "${{ steps.sim.outputs.small }}" || true
+          xcodebuild test-without-building \
+            -project Waivera.xcodeproj -scheme Waivera \
             -destination "id=${{ steps.sim.outputs.large }}" \
             -derivedDataPath "$DERIVED" \
-            -only-testing:WaiveraTests -only-testing:WaiveraUITests -only-testing:WaiveraSnapshotTests \
-            -parallel-testing-enabled YES \
-            -resultBundlePath "$RESULT" \
-            CODE_SIGNING_ALLOWED=NO > test.log 2>&1 || status=$?
-          grep -E "error:|failed|Test Suite .* (passed|failed)|Executed" test.log | head -300 || true
-          exit $status
+            -only-testing:WaiveraUITests/ScreenshotTourLight \
+            -only-testing:WaiveraUITests/ScreenshotTourDark \
+            -only-testing:WaiveraUITests/ScreenshotTourAccessibilityXXXL \
+            -parallel-testing-enabled NO \
+            -test-timeouts-enabled YES \
+            -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 900 \
+            -resultBundlePath UILarge.xcresult \
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tee ui-large.log \
+            | grep --line-buffered -iE "test case .*(passed|failed|skipped)|error:|\*\* TEST"
+          exit ${PIPESTATUS[0]}
       - name: Export screenshots to PNG
         id: export
         if: always()
         continue-on-error: true
         run: |
           mkdir -p screenshots
-          if [ -d "$RESULT" ]; then
-            xcrun xcresulttool export attachments --path "$RESULT" --output-path screenshots
+          exported=0
+          for bundle in Unit UISmall UILarge; do
+            if [ ! -f "$bundle.xcresult/Info.plist" ]; then
+              echo "$bundle.xcresult is missing or was not closed; nothing to export"
+              continue
+            fi
+            out="screenshots/$bundle"
+            mkdir -p "$out"
+            xcrun xcresulttool export attachments --path "$bundle.xcresult" --output-path "$out" || continue
+            exported=1
             # Rename exported files to their attachment names (<route>__<device>-<variant>).
-            if [ -f screenshots/manifest.json ]; then
+            if [ -f "$out/manifest.json" ]; then
               jq -r '.[] | .attachments[] | [.exportedFileName, .suggestedHumanReadableName] | @tsv' \
-                screenshots/manifest.json | while IFS=$'\t' read -r file name; do
-                  [ -f "screenshots/$file" ] && mv "screenshots/$file" "screenshots/${name}" || true
+                "$out/manifest.json" | while IFS=$'\t' read -r file name; do
+                  [ -f "$out/$file" ] && mv "$out/$file" "$out/${name}" || true
                 done
             fi
-          fi
-          ls screenshots | head -50
+            echo "$bundle: $(find "$out" -name '*.png' | wc -l | tr -d ' ') PNGs"
+          done
+          test "$exported" = 1
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v5
@@ -211,7 +285,7 @@ jobs:
         with:
           name: test-results
           path: |
-            ${{ env.RESULT }}
+            *.xcresult
             *.log
           if-no-files-found: warn
       - name: Fail if any check failed
@@ -223,7 +297,9 @@ jobs:
           [ "${{ steps.xcodegen.outcome }}" = success ] || failed="$failed xcodegen"
           [ "${{ steps.sim.outcome }}" = success ] || failed="$failed simulators"
           [ "${{ steps.build.outcome }}" = success ] || failed="$failed build"
-          [ "${{ steps.test.outcome }}" = success ] || failed="$failed tests"
+          [ "${{ steps.unit.outcome }}" = success ] || failed="$failed shell-tests-and-snapshots"
+          [ "${{ steps.ui_small.outcome }}" = success ] || failed="$failed ui-tests-small-phone"
+          [ "${{ steps.ui_large.outcome }}" = success ] || failed="$failed screenshot-tour-large-phone"
           [ "${{ steps.export.outcome }}" = success ] || failed="$failed screenshot-export"
           if [ -n "$failed" ]; then echo "Failed checks:$failed"; exit 1; fi
           echo "All checks passed"
