@@ -96,14 +96,15 @@
                     Button {
                         actions.openPerson(authorId)
                     } label: {
+                        // The column stays one avatar wide, so a run of bubbles lines up; only
+                        // the touch area grows to the 44pt target, outside the layout.
                         ChatAvatar(
                             userId: authorId,
                             name: name,
                             size: ControlSize.avatarSmall,
                             loader: actions.loadAvatar
                         )
-                        .frame(minWidth: ControlSize.minHitTarget, minHeight: ControlSize.minHitTarget, alignment: .top)
-                        .contentShape(Rectangle())
+                        .contentShape(Rectangle().inset(by: -ChatMetrics.avatarHitOutset))
                     }
                     .buttonStyle(.press(.compact))
                     .accessibilityLabel(ConversationStrings.format("open.profile", name))
@@ -112,6 +113,7 @@
                         .accessibilityHidden(true)
                 }
             }
+            .frame(width: ControlSize.avatarSmall, alignment: .topLeading)
             .padding(.top, row.groupedWithPrevious ? 0 : ChatMetrics.avatarTopOffset)
         }
     }

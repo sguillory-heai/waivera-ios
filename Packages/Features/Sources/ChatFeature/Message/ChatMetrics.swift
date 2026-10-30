@@ -9,6 +9,8 @@ enum ChatMetrics {
     static let bubbleMinWidth: CGFloat = 54
     static let bubbleMaxWidthFraction: CGFloat = 0.82
     static let avatarTopOffset: CGFloat = 18
+    /// How far an author avatar's touch area reaches past its 32pt square, to make 44pt.
+    static let avatarHitOutset: CGFloat = (ControlSize.minHitTarget - ControlSize.avatarSmall) / 2
     static let imageWidth: CGFloat = 250
     static let imageHeight: CGFloat = 190
     static let imageRadius: CGFloat = 13
