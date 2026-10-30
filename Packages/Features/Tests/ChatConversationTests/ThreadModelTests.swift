@@ -132,14 +132,12 @@ struct ThreadModelTests {
         #expect(await eventually { model.state.content == .ready && model.state.canWrite == true })
         let root = try #require(model.state.root?.message)
         model.openActions(root)
-        guard case .actions(let sheet) = model.interactions.sheet else {
-            Issue.record("No action sheet")
-            return
-        }
-        #expect(sheet.canReply)
+        let focus = try #require(model.interactions.focus)
+        #expect(focus.canReply)
         let before = model.state.focusRequest
         model.replyFromSheet()
         #expect(model.state.focusRequest == before + 1)
+        #expect(model.interactions.focus == nil)
         #expect(model.interactions.sheet == nil)
         task.cancel()
     }

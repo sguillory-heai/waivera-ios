@@ -87,6 +87,7 @@ extension ConversationModel {
     }
 
     func startEdit(_ message: ChatMessage) {
+        interactions.closeFocus()
         interactions.dismissSheet()
         state.editingMessageID = message.id
         state.stagedImage = nil
@@ -111,8 +112,9 @@ extension ConversationModel {
         )
     }
 
-    /// Reply from the action sheet or the thread chip: replies live in the thread (04 §1).
+    /// Reply from the focus overlay or the thread chip: replies live in the thread (04 §1).
     func openThread(_ message: ChatMessage) {
+        interactions.closeFocus()
         interactions.dismissSheet()
         onOpenThread(message.threadRootId ?? message.id, nil)
     }

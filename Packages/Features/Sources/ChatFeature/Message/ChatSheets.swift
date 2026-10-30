@@ -12,11 +12,13 @@
         var names: [String: String]
         var onReply: @MainActor (ChatMessage) -> Void
         var onEdit: @MainActor (ChatMessage) -> Void
+        /// Where the pressed bubble was, so the focus overlay lifts it in place.
+        var anchor: @MainActor (_ messageId: Int) -> CGRect? = { _ in nil }
     }
 
     extension View {
-        /// The action, reaction, file, image and delete sheets plus the toast, shared by the
-        /// conversation and the thread.
+        /// The long-press focus overlay, the reaction, file, image and delete sheets plus the
+        /// toast, shared by the conversation and the thread.
         func chatSheets(_ interactions: MessageInteractions, context: ChatSheetContext) -> some View {
             modifier(ChatSheetsModifier(interactions: interactions, context: context))
         }
@@ -26,8 +28,26 @@
         let interactions: MessageInteractions
         let context: ChatSheetContext
 
+        /// The overlay as shown. It follows `interactions.focus` without the cover's slide, so
+        /// the overlay's own lift and fade are the only motion, and its close is immediate.
+        @State private var shownFocus: MessageActionsModel?
+
         func body(content: Content) -> some View {
             content
+                .background {
+                    Color.clear
+                        .fullScreenCover(item: focusBinding) { model in
+                            MessageFocusOverlay(
+                                model: model,
+                                anchor: context.anchor(model.message.id),
+                                actions: focusActions(model)
+                            )
+                            .presentationBackground(.clear)
+                        }
+                }
+                .onChange(of: interactions.focus) { _, focus in
+                    withTransaction(Self.immediate) { shownFocus = focus }
+                }
                 .sheet(item: sheetBinding) { sheet in
                     sheetContent(sheet)
                         .presentationDragIndicator(.visible)
@@ -54,6 +74,41 @@
                 .waiveraAnimation(.state, value: interactions.toast)
         }
 
+        private static var immediate: Transaction {
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            return transaction
+        }
+
+        private var focusBinding: Binding<MessageActionsModel?> {
+            Binding(
+                get: { shownFocus },
+                set: { value in
+                    guard value == nil else { return }
+                    withTransaction(Self.immediate) {
+                        shownFocus = nil
+                        interactions.closeFocus()
+                    }
+                }
+            )
+        }
+
+        private func focusActions(_ model: MessageActionsModel) -> MessageFocusActions {
+            let message = model.message
+            let interactions = interactions
+            let context = context
+            return MessageFocusActions(
+                onDismiss: { interactions.closeFocus() },
+                onReact: { emoji in Task { await interactions.react(messageId: message.id, emoji: emoji) } },
+                onReply: { context.onReply(message) },
+                onCopy: { interactions.copy(message) },
+                onCopiedShown: { interactions.finishCopy(messageId: message.id) },
+                onEdit: { context.onEdit(message) },
+                onBookmark: { Task { await interactions.toggleBookmark(messageId: message.id) } },
+                onDelete: { Task { await interactions.requestDelete(messageId: message.id) } }
+            )
+        }
+
         private var sheetBinding: Binding<ChatSheet?> {
             Binding(
                 get: {
@@ -77,8 +132,6 @@
         @ViewBuilder
         private func sheetContent(_ sheet: ChatSheet) -> some View {
             switch sheet {
-            case .actions(let model):
-                actionSheet(model).presentationDetents([.medium, .large])
             case .reactions(let messageId, let emoji):
                 ReactionDetailsSheet(
                     reactions: context.message(messageId)?.reactions ?? [],
@@ -110,20 +163,6 @@
             case .imagePreview:
                 EmptyView()
             }
-        }
-
-        private func actionSheet(_ model: MessageActionsModel) -> some View {
-            let message = model.message
-            return MessageActionSheet(
-                model: model,
-                onReact: { emoji in Task { await interactions.react(messageId: message.id, emoji: emoji) } },
-                onCopy: { interactions.copy(message) },
-                onReply: { context.onReply(message) },
-                onEdit: { context.onEdit(message) },
-                onBookmark: { Task { await interactions.toggleBookmark(messageId: message.id) } },
-                onDelete: { interactions.requestDelete(messageId: message.id) },
-                onClose: { interactions.dismissSheet() }
-            )
         }
 
         private func prepare(_ messageId: Int, _ purpose: PreparedFile.Purpose) {

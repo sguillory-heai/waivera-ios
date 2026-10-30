@@ -33,6 +33,15 @@ enum RichMentionAttribute: AttributedStringKey {
 /// compose, a safe link keeps its marks and adds `link` (the view colours it with the accent),
 /// mentions read `@label`, hard breaks are newlines.
 enum RichTextAttributes {
+    /// U+2011, a hyphen that never breaks a line.
+    static let nonBreakingHyphen: Character = "\u{2011}"
+
+    /// A mention's label with non-breaking hyphens, so "@Maria-Fernanda" never splits over two
+    /// lines (wave 28 M2). Speech and copy use the message's plain text, which keeps "-".
+    static func mentionRun(_ label: String) -> String {
+        String(label.map { $0 == "-" ? nonBreakingHyphen : $0 })
+    }
+
     static func attributed(_ inlines: [RichInline]) -> AttributedString {
         var result = AttributedString()
         for inline in inlines {
@@ -45,7 +54,7 @@ enum RichTextAttributes {
             case .mention(let label):
                 var container = AttributeContainer()
                 container[RichMentionAttribute.self] = label
-                result += AttributedString("@" + label, attributes: container)
+                result += AttributedString("@" + mentionRun(label), attributes: container)
             case .hardBreak:
                 result += AttributedString("\n")
             }

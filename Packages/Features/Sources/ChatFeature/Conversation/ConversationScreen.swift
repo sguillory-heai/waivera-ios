@@ -8,6 +8,9 @@
         @Bindable var model: ConversationModel
         var avatars: (any AvatarRepository)?
         var onOpenPerson: (_ userID: String) -> Void = { _ in }
+        var onOpenMembers: ((_ conversationID: Int) -> Void)?
+
+        @State private var anchors = FocusAnchors()
 
         private var state: ConversationState { model.state }
 
@@ -16,8 +19,13 @@
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Palette.background)
                 .safeAreaInset(edge: .top, spacing: 0) {
-                    if state.call.isLive {
-                        CallBanner(isOpening: state.call.isOpening) { Task { await model.openCall() } }
+                    VStack(spacing: 0) {
+                        if state.memberCount != nil, let subtitle = state.subtitle {
+                            ConnectionStrip(subtitle: subtitle)
+                        }
+                        if state.call.isLive {
+                            CallBanner(isOpening: state.call.isOpening) { Task { await model.openCall() } }
+                        }
                     }
                 }
                 .safeAreaInset(edge: .bottom, spacing: 0) { bottomBar }
@@ -130,7 +138,11 @@
             ToolbarItem(placement: .principal) {
                 ChatHeaderTitle(
                     title: ConversationStrings.title(state.title),
-                    subtitle: state.subtitle.map(ConversationStrings.subtitle)
+                    groupName: groupName,
+                    groupOthers: groupOthers,
+                    subtitle: state.memberCount == nil ? state.subtitle.map(ConversationStrings.subtitle) : nil,
+                    memberCount: state.memberCount,
+                    onOpenMembers: onOpenMembers.map { open in { open(model.conversationID) } }
                 )
             }
             ToolbarItem(placement: .topBarTrailing) {
@@ -154,6 +166,16 @@
             }
         }
 
+        private var groupName: String? {
+            guard case .group(let first, _) = state.title else { return nil }
+            return ConversationStrings.groupFirstName(first)
+        }
+
+        private var groupOthers: Int {
+            guard case .group(_, let others) = state.title else { return 0 }
+            return others
+        }
+
         private func rowContext(now: Date) -> RowContext {
             RowContext(
                 now: now,
@@ -170,7 +192,9 @@
             let avatars = avatars
             var actions = MessageRowActions()
             actions.toggleTimestamp = { model.toggleTimestamp($0) }
+            let anchors = anchors
             actions.longPress = { model.openActions($0) }
+            actions.recordAnchor = { anchors.record($0, bounds: $1) }
             if state.canWrite == true {
                 actions.react = { id, emoji in Task { await interactions.react(messageId: id, emoji: emoji) } }
             }
@@ -195,31 +219,80 @@
                 viewerId: state.viewerId,
                 names: state.names,
                 onReply: { model.openThread($0) },
-                onEdit: { model.startEdit($0) }
+                onEdit: { model.startEdit($0) },
+                anchor: { [anchors] in anchors.bounds(of: $0) }
             )
         }
     }
 
-    /// The header title with the connection state under it (03 §1).
+    /// The header title (spec §6.2, §9.2): the chat's name on one line that shrinks a little and
+    /// then ends in "…", or a group's "Name & 4 others" where only the name is cut. Under it a
+    /// group has its "N members" line, a button with a chevron to the members screen; other chats
+    /// show the connection state there, when there is one.
     struct ChatHeaderTitle: View {
         let title: String
-        let subtitle: String?
+        var groupName: String?
+        var groupOthers = 0
+        var subtitle: String?
+        var memberCount: Int?
+        var onOpenMembers: (() -> Void)?
 
         var body: some View {
-            VStack(spacing: 0) {
-                Text(title)
-                    .font(WaiveraFont.bodyEmphasis)
-                    .foregroundStyle(Palette.text)
-                    .lineLimit(1)
-                if let subtitle {
-                    Text(subtitle)
-                        .font(WaiveraFont.caption)
+            if let memberCount, let onOpenMembers {
+                Button(action: onOpenMembers) {
+                    VStack(spacing: 0) {
+                        titleLine
+                        HStack(spacing: Spacing.xxSmall) {
+                            Text(ConversationStrings.members(memberCount))
+                                .waiveraTextStyle(.labelMedium)
+                                .lineLimit(1)
+                            Image(systemName: "chevron.right")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: ControlSize.iconSmall / 2, height: ControlSize.iconSmall / 2)
+                                .accessibilityHidden(true)
+                        }
                         .foregroundStyle(Palette.textSecondary)
-                        .lineLimit(1)
+                    }
+                    .frame(minHeight: ControlSize.minHitTarget)
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.press(.compact))
+                .accessibilityElement(children: .combine)
+                .accessibilityHint(ConversationStrings.text("members.show"))
+                .accessibilityAddTraits(.isHeader)
+            } else {
+                VStack(spacing: 0) {
+                    titleLine
+                    if let line = subtitle ?? memberCount.map(ConversationStrings.members) {
+                        OneLineName(line, style: .labelMedium)
+                            .foregroundStyle(Palette.textSecondary)
+                    }
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isHeader)
             }
-            .accessibilityElement(children: .combine)
-            .accessibilityAddTraits(.isHeader)
+        }
+
+        @ViewBuilder private var titleLine: some View {
+            if let groupName {
+                ShortenedNameText(groupTitle: title, firstName: groupName, others: groupOthers, style: .titleSmall)
+                    .foregroundStyle(Palette.text)
+            } else {
+                OneLineName(title, style: .titleSmall)
+                    .foregroundStyle(Palette.text)
+            }
+        }
+    }
+
+    /// The connection state for a group, whose header line is its members button.
+    struct ConnectionStrip: View {
+        let subtitle: ConnectionSubtitle
+
+        var body: some View {
+            BannerView(subtitle == .offline ? .offline : .reconnecting, message: ConversationStrings.subtitle(subtitle))
+                .padding(.horizontal, Spacing.gutter)
+                .padding(.vertical, Spacing.extraSmall)
         }
     }
 

@@ -9,7 +9,7 @@
 
     @testable import ChatFeature
 
-    /// Snapshots the conversation and thread screens in every preview state, in light, dark and
+    /// Snapshots the conversation, thread and group members screens in every preview state, in light, dark and
     /// accessibility XXXL at iPhone SE size. References live in `__Snapshots__/` next to this file.
     @MainActor
     final class ConversationSnapshotTests: XCTestCase {
@@ -58,6 +58,18 @@
             for state in ThreadPreviewVariant.allCases {
                 let model = ChatPreviewData.threadModel(state)
                 assertVariants(ThreadScreen(model: model), named: "thread-\(state.rawValue)")
+            }
+        }
+
+        func testGroupMembersStates() {
+            let states = [
+                ("content", GroupMembersPreviewData.content),
+                ("search", GroupMembersPreviewData.long),
+                ("error", GroupMembersPreviewData.error),
+            ]
+            for (name, state) in states {
+                let model = GroupMembersModel(preview: state)
+                assertVariants(GroupMembersScreen(model: model), named: "members-\(name)")
             }
         }
     }

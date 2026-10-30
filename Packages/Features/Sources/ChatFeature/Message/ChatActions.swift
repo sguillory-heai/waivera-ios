@@ -3,7 +3,7 @@ import WaiveraAPI
 import WaiveraData
 import WaiveraDesign
 
-/// What the action sheet offers for one message (03 §14; threads get the same, 04 §1).
+/// What the focus overlay offers for one message (03 §14; threads get the same, 04 §1).
 struct MessageActionsModel: Hashable, Sendable {
     var message: ChatMessage
     var rich: RichDocument?
@@ -12,7 +12,14 @@ struct MessageActionsModel: Hashable, Sendable {
     var canEdit: Bool
     var canDelete: Bool
     var canCopy: Bool
+    /// The viewer wrote it: the lifted bubble keeps its own side and fill.
+    var isMine = false
     var copied = false
+}
+
+extension MessageActionsModel: Identifiable {
+    /// One overlay per message; a change such as "Copied" updates it in place.
+    var id: Int { message.id }
 }
 
 /// Which actions a long press offers (03 §14). Threads use the same rules (04 §1).
@@ -38,14 +45,15 @@ enum ChatActions {
             canReply: writable && allowsReply && !message.isThreadReply,
             canEdit: writable && mine && hasText,
             canDelete: writable && mine,
-            canCopy: hasText
+            canCopy: hasText,
+            isMine: mine
         )
     }
 }
 
-/// The one sheet open over a message list.
+/// The one sheet open over a message list. The message actions are not a sheet: they are the
+/// focus overlay (`MessageInteractions.focus`).
 enum ChatSheet: Hashable, Sendable, Identifiable {
-    case actions(MessageActionsModel)
     case reactions(messageId: Int, initialEmoji: String)
     case fileActions(messageId: Int, fileName: String, isBusy: Bool)
     case imagePreview(messageId: Int)
@@ -53,7 +61,6 @@ enum ChatSheet: Hashable, Sendable, Identifiable {
 
     var id: String {
         switch self {
-        case .actions(let model): "actions-\(model.message.id)"
         case .reactions(let messageId, _): "reactions-\(messageId)"
         case .fileActions(let messageId, _, _): "file-\(messageId)"
         case .imagePreview(let messageId): "image-\(messageId)"

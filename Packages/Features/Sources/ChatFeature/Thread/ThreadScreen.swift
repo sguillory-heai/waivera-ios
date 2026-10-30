@@ -9,6 +9,8 @@
         var avatars: (any AvatarRepository)?
         var onOpenPerson: (_ userID: String) -> Void = { _ in }
 
+        @State private var anchors = FocusAnchors()
+
         private var state: ThreadState { model.state }
 
         var body: some View {
@@ -19,10 +21,13 @@
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .principal) {
+                        // "Thread" and a one-line "In <channel>" (wave 28 M3); VoiceOver reads it whole.
                         ChatHeaderTitle(
                             title: ConversationStrings.text("thread.screen.title"),
                             subtitle: state.subtitle.map(ConversationStrings.subtitle)
-                                ?? state.conversationTitle.map(ConversationStrings.title)
+                                ?? state.conversationTitle.map {
+                                    ConversationStrings.threadIn(ConversationStrings.title($0))
+                                }
                         )
                     }
                 }
@@ -152,7 +157,9 @@
             let avatars = avatars
             var actions = MessageRowActions()
             actions.toggleTimestamp = { model.toggleTimestamp($0) }
+            let anchors = anchors
             actions.longPress = { model.openActions($0) }
+            actions.recordAnchor = { anchors.record($0, bounds: $1) }
             if state.canWrite == true {
                 actions.react = { id, emoji in Task { await interactions.react(messageId: id, emoji: emoji) } }
             }
@@ -179,7 +186,8 @@
                 viewerId: state.viewerId,
                 names: state.names,
                 onReply: { _ in model.replyFromSheet() },
-                onEdit: { model.startEdit($0) }
+                onEdit: { model.startEdit($0) },
+                anchor: { [anchors] in anchors.bounds(of: $0) }
             )
         }
     }

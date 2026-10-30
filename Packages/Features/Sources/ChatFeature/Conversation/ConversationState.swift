@@ -23,6 +23,9 @@ struct CallDisplay: Equatable, Sendable {
 /// any state directly.
 struct ConversationState: Equatable, Sendable {
     var title: ConversationTitle?
+    /// Everyone in a group, for the header's "N members" button; `nil` for direct messages,
+    /// channels and the bot, which have no members screen (spec §9.2).
+    var memberCount: Int?
     var subtitle: ConnectionSubtitle?
     var content: ConversationContent = .loading
     /// Oldest first; the list anchors to the bottom.

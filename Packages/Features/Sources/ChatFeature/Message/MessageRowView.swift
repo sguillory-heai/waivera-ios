@@ -4,14 +4,16 @@
     import WaiveraDesign
 
     /// One message: avatar and name for others, the bubble, reactions, the thread chip and the
-    /// tap-to-show timestamp (03 §4-6). A live arrival slides and fades in; history stays still.
+    /// time line (03 §4-6). A live arrival comes in per `BubbleArrival`: my own pops on the send
+    /// spring, someone else's glides up on the layout spring. History and Reduce Motion arrive
+    /// at rest.
     struct MessageRowView: View {
         let row: MessageRow
         let context: RowContext
         let actions: MessageRowActions
 
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
-        @State private var arrived = true
+        @State private var arrival: Double = 1
 
         private var message: ChatMessage { row.message }
         private var isHighlighted: Bool { context.highlightKey == row.key }
@@ -44,16 +46,36 @@
                     Rectangle().strokeBorder(Palette.accentBorderStrong, lineWidth: Spacing.hairline)
                 }
             }
-            .offset(y: arrived ? 0 : ChatMetrics.arrivalOffset)
-            .opacity(arrived ? 1 : ChatMetrics.arrivalMinOpacity)
+            .modifier(BubbleArrivalEffect(progress: arrival, mine: row.isMine))
             .waiveraAnimation(.state, value: isHighlighted)
             .onAppear(perform: animateArrival)
         }
 
         private func animateArrival() {
             guard row.isLiveArrival, !reduceMotion else { return }
-            arrived = false
-            withAnimation(Motion.animation(.layout, reduceMotion: reduceMotion)) { arrived = true }
+            arrival = 0
+            let curve = row.isMine ? MotionPolicy.sendPop(reduceMotion: false) : .spring(MotionSpec.defaultSpatial)
+            withAnimation(Motion.animation(curve)) { arrival = 1 }
+        }
+    }
+
+    /// Draws an arrival's progress as a `BubbleArrival` frame: my own bubble grows from its
+    /// bottom trailing corner, everyone's rises from `BubbleArrival.offset` below and fades in.
+    struct BubbleArrivalEffect: ViewModifier, Animatable {
+        var progress: Double
+        let mine: Bool
+
+        var animatableData: Double {
+            get { progress }
+            set { progress = newValue }
+        }
+
+        func body(content: Content) -> some View {
+            let frame = BubbleArrival.frame(progress: progress, mine: mine)
+            content
+                .scaleEffect(frame.scale, anchor: mine ? .bottomTrailing : .bottomLeading)
+                .offset(y: frame.offsetFraction * BubbleArrival.offset)
+                .opacity(frame.alpha)
         }
     }
 
@@ -67,12 +89,8 @@
                 if row.groupedWithPrevious {
                     Color.clear.frame(width: ControlSize.avatarSmall, height: ControlSize.avatarSmall)
                 } else if row.isBot {
-                    Image(systemName: "sparkles")
-                        .font(WaiveraFont.caption)
-                        .foregroundStyle(Palette.accent)
-                        .frame(width: ControlSize.avatarSmall, height: ControlSize.avatarSmall)
-                        .background(Palette.accentWash, in: Circle())
-                        .overlay(Circle().strokeBorder(Palette.accentBorderStrong, lineWidth: Spacing.hairline))
+                    // The bot is Waivera itself, so it wears the mark (UI8-08); the author line names it.
+                    LogoTile(size: ControlSize.avatarSmall)
                         .accessibilityHidden(true)
                 } else if let authorId = row.message.authorId ?? row.message.author?.id {
                     Button {
@@ -87,7 +105,7 @@
                         .frame(minWidth: ControlSize.minHitTarget, minHeight: ControlSize.minHitTarget, alignment: .top)
                         .contentShape(Rectangle())
                     }
-                    .buttonStyle(.pressScale)
+                    .buttonStyle(.press(.compact))
                     .accessibilityLabel(ConversationStrings.format("open.profile", name))
                 } else {
                     AvatarView(name: name, size: ControlSize.avatarSmall)
@@ -104,14 +122,14 @@
 
         var body: some View {
             HStack(spacing: Spacing.extraSmall) {
-                Text(name)
-                    .font(WaiveraFont.label)
+                OneLineName(name, style: .labelSmall)
                     .foregroundStyle(isBot ? Palette.accent : Palette.text)
-                    .lineLimit(2)
+                    .layoutPriority(1)
                 if isBot {
                     StatusBadge(ConversationStrings.text("automated"), tone: .accent)
                 }
             }
+            .padding(.bottom, Spacing.xxSmall)
             .accessibilityHidden(true)
         }
     }
