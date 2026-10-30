@@ -31,8 +31,8 @@
 "automated" = "AUTOMATED";
 "saved" = "Saved";
 "sending" = "Sending…";
-"queued" = "Waiting for connection…";
-"failed" = "Failed";
+"queued" = "Sends when you’re back online";
+"failed" = "Not sent";
 "failed.retry" = "Retry";
 "failed.edit" = "Edit";
 "failed.discard" = "Discard";
@@ -60,7 +60,7 @@
 "reaction.needs.connection" = "Reactions require a live chat connection.";
 "preview.label" = "MESSAGE PREVIEW";
 "action.copy" = "Copy text";
-"action.copied" = "Copied to clipboard";
+"action.copied" = "Copied";
 "action.reply" = "Reply in thread";
 "action.edit" = "Edit message";
 "action.bookmark" = "Bookmark";
@@ -170,3 +170,33 @@
 "time.days.other" = "%ld days ago";
 "title.group.one" = "%1$@ & %2$ld other";
 "title.group.other" = "%1$@ & %2$ld others";
+
+/* Send confirmation and failure (Android FooterPhase) */
+"sent" = "Sent";
+"sent.at" = "Sent · %1$@";
+"edited" = "Edited";
+"failed.more" = "More actions for the message that wasn’t sent";
+
+/* Thread header (wave 28 M3) */
+"thread.in" = "In %1$@";
+
+/* Group header and members (spec §9.2, Android strings_members.xml) */
+"members.one" = "%ld member";
+"members.other" = "%ld members";
+"members.show" = "Show members";
+"members.title" = "Members";
+"members.you" = "You";
+"members.unknown" = "Unknown person";
+"members.open.person" = "Open profile";
+"members.message" = "Message %1$@";
+"members.opening" = "Opening chat with %1$@";
+"members.search.label" = "Search members";
+"members.search.placeholder" = "Name";
+"members.search.clear" = "Clear search";
+"members.loading" = "Loading members";
+"members.error.title" = "Members didn’t load";
+"members.empty.title" = "No one here yet";
+"members.empty.message" = "When people join this group, they show here.";
+"members.no.match.title" = "No one matches";
+"members.no.match.message" = "Try another name.";
+"members.offline.saved" = "You’re offline. These are the members saved on this phone.";

@@ -3,27 +3,48 @@
     import WaiveraData
     import WaiveraDesign
 
-    /// The bubble: body, attachment, reactions and the thread chip. Tap shows the time, a long
-    /// press opens the actions (03 §6, §14).
+    /// The bubble: body, attachment, reactions and the thread chip. A tap opens its time line;
+    /// a long press sinks it and opens the focus overlay over it (spec §9.1). Silent.
     struct MessageBubble: View {
         let row: MessageRow
         let context: RowContext
         let actions: MessageRowActions
 
+        @State private var anchor = AnchorBox()
+
         private var message: ChatMessage { row.message }
         private var hasBody: Bool { message.isDeleted || row.ticket != nil || message.hasBody }
+        /// My own messages wear the soft violet (plum in dark) with the theme's ink (v5 decision
+        /// 3B); a deleted one stays quiet whoever wrote it.
+        private var tinted: Bool { hasBody && row.isMine && !row.isBot && !message.isDeleted }
+        private var canOpenActions: Bool { actions.longPress != nil && !message.isDeleted }
         private var shape: UnevenRoundedRectangle {
             BubbleShape.make(isMine: row.isMine, previous: row.groupedWithPrevious, next: row.groupedWithNext)
         }
 
         var body: some View {
-            VStack(alignment: row.isMine ? .trailing : .leading, spacing: Spacing.small) {
+            if canOpenActions {
+                bubble
+                    .waiveraPressable(
+                        depth: .button,
+                        longPressActionName: ConversationStrings.text("open.actions"),
+                        onTap: { actions.toggleTimestamp(row.key) },
+                        onLongPress: openActions
+                    )
+            } else {
+                bubble
+                    .contentShape(shape)
+                    .onTapGesture { actions.toggleTimestamp(row.key) }
+                    .accessibilityAction { actions.toggleTimestamp(row.key) }
+            }
+        }
+
+        private var bubble: some View {
+            VStack(alignment: row.isMine ? .trailing : .leading, spacing: Spacing.extraSmall + Spacing.xxSmall) {
                 BubbleBody(row: row, actions: actions)
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(accessibilityLabel)
                     .accessibilityHint(ConversationStrings.text("show.time"))
-                    .accessibilityAction { actions.toggleTimestamp(row.key) }
-                    .accessibilityAction(named: ConversationStrings.text("open.actions")) { openActions() }
                 if let attachment = message.attachment, !message.isDeleted {
                     AttachmentView(message: message, attachment: attachment, actions: actions)
                 }
@@ -34,21 +55,27 @@
                     ThreadChip(count: message.threadReplyCount) { openThread(message) }
                 }
             }
-            .padding(.horizontal, hasBody ? Spacing.smallPlus : 0)
+            .padding(.horizontal, hasBody ? Spacing.mediumSmall - Spacing.hairline : 0)
             .padding(.vertical, hasBody ? Spacing.small : 0)
             .frame(minWidth: hasBody ? ChatMetrics.bubbleMinWidth : nil, alignment: row.isMine ? .trailing : .leading)
             .background(fill, in: shape)
             .overlay {
-                if hasBody { shape.stroke(border, lineWidth: Spacing.hairline) }
+                if hasBody && !tinted { shape.strokeBorder(border, lineWidth: Spacing.hairline) }
             }
             .contentShape(shape)
-            .onTapGesture { actions.toggleTimestamp(row.key) }
-            .onLongPressGesture { openActions() }
+            .background {
+                GeometryReader { proxy in
+                    let box = anchor
+                    Color.clear.onChange(of: proxy.frame(in: .global), initial: true) { _, frame in
+                        box.frame = frame
+                    }
+                }
+            }
         }
 
         private var fill: Color {
             guard hasBody else { return .clear }
-            return row.isMine && !row.isBot ? Palette.accentSoft : Palette.surface
+            return tinted ? Palette.myBubble : Palette.surface
         }
 
         private var border: Color {
@@ -56,7 +83,8 @@
         }
 
         private func openActions() {
-            guard !message.isDeleted, let longPress = actions.longPress else { return }
+            guard canOpenActions, let longPress = actions.longPress else { return }
+            actions.recordAnchor(message.id, anchor.frame)
             longPress(message)
         }
 
@@ -121,41 +149,63 @@
         }
     }
 
-    /// "Saved" and the relative time with "edited" (03 §4).
+    /// Under the bubble (Android `SettledFooter`). The last bubble of a run always shows its
+    /// clock ("9:41 AM", or "Sent · 9:41 AM" under my own), which is how a send or a retry
+    /// confirms, silently. A bubble inside a run opens its time line on tap, as a relative time;
+    /// the line grows and folds on the layout spring so the list moves instead of jumping.
     struct MessageFooter: View {
         let row: MessageRow
         let context: RowContext
 
-        @Environment(\.accessibilityReduceMotion) private var reduceMotion
-        @State private var savedScale: CGFloat = 1
+        private var message: ChatMessage { row.message }
+        private var bookmarked: Bool { message.isBookmarked == true }
+        private var endOfRun: Bool { !row.groupedWithNext && !message.isDeleted }
 
         var body: some View {
-            let message = row.message
-            let showsTime = context.visibleTimestamps.contains(row.key) && message.createdAt != nil
-            if showsTime || message.isBookmarked == true {
-                HStack(spacing: Spacing.small) {
-                    if showsTime, let createdAt = message.createdAt {
-                        let relative = ConversationStrings.relative(
-                            ChatTime.relative(createdAt, now: context.now, zone: context.zone)
-                        )
-                        Text(message.isEdited ? ConversationStrings.format("timestamp.edited", relative) : relative)
-                            .font(WaiveraFont.caption)
-                            .foregroundStyle(Palette.textSecondary)
-                    }
-                    if message.isBookmarked == true {
-                        StatusBadge(ConversationStrings.text("saved"), tone: .accent, systemImage: "bookmark.fill")
-                            .scaleEffect(savedScale)
-                            .onAppear(perform: pop)
-                    }
+            let label = Self.label(row, context: context)
+            if endOfRun || message.createdAt == nil {
+                if label != nil || bookmarked { FooterLine(label: label, bookmarked: bookmarked) }
+            } else {
+                Expand(isExpanded: label != nil || bookmarked) {
+                    FooterLine(label: label, bookmarked: bookmarked)
                 }
-                .padding(.top, Spacing.extraSmall)
             }
         }
 
-        private func pop() {
-            guard !reduceMotion else { return }
-            savedScale = ChatMetrics.savedPopStart
-            withAnimation(Motion.animation(.celebrate, reduceMotion: reduceMotion)) { savedScale = 1 }
+        static func label(_ row: MessageRow, context: RowContext) -> String? {
+            let message = row.message
+            guard let createdAt = message.createdAt else { return nil }
+            let endOfRun = !row.groupedWithNext && !message.isDeleted
+            let text: String
+            if endOfRun {
+                let clock = ChatTime.clock(createdAt, zone: context.zone)
+                text = row.isMine ? ConversationStrings.format("sent.at", clock) : clock
+            } else if context.visibleTimestamps.contains(row.key) {
+                text = ConversationStrings.relative(ChatTime.relative(createdAt, now: context.now, zone: context.zone))
+            } else {
+                return nil
+            }
+            return message.isEdited ? ConversationStrings.format("timestamp.edited", text) : text
+        }
+    }
+
+    /// The time line and the "Saved" pill, which pops in when a message is bookmarked.
+    private struct FooterLine: View {
+        let label: String?
+        let bookmarked: Bool
+
+        var body: some View {
+            HStack(spacing: Spacing.small) {
+                if let label {
+                    Text(label)
+                        .waiveraTextStyle(.labelMedium)
+                        .foregroundStyle(Palette.textSecondary)
+                }
+                PopVisibility(isVisible: bookmarked) {
+                    StatusBadge(ConversationStrings.text("saved"), tone: .accent, systemImage: "bookmark.fill")
+                }
+            }
+            .padding(.top, Spacing.extraSmall)
         }
     }
 
