@@ -154,6 +154,8 @@ public final class ScheduleModel {
                 for await banner in realtime.banner() { await self.apply(banner: banner) }
             }
         }
+        // The screen is gone: a chat that opens now has nowhere to go.
+        cancelWishes()
     }
 
     /// Watches the feed for the current period and fetches it when missing or stale.
@@ -237,6 +239,7 @@ public final class ScheduleModel {
         openingWishesFor = userId
         wishesFailure = nil
         rebuild()
+        wishesTask?.cancel()
         wishesTask = Task {
             let result: Result<Int, WaiveraError>
             do {
@@ -245,6 +248,7 @@ public final class ScheduleModel {
                 result = .failure(WaiveraError.from(error))
             }
             guard !Task.isCancelled else { return }
+            self.wishesTask = nil
             self.finishWishes(userId: userId, result: result)
         }
     }
@@ -256,6 +260,14 @@ public final class ScheduleModel {
 
     public func dismissWishesFailure() {
         wishesFailure = nil
+    }
+
+    private func cancelWishes() {
+        wishesTask?.cancel()
+        wishesTask = nil
+        guard openingWishesFor != nil else { return }
+        openingWishesFor = nil
+        rebuild()
     }
 
     private func finishWishes(userId: String, result: Result<Int, WaiveraError>) {

@@ -213,6 +213,8 @@ final class TestRealtime: RealtimeStatusRepository {
 final class TestConversations: ConversationsRepository {
     let result = LockedValue<Result<Int, WaiveraError>>(.success(42))
     let calls = CallLog()
+    /// How long the open-or-create takes, to leave the screen while it is under way.
+    let delay = LockedValue<Duration?>(nil)
 
     func conversations() -> AsyncStream<Resource<[Conversation]>> { StateCell(Resource<[Conversation]>()).stream() }
     func refresh() async {}
@@ -221,6 +223,7 @@ final class TestConversations: ConversationsRepository {
     func totalUnread() -> AsyncStream<Int> { StateCell(0).stream() }
     func openDirectConversation(with userId: String) async throws -> Conversation {
         calls.record("direct:\(userId)")
+        if let delay = delay.get() { try? await Task.sleep(for: delay) }
         let id = try result.get().get()
         return Conversation(id: id, kind: .direct, viewerId: "usr_me")
     }

@@ -64,6 +64,9 @@
         var onOpenConversation: (_ conversationID: Int) -> Void = { _ in }
 
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
+        /// The Message tap waiting for its chat. Owned by the screen and cancelled when it goes,
+        /// so a chat that opens late is never pushed over whatever the person moved on to.
+        @State private var messageTask: Task<Void, Never>?
 
         private var state: GroupMembersState { model.state }
 
@@ -103,6 +106,10 @@
             }
             .background(Palette.background)
             .waiveraAnimation(.state, value: state.messageError)
+            .onDisappear {
+                messageTask?.cancel()
+                messageTask = nil
+            }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
@@ -174,8 +181,11 @@
         }
 
         private func message(_ userId: String) {
-            Task {
-                if let id = await model.message(userId) { onOpenConversation(id) }
+            messageTask?.cancel()
+            messageTask = Task {
+                let id = await model.message(userId)
+                guard !Task.isCancelled, let id else { return }
+                onOpenConversation(id)
             }
         }
     }

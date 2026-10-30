@@ -63,6 +63,20 @@ struct ScheduleModelWishesTests {
         #expect(await eventually { model.wishesRequest?.conversationId == 7 })
     }
 
+    @Test func leavingTheScreenDropsAChatStillOpening() async {
+        let conversations = TestConversations()
+        conversations.delay.update { $0 = .milliseconds(200) }
+        let (model, _) = model(conversations: conversations)
+        let start = Task { await model.start() }
+        model.sendWishes(to: "u2")
+        #expect(model.state.openingWishesFor == "u2")
+        start.cancel()
+        #expect(await eventually { model.state.openingWishesFor == nil })
+        try? await Task.sleep(for: .milliseconds(300))
+        #expect(model.wishesRequest == nil)
+        #expect(model.wishesFailure == nil)
+    }
+
     @Test func noWishesToYourselfOrWithoutAChatRepository() async {
         let conversations = TestConversations()
         let (model, _) = model(conversations: conversations)
