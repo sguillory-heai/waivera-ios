@@ -10,6 +10,8 @@
         /// The hero bar's avatar; nil hides the button's action until the app wires the account menu.
         var openAccount: (() -> Void)?
         var respond: (String, Bool) -> Void = { _, _ in }
+        /// "Send wishes" on a celebration card, with the person's user id; nil hides the button.
+        var sendWishes: ((String) -> Void)?
         var toggleNeedsYou: () -> Void = {}
         var setFilter: (ActivityFilter) -> Void = { _ in }
         var toggleUnreadOnly: () -> Void = {}
@@ -194,10 +196,21 @@
                 if state.celebrationsFailed {
                     SectionErrorView(message: TodayStrings.text("today.celebration.failed"), onRetry: actions.reload)
                 }
-                ForEach(state.celebrations) { item in
-                    CelebrationCard(item: item) { actions.open(.schedule, nil) }
+                ForEach(Array(state.celebrations.enumerated()), id: \.element.id) { index, item in
+                    CelebrationCard(
+                        item: item,
+                        burstSeed: UInt64(index),
+                        isOpeningWishes: state.openingWishesFor == item.userId,
+                        onOpen: { actions.open(.schedule, nil) },
+                        onSendWishes: wishesAction(for: item)
+                    )
                 }
             }
+        }
+
+        private func wishesAction(for item: CelebrationItem) -> (() -> Void)? {
+            guard let send = actions.sendWishes else { return nil }
+            return { send(item.userId) }
         }
 
         // MARK: Activity

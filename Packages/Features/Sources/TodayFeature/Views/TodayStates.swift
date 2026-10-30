@@ -144,50 +144,38 @@
         static let supporting: CGFloat = 0.45
     }
 
-    /// A floating confirmation or error pill with an optional Retry, in place of a system alert.
+    /// The snackbar for a Today toast (Android `WaiveraSnackbarHost`): the inverse pill with Undo
+    /// for an answered invitation, Retry for a failure, or no action for a plain confirmation.
     struct TodayToastView: View {
         let toast: TodayToast
-        let onRetry: () -> Void
-        let onDismiss: () -> Void
+        let onAction: () -> Void
 
         var body: some View {
-            HStack(spacing: Spacing.small) {
-                Text(toast.notice.message)
-                    .waiveraTextStyle(.bodyMedium)
-                    .foregroundStyle(Palette.text)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                if toast.notice.offersRetry {
-                    WaiveraButton(TodayStrings.text("today.retry"), variant: .text, action: onRetry)
-                        .accessibilityIdentifier("today.toast.retry")
-                }
-                Button(action: onDismiss) {
-                    Image(systemName: "xmark")
-                        .font(WaiveraFont.captionEmphasis)
-                        .foregroundStyle(Palette.textSecondary)
-                        .frame(width: ControlSize.minHitTarget, height: ControlSize.minHitTarget)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.press(.compact))
-                .accessibilityLabel(Text(TodayStrings.text("today.dismiss")))
-            }
-            .padding(.leading, Spacing.medium)
-            .padding(.trailing, Spacing.extraSmall)
-            .padding(.vertical, Spacing.extraSmall)
-            .background(Palette.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    .strokeBorder(Palette.border, lineWidth: Spacing.hairline)
+            SnackbarView(
+                message: toast.notice.message,
+                actionTitle: actionTitle,
+                actionIdentifier: toast.notice.offersUndo ? "today.toast.undo" : "today.toast.retry",
+                action: actionTitle == nil ? nil : onAction
             )
-            .accessibilityElement(children: .contain)
             .accessibilityIdentifier("today.toast")
+        }
+
+        private var actionTitle: String? {
+            if toast.notice.offersUndo { return TodayStrings.text("today.undo") }
+            return toast.notice.offersRetry ? TodayStrings.text("today.retry") : nil
         }
     }
 
     extension View {
-        /// Shows the feedback's toast at the bottom, announces it, clears it after the toast
-        /// timeout (longer with VoiceOver).
-        func todayFeedback(_ feedback: TodayFeedback, onRetry: @escaping (TodayToast) -> Void) -> some View {
-            modifier(TodayFeedbackModifier(feedback: feedback, onRetry: onRetry))
+        /// Shows the feedback's toast at the bottom, announces it, and closes it after the toast
+        /// timeout (longer with VoiceOver). `onClose` hears a toast that went away without its
+        /// action, so a held invitation answer can go out at once.
+        func todayFeedback(
+            _ feedback: TodayFeedback,
+            onAction: @escaping (TodayToast) -> Void,
+            onClose: ((TodayToast) -> Void)? = nil
+        ) -> some View {
+            modifier(TodayFeedbackModifier(feedback: feedback, onAction: onAction, onClose: onClose))
         }
     }
 
@@ -195,25 +183,23 @@
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
         @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
         let feedback: TodayFeedback
-        let onRetry: (TodayToast) -> Void
+        let onAction: (TodayToast) -> Void
+        let onClose: ((TodayToast) -> Void)?
 
         func body(content: Content) -> some View {
             content
                 .overlay(alignment: .bottom) {
                     if let toast = feedback.toast {
-                        TodayToastView(
-                            toast: toast,
-                            onRetry: { onRetry(toast) },
-                            onDismiss: { feedback.dismiss(toast.id) }
-                        )
-                        .padding(Spacing.medium)
-                        .transition(Motion.transition(edge: .bottom, reduceMotion: reduceMotion))
-                        .task(id: toast.id) {
-                            AccessibilityNotification.Announcement(toast.notice.message).post()
-                            let lifetime = voiceOver ? FeedbackTiming.undoToastAccessible : FeedbackTiming.undoToast
-                            try? await Task.sleep(for: .seconds(lifetime))
-                            if !Task.isCancelled { feedback.dismiss(toast.id) }
-                        }
+                        TodayToastView(toast: toast, onAction: { onAction(toast) })
+                            .padding(Spacing.medium)
+                            .transition(Motion.transition(edge: .bottom, reduceMotion: reduceMotion))
+                            .task(id: toast.id) {
+                                AccessibilityNotification.Announcement(toast.notice.message).post()
+                                let lifetime = voiceOver ? FeedbackTiming.undoToastAccessible : FeedbackTiming.undoToast
+                                try? await Task.sleep(for: .seconds(lifetime))
+                                guard !Task.isCancelled, feedback.toast?.id == toast.id else { return }
+                                if let onClose { onClose(toast) } else { feedback.dismiss(toast.id) }
+                            }
                     }
                 }
                 .animation(Motion.animation(.layout, reduceMotion: reduceMotion), value: feedback.toast)

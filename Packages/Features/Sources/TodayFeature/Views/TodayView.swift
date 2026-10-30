@@ -76,7 +76,17 @@
 
         var body: some View {
             TodayContent(state: model.state, actions: actions, onRefresh: { [model] in await model.refresh() })
-                .todayFeedback(model.feedback) { model.retry($0) }
+                .todayFeedback(
+                    model.feedback,
+                    onAction: { model.toastAction($0) },
+                    onClose: { model.toastClosed($0) }
+                )
+                .onChange(of: model.wishesRequest) { _, request in
+                    // The chat "Send wishes" opened, followed once.
+                    guard let request else { return }
+                    open(.chat(.conversation(id: request.conversationId, targetMessageId: nil)))
+                    model.wishesHandled(request)
+                }
         }
 
         private var actions: TodayActions {
@@ -87,6 +97,7 @@
                 },
                 openAccount: openAccount,
                 respond: { model.respond(toEventId: $0, accept: $1) },
+                sendWishes: { model.sendWishes(to: $0) },
                 toggleNeedsYou: { model.toggleNeedsYouExpanded() },
                 setFilter: { model.setFilter($0) },
                 toggleUnreadOnly: { model.toggleUnreadOnly() },

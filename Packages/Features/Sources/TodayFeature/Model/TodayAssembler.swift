@@ -39,6 +39,8 @@ struct TodayLocalState: Equatable, Sendable {
     /// Invitations answered optimistically; they leave Needs you at once and return if the call fails.
     var answeredInvitations: Set<String> = []
     var isRefreshing = false
+    /// The celebrated person whose "Send wishes" chat is opening; their button shows it.
+    var openingWishesFor: String?
 }
 
 /// Who, where and when the screen is rendered for.
@@ -131,6 +133,7 @@ enum TodayAssembler {
             return item
         }
         state.celebrationsFailed = milestones.error != nil && !milestones.hasContent
+        state.openingWishesFor = context.local.openingWishesFor
         state.activity = ActivityAssembler.section(
             sources.activity,
             local: context.activity,

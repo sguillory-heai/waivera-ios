@@ -138,38 +138,51 @@
         private static let clockMinimumScale: CGFloat = 0.6
     }
 
-    /// A birthday or work anniversary today on the celebration wash: the avatar, what it is, and
-    /// the sentence with the name kept to two lines (wave 29 N3). Emoji and confetti are kept for
-    /// the all-caught-up reward on this screen, so the card ends in an amber gift tile.
+    /// A birthday or work anniversary today, as a small moment rather than a list row (Android
+    /// `CelebrationCard`): the plain avatar, what it is, the sentence with the name kept to two
+    /// lines (wave 29 N3) and the one celebration emoji in its own tile, on the celebration wash.
+    /// "Send wishes" opens a direct chat with them and is its own target, so VoiceOver reaches it
+    /// separately; it is hidden on your own card. Confetti bursts over the card when it first
+    /// shows (nothing under Reduce Motion). The card body opens the schedule.
     struct CelebrationCard: View {
         let item: CelebrationItem
+        var burstSeed: UInt64 = 0
+        var isOpeningWishes = false
         let onOpen: () -> Void
+        var onSendWishes: (() -> Void)?
+
+        @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
         var body: some View {
             let sentence = TodayStrings.celebration(item)
-            let name = item.name ?? TodayStrings.text("today.celebration.nameFallback")
-            Button(action: onOpen) {
-                HStack(spacing: Spacing.mediumSmall) {
-                    AvatarView(name: name, size: ControlSize.avatarMedium)
-                    VStack(alignment: .leading, spacing: Spacing.xxSmall) {
-                        Text(TodayStrings.celebrationLabel(item))
-                            .waiveraTextStyle(.labelMedium)
-                            .foregroundStyle(Palette.textSecondary)
-                        WordSafeText(text: sentence, style: .titleSmall, lines: CelebrationCard.sentenceLines)
-                            .foregroundStyle(Palette.text)
+            VStack(alignment: .leading, spacing: 0) {
+                Button(action: onOpen) {
+                    HStack(spacing: Spacing.mediumSmall) {
+                        AvatarView(name: name, size: ControlSize.avatarMedium)
+                        VStack(alignment: .leading, spacing: Spacing.xxSmall) {
+                            Text(TodayStrings.celebrationLabel(item))
+                                .waiveraTextStyle(.labelMedium)
+                                .foregroundStyle(Palette.textSecondary)
+                            WordSafeText(text: sentence, style: .titleSmall, lines: CelebrationCard.sentenceLines)
+                                .foregroundStyle(Palette.text)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        // The same emoji tile as Schedule and Profile: one celebration treatment (UI9-07).
+                        EmojiTile(TodayStrings.celebrationEmoji(item))
                     }
+                    .padding(Spacing.medium)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    TodayTile(systemImage: item.isBirthday ? "gift" : "star", tone: .amber)
+                    .contentShape(Rectangle())
                 }
-                .padding(Spacing.medium)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
+                .buttonStyle(.press(.card))
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(sentence))
+                .accessibilityHint(Text(TodayStrings.text("today.hint.openSchedule")))
+                .accessibilityAddTraits(.isButton)
+                if let onSendWishes, !item.isMe {
+                    wishes(onSendWishes)
+                }
             }
-            .buttonStyle(.press(.card))
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text(sentence))
-            .accessibilityHint(Text(TodayStrings.text("today.hint.openSchedule")))
-            .accessibilityAddTraits(.isButton)
             .background {
                 ZStack {
                     Palette.surface
@@ -177,10 +190,46 @@
                 }
                 .clipShape(RoundedRectangle(cornerRadius: Radius.upNextCard, style: .continuous))
             }
+            .overlay { CelebrationBurst(trigger: item.userId, seed: burstSeed) }
             .todayCardSpacing()
         }
 
+        private var name: String { item.name ?? TodayStrings.text("today.celebration.nameFallback") }
+
+        /// Under the sentence while it fits on one line; at the card's content start on a narrow
+        /// card or at the accessibility sizes, so its two words never wrap (UI11-03).
+        @ViewBuilder private func wishes(_ action: @escaping () -> Void) -> some View {
+            if dynamicTypeSize.isExtraLargeText {
+                wishesButton(action).padding(.leading, Spacing.medium)
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    wishesButton(action).padding(.leading, CelebrationCard.wishesIndent)
+                    wishesButton(action).padding(.leading, Spacing.medium)
+                }
+            }
+        }
+
+        private func wishesButton(_ action: @escaping () -> Void) -> some View {
+            WaiveraButton(
+                TodayStrings.text("today.sendWishes"),
+                variant: .tonalOnWash,
+                systemImage: "bubble.left",
+                isLoading: isOpeningWishes,
+                loadingTitle: TodayStrings.text("today.sendWishes.opening"),
+                fillsWidth: false,
+                action: action
+            )
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .accessibilityLabel(Text(TodayStrings.format("today.sendWishes.a11y", name)))
+            .padding(.trailing, Spacing.medium)
+            .padding(.bottom, Spacing.medium)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+
         private static let sentenceLines = 2
+        /// Lines the button up with the sentence: the card padding, the avatar and the gap.
+        private static let wishesIndent = Spacing.medium + ControlSize.avatarMedium + Spacing.mediumSmall
     }
 
     extension NextUpItem {
@@ -195,7 +244,9 @@
                 VStack(spacing: 0) {
                     UpNextCard(item: items[0], formatter: TodayFormatting.shared) {}
                     ForEach(items.dropFirst()) { NextUpRow(item: $0, formatter: TodayFormatting.shared) {} }
-                    ForEach(TodayPreviewStates.populated().celebrations) { CelebrationCard(item: $0) {} }
+                    ForEach(TodayPreviewStates.populated().celebrations) {
+                        CelebrationCard(item: $0, onOpen: {}, onSendWishes: {})
+                    }
                 }
             }
             .background(Palette.background)
@@ -206,7 +257,9 @@
             ScrollView {
                 VStack(spacing: 0) {
                     if let first = items.first { UpNextCard(item: first, formatter: TodayFormatting.shared) {} }
-                    ForEach(TodayPreviewStates.longContent().celebrations) { CelebrationCard(item: $0) {} }
+                    ForEach(TodayPreviewStates.longContent().celebrations) {
+                        CelebrationCard(item: $0, isOpeningWishes: true, onOpen: {}, onSendWishes: {})
+                    }
                 }
             }
             .background(Palette.background)

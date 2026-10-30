@@ -109,7 +109,10 @@ enum TodayStrings {
         }
     }
 
+    /// The celebration sentence. Your own card speaks to you by first name, as Profile and
+    /// Schedule do (Android `CelebrationCopy.self`, UI9-05); a teammate's names them in full.
     static func celebration(_ item: CelebrationItem) -> String {
+        if item.isMe { return selfCelebration(item) }
         let name = item.name ?? text("today.celebration.nameFallback")
         switch (item.isBirthday, item.anniversaryYears) {
         case (true, let years?): return format("today.celebration.both", name, String(years))
@@ -251,6 +254,28 @@ enum TodayStrings {
     /// Keeps a ticket key ("WAIV-2527") as one word on screen: its hyphens do not break.
     static func nonBreakingHyphens(_ value: String) -> String {
         value.replacingOccurrences(of: "-", with: "\u{2011}")
+    }
+
+    private static func selfCelebration(_ item: CelebrationItem) -> String {
+        let first = GreetingRules.firstName(nil, displayName: item.name)
+        switch (item.isBirthday, item.anniversaryYears, first) {
+        case (true, .some, let name?): return format("today.celebration.self.both", name)
+        case (true, .some, nil): return text("today.celebration.self.unnamed.both")
+        case (false, let years?, let name?): return format("today.celebration.self.anniversary", name, String(years))
+        case (false, let years?, nil): return format("today.celebration.self.unnamed.anniversary", String(years))
+        case (_, _, let name?): return format("today.celebration.self.birthday", name)
+        case (_, _, nil): return text("today.celebration.self.unnamed.birthday")
+        }
+    }
+
+    /// The emoji in the celebration card's own tile; the sentence carries none (Android
+    /// `celebrationEmoji`). Celebrations are the one place emoji are allowed.
+    static func celebrationEmoji(_ item: CelebrationItem) -> String {
+        switch (item.isBirthday, item.anniversaryYears) {
+        case (true, .some): text("today.celebration.emoji.both")
+        case (true, nil): text("today.celebration.emoji.birthday")
+        default: text("today.celebration.emoji.anniversary")
+        }
     }
 
     static func celebrationLabel(_ item: CelebrationItem) -> String {

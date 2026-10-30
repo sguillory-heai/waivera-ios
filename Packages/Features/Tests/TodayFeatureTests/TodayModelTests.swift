@@ -174,6 +174,11 @@ struct TodayModelTests {
             harness.calendar.controls.update { $0 = FakeControls(failure: .offline) }
             model.respond(toEventId: "evt_review", accept: true)
             #expect(!model.state.needsYou.items.contains { $0.id == "invite-evt_review" }, "optimistic")
+            let held = try #require(model.feedback.toast)
+            #expect(held.notice == .invitationAnswered(eventId: "evt_review", accept: true, token: 1))
+            #expect(harness.calendar.calls.count("respond:evt_review:true") == 0, "held for Undo")
+            // The toast timing out sends the answer at once.
+            model.toastClosed(held)
             #expect(
                 await eventually {
                     model.feedback.toast?.notice == .invitationFailed(eventId: "evt_review", accept: true)
@@ -183,14 +188,38 @@ struct TodayModelTests {
 
             harness.calendar.controls.update { $0 = FakeControls() }
             let toast = try #require(model.feedback.toast)
-            model.retry(toast)
-            #expect(await eventually { model.feedback.toast?.notice == .invitationAnswered(accept: true) })
-            #expect(harness.calendar.calls.count("respond:evt_review:true") == 2)
+            model.toastAction(toast)
+            #expect(!model.state.needsYou.items.contains { $0.id == "invite-evt_review" })
+            #expect(await eventually { model.feedback.successCount == 1 })
+            #expect(harness.calendar.calls.count("respond:evt_review:true") == 2, "Retry goes straight out")
             #expect(!model.state.needsYou.items.contains { $0.id == "invite-evt_review" })
         }
     }
 
-    @Test func invitationASuccessfulAnswerConfirmsAndTheEventJoinsNextUp() async {
+    @Test func invitationUndoBringsItBackAndNothingIsSent() async throws {
+        let invite = Fixture.event("evt_review", "2026-11-02T15:00:00Z", "2026-11-02T16:00:00Z", response: .pending)
+        let harness = TodayHarness(events: [invite])
+        let model = harness.todayModel()
+        try await running(model) {
+            #expect(await eventually { model.state.needsYou.items.contains { $0.id == "invite-evt_review" } })
+            model.respond(toEventId: "evt_review", accept: false)
+            let toast = try #require(model.feedback.toast)
+            #expect(toast.notice.offersUndo)
+            #expect(toast.notice.message == "Invitation declined")
+            model.toastAction(toast)
+            #expect(model.feedback.toast == nil)
+            #expect(model.state.needsYou.items.contains { $0.id == "invite-evt_review" })
+            harness.clock.advance(by: 11)
+            await settle()
+            #expect(harness.calendar.calls.count("respond:evt_review:false") == 0)
+            // A stale close after Undo sends nothing either.
+            model.toastClosed(toast)
+            await settle()
+            #expect(harness.calendar.calls.count("respond:evt_review:false") == 0)
+        }
+    }
+
+    @Test func invitationASuccessfulAnswerGoesOutAfterTheUndoWindowAndJoinsNextUp() async {
         let invite = Fixture.event("evt_review", "2026-11-01T17:00:00Z", "2026-11-01T18:00:00Z", response: .pending)
         let harness = TodayHarness(events: [invite])
         let model = harness.todayModel()
@@ -198,9 +227,57 @@ struct TodayModelTests {
             #expect(await eventually { !model.state.needsYou.items.isEmpty })
             #expect(model.state.nextUp.items.isEmpty, "pending items stay under Needs you")
             model.respond(toEventId: "evt_review", accept: true)
-            #expect(await eventually { model.feedback.successCount == 1 })
-            #expect(model.feedback.toast?.notice == .invitationAnswered(accept: true))
+            #expect(model.feedback.toast?.notice == .invitationAnswered(eventId: "evt_review", accept: true, token: 1))
+            #expect(model.feedback.toast?.notice.message == "Accepted. See you there!")
+            #expect(
+                await eventually {
+                    harness.clock.advance(by: 1)
+                    return model.feedback.successCount == 1
+                }
+            )
+            #expect(harness.calendar.calls.count("respond:evt_review:true") == 1)
             #expect(await eventually { model.state.nextUp.items.map(\.eventId) == ["evt_review"] })
+        }
+    }
+
+    // MARK: Send wishes
+
+    @Test func sendWishesOpensTheDirectChatOnceAndIsBusyMeanwhile() async throws {
+        let harness = TodayHarness()
+        let model = harness.todayModel()
+        await running(model) {
+            model.sendWishes(to: "usr_sam_ortiz")
+            #expect(model.state.openingWishesFor == "usr_sam_ortiz")
+            model.sendWishes(to: "usr_jordan_lee")
+            #expect(model.state.openingWishesFor == "usr_sam_ortiz", "one chat opens at a time")
+            #expect(await eventually { model.wishesRequest != nil })
+            #expect(model.state.openingWishesFor == nil)
+            let request = model.wishesRequest
+            let direct = try? await harness.fakes.chat.openDirectConversation(with: "usr_sam_ortiz")
+            #expect(request?.conversationId == direct?.id)
+            if let request { model.wishesHandled(request) }
+            #expect(model.wishesRequest == nil)
+        }
+    }
+
+    @Test func sendWishesFailureOffersRetryAndYourOwnCardHasNone() async throws {
+        let harness = TodayHarness(conversations: [Fixture.direct(7, unread: 0)])
+        await harness.fakes.session.start()
+        let model = harness.todayModel()
+        try await running(model) {
+            model.sendWishes(to: "usr_sam_ortiz")
+            #expect(await eventually { model.feedback.toast?.notice == .wishesFailed(userId: "usr_sam_ortiz") })
+            #expect(model.state.openingWishesFor == nil)
+            #expect(model.wishesRequest == nil)
+            let toast = try #require(model.feedback.toast)
+            #expect(toast.notice.offersRetry)
+            model.toastAction(toast)
+            #expect(model.state.openingWishesFor == "usr_sam_ortiz", "Retry tries again")
+            #expect(await eventually { model.state.openingWishesFor == nil })
+
+            let me = harness.fakes.data.user.id
+            model.sendWishes(to: me)
+            #expect(model.state.openingWishesFor == nil, "no wishes to yourself")
         }
     }
 
@@ -295,6 +372,9 @@ struct TodayModelTests {
             #expect(model.state.progress == TodayProgress(handled: 1, open: 0))
             #expect(model.state.isAllCaughtUp, "nine of nine: the reward hero")
             #expect(harness.handledStore.load()?.handled == 1, "the tally is saved for the next launch")
+            // The Undo toast closes, so the answer goes out before the relaunch.
+            if let toast = model.feedback.toast { model.toastClosed(toast) }
+            #expect(await eventually { harness.calendar.calls.count("respond:invite:true") == 1 })
         }
         let relaunched = harness.todayModel()
         await running(relaunched) {

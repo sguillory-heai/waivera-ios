@@ -81,7 +81,7 @@ final class ActivityFeedModel {
         case .refreshFailed: tasks.run { [weak self] in await self?.refresh() }
         case .markReadFailed(let id): activity.markRead(id)
         case .markAllFailed: activity.markAllRead()
-        case .invitationAnswered, .invitationFailed: break
+        case .invitationAnswered, .invitationFailed, .wishesFailed: break
         }
     }
 

@@ -51,7 +51,7 @@ final class TodaySnapshotTests: XCTestCase {
 
     private func today(_ state: TodayState) -> some View {
         // The hero draws its own bar, as `TodayView` does.
-        TodayContent(state: state, actions: TodayActions(), onRefresh: {})
+        TodayContent(state: state, actions: TodayActions(sendWishes: { _ in }), onRefresh: {})
             .toolbar(.hidden, for: .navigationBar)
     }
 

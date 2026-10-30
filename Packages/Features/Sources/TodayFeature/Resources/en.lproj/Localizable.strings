@@ -95,6 +95,20 @@
 "today.celebration.anniversary" = "Happy %2$ld-year work anniversary, %1$@!";
 "today.celebration.both" = "Happy birthday and %2$ld-year work anniversary, %1$@!";
 "today.celebration.failed" = "Celebrations didn't load.";
+/* Your own celebration speaks to you by first name; no emoji in the sentence (the tile has it). */
+"today.celebration.self.birthday" = "Happy birthday, %@!";
+"today.celebration.self.anniversary" = "Happy %2$ld-year work anniversary, %1$@!";
+"today.celebration.self.both" = "Happy birthday and work anniversary, %@!";
+"today.celebration.self.unnamed.birthday" = "Happy birthday!";
+"today.celebration.self.unnamed.anniversary" = "Happy %ld-year work anniversary!";
+"today.celebration.self.unnamed.both" = "Happy birthday and work anniversary!";
+/* The celebration card's emoji tile. */
+"today.celebration.emoji.birthday" = "🎂";
+"today.celebration.emoji.anniversary" = "🎉";
+"today.celebration.emoji.both" = "🎉";
+"today.sendWishes" = "Send wishes";
+"today.sendWishes.a11y" = "Send wishes to %@";
+"today.sendWishes.opening" = "Opening chat…";
 
 /* All caught up: the one celebrated empty state */
 "today.caughtUp.title" = "You're all caught up\U00A0🎉";
@@ -139,9 +153,11 @@
 "today.toast.refreshFailed" = "Couldn't refresh. Showing saved updates.";
 "today.toast.markReadFailed" = "Couldn't mark that as read.";
 "today.toast.markAllFailed" = "Couldn't mark everything as read.";
-"today.toast.accepted" = "Invitation accepted";
+"today.toast.accepted" = "Accepted. See you there!";
 "today.toast.declined" = "Invitation declined";
 "today.toast.invitationFailed" = "Your response wasn't saved.";
+"today.toast.wishesFailed" = "We couldn’t open the chat. Try again in a moment.";
+"today.undo" = "Undo";
 
 /* Hero: greeting in the employee's time zone. No emoji: they belong to celebrations only. */
 "today.greeting.morning" = "Good morning";

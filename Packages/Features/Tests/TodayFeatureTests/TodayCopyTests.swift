@@ -104,10 +104,45 @@ struct TodayCopyTests {
         #expect(formatter.quiet(.offline(since: .yesterday)) == "You're offline · updated yesterday")
     }
 
+    @Test func yourOwnCelebrationSpeaksToYouByFirstName() {
+        func mine(_ name: String?, birthday: Bool, years: Int?) -> String {
+            TodayStrings.celebration(
+                CelebrationItem(userId: "me", name: name, isBirthday: birthday, anniversaryYears: years, isMe: true)
+            )
+        }
+        #expect(mine("Alex Rivera", birthday: true, years: nil) == "Happy birthday, Alex!")
+        #expect(mine("Alex Rivera", birthday: false, years: 3) == "Happy 3-year work anniversary, Alex!")
+        #expect(mine("Alex Rivera", birthday: true, years: 3) == "Happy birthday and work anniversary, Alex!")
+        #expect(mine(nil, birthday: true, years: nil) == "Happy birthday!")
+        #expect(mine("  ", birthday: false, years: 4) == "Happy 4-year work anniversary!")
+        #expect(mine(nil, birthday: true, years: 2) == "Happy birthday and work anniversary!")
+        let teammate = CelebrationItem(userId: "u", name: "Sam Ortiz", isBirthday: true, anniversaryYears: nil)
+        #expect(TodayStrings.celebration(teammate) == "Happy birthday, Sam Ortiz!")
+    }
+
+    @Test func theCelebrationEmojiIsInItsTileNotTheSentence() {
+        let birthday = CelebrationItem(userId: "u", name: "Sam", isBirthday: true, anniversaryYears: nil)
+        let anniversary = CelebrationItem(userId: "u", name: "Sam", isBirthday: false, anniversaryYears: 5)
+        let both = CelebrationItem(userId: "u", name: "Sam", isBirthday: true, anniversaryYears: 5)
+        #expect(TodayStrings.celebrationEmoji(birthday) == "🎂")
+        #expect(TodayStrings.celebrationEmoji(anniversary) == "🎉")
+        #expect(TodayStrings.celebrationEmoji(both) == "🎉")
+        for item in [birthday, anniversary, both] {
+            #expect(TodayStrings.celebration(item).unicodeScalars.allSatisfy { $0.value < 0x2000 })
+        }
+    }
+
     @Test func toastsUseFixedCopyNeverServerText() {
         #expect(TodayNotice.refreshFailed.message == "Couldn't refresh. Showing saved updates.")
-        #expect(TodayNotice.invitationAnswered(accept: false).message == "Invitation declined")
-        #expect(!TodayNotice.invitationAnswered(accept: true).offersRetry)
+        let declined = TodayNotice.invitationAnswered(eventId: "e", accept: false, token: 1)
+        let accepted = TodayNotice.invitationAnswered(eventId: "e", accept: true, token: 1)
+        #expect(declined.message == "Invitation declined")
+        #expect(accepted.message == "Accepted. See you there!")
+        #expect(!accepted.offersRetry)
+        #expect(accepted.offersUndo)
+        #expect(TodayNotice.wishesFailed(userId: "u").message == "We couldn’t open the chat. Try again in a moment.")
+        #expect(TodayNotice.wishesFailed(userId: "u").offersRetry)
+        #expect(!TodayNotice.refreshFailed.offersUndo)
         #expect(TodayNotice.markReadFailed(activityId: 1).offersRetry)
     }
 

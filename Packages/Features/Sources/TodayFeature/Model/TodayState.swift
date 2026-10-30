@@ -108,6 +108,8 @@ struct TodayState: Equatable, Sendable {
     var nextUp = NextUpSection()
     var celebrations: [CelebrationItem] = []
     var celebrationsFailed = false
+    /// The celebrated person whose "Send wishes" chat is opening.
+    var openingWishesFor: String?
     var activity = ActivitySection()
     /// The hero ring: handled today (tallied on this device) and still open; `nil` until Needs you loads.
     var progress: TodayProgress?

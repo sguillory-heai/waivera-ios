@@ -24,8 +24,13 @@ final class TodayModel {
     /// Relative labels ("in 25 min", "5m") are recomputed this often (02 §4 fix: they never freeze).
     static let tickInterval: Duration = .seconds(30)
 
+    /// How long an invitation answer waits for Undo before it is sent (Android's long snackbar).
+    static let invitationUndoWindow: Duration = .seconds(10)
+
     private(set) var state = TodayState()
     let feedback = TodayFeedback()
+    /// The chat "Send wishes" opened, for the view to follow once.
+    private(set) var wishesRequest: WishesRequest?
 
     @ObservationIgnored private let environment: DataEnvironment
     @ObservationIgnored private let clock: any WaiveraClock
@@ -43,6 +48,10 @@ final class TodayModel {
     @ObservationIgnored private let handledStore: any HandledTallyStore
     @ObservationIgnored private var handled: HandledTally?
     @ObservationIgnored private var user: CurrentUser?
+    /// Invitation answers inside their Undo window, by event id.
+    @ObservationIgnored private var heldAnswers: [String: HeldAnswer] = [:]
+    @ObservationIgnored private var answerToken = 0
+    @ObservationIgnored private var wishesCount = 0
 
     init(
         environment: DataEnvironment,
@@ -115,22 +124,61 @@ final class TodayModel {
     func loadMoreActivity() { activity.loadMoreIfPossible() }
     func retryMoreActivity() { activity.retryMore() }
 
-    /// Accept or Decline from Needs you. The row leaves at once and comes back if the call fails.
+    /// Accept or Decline from Needs you. The row leaves at once and the toast offers Undo; the
+    /// answer goes out when the toast closes without Undo, or after `invitationUndoWindow`
+    /// (Android `InvitationAnswers`). A failed send brings the row back with Retry.
     func respond(toEventId eventId: String, accept: Bool) {
+        guard heldAnswers[eventId] == nil else { return }
         local.answeredInvitations.insert(eventId)
         rebuild()
+        answerToken += 1
+        let token = answerToken
+        let clock = clock
         let calendar = environment.calendar
-        tasks.run { [weak self] in
+        // Not in `tasks`: an answer still waiting when Today goes away is the person's decision,
+        // so it is sent even after the model is released.
+        let timer = Task { [weak self] in
             do {
-                try await calendar.respond(toEventId: eventId, accept: accept)
-                self?.feedback.succeed(.invitationAnswered(accept: accept))
-                await self?.refreshSchedule()
+                try await clock.sleep(for: Self.invitationUndoWindow)
             } catch {
-                guard let self else { return }
-                local.answeredInvitations.remove(eventId)
-                rebuild()
-                feedback.fail(.invitationFailed(eventId: eventId, accept: accept))
+                return
             }
+            guard !Task.isCancelled else { return }
+            if let self {
+                self.sendHeldAnswer(eventId: eventId, token: token)
+            } else {
+                try? await calendar.respond(toEventId: eventId, accept: accept)
+            }
+        }
+        heldAnswers[eventId] = HeldAnswer(accept: accept, token: token, timer: timer)
+        feedback.show(.invitationAnswered(eventId: eventId, accept: accept, token: token))
+    }
+
+    /// Undo on the toast: the answer was never sent, so the invitation simply comes back.
+    func undoInvitation(eventId: String, token: Int) {
+        guard let held = heldAnswers[eventId], held.token == token else { return }
+        held.timer.cancel()
+        heldAnswers[eventId] = nil
+        local.answeredInvitations.remove(eventId)
+        rebuild()
+    }
+
+    /// The toast went away: timed out, dismissed or replaced. An answer it was holding goes out
+    /// now rather than waiting out the window.
+    func toastClosed(_ toast: TodayToast) {
+        feedback.dismiss(toast.id)
+        if case .invitationAnswered(let eventId, _, let token) = toast.notice {
+            sendHeldAnswer(eventId: eventId, token: token)
+        }
+    }
+
+    /// The toast's action: Undo for an answered invitation, Retry for everything else.
+    func toastAction(_ toast: TodayToast) {
+        if case .invitationAnswered(let eventId, _, let token) = toast.notice {
+            feedback.dismiss(toast.id)
+            undoInvitation(eventId: eventId, token: token)
+        } else {
+            retry(toast)
         }
     }
 
@@ -141,8 +189,74 @@ final class TodayModel {
         case .refreshFailed: tasks.run { [weak self] in await self?.refresh() }
         case .markReadFailed(let id): activity.markRead(id)
         case .markAllFailed: activity.markAllRead()
-        case .invitationFailed(let eventId, let accept): respond(toEventId: eventId, accept: accept)
+        case .invitationFailed(let eventId, let accept):
+            // A decision already made: it goes straight out, with no second Undo.
+            guard heldAnswers[eventId] == nil else { return }
+            local.answeredInvitations.insert(eventId)
+            rebuild()
+            send(eventId: eventId, accept: accept)
+        case .wishesFailed(let userId): sendWishes(to: userId)
         case .invitationAnswered: break
+        }
+    }
+
+    /// "Send wishes" on a celebration card: opens (or starts) the direct chat with the
+    /// celebrated person. The button shows it is opening from the tap; a second tap meanwhile is
+    /// ignored, so one tap never opens two chats. Never on your own card.
+    func sendWishes(to userId: String) {
+        let me = user?.id ?? environment.session.currentState.user?.id
+        guard local.openingWishesFor == nil, userId != me else { return }
+        local.openingWishesFor = userId
+        rebuild()
+        let conversations = environment.conversations
+        tasks.run { [weak self] in
+            let result: Result<Int, WaiveraError>
+            do {
+                result = .success(try await conversations.openDirectConversation(with: userId).id)
+            } catch {
+                result = .failure(WaiveraError.from(error))
+            }
+            self?.finishWishes(userId: userId, result: result)
+        }
+    }
+
+    /// The view followed `request`; it is not offered again.
+    func wishesHandled(_ request: WishesRequest) {
+        if wishesRequest == request { wishesRequest = nil }
+    }
+
+    private func finishWishes(userId: String, result: Result<Int, WaiveraError>) {
+        local.openingWishesFor = nil
+        rebuild()
+        switch result {
+        case .success(let conversationId):
+            wishesCount += 1
+            wishesRequest = WishesRequest(id: wishesCount, conversationId: conversationId)
+        case .failure:
+            feedback.fail(.wishesFailed(userId: userId))
+        }
+    }
+
+    private func sendHeldAnswer(eventId: String, token: Int) {
+        guard let held = heldAnswers[eventId], held.token == token else { return }
+        held.timer.cancel()
+        heldAnswers[eventId] = nil
+        send(eventId: eventId, accept: held.accept)
+    }
+
+    private func send(eventId: String, accept: Bool) {
+        let calendar = environment.calendar
+        tasks.run { [weak self] in
+            do {
+                try await calendar.respond(toEventId: eventId, accept: accept)
+                self?.feedback.succeed()
+                await self?.refreshSchedule()
+            } catch {
+                guard let self else { return }
+                local.answeredInvitations.remove(eventId)
+                rebuild()
+                feedback.fail(.invitationFailed(eventId: eventId, accept: accept))
+            }
         }
     }
 
@@ -338,4 +452,17 @@ final class TodayModel {
             feedback.show(.refreshFailed)
         }
     }
+}
+
+/// An invitation answer inside its Undo window.
+private struct HeldAnswer {
+    let accept: Bool
+    let token: Int
+    let timer: Task<Void, Never>
+}
+
+/// A chat "Send wishes" opened. `id` makes a second request for the same chat a new value.
+struct WishesRequest: Equatable, Sendable {
+    let id: Int
+    let conversationId: Int
 }

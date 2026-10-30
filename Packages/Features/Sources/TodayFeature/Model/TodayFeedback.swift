@@ -3,25 +3,30 @@ import Observation
 import WaiveraAPI
 import WaiveraData
 
-/// One-off results the screen shows as a toast, some with Retry.
+/// One-off results the screen shows as a toast, some with Retry or Undo.
 enum TodayNotice: Hashable, Sendable {
     /// A refresh failed; cached data stays on screen.
     case refreshFailed
     /// The row went back to unread; Retry sends the mark-read again.
     case markReadFailed(activityId: Int64)
     case markAllFailed
-    case invitationAnswered(accept: Bool)
+    /// An invitation answer held for the Undo window (Android `OfferUndo`); `token` tells a
+    /// later answer to the same invitation apart.
+    case invitationAnswered(eventId: String, accept: Bool, token: Int)
     /// The invitation is back under Needs you; Retry sends the same answer again.
     case invitationFailed(eventId: String, accept: Bool)
+    /// "Send wishes" could not open the chat; Retry tries again.
+    case wishesFailed(userId: String)
 
     var message: String {
         switch self {
         case .refreshFailed: TodayStrings.text("today.toast.refreshFailed")
         case .markReadFailed: TodayStrings.text("today.toast.markReadFailed")
         case .markAllFailed: TodayStrings.text("today.toast.markAllFailed")
-        case .invitationAnswered(let accept):
+        case .invitationAnswered(_, let accept, _):
             TodayStrings.text(accept ? "today.toast.accepted" : "today.toast.declined")
         case .invitationFailed: TodayStrings.text("today.toast.invitationFailed")
+        case .wishesFailed: TodayStrings.text("today.toast.wishesFailed")
         }
     }
 
@@ -30,6 +35,11 @@ enum TodayNotice: Hashable, Sendable {
         case .invitationAnswered: false
         default: true
         }
+    }
+
+    var offersUndo: Bool {
+        if case .invitationAnswered = self { return true }
+        return false
     }
 }
 
