@@ -6,7 +6,9 @@ import XCTest
 
 @testable import TodayFeature
 
-/// Today and Activity screen states in light, dark and accessibility XXXL at iPhone SE width.
+/// Today and Activity screen states in light, dark and accessibility XXXL at iPhone SE width:
+/// the hero (count-only ring, stats, the 9/9 reward), the sheet's cards, and the long-content
+/// and long-name rules (wave 28 and 29).
 /// The states are the fixed `TodayPreviewStates` (demo "today": 1 November 2026, Chicago), so
 /// the images never depend on the clock or the device zone. References live in `__Snapshots__/`.
 @MainActor
@@ -48,7 +50,9 @@ final class TodaySnapshotTests: XCTestCase {
     }
 
     private func today(_ state: TodayState) -> some View {
+        // The hero draws its own bar, as `TodayView` does.
         TodayContent(state: state, actions: TodayActions(), onRefresh: {})
+            .toolbar(.hidden, for: .navigationBar)
     }
 
     func testTodayPopulated() {
@@ -57,6 +61,14 @@ final class TodaySnapshotTests: XCTestCase {
 
     func testTodayAllCaughtUp() {
         assertVariants(today(TodayPreviewStates.caughtUp()), named: "caughtUp")
+    }
+
+    func testTodayLongContent() {
+        assertVariants(today(TodayPreviewStates.longContent()), named: "longContent")
+    }
+
+    func testTodayAllCaughtUpLongName() {
+        assertVariants(today(TodayPreviewStates.caughtUpLongName()), named: "caughtUpLongName")
     }
 
     func testTodayOffline() {
