@@ -124,7 +124,7 @@
         }
     }
 
-    private func confirmationPreview() -> some View {
+    @MainActor private func confirmationPreview() -> some View {
         VStack {
             ConfirmationSheet(
                 title: "Delete message?",
