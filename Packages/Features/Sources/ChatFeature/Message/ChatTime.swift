@@ -1,9 +1,12 @@
 import Foundation
 import WaiveraAPI
+import WaiveraData
 
-/// Time for chat screens. Instants come from the shared UTC parser in the data layer; chat
-/// clocks and day boundaries use the device zone, as in the reference app (03 §3), unlike
-/// schedules, which use the employee's saved zone. Both are injected so tests can pin them.
+/// Time for chat screens. Instants come from the shared UTC parser in the data layer. Inside a
+/// conversation or thread, clocks, spoken times and day separators use the employee's saved
+/// named zone (`employee(_:)`), the same zone the chat list and the schedule use, so one message
+/// never reads two different times (AGENTS.md "Dates and time zones"). Both the clock and the
+/// zone are injected so tests can pin them.
 struct ChatClock: Sendable {
     let clock: any WaiveraClock
     private let zoneProvider: @Sendable () -> TimeZone
@@ -11,6 +14,13 @@ struct ChatClock: Sendable {
     init(clock: any WaiveraClock = SystemClock(), timeZone: @escaping @Sendable () -> TimeZone = { .current }) {
         self.clock = clock
         zoneProvider = timeZone
+    }
+
+    /// The app's clock in the employee's saved zone, falling back to the device zone until a
+    /// person is signed in. Read on every use, so a saved-zone change applies at once.
+    static func employee(_ data: DataEnvironment) -> ChatClock {
+        let calendar = data.calendar
+        return ChatClock(clock: data.clock, timeZone: { calendar.scheduleTimeZone().zone })
     }
 
     var now: Date { clock.now }

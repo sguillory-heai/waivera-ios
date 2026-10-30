@@ -55,6 +55,7 @@
                         conversationID: conversationID,
                         targetMessageID: targetMessageID,
                         data: data,
+                        clock: data.map(ChatClock.employee) ?? ChatClock(),
                         platform: .live,
                         onOpenThread: { onOpenThread($0, $1) }
                     )

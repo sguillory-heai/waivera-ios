@@ -46,6 +46,7 @@
                         conversationID: conversationID,
                         targetMessageID: targetMessageID,
                         data: data,
+                        clock: data.map(ChatClock.employee) ?? ChatClock(),
                         platform: .live
                     )
                 model = active
