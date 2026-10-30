@@ -75,9 +75,10 @@ final class ScheduleText {
 
     /// "Sun" … "Sat": the grid always starts on Sunday.
     var weekdayHeaders: [String] {
-        let formatter = formatter(for: "EEE")
-        let symbols = formatter.shortWeekdaySymbols
-        return symbols.count == 7 ? symbols : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+        // Darwin types this as `[String]!` and Linux as `[String]`; the annotation reads both the same way.
+        let symbols: [String]? = formatter(for: "EEE").shortWeekdaySymbols
+        guard let symbols, symbols.count == 7 else { return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] }
+        return symbols
     }
 
     /// "S" … "S": the month headers at the largest text sizes (Android `TextStyle.NARROW`).
