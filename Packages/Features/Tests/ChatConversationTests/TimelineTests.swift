@@ -232,7 +232,7 @@ struct TimelineTests {
         #expect(summary.map(\.count) == [2, 1])
         #expect(summary.map(\.mine) == [false, true])
         #expect(summary.first?.userIds == ["usr_a", "usr_b"])
-        #expect(summary.map(\.showsCount) == [true, false])
+        #expect(summary.map(\.showsCount) == [true, true], "a count of one still shows")
     }
 
     @Test func quickReactionsAreTheFixedSix() {

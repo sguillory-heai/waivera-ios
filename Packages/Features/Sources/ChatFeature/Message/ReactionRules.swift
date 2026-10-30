@@ -9,8 +9,9 @@ struct ReactionSummary: Hashable, Sendable, Identifiable {
     var userIds: [String]
 
     var id: String { emoji }
-    /// The count shows only when more than one person reacted (03 §13).
-    var showsCount: Bool { count > 1 }
+    /// The count always shows, 1 included: a bare emoji reads as decoration, not a count
+    /// (Android UI2-28).
+    var showsCount: Bool { count > 0 }
 }
 
 /// Who reacted, as the details sheet names them (03 §13); the view localizes each case.

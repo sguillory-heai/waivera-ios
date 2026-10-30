@@ -3,74 +3,127 @@
     import WaiveraData
     import WaiveraDesign
 
-    /// Reaction pills: tap toggles, long press shows who reacted (03 §15).
+    /// Reaction pills inside the bubble (03 §13; Android `ReactionPills`): they flow onto as many
+    /// lines as they need, from the bubble's own side. Tap toggles mine, long press shows who
+    /// reacted. Read-only, they are inert. Each pill says its emoji, count and whether I
+    /// reacted, never colour alone.
     struct ReactionPills: View {
         let row: MessageRow
         let actions: MessageRowActions
 
         var body: some View {
-            // Wraps like a flow layout without a custom Layout: rows of pills that fit.
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: Spacing.extraSmall) { pills }
-                VStack(alignment: row.isMine ? .trailing : .leading, spacing: Spacing.extraSmall) { pills }
-            }
-        }
-
-        @ViewBuilder private var pills: some View {
-            ForEach(row.reactions) { reaction in
-                ReactionPill(reaction: reaction, messageId: row.message.id, actions: actions)
+            ReactionFlowLayout(spacing: Spacing.extraSmall, alignEnd: row.isMine) {
+                ForEach(row.reactions) { reaction in
+                    ReactionPill(reaction: reaction, messageId: row.message.id, actions: actions)
+                }
             }
         }
     }
 
+    /// Rows of pills that wrap like Android's `FlowRow`, packed to the leading or trailing edge.
+    private struct ReactionFlowLayout: Layout {
+        let spacing: CGFloat
+        let alignEnd: Bool
+
+        func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+            let rows = arrange(subviews, maxWidth: proposal.width ?? .infinity)
+            let width = rows.map(\.width).max() ?? 0
+            let height = rows.map(\.height).reduce(0, +) + spacing * CGFloat(max(rows.count - 1, 0))
+            return CGSize(width: width, height: height)
+        }
+
+        func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+            var y = bounds.minY
+            for row in arrange(subviews, maxWidth: bounds.width) {
+                var x = alignEnd ? bounds.maxX - row.width : bounds.minX
+                for index in row.indices {
+                    let size = subviews[index].sizeThatFits(.unspecified)
+                    subviews[index].place(
+                        at: CGPoint(x: x, y: y + (row.height - size.height) / 2),
+                        proposal: ProposedViewSize(size)
+                    )
+                    x += size.width + spacing
+                }
+                y += row.height + spacing
+            }
+        }
+
+        private struct Row {
+            var indices: [Int] = []
+            var width: CGFloat = 0
+            var height: CGFloat = 0
+        }
+
+        private func arrange(_ subviews: Subviews, maxWidth: CGFloat) -> [Row] {
+            var rows: [Row] = []
+            var current = Row()
+            for index in subviews.indices {
+                let size = subviews[index].sizeThatFits(.unspecified)
+                let added = current.indices.isEmpty ? size.width : current.width + spacing + size.width
+                if added > maxWidth, !current.indices.isEmpty {
+                    rows.append(current)
+                    current = Row()
+                }
+                current.width = current.indices.isEmpty ? size.width : current.width + spacing + size.width
+                current.height = max(current.height, size.height)
+                current.indices.append(index)
+            }
+            if !current.indices.isEmpty { rows.append(current) }
+            return rows
+        }
+    }
+
+    /// One pill (Android `ReactionPill`): mine on the soft accent with an accent outline, others
+    /// on the page with a hairline. The count always shows, 1 included. Adding or taking back a
+    /// reaction, or someone else's landing, pops the pill.
     private struct ReactionPill: View {
         let reaction: ReactionSummary
         let messageId: Int
         let actions: MessageRowActions
 
         var body: some View {
-            let content = HStack(spacing: Spacing.extraSmall) {
-                Text(reaction.emoji).font(WaiveraFont.caption)
-                if reaction.showsCount {
-                    Text("\(reaction.count)")
-                        .font(WaiveraFont.badge)
-                        .foregroundStyle(reaction.mine ? Palette.accent : Palette.textSecondary)
-                }
+            if let react = actions.react {
+                pill
+                    .frame(minHeight: ControlSize.minHitTarget)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(ConversationStrings.reactionLabel(reaction))
+                    .accessibilityAddTraits(reaction.mine ? .isSelected : [])
+                    .accessibilityHint(ConversationStrings.text("reaction.toggle"))
+                    .waiveraPressable(
+                        longPressActionName: ConversationStrings.text("reaction.details"),
+                        onTap: { react(messageId, reaction.emoji) },
+                        onLongPress: { actions.reactionDetails?(messageId, reaction.emoji) }
+                    )
+            } else {
+                pill
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(ConversationStrings.reactionLabel(reaction))
+            }
+        }
+
+        private var pill: some View {
+            HStack(spacing: Spacing.extraSmall) {
+                Text(reaction.emoji).waiveraTextStyle(.bodySmall)
+                Text(verbatim: "\(reaction.count)")
+                    .waiveraTextStyle(.labelSmall)
+                    .fontWeight(reaction.mine ? .semibold : nil)
+                    .foregroundStyle(reaction.mine ? Palette.onAccentSoft : Palette.textSecondary)
             }
             .padding(.horizontal, Spacing.small)
             .frame(minHeight: ChatMetrics.reactionPillHeight)
             .background(reaction.mine ? Palette.accentSoft : Palette.background, in: Capsule())
             .overlay(
                 Capsule().strokeBorder(
-                    reaction.mine ? Palette.accentBorderStrong : Palette.border,
-                    lineWidth: Spacing.hairline
+                    reaction.mine ? Palette.accent : Palette.border,
+                    lineWidth: reaction.mine ? ControlSize.selectedOutline : Spacing.hairline
                 )
             )
-            .frame(minHeight: ControlSize.minHitTarget)
-            .contentShape(Rectangle())
-
-            if let react = actions.react {
-                content
-                    .onTapGesture { react(messageId, reaction.emoji) }
-                    .onLongPressGesture { actions.reactionDetails?(messageId, reaction.emoji) }
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(ConversationStrings.reactionLabel(reaction))
-                    .accessibilityAddTraits(reaction.mine ? [.isButton, .isSelected] : .isButton)
-                    .accessibilityHint(ConversationStrings.text("reaction.toggle"))
-                    .accessibilityAction(named: ConversationStrings.text("reaction.details")) {
-                        actions.reactionDetails?(messageId, reaction.emoji)
-                    }
-            } else {
-                content
-                    .onLongPressGesture { actions.reactionDetails?(messageId, reaction.emoji) }
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(ConversationStrings.reactionLabel(reaction))
-            }
+            .popOnChange(of: [reaction.count, reaction.mine ? 1 : 0])
         }
     }
 
     /// Image, file, scanning or blocked attachment (03 §8). Images load through the data
-    /// layer's authenticated loader; a pending upload shows its progress.
+    /// layer's authenticated loader.
     struct AttachmentView: View {
         let message: ChatMessage
         let attachment: Attachment
@@ -81,10 +134,10 @@
             case .rejected:
                 AttachmentNotice(
                     text: ConversationStrings.text("attachment.blocked"),
-                    systemImage: "exclamationmark.shield"
+                    systemImage: "exclamationmark.triangle"
                 )
             case .pending:
-                AttachmentNotice(text: ConversationStrings.text("attachment.scanning"), systemImage: "hourglass")
+                AttachmentNotice(text: ConversationStrings.text("attachment.scanning"), systemImage: "info.circle")
             default:
                 if AttachmentRules.isImage(attachment) {
                     ImageAttachment(message: message, actions: actions)
@@ -95,12 +148,17 @@
         }
     }
 
+    /// The picture, pressed like a card, with the expand glyph on a scrim chip in its corner.
     private struct ImageAttachment: View {
         let message: ChatMessage
         let actions: MessageRowActions
 
         @State private var image: UIImage?
         @State private var failed = false
+
+        private var shape: RoundedRectangle {
+            RoundedRectangle(cornerRadius: ChatMetrics.imageRadius, style: .continuous)
+        }
 
         var body: some View {
             Group {
@@ -112,33 +170,37 @@
                             .resizable()
                             .scaledToFill()
                             .frame(width: ChatMetrics.imageWidth, height: ChatMetrics.imageHeight)
-                            .clipShape(RoundedRectangle(cornerRadius: ChatMetrics.imageRadius, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: ChatMetrics.imageRadius, style: .continuous)
-                                    .strokeBorder(Palette.border, lineWidth: Spacing.hairline)
-                            )
-                            .overlay(alignment: .topTrailing) {
-                                Image(systemName: "arrow.up.left.and.arrow.down.right")
-                                    .font(WaiveraFont.caption)
-                                    .foregroundStyle(Palette.onAccent)
-                                    .padding(Spacing.extraSmall)
-                                    .background(Palette.scrim, in: RoundedRectangle(cornerRadius: Radius.chip))
-                                    .padding(Spacing.small)
-                            }
+                            .clipShape(shape)
+                            .overlay(shape.strokeBorder(Palette.border, lineWidth: Spacing.hairline))
+                            .overlay(alignment: .topTrailing) { expandBadge }
+                            .contentShape(shape)
                     }
-                    .buttonStyle(.pressScale)
+                    .buttonStyle(.press(.card))
                     .accessibilityLabel(ConversationStrings.text("open.image"))
                 } else if failed {
                     AttachmentNotice(text: ConversationStrings.text("image.unavailable"), systemImage: "photo")
                 } else {
                     SkeletonBlock(
                         width: ChatMetrics.imageWidth,
-                        height: ChatMetrics.imageHeight,
+                        height: ChatMetrics.imageLoadingHeight,
                         cornerRadius: ChatMetrics.imageRadius
                     )
                 }
             }
             .task(id: message.id) { await load() }
+        }
+
+        /// White on the dark scrim, which is the one place the white glyph reads.
+        private var expandBadge: some View {
+            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                .resizable()
+                .scaledToFit()
+                .frame(width: ControlSize.iconSmall, height: ControlSize.iconSmall)
+                .foregroundStyle(Palette.onAccent)
+                .frame(width: ChatMetrics.imageBadge, height: ChatMetrics.imageBadge)
+                .background(Palette.scrim, in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous))
+                .padding(Spacing.small)
+                .accessibilityHidden(true)
         }
 
         private func load() async {
@@ -159,60 +221,101 @@
         }
     }
 
+    /// A file card (Android `FileAttachment`): a neutral tile, the name on one line cut in the
+    /// middle so the extension stays, "Tap to open" and the download glyph. At large text the
+    /// tile and glyph share a top row and the name takes the card's whole width.
     private struct FileAttachment: View {
         let message: ChatMessage
         let attachment: Attachment
         let onOpen: () -> Void
 
+        @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+        private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: Radius.card, style: .continuous) }
+
         var body: some View {
             let kind = AttachmentRules.kind(attachment, messageId: message.id)
+            let name = AttachmentRules.fileName(attachment, messageId: message.id)
             Button(action: onOpen) {
-                HStack(spacing: Spacing.small) {
-                    Image(systemName: kind.systemImage)
-                        .font(WaiveraFont.bodyEmphasis)
-                        .foregroundStyle(Palette.accent)
-                        .frame(width: ControlSize.iconTile, height: ControlSize.iconTile)
-                        .background(Palette.surfaceMuted, in: RoundedRectangle(cornerRadius: Radius.chip))
-                    VStack(alignment: .leading, spacing: Spacing.hairline) {
-                        Text(AttachmentRules.fileName(attachment, messageId: message.id))
-                            .font(WaiveraFont.subtitle)
-                            .foregroundStyle(Palette.text)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                        Text(ConversationStrings.text("file.caption"))
-                            .font(WaiveraFont.caption)
-                            .foregroundStyle(Palette.textSecondary)
+                Group {
+                    if dynamicTypeSize.isLargeText {
+                        VStack(alignment: .leading, spacing: Spacing.small) {
+                            HStack {
+                                IconTile(systemImage: kind.systemImage, tone: .neutral)
+                                Spacer(minLength: 0)
+                                downloadGlyph
+                            }
+                            Text(name)
+                                .waiveraTextStyle(.titleSmall)
+                                .foregroundStyle(Palette.text)
+                                .lineLimit(2)
+                                .truncationMode(.middle)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    } else {
+                        HStack(spacing: Spacing.small) {
+                            IconTile(systemImage: kind.systemImage, tone: .neutral)
+                            VStack(alignment: .leading, spacing: 0) {
+                                Text(name)
+                                    .waiveraTextStyle(.titleSmall)
+                                    .foregroundStyle(Palette.text)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                                Text(ConversationStrings.text("file.caption"))
+                                    .waiveraTextStyle(.labelMedium)
+                                    .foregroundStyle(Palette.textSecondary)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            downloadGlyph
+                        }
                     }
-                    Spacer(minLength: 0)
-                    Image(systemName: "arrow.down.circle")
-                        .foregroundStyle(Palette.textSecondary)
-                        .accessibilityHidden(true)
                 }
                 .padding(Spacing.small)
                 .frame(maxWidth: ChatMetrics.fileCardWidth)
-                .background(Palette.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                        .strokeBorder(Palette.border, lineWidth: Spacing.hairline)
-                )
+                .background(Palette.surface, in: shape)
+                .overlay(shape.strokeBorder(Palette.border, lineWidth: Spacing.hairline))
+                .contentShape(shape)
             }
-            .buttonStyle(.pressScale)
-            .accessibilityElement(children: .combine)
+            .buttonStyle(.press(.card))
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(name))
+            .accessibilityHint(ConversationStrings.text("file.caption"))
+            .accessibilityAddTraits(.isButton)
+        }
+
+        private var downloadGlyph: some View {
+            Image(systemName: "arrow.down.to.line")
+                .resizable()
+                .scaledToFit()
+                .frame(width: ControlSize.smallIcon, height: ControlSize.smallIcon)
+                .foregroundStyle(Palette.textSecondary)
+                .frame(width: ControlSize.icon, height: ControlSize.icon)
+                .accessibilityHidden(true)
         }
     }
 
+    /// A blocked, scanning or unavailable attachment: a muted card with the reason (Android
+    /// `AttachmentNotice`).
     struct AttachmentNotice: View {
         let text: String
         let systemImage: String
 
         var body: some View {
-            Label(text, systemImage: systemImage)
-                .font(WaiveraFont.caption)
-                .foregroundStyle(Palette.textSecondary)
-                .padding(.horizontal, Spacing.smallPlus)
-                .padding(.vertical, Spacing.small)
-                .frame(maxWidth: ChatMetrics.fileCardWidth, minHeight: ControlSize.minHitTarget, alignment: .leading)
-                .background(Palette.surfaceMuted, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            HStack(spacing: Spacing.small) {
+                Image(systemName: systemImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: ControlSize.smallIcon, height: ControlSize.smallIcon)
+                    .frame(width: ControlSize.icon, height: ControlSize.icon)
+                    .accessibilityHidden(true)
+                Text(text).waiveraTextStyle(.bodySmall)
+            }
+            .foregroundStyle(Palette.textSecondary)
+            .padding(.horizontal, Spacing.mediumSmall)
+            .padding(.vertical, Spacing.small)
+            .frame(maxWidth: ChatMetrics.fileCardWidth, minHeight: ControlSize.minHitTarget, alignment: .leading)
+            .background(Palette.surfaceMuted, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            .accessibilityElement(children: .combine)
         }
     }
 #endif

@@ -14,6 +14,10 @@ enum ChatMetrics {
     static let imageWidth: CGFloat = 250
     static let imageHeight: CGFloat = 190
     static let imageRadius: CGFloat = 13
+    /// The image skeleton's height while it loads (Android `ImageLoadingHeight`).
+    static let imageLoadingHeight: CGFloat = 150
+    /// The square behind an image's expand glyph.
+    static let imageBadge: CGFloat = 28
     static let fileCardWidth: CGFloat = 250
     static let reactionPillHeight: CGFloat = 30
     static let typingSlot: CGFloat = 22
@@ -29,6 +33,12 @@ enum ChatMetrics {
     static let emojiTarget: CGFloat = 48
     static let reactionTabMinWidth: CGFloat = 62
     static let tableCellWidth: CGFloat = 150
+    static let tableCellMinHeight: CGFloat = 38
+    static let tableMinWidth: CGFloat = 260
+    /// A blockquote's accent rule.
+    static let quoteBar: CGFloat = 3
+    /// Room for a list's marker ("10.") before its item.
+    static let listMarkerGutter: CGFloat = 24
     /// Farther than this from the newest message shows "Jump to latest" (03 §15).
     static let jumpToLatestThreshold: CGFloat = 180
     /// Within this of the newest message, new rows keep the list pinned to the bottom.
