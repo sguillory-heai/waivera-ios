@@ -136,14 +136,11 @@ extension AppModel {
     }
 
     func choosePrimer(_ choice: PrimerChoice) {
-        environment.primerStore.markSeen()
-        hasSeenPrimer = true
+        markPrimerSeen()
         let authorizer = environment.authorizer
-        let coordinator = pushCoordinator
         Task {
             let status = await authorizer.request(NotificationPermissionPolicy.request(for: choice))
-            authorization = status
-            await coordinator.authorizationChanged(status)
+            await authorizationAnswered(status)
         }
     }
 

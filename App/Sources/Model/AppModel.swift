@@ -268,8 +268,19 @@ final class AppModel {
 
     private func refreshAuthorization() async {
         let status = await environment.authorizer.currentAuthorization()
+        await authorizationAnswered(status)
+    }
+
+    /// The system's answer, from a launch check or the primer. The setters stay private to
+    /// this file, so the notifications extension writes through here.
+    func authorizationAnswered(_ status: NotificationAuthorization) async {
         authorization = status
         await pushCoordinator.authorizationChanged(status)
+    }
+
+    func markPrimerSeen() {
+        environment.primerStore.markSeen()
+        hasSeenPrimer = true
     }
 }
 
