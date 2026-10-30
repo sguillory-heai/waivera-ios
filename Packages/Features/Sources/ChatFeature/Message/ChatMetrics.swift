@@ -25,8 +25,11 @@ enum ChatMetrics {
     static let stagedThumbnail: CGFloat = 50
     static let readOnlyTile: CGFloat = 34
     static let liveDot: CGFloat = 7
-    static let skeletonBubbleHeight: CGFloat = 54
+    /// A one-line bubble: the body line (22) and the bubble's vertical padding (Android `BubbleBone`).
+    static let skeletonBubbleHeight: CGFloat = 38
     static let skeletonWidthFractions: [CGFloat] = [0.66, 0.51, 0.78, 0.62, 0.47]
+    /// Enough bones to fill a tall timeline; the oldest is cut at the top.
+    static let skeletonFillRows = 12
     static let arrivalOffset: CGFloat = 18
     static let arrivalMinOpacity = 0.35
     static let previewMaxHeight: CGFloat = 220

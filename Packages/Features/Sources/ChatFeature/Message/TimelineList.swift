@@ -159,27 +159,17 @@
         }
     }
 
-    /// Two bubble placeholders at the top of the list while an older page loads (Android
+    /// Two message bones at the top of the list while an older page loads (Android
     /// `OlderMessagesRow`); spoken as one "Loading older messages".
     private struct OlderMessagesSkeleton: View {
+        @State private var width: CGFloat = 0
+
         var body: some View {
-            VStack(spacing: Spacing.smallPlus) {
-                ForEach(Array(ChatMetrics.skeletonWidthFractions.prefix(2).enumerated()), id: \.offset) { index, fraction in
-                    HStack {
-                        if !index.isMultiple(of: 2) { Spacer(minLength: 0) }
-                        SkeletonBlock(
-                            height: ChatMetrics.skeletonBubbleHeight,
-                            cornerRadius: ChatMetrics.bubbleRadius
-                        )
-                        .containerRelativeFrame(.horizontal) { width, _ in width * fraction }
-                        if index.isMultiple(of: 2) { Spacer(minLength: 0) }
-                    }
-                }
-            }
-            .padding(.horizontal, Spacing.medium)
-            .padding(.vertical, Spacing.small)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(ConversationStrings.text("older.loading"))
+            MessageBones(rows: 2, width: width)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(ConversationStrings.text("older.loading"))
         }
     }
 
@@ -194,29 +184,96 @@
         }
     }
 
-    /// Bubble-shaped placeholders while the first page loads (shown after ~300 ms).
+    /// Message bones while the first page loads (shown after ~300 ms; Android
+    /// `MessageListSkeleton`): they fill the timeline from the bottom up, as the newest messages
+    /// do, and the oldest is cut at the top edge. Spoken once.
     struct MessagesSkeleton: View {
         var body: some View {
             GeometryReader { geometry in
-                VStack(spacing: Spacing.smallPlus) {
+                VStack(spacing: 0) {
                     Spacer(minLength: 0)
-                    ForEach(Array(ChatMetrics.skeletonWidthFractions.enumerated()), id: \.offset) { index, fraction in
-                        HStack {
-                            if index.isMultiple(of: 2) { Spacer(minLength: 0) }
-                            SkeletonBlock(
-                                width: geometry.size.width * fraction,
-                                height: ChatMetrics.skeletonBubbleHeight,
-                                cornerRadius: ChatMetrics.bubbleRadius
-                            )
-                            if !index.isMultiple(of: 2) { Spacer(minLength: 0) }
-                        }
-                    }
+                    MessageBones(rows: ChatMetrics.skeletonFillRows, width: geometry.size.width)
                 }
-                .padding(.horizontal, Spacing.medium)
-                .padding(.bottom, Spacing.medium)
+                .frame(width: geometry.size.width, height: geometry.size.height, alignment: .bottom)
+                .clipped()
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(ConversationStrings.text("messages.loading"))
+        }
+    }
+
+    /// Bones shaped like message rows: someone else's has the small avatar, the author line, a
+    /// one-line bubble and its time; mine has the bubble and its "Sent" line on the trailing side.
+    /// Counted from the bottom, so the newest bone is always someone else's.
+    struct MessageBones: View {
+        let rows: Int
+        let width: CGFloat
+
+        private static let authorFraction: CGFloat = 0.35
+        private static let timeFraction: CGFloat = 0.22
+        private static let sentFraction: CGFloat = 0.3
+
+        var body: some View {
+            VStack(spacing: 0) {
+                ForEach(0..<rows, id: \.self) { index in
+                    let fractions = ChatMetrics.skeletonWidthFractions
+                    let fraction = fractions[index % fractions.count]
+                    if (rows - 1 - index) % 2 == 1 {
+                        mine(fraction)
+                    } else {
+                        incoming(fraction)
+                    }
+                }
+            }
+            .padding(.vertical, Spacing.small)
+        }
+
+        /// The bubble column's width beside an avatar, or alone for mine.
+        private func column(withAvatar: Bool) -> CGFloat {
+            let inner = width - 2 * Spacing.gutter - (withAvatar ? ControlSize.avatarSmall + Spacing.small : 0)
+            return max(inner, 0) * ChatMetrics.bubbleMaxWidthFraction
+        }
+
+        private func incoming(_ fraction: CGFloat) -> some View {
+            let column = column(withAvatar: true)
+            return HStack(alignment: .top, spacing: Spacing.small) {
+                SkeletonBlock(
+                    width: ControlSize.avatarSmall,
+                    height: ControlSize.avatarSmall,
+                    cornerRadius: AvatarGeometry.cornerRadius(size: ControlSize.avatarSmall)
+                )
+                .padding(.top, ChatMetrics.avatarTopOffset)
+                VStack(alignment: .leading, spacing: 0) {
+                    SkeletonBlock(width: column * Self.authorFraction, height: ControlSize.skeletonLine)
+                        .padding(.bottom, Spacing.xxSmall)
+                    SkeletonBlock(
+                        width: column * fraction,
+                        height: ChatMetrics.skeletonBubbleHeight,
+                        cornerRadius: ChatMetrics.bubbleRadius
+                    )
+                    SkeletonBlock(width: column * Self.timeFraction, height: ControlSize.skeletonLine)
+                        .padding(.top, Spacing.extraSmall)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, Spacing.gutter)
+            .padding(.top, Spacing.small)
+        }
+
+        private func mine(_ fraction: CGFloat) -> some View {
+            let column = column(withAvatar: false)
+            return VStack(alignment: .trailing, spacing: 0) {
+                SkeletonBlock(
+                    width: column * fraction,
+                    height: ChatMetrics.skeletonBubbleHeight,
+                    cornerRadius: ChatMetrics.bubbleRadius
+                )
+                SkeletonBlock(width: column * Self.sentFraction, height: ControlSize.skeletonLine)
+                    .padding(.top, Spacing.extraSmall)
+            }
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .padding(.horizontal, Spacing.gutter)
+            .padding(.top, Spacing.small)
         }
     }
 #endif
