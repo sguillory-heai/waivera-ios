@@ -83,6 +83,8 @@
         public static let scrim = Color(token: .scrim)
         /// The long-press focus overlay's scrim: 70% light, 76% dark.
         public static let focusScrim = Color(token: .focusScrim)
+        /// Behind a full-screen image preview: black at 94%.
+        public static let previewScrim = Color(token: .previewScrim)
         public static let thumb = Color(token: .thumb)
         public static let milestone = Color(token: .milestone)
         public static let holiday = Color(token: .holiday)

@@ -101,6 +101,12 @@ struct ColorTokenTests {
         #expect(ColorToken.scrim.light.alpha == 0.36)
     }
 
+    @Test func previewScrimIsAlmostBlackInBothThemes() {
+        #expect(ColorToken.previewScrim.light.alpha == 0.94)
+        #expect(ColorToken.previewScrim.dark.alpha == 0.94)
+        #expect(ColorToken.previewScrim.light.alpha > ColorToken.focusScrim.dark.alpha)
+    }
+
     @Test func derivedAccentTokensAreTranslucentAccent() {
         #expect(ColorToken.accentWash.light == RGBColor(hex: 0x6A3DC4, alpha: 0.08))
         #expect(ColorToken.accentBorder.dark.alpha == 0.16)

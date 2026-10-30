@@ -111,6 +111,8 @@ public enum BrandPalette {
     /// The long-press focus overlay's scrim (wave 30 O3): the chat behind stops reading.
     public static let focusScrimAlphaLight = 0.70
     public static let focusScrimAlphaDark = 0.76
+    /// Behind a full-screen image preview (Android `PREVIEW_SCRIM_ALPHA`): the chat is gone.
+    public static let previewScrimAlpha = 0.94
     public static let washAlpha = 0.08
     public static let borderAlpha = 0.16
     public static let borderStrongAlpha = 0.21
@@ -199,6 +201,8 @@ public enum ColorToken: String, CaseIterable, Sendable {
     case onMultipleContainer
     /// Behind the long-press focus overlay: stronger than `scrim`.
     case focusScrim
+    /// Behind a full-screen image preview: almost black in both themes.
+    case previewScrim
     /// Resting skeleton bone, and the static frame under Reduce Motion.
     case skeletonBase
     /// The other end of the skeleton pulse.
@@ -298,6 +302,11 @@ public enum ColorToken: String, CaseIterable, Sendable {
         case .warningText: pair(0xA04A06, 0xFBBF24)
         case .warningContainer: pair(0xFEF3C7, 0x3A2C17)
         case .onWarningContainer: pair(0x92400E, 0xFDE68A)
+        case .previewScrim:
+            (
+                RGBColor(hex: 0, alpha: BrandPalette.previewScrimAlpha),
+                RGBColor(hex: 0, alpha: BrandPalette.previewScrimAlpha)
+            )
         case .focusScrim:
             (
                 RGBColor(hex: 0, alpha: BrandPalette.focusScrimAlphaLight),
