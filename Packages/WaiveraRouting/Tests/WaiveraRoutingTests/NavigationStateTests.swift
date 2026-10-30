@@ -156,8 +156,8 @@ struct RouteCatalogTests {
         let routes = RouteCatalog.links.compactMap(\.destination).flatMap(\.path)
         let covered = Set(routes.map(caseName))
         let expected: Set<String> = [
-            "activity", "conversation", "thread", "calendarEvent", "profile", "organization", "people", "person",
-            "bookmarks", "settings", "notificationSettings", "appearanceSettings", "accountSettings",
+            "activity", "conversation", "thread", "groupMembers", "calendarEvent", "profile", "organization",
+            "people", "person", "bookmarks", "settings", "notificationSettings", "appearanceSettings",
             "changePassword",
         ]
         #expect(covered == expected)

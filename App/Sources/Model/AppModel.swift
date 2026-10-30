@@ -30,6 +30,10 @@ final class AppModel {
     /// required password change). It stays on screen through `.bootstrapping`, so that screen
     /// keeps its busy state and its answer instead of flashing the loader or sign-in.
     private(set) var heldGate: GateScreen?
+    /// Unread messages across every chat, for the Chat tab's count.
+    private(set) var unreadTotal = 0
+    /// The account menu sheet, opened from the avatar in a tab root's top bar.
+    var isAccountMenuPresented = false
 
     @ObservationIgnored let dataEnvironment: DataEnvironment?
     @ObservationIgnored let environment: AppEnvironment
@@ -158,6 +162,7 @@ final class AppModel {
         observe(data.settings.settings()) { model, value in model.settingsChanged(to: value) }
         observe(data.realtimeStatus.banner()) { model, banner in model.connectionBanner = banner }
         observe(data.alerts.alerts()) { model, alert in model.alertArrived(alert) }
+        observe(data.conversations.totalUnread()) { model, total in model.unreadTotal = total }
         // Read on any surface, here or on the web, clears that chat's notifications (IF-07).
         observe(data.alerts.conversationsRead()) { _, conversationID in
             await DeliveredNotifications.removeAll(conversationID: conversationID)
@@ -246,6 +251,7 @@ final class AppModel {
             tapRouter.discardPending()
             navigation = NavigationState()
             chatAlert = nil
+            isAccountMenuPresented = false
             await pushCoordinator.didSignOut()
         }
     }
@@ -312,6 +318,17 @@ extension AppModel {
 
     func select(_ tab: AppTab) {
         navigation.select(tab)
+    }
+
+    func presentAccountMenu() {
+        isAccountMenuPresented = true
+    }
+
+    /// From the account menu: close it, then open `route` over the current tab (Android
+    /// `openFromAccountMenu`), so back returns to the tab the menu was opened on.
+    func openFromAccountMenu(_ route: AppRoute) {
+        isAccountMenuPresented = false
+        navigation.push(route)
     }
 
     func presentNewChat() {

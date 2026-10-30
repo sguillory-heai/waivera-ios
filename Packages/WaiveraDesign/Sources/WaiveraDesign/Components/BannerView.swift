@@ -12,6 +12,9 @@
         case info
         /// The conversation cannot be written to.
         case readOnly
+        /// Something needs attention but nothing failed (Android `BannerTone.Warning`): a build
+        /// without settings, notifications blocked by the system, a page that would not open.
+        case warning
     }
 
     /// A full-width tinted banner (Android `WaiveraBanner`): an icon, an optional title, the
@@ -156,13 +159,14 @@
             case .error: "exclamationmark.circle"
             case .info: "info.circle"
             case .readOnly: "lock"
+            case .warning: "exclamationmark.triangle"
             }
         }
 
         private var container: Color {
             switch kind {
             case .info: Palette.accentSoft
-            case .reconnecting: Palette.warningContainer
+            case .reconnecting, .warning: Palette.warningContainer
             case .error: Palette.dangerContainer
             case .offline, .readOnly: Palette.surfaceMuted
             }
@@ -171,7 +175,7 @@
         private var ink: Color {
             switch kind {
             case .info: Palette.onAccentSoft
-            case .reconnecting: Palette.onWarningContainer
+            case .reconnecting, .warning: Palette.onWarningContainer
             case .error: Palette.onDangerContainer
             case .offline: Palette.text
             case .readOnly: Palette.textSecondary
@@ -188,6 +192,7 @@
                     BannerView(.error, message: "Message not sent.", actionTitle: "Retry", action: {}, onDismiss: {})
                     BannerView(.info, title: "Alex Rivera", message: "Can you cover Friday?", onDismiss: {})
                     BannerView(.readOnly, message: "Only admins can post in this channel.")
+                    BannerView(.warning, title: "Notifications are off", message: "Turn them on in Settings.")
                 }
                 .padding(Spacing.medium)
             }

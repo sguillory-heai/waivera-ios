@@ -181,7 +181,7 @@ public struct AccountSummary: Equatable, Sendable {
 @Observable
 public final class AccountModel {
     public private(set) var account: AccountSummary?
-    public var isConfirmingSignOut = false
+    public private(set) var isConfirmingSignOut = false
     public private(set) var isSigningOut = false
 
     @ObservationIgnored private let session: any SessionRepository
@@ -198,7 +198,10 @@ public final class AccountModel {
     public func run() async {
         for await state in session.states() {
             account = state.user.map(AccountSummary.init)
-            if case .signedOut = state { isConfirmingSignOut = false }
+            if case .signedOut = state {
+                isConfirmingSignOut = false
+                isSigningOut = false
+            }
         }
     }
 
@@ -207,12 +210,19 @@ public final class AccountModel {
         isConfirmingSignOut = true
     }
 
-    /// `true` exactly once: the caller then signs out. Later calls return `false`.
+    /// `true` exactly once: the caller then signs out. Later calls return `false`. The sheet
+    /// stays up with its confirm busy (and its dismiss disabled) until the session has signed
+    /// out, as on Android, so nothing on screen suggests the sign-out was abandoned.
     public func confirmSignOut() -> Bool {
         guard !isSigningOut, account != nil else { return false }
         isSigningOut = true
-        isConfirmingSignOut = false
         return true
+    }
+
+    /// The sheet's binding: it cannot be dismissed while the sign-out runs.
+    public func setConfirmingSignOut(_ isPresented: Bool) {
+        guard !isSigningOut else { return }
+        isConfirmingSignOut = isPresented
     }
 }
 

@@ -6,11 +6,17 @@ enum AppStrings {
     static var tabToday: String { String(localized: "app.tab.today") }
     static var tabChat: String { String(localized: "app.tab.chat") }
     static var tabSchedule: String { String(localized: "app.tab.schedule") }
-    static var accountMenu: String { String(localized: "app.menu.account") }
-    static var menuProfile: String { String(localized: "app.menu.profile") }
+    static var accountFallback: String { String(localized: "app.menu.accountFallback") }
+    static var viewProfile: String { String(localized: "app.menu.viewProfile") }
     static var menuPeople: String { String(localized: "app.menu.people") }
     static var menuBookmarks: String { String(localized: "app.menu.bookmarks") }
     static var menuSettings: String { String(localized: "app.menu.settings") }
+
+    /// VoiceOver value on the Chat tab: "4 unread".
+    static func tabUnread(_ count: Int) -> String {
+        String(localized: "app.tab.unread \(count)")
+    }
+
     static var alertOpen: String { String(localized: "app.alert.open") }
     static var privacyCover: String { String(localized: "app.privacyCover") }
     static var replyNotSentTitle: String { String(localized: "app.reply.notSent.title") }

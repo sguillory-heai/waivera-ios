@@ -4,9 +4,12 @@
 "app.tab.today" = "Today";
 "app.tab.chat" = "Chat";
 "app.tab.schedule" = "Schedule";
-/* VoiceOver label for the avatar button that opens the account menu. */
-"app.menu.account" = "Account menu";
-"app.menu.profile" = "Profile";
+/* VoiceOver value on the Chat tab while messages are unread. */
+"app.tab.unread %lld" = "%lld unread";
+/* The account menu's first row when the signed-in name is not known yet. */
+"app.menu.accountFallback" = "Your account";
+/* Under the signed-in name on the account menu's first row, which opens the profile. */
+"app.menu.viewProfile" = "View profile";
 "app.menu.people" = "People";
 "app.menu.bookmarks" = "Bookmarks";
 "app.menu.settings" = "Settings";

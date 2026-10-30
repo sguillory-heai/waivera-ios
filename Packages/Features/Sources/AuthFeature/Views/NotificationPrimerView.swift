@@ -3,13 +3,24 @@
     import WaiveraDesign
 
     /// One-screen value primer shown once after the first sign-in, before the system prompt (09 §5,
-    /// UX research). The system prompt opens only from "Turn on notifications", never on its own.
-    /// "Not now" opts into quiet (provisional) delivery in the app, so nothing is lost while the
-    /// person decides. Either button can be used once: a second tap cannot stack prompts.
+    /// Android `NotificationPrimerScreen`). The system prompt opens only from "Turn on
+    /// notifications", never on its own. "Not now" opts into quiet (provisional) delivery in the
+    /// app, so nothing is lost while the person decides. Either button can be used once: a second
+    /// tap cannot stack prompts.
+    ///
+    /// The primer's whole point is "Turn on notifications", so that button stays pinned in thumb
+    /// reach at every text size. At large text two pinned buttons would crowd out the kinds, so
+    /// there "Not now" moves to the end of the scrolling content instead.
     public struct NotificationPrimerView: View {
+        @Environment(\.dynamicTypeSize) private var dynamicTypeSize
         private let onEnable: () -> Void
         private let onNotNow: () -> Void
-        @State private var hasChosen = false
+        @State private var choice: Choice?
+
+        private enum Choice {
+            case enable
+            case notNow
+        }
 
         public init(onEnable: @escaping () -> Void, onNotNow: @escaping () -> Void) {
             self.onEnable = onEnable
@@ -17,59 +28,83 @@
         }
 
         public var body: some View {
-            AuthScaffold {
+            let notNowInline = dynamicTypeSize.isLargeText
+            AuthScaffold(pinnedAtLargeText: true) {
                 AuthHeader(
                     systemImage: "bell.badge.fill",
                     title: AuthStrings.primerTitle,
-                    message: AuthStrings.primerMessage
+                    message: AuthStrings.primerMessage,
+                    tone: .amber,
+                    welcome: true
                 )
-                SampleNotification()
                 VStack(alignment: .leading, spacing: Spacing.medium) {
-                    ForEach(PrimerCategory.allCases, id: \.self) { category in
-                        PrimerCategoryRow(category: category)
+                    SampleNotification()
+                    ForEach(PrimerKind.allCases, id: \.self) { kind in
+                        PrimerKindRow(kind: kind)
+                    }
+                    Text(AuthStrings.primerFootnote)
+                        .waiveraTextStyle(.bodyMedium)
+                        .foregroundStyle(Palette.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, Spacing.extraSmall)
+                    if notNowInline {
+                        notNow
                     }
                 }
-                Text(AuthStrings.primerFootnote)
-                    .font(WaiveraFont.caption)
-                    .foregroundStyle(Palette.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                VStack(spacing: Spacing.small) {
-                    WaiveraButton(AuthStrings.primerEnable, isLoading: hasChosen) {
-                        choose(onEnable)
-                    }
-                    .accessibilityIdentifier("primer.enable")
-                    WaiveraButton(AuthStrings.primerNotNow, variant: .plain) {
-                        choose(onNotNow)
-                    }
-                    .disabled(hasChosen)
-                    .accessibilityIdentifier("primer.notNow")
+            } actions: {
+                WaiveraButton(
+                    AuthStrings.primerEnable,
+                    isLoading: choice == .enable,
+                    loadingTitle: AuthStrings.primerRequesting
+                ) {
+                    choose(.enable, onEnable)
+                }
+                .disabled(choice == .notNow)
+                .accessibilityIdentifier("primer.enable")
+                if !notNowInline {
+                    notNow
                 }
             }
             .accessibilityIdentifier("screen.notification-primer")
         }
 
-        private func choose(_ action: () -> Void) {
-            guard !hasChosen else { return }
-            hasChosen = true
+        private var notNow: some View {
+            WaiveraButton(AuthStrings.primerNotNow, variant: .text, fillsWidth: true) {
+                choose(.notNow, onNotNow)
+            }
+            .disabled(choice != nil)
+            .accessibilityIdentifier("primer.notNow")
+        }
+
+        private func choose(_ made: Choice, _ action: () -> Void) {
+            guard choice == nil else { return }
+            choice = made
             action()
         }
     }
 
+    /// A mocked notification, so the person sees what they are agreeing to. VoiceOver reads it as
+    /// one example rather than as a real alert.
     private struct SampleNotification: View {
         var body: some View {
-            HStack(alignment: .top, spacing: Spacing.smallPlus) {
-                AvatarView(name: AuthStrings.primerSampleSender, size: ControlSize.avatarSmall)
-                VStack(alignment: .leading, spacing: Spacing.extraSmall) {
+            HStack(alignment: .top, spacing: Spacing.mediumSmall) {
+                WaiveraLogo(style: .mark, decorative: true)
+                    .frame(height: ControlSize.icon)
+                VStack(alignment: .leading, spacing: Spacing.xxSmall) {
+                    Text(AuthStrings.primerSampleApp)
+                        .waiveraTextStyle(.labelMedium)
+                        .foregroundStyle(Palette.textSecondary)
                     Text(AuthStrings.primerSampleSender)
-                        .font(WaiveraFont.captionEmphasis)
+                        .waiveraTextStyle(.titleSmall)
                         .foregroundStyle(Palette.text)
                     Text(AuthStrings.primerSampleBody)
-                        .font(WaiveraFont.caption)
-                        .foregroundStyle(Palette.textSecondary)
+                        .waiveraTextStyle(.bodyMedium)
+                        .foregroundStyle(Palette.text)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(Spacing.smallPlus)
+            .padding(Spacing.mediumSmall)
             .background(Palette.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
@@ -80,22 +115,19 @@
         }
     }
 
-    private struct PrimerCategoryRow: View {
-        let category: PrimerCategory
+    /// One kind: its meaning tile, title and explanation, read together as one VoiceOver stop.
+    private struct PrimerKindRow: View {
+        let kind: PrimerKind
 
         var body: some View {
-            HStack(alignment: .top, spacing: Spacing.smallPlus) {
-                Image(systemName: category.systemImage)
-                    .font(WaiveraFont.bodyEmphasis)
-                    .foregroundStyle(Palette.accent)
-                    .frame(minWidth: ControlSize.smallIcon)
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: Spacing.extraSmall) {
-                    Text(category.title)
-                        .font(WaiveraFont.bodyEmphasis)
+            HStack(alignment: .top, spacing: Spacing.mediumSmall) {
+                IconTile(systemImage: kind.systemImage, tone: kind.tone)
+                VStack(alignment: .leading, spacing: Spacing.xxSmall) {
+                    Text(kind.title)
+                        .waiveraTextStyle(.titleSmall)
                         .foregroundStyle(Palette.text)
-                    Text(category.detail)
-                        .font(WaiveraFont.caption)
+                    Text(kind.detail)
+                        .waiveraTextStyle(.bodyMedium)
                         .foregroundStyle(Palette.textSecondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -107,5 +139,5 @@
 
     #Preview("Light") { NotificationPrimerView(onEnable: {}, onNotNow: {}) }
     #Preview("Dark") { NotificationPrimerView(onEnable: {}, onNotNow: {}).preferredColorScheme(.dark) }
-    #Preview("AX XXXL") { NotificationPrimerView(onEnable: {}, onNotNow: {}).dynamicTypeSize(.accessibility5) }
+    #Preview("AX5") { NotificationPrimerView(onEnable: {}, onNotNow: {}).dynamicTypeSize(.accessibility5) }
 #endif

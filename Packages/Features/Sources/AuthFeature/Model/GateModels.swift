@@ -12,14 +12,23 @@ public final class BootstrapFailedModel {
     public private(set) var error: WaiveraError?
     public private(set) var isRetrying = false
     public private(set) var failureCount = 0
+    /// When the last Try again failed, so a failed retry looks different from the first failure
+    /// ("Still can't reach Waivera · last tried at 10:31"). `nil` until a retry fails.
+    public private(set) var lastFailedRetryAt: Date?
 
     @ObservationIgnored private let session: (any SessionRepository)?
     @ObservationIgnored private let onRetry: () -> Void
+    @ObservationIgnored private let now: @Sendable () -> Date
 
     /// `onRetry` is the app's `retryBootstrap`; the model never calls the session to retry itself,
     /// so the gate owner stays the one place that starts a bootstrap.
-    public init(session: (any SessionRepository)?, onRetry: @escaping () -> Void) {
+    public init(
+        session: (any SessionRepository)?,
+        now: @escaping @Sendable () -> Date = Date.init,
+        onRetry: @escaping () -> Void
+    ) {
         self.session = session
+        self.now = now
         self.onRetry = onRetry
         if let state = session?.currentState { apply(state) }
     }
@@ -39,7 +48,10 @@ public final class BootstrapFailedModel {
         case .bootstrapping:
             break
         case .bootstrapFailed(let newError):
-            if isRetrying { failureCount += 1 }
+            if isRetrying {
+                failureCount += 1
+                lastFailedRetryAt = now()
+            }
             error = newError
             isRetrying = false
         default:

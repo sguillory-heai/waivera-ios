@@ -2,7 +2,7 @@
     import SwiftUI
     import UIKit
 
-    /// Labelled text field with an optional password reveal and an inline error.
+    /// Labelled text field with an optional leading glyph, password reveal and inline error.
     ///
     /// A secure field keeps a `SecureField` and a `TextField` stacked and shows one of them, so
     /// Show password moves focus to the visible one and the keyboard stays up while typing.
@@ -27,6 +27,7 @@
         private let isSecure: Bool
         private let contentType: UITextContentType?
         private let keyboard: UIKeyboardType
+        private let systemImage: String?
         private let identifier: String?
         private let focusLink: FocusLink?
 
@@ -41,6 +42,7 @@
             isSecure: Bool = false,
             contentType: UITextContentType? = nil,
             keyboard: UIKeyboardType = .default,
+            systemImage: String? = nil,
             accessibilityIdentifier: String? = nil
         ) {
             self.label = label
@@ -50,6 +52,7 @@
             self.isSecure = isSecure
             self.contentType = contentType
             self.keyboard = keyboard
+            self.systemImage = systemImage
             identifier = accessibilityIdentifier
             focusLink = nil
         }
@@ -65,6 +68,7 @@
             isSecure: Bool = false,
             contentType: UITextContentType? = nil,
             keyboard: UIKeyboardType = .default,
+            systemImage: String? = nil,
             accessibilityIdentifier: String? = nil
         ) {
             self.label = label
@@ -74,6 +78,7 @@
             self.isSecure = isSecure
             self.contentType = contentType
             self.keyboard = keyboard
+            self.systemImage = systemImage
             identifier = accessibilityIdentifier
             focusLink = FocusLink(
                 isFocused: { focus.wrappedValue == field },
@@ -94,6 +99,14 @@
                     .foregroundStyle(Palette.textSecondary)
                     .accessibilityHidden(true)
                 HStack(spacing: Spacing.small) {
+                    if let systemImage {
+                        // Decorative (Android `FieldIcon`): the label names the field.
+                        Image(systemName: systemImage)
+                            .font(.system(size: ControlSize.icon * 0.8))
+                            .foregroundStyle(Palette.textSecondary)
+                            .frame(width: ControlSize.icon)
+                            .accessibilityHidden(true)
+                    }
                     field
                         .font(WaiveraFont.body)
                         .foregroundStyle(Palette.text)
@@ -200,7 +213,13 @@
 
         var body: some View {
             VStack(spacing: Spacing.medium) {
-                WaiveraTextField("Email", text: $email, contentType: .emailAddress, keyboard: .emailAddress)
+                WaiveraTextField(
+                    "Email",
+                    text: $email,
+                    contentType: .emailAddress,
+                    keyboard: .emailAddress,
+                    systemImage: "envelope"
+                )
                 WaiveraTextField(
                     "Password",
                     text: $password,

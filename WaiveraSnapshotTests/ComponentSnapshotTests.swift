@@ -92,13 +92,15 @@ final class ComponentSnapshotTests: XCTestCase {
                     ChipView("All", isSelected: true) {}
                     ChipView("Unread", isSelected: false) {}
                 }
-                WaiveraTextField("Email", text: .constant("alex@example.com"))
+                WaiveraTextField("Email", text: .constant("alex@example.com"), systemImage: "envelope")
                 WaiveraTextField(
                     "Password",
                     text: .constant("secret"),
                     error: "Check your password and try again.",
-                    isSecure: true
+                    isSecure: true,
+                    systemImage: "lock"
                 )
+                WaiveraTextField("Display name", text: .constant(""), placeholder: "Alex Rivera")
             }
             .padding(Spacing.medium),
             named: "inputs"
@@ -112,6 +114,13 @@ final class ComponentSnapshotTests: XCTestCase {
                 BannerView.reconnecting {}
                 BannerView(.error, message: "Message not sent.", actionTitle: "Retry", action: {}, onDismiss: {})
                 BannerView(.readOnly, message: "Only admins can post in this channel.")
+                BannerView(
+                    .warning,
+                    title: "Notifications are off",
+                    message: "Turn them on in iOS Settings to hear about new messages.",
+                    actionTitle: "Open Settings",
+                    action: {}
+                )
                 UndoToast(message: "Marked all activity as read") {}
                 SyncStateIndicator(state: .pending) {}
                 SyncStateIndicator(state: .failed) {}
@@ -146,6 +155,23 @@ final class ComponentSnapshotTests: XCTestCase {
             ) {}
             .frame(height: 560),
             named: "confirmation"
+        )
+    }
+
+    /// The sheet that stays up while its action runs (sign out): the confirm button busy, Cancel
+    /// unavailable until it finishes.
+    func testConfirmationSheetConfirming() {
+        assertVariants(
+            ConfirmationSheet(
+                title: "Sign out of Waivera?",
+                message: "You'll stop getting notifications on this device until you sign in again.",
+                confirmTitle: "Sign out",
+                isConfirming: true,
+                confirmingTitle: "Signing out…",
+                dismissesOnConfirm: false
+            ) {}
+            .frame(height: 560),
+            named: "confirmation_confirming"
         )
     }
 

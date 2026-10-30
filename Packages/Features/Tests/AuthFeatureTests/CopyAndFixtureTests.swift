@@ -22,8 +22,27 @@ struct AuthCopyTests {
         #expect(AuthStrings.newPasswordHint.contains("8"))
     }
 
-    @Test func resetMessageNamesTheAddress() {
-        #expect(AuthStrings.resetSentMessage("alex@example.org").contains("alex@example.org"))
+    @Test func resetMessageNamesTheAddressOnItsOwnLine() {
+        let message = AuthStrings.resetSentMessage("alex@example.org")
+        #expect(message.hasSuffix("\nalex@example.org"))
+        #expect(!message.hasPrefix("auth."))
+    }
+
+    @Test func signInCarriesNoFillerCopy() {
+        // Everything on sign-in helps someone sign in: a title, the fields, the actions and the
+        // legal sentence, and nothing else (as on Android).
+        #expect(AuthStrings.signInTitle == "Welcome back")
+        #expect(
+            AuthStrings.legalSentence
+                == "By continuing, you agree to our Terms of Service and Privacy Policy."
+        )
+        for text in [
+            AuthStrings.signInFailedTitle, AuthStrings.resetSentTitle, AuthStrings.linkFailedTitle,
+            AuthStrings.linkFailedMessage, AuthStrings.passwordPlaceholder, AuthStrings.legalOpenHint,
+        ] {
+            #expect(!text.isEmpty)
+            #expect(!text.hasPrefix("auth."))
+        }
     }
 
     @Test func screenCopyIsUserFacing() {
@@ -49,6 +68,19 @@ struct AuthCopyTests {
         for category in PrimerCategory.allCases {
             #expect(!category.title.hasPrefix("auth."))
             #expect(!category.detail.hasPrefix("auth."))
+        }
+    }
+
+    @Test func primerGroupsTheCategoriesIntoThreeKinds() {
+        #expect(PrimerKind.allCases == [.messages, .schedule, .digest])
+        let grouped = PrimerKind.allCases.flatMap(\.categories)
+        #expect(grouped == PrimerCategory.allCases, "every category is explained once, in order")
+        #expect(PrimerKind.messages.tone == .brand)
+        #expect(PrimerKind.schedule.tone == .teal)
+        #expect(PrimerKind.digest.tone == .amber)
+        for kind in PrimerKind.allCases {
+            #expect(!kind.title.hasPrefix("auth."))
+            #expect(!kind.detail.hasPrefix("auth."))
         }
     }
 }

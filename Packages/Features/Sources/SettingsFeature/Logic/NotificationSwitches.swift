@@ -48,3 +48,21 @@ public enum NotificationSwitches {
         preferences.chatMessages = preferences.mentions || preferences.reactions
     }
 }
+
+/// Why the category, preview and in-app switches are dimmed, if they are.
+public enum NotificationSwitchBlock: Equatable, Sendable {
+    /// The push master switch is off.
+    case pushOff
+    /// iOS blocks every notification from the app; the switches cannot fix that.
+    case systemOff
+}
+
+extension NotificationSwitches {
+    /// The dependent switches are dimmed, not changed, while push is off (08 §8) or iOS blocks the
+    /// app (Android UI2-24): a switch reading On must never promise a notification. `nil` when
+    /// they are live. Quiet delivery and "not asked yet" still deliver, so they block nothing.
+    public static func block(pushEnabled: Bool, system: SystemNotificationStatus) -> NotificationSwitchBlock? {
+        if system == .offInSystemSettings { return .systemOff }
+        return pushEnabled ? nil : .pushOff
+    }
+}

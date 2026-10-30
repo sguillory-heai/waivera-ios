@@ -44,7 +44,7 @@ struct RootView: View {
                 .background(Palette.background)
                 .accessibilityIdentifier("screen.loading")
         case .signIn:
-            SignInView()
+            SignInView(legalLinks: LegalLinks.from(webBase: AppConfiguration.main.webBaseURL))
         case .bootstrapFailed:
             BootstrapFailedView(
                 message: model.bootstrapFailureMessage,

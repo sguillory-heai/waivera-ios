@@ -125,7 +125,7 @@ struct SignInModelTests {
         await first.value
     }
 
-    /// 01 §8 check 1: the button shows a spinner labelled "Connecting to Waivera…" while the
+    /// 01 §8 check 1: the button shows a spinner labelled "Signing you in…" (Android's copy) while the
     /// backend bootstrap runs; the app then moves on and the form forgets the credentials.
     @Test func staysBusyThroughTheBootstrapThenForgetsCredentials() async {
         let session = ScriptedSession()
@@ -139,7 +139,7 @@ struct SignInModelTests {
         #expect(await eventually { model.isConnecting })
         #expect(model.isSigningIn)
         #expect(!model.fieldsEnabled)
-        #expect(AuthStrings.connecting == "Connecting to Waivera…")
+        #expect(AuthStrings.connecting == "Signing you in…")
         session.set(.signedIn(DemoData.make().user))
         #expect(await eventually { !model.isConnecting })
         #expect(model.email.isEmpty)
@@ -285,6 +285,31 @@ struct SignInModelTests {
         #expect(model.notice == .failed(.offline))
         #expect(model.failureCount == 1)
         #expect(model.phase == .idle)
+    }
+
+    // MARK: Legal links
+
+    @Test func anUnopenableLinkSaysSoWithoutTouchingTheForm() {
+        let model = filled(ScriptedSession())
+        model.linkUnavailable()
+        #expect(model.notice == .linkUnavailable)
+        #expect(model.email == email)
+        #expect(model.password == "correct horse")
+        #expect(model.rejectionCount == 0, "a link that will not open is not a rejection")
+        #expect(model.failureCount == 0)
+        model.dismissNotice()
+        #expect(model.notice == nil)
+    }
+
+    @Test func emptyFieldsStillAnswerATap() async {
+        // The button is enabled with empty fields (as on Android): a tap explains what is missing.
+        let session = ScriptedSession()
+        let model = SignInModel(session: session)
+        #expect(model.fieldsEnabled)
+        await model.submit()
+        #expect(model.emailIssue == .emailRequired)
+        #expect(model.passwordIssue == .passwordRequired)
+        #expect(model.rejectionCount == 0, "a field error never vibrates or shakes")
     }
 
     // MARK: Privacy

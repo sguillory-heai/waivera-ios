@@ -10,10 +10,11 @@ import Foundation
 /// waivera://chats | chats/new | chats/{conversationId}[?messageId=]
 /// waivera://chats/thread/{rootId}[?conversationId=&messageId=]
 /// waivera://chats/{conversationId}/thread/{rootId}[?messageId=]
+/// waivera://chats/{conversationId}/members
 /// waivera://schedule | calendar | calendar/{eventId} | calendar?eventId=
 /// waivera://profile | profile/organization | people | people/{userId} | bookmarks
-/// waivera://settings | settings/notifications | settings/appearance | settings/account
-/// waivera://settings/account/password
+/// waivera://settings | settings/notifications | settings/appearance | settings/password
+/// waivera://settings/account (Settings itself) | settings/account/password (older links)
 /// ```
 public enum DeepLink {
     public static let scheme = "waivera"
@@ -82,19 +83,7 @@ public enum DeepLink {
         case "bookmarks":
             return segments.count == 1 ? Destination(tab: nil, path: [.bookmarks]) : nil
         case "settings":
-            if segments.count == 1 { return Destination(tab: nil, path: [.settings]) }
-            if segments.count == 3, segments[1].lowercased() == "account", segments[2].lowercased() == "password" {
-                return Destination(tab: nil, path: [.settings, .accountSettings, .changePassword])
-            }
-            guard segments.count == 2 else { return nil }
-            let leaf: AppRoute
-            switch segments[1].lowercased() {
-            case "notifications": leaf = .notificationSettings
-            case "appearance": leaf = .appearanceSettings
-            case "account": leaf = .accountSettings
-            default: return nil
-            }
-            return Destination(tab: nil, path: [.settings, leaf])
+            return settingsDestination(segments.dropFirst().map { $0.lowercased() })
         default:
             return nil
         }
@@ -113,6 +102,9 @@ public enum DeepLink {
             guard let rootID = Identifier.positiveInt(rest[1]) else { return nil }
             let conversationID = query["conversationId"].flatMap(Identifier.positiveInt)
             return .thread(rootMessageID: rootID, conversationID: conversationID, targetMessageID: messageID)
+        case 2 where rest[1].lowercased() == "members":
+            guard let conversationID = Identifier.positiveInt(rest[0]) else { return nil }
+            return .groupMembers(conversationID)
         case 3 where rest[1].lowercased() == "thread":
             guard let conversationID = Identifier.positiveInt(rest[0]), let rootID = Identifier.positiveInt(rest[2])
             else {
@@ -122,6 +114,23 @@ public enum DeepLink {
         default:
             return nil
         }
+    }
+}
+
+extension DeepLink {
+    /// Account and sign-out live on Settings itself (as on Android), so the older
+    /// `settings/account` links land there and `settings/account/password` opens the change.
+    fileprivate static func settingsDestination(_ rest: [String]) -> Destination? {
+        let leaf: AppRoute?
+        switch rest {
+        case []: leaf = nil
+        case ["notifications"]: leaf = .notificationSettings
+        case ["appearance"]: leaf = .appearanceSettings
+        case ["account"]: leaf = nil
+        case ["password"], ["account", "password"]: leaf = .changePassword
+        default: return nil
+        }
+        return Destination(tab: nil, path: [.settings] + (leaf.map { [$0] } ?? []))
     }
 }
 

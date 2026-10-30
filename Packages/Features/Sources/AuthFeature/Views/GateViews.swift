@@ -73,30 +73,51 @@
     }
 
     private struct BootstrapFailedContent: View {
+        @Environment(\.dynamicTypeSize) private var dynamicTypeSize
         let model: BootstrapFailedModel
         let fallbackMessage: String
         let onSignOut: () -> Void
 
         var body: some View {
-            AuthScaffold {
+            // At large text Try again stays pinned and Sign out moves to the end of the content,
+            // so no action is ever cut in half at the fold (UI11-05).
+            let signOutInline = dynamicTypeSize.isLargeText
+            AuthScaffold(pinnedAtLargeText: true) {
                 AuthHeader(
-                    systemImage: model.isOffline ? "wifi.slash" : "exclamationmark.icloud.fill",
+                    systemImage: model.isOffline ? "icloud.slash" : "exclamationmark.triangle.fill",
                     title: model.isOffline ? AuthStrings.bootstrapOfflineTitle : AuthStrings.bootstrapFailedTitle,
-                    message: model.error.map(AuthStrings.failure) ?? fallbackMessage,
-                    tone: model.isOffline ? .amber : .danger
+                    // The title already says "offline"; the body says what to do instead.
+                    message: model.isOffline
+                        ? AuthStrings.bootstrapOfflineMessage
+                        : (model.error.map(AuthStrings.failure) ?? fallbackMessage),
+                    tone: model.isOffline ? .neutral : .danger
                 )
-                Text(AuthStrings.bootstrapHelp)
-                    .font(WaiveraFont.body)
-                    .foregroundStyle(Palette.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                VStack(spacing: Spacing.small) {
-                    WaiveraButton(AuthStrings.tryAgain, isLoading: model.isRetrying, action: { model.retry() })
-                        .accessibilityIdentifier("state.action")
-                    WaiveraButton(AuthStrings.signOut, variant: .secondary, action: onSignOut)
-                        .disabled(model.isRetrying)
+                if let failedAt = model.lastFailedRetryAt, !model.isRetrying {
+                    BannerView(
+                        .warning,
+                        title: AuthStrings.bootstrapStillFailingTitle,
+                        message: AuthStrings.bootstrapStillFailingMessage(
+                            failedAt.formatted(date: .omitted, time: .shortened)
+                        )
+                    )
+                    .authNoticeTransition()
+                    .accessibilityIdentifier("bootstrap.stillFailing")
+                }
+                AuthHelp(text: AuthStrings.bootstrapHelp)
+                if signOutInline {
+                    GateSignOut(isEnabled: !model.isRetrying, action: onSignOut)
                         .accessibilityIdentifier("bootstrap.signOut")
                 }
+            } actions: {
+                GateActions(
+                    title: AuthStrings.tryAgain,
+                    busyTitle: AuthStrings.retrying,
+                    isBusy: model.isRetrying,
+                    onPrimary: { model.retry() },
+                    onSignOut: signOutInline ? nil : onSignOut
+                )
             }
+            .waiveraAnimation(.layout, value: model.lastFailedRetryAt)
         }
     }
 
@@ -124,7 +145,7 @@
                 )
                 if !report.missingKeys.isEmpty {
                     Text(AuthStrings.configurationDetails(report.missingKeys))
-                        .font(WaiveraFont.caption)
+                        .waiveraTextStyle(.bodySmall)
                         .foregroundStyle(Palette.textSecondary)
                         .textSelection(.enabled)
                         .fixedSize(horizontal: false, vertical: true)
@@ -181,23 +202,24 @@
     }
 
     private struct OnboardingContent: View {
+        @Environment(\.dynamicTypeSize) private var dynamicTypeSize
         let model: OnboardingModel
         let onSignOut: () -> Void
 
         var body: some View {
-            AuthScaffold {
+            // At large text the main action stays pinned, so "Checking…" is always in sight on a
+            // small phone, and Sign out moves to the end of the content (UI8-07).
+            let signOutInline = dynamicTypeSize.isLargeText
+            AuthScaffold(pinnedAtLargeText: true) {
                 AuthHeader(
-                    systemImage: "list.bullet.clipboard.fill",
+                    systemImage: "person.fill",
                     title: AuthStrings.onboardingTitle,
-                    message: AuthStrings.onboardingMessage
+                    message: AuthStrings.onboardingMessage,
+                    welcome: true
                 )
-                Text(AuthStrings.onboardingHelp)
-                    .font(WaiveraFont.body)
-                    .foregroundStyle(Palette.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
                 switch model.status {
                 case .stillPending:
-                    BannerView(.info, message: AuthStrings.onboardingStillPending)
+                    BannerView(.warning, message: AuthStrings.onboardingStillPending)
                         .authNoticeTransition()
                         .accessibilityIdentifier("onboarding.stillPending")
                 case .failed(let error):
@@ -207,14 +229,21 @@
                 case .waiting, .checking:
                     EmptyView()
                 }
-                VStack(spacing: Spacing.small) {
-                    WaiveraButton(AuthStrings.onboardingCheck, isLoading: model.isChecking, action: { checkAgain() })
-                        .disabled(!model.canCheck && !model.isChecking)
-                        .accessibilityIdentifier("onboarding.check")
-                    WaiveraButton(AuthStrings.signOut, variant: .secondary, action: onSignOut)
-                        .disabled(model.isChecking)
+                AuthHelp(text: AuthStrings.onboardingHelp)
+                if signOutInline {
+                    GateSignOut(isEnabled: !model.isChecking, action: onSignOut)
                         .accessibilityIdentifier("onboarding.signOut")
                 }
+            } actions: {
+                GateActions(
+                    title: AuthStrings.onboardingCheck,
+                    busyTitle: AuthStrings.onboardingChecking,
+                    isBusy: model.isChecking,
+                    isEnabled: model.canCheck,
+                    onPrimary: { checkAgain() },
+                    onSignOut: signOutInline ? nil : onSignOut,
+                    identifier: "onboarding.check"
+                )
             }
             .waiveraAnimation(.layout, value: model.status)
         }
@@ -231,7 +260,7 @@
         #Preview("Bootstrap offline, dark") {
             BootstrapFailedView(model: AuthFixtures.bootstrap(.offline)) {}.preferredColorScheme(.dark)
         }
-        #Preview("Bootstrap retrying, AX XXXL") {
+        #Preview("Bootstrap retrying, AX5") {
             BootstrapFailedView(model: AuthFixtures.bootstrap(.retrying)) {}.dynamicTypeSize(.accessibility5)
         }
         #Preview("Configuration missing") {
@@ -240,7 +269,7 @@
         #Preview("Configuration missing, dark") {
             ConfigurationMissingView(report: ConfigurationReport(missingKeys: [])).preferredColorScheme(.dark)
         }
-        #Preview("Configuration missing, AX XXXL") {
+        #Preview("Configuration missing, AX5") {
             ConfigurationMissingView(report: ConfigurationReport(missingKeys: ["WaiveraFirebaseAPIKey"]))
                 .dynamicTypeSize(.accessibility5)
         }
@@ -259,7 +288,7 @@
             }
             .preferredColorScheme(.dark)
         }
-        #Preview("Onboarding failed, AX XXXL") {
+        #Preview("Onboarding failed, AX5") {
             FixturePreview {
                 await AuthFixtures.onboarding(.failed)
             } content: {

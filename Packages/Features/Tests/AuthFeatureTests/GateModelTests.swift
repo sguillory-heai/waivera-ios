@@ -39,7 +39,7 @@ struct GateModelTests {
         model.apply(.bootstrapFailed(.server(statusCode: 500)))
         #expect(!model.isRetrying)
         #expect(model.error == .server(statusCode: 500))
-        #expect(model.failureCount == 1, "a failed retry plays the error haptic")
+        #expect(model.failureCount == 1, "a failed retry is counted, silently")
         model.retry()
         #expect(retries == 2)
     }
@@ -53,6 +53,19 @@ struct GateModelTests {
         session.set(.signedIn(user))
         #expect(await eventually { !model.isRetrying })
         #expect(model.failureCount == 0)
+    }
+
+    @Test func aFailedRetryIsStampedButTheFirstFailureIsNot() {
+        let stamp = Date(timeIntervalSince1970: 1_793_000_000)
+        let model = BootstrapFailedModel(
+            session: ScriptedSession(.bootstrapFailed(.offline)),
+            now: { stamp },
+            onRetry: {}
+        )
+        #expect(model.lastFailedRetryAt == nil, "the first failure is not a failed retry")
+        model.retry()
+        model.apply(.bootstrapFailed(.offline))
+        #expect(model.lastFailedRetryAt == stamp)
     }
 
     // MARK: Onboarding

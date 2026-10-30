@@ -169,7 +169,10 @@
 
     /// The hero bar (Android `WaiveraHeroTopBar`): the mark, the screen title (the heading, two
     /// lines at most) and the signed-in person's avatar on the glass, which opens the account menu.
+    /// Without an account of its own it shows the one the app shell provides
+    /// (`\.waiveraAccountMenu`).
     public struct HeroTopBar: View {
+        @Environment(\.waiveraAccountMenu) private var accountMenu
         private let title: String
         private let accountName: String?
         private let accountImage: Image?
@@ -200,11 +203,13 @@
                     .lineLimit(2)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityAddTraits(.isHeader)
-                if let accountName, let onAccount {
+                if let accountName = accountName ?? accountMenu?.name,
+                    let onAccount = onAccount ?? accountMenu?.openMenu
+                {
                     Button(action: onAccount) {
                         AvatarView(
                             name: accountName,
-                            image: accountImage,
+                            image: accountImage ?? accountMenu?.image,
                             size: CGFloat(HeroMetrics.barAvatar),
                             fill: .hero
                         )
