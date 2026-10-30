@@ -7,15 +7,18 @@
     public struct OneLineName: View {
         private let name: String
         private let style: TextStyleToken
+        private let weight: FontWeightToken?
 
-        public init(_ name: String, style: TextStyleToken = .titleSmall) {
+        /// - Parameter weight: another face for the style, such as ExtraBold for an unread chat.
+        public init(_ name: String, style: TextStyleToken = .titleSmall, weight: FontWeightToken? = nil) {
             self.name = name
             self.style = style
+            self.weight = weight
         }
 
         public var body: some View {
             Text(name)
-                .waiveraTextStyle(style)
+                .waiveraTextStyle(style, weight: weight)
                 .lineLimit(1)
                 .minimumScaleFactor(NameFit.minimumScale)
                 .truncationMode(.tail)
@@ -53,32 +56,50 @@
         private let name: String
         private let compactSuffix: String?
         private let style: TextStyleToken
+        private let weight: FontWeightToken?
 
         /// - Parameters:
         ///   - title: the whole title.
         ///   - name: the part of `title` that may be cut; when it is not in `title`, the title is
         ///     only shrunk and then tail-truncated.
         ///   - compactSuffix: the short count ("+4") for when even "…" and the count do not fit.
-        public init(_ title: String, name: String, compactSuffix: String? = nil, style: TextStyleToken = .titleSmall) {
+        ///   - weight: another face for the style, such as ExtraBold for an unread chat.
+        public init(
+            _ title: String,
+            name: String,
+            compactSuffix: String? = nil,
+            style: TextStyleToken = .titleSmall,
+            weight: FontWeightToken? = nil
+        ) {
             self.title = title
             self.name = name
             self.compactSuffix = compactSuffix
             self.style = style
+            self.weight = weight
         }
 
         /// A group conversation's title: the first member's short label and how many others.
-        public init(groupTitle: String, firstName: String, others: Int, style: TextStyleToken = .titleSmall) {
+        public init(
+            groupTitle: String,
+            firstName: String,
+            others: Int,
+            style: TextStyleToken = .titleSmall,
+            weight: FontWeightToken? = nil
+        ) {
             self.init(
                 groupTitle,
                 name: firstName,
                 compactSuffix: others > 0 ? GroupTitle.compactSuffix(others: others) : nil,
-                style: style
+                style: style,
+                weight: weight
             )
         }
 
+        private var face: String { style.spec.weighted(weight).weight.postScriptName }
+
         public var body: some View {
             Text(verbatim: "Hg")
-                .waiveraTextStyle(style)
+                .waiveraTextStyle(style, weight: weight)
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .hidden()
@@ -86,7 +107,7 @@
                     GeometryReader { proxy in
                         let fitted = fit(width: proxy.size.width)
                         Text(fitted.shown)
-                            .font(.custom(style.spec.weight.postScriptName, fixedSize: fitted.size))
+                            .font(.custom(face, fixedSize: fitted.size))
                             .tracking(style.spec.trackingEm * fitted.size)
                             .lineLimit(1)
                             .truncationMode(.tail)
@@ -101,7 +122,7 @@
             let traits = UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(dynamicTypeSize))
             let fullSize = Double(style.uiFont(compatibleWith: traits).pointSize)
             let range = GroupTitle.nameRange(in: title, name: name) ?? 0..<0
-            let postScriptName = style.spec.weight.postScriptName
+            let postScriptName = face
             let trackingEm = style.spec.trackingEm
             return ShortenedNameFitter.fit(
                 text: title,

@@ -124,6 +124,13 @@ public enum TextStyleToken: String, CaseIterable, Sendable {
         public let trackingEm: Double
 
         public var tracking: Double { size * trackingEm }
+
+        /// The same size, line height and tracking in another face, for a row that shows unread
+        /// in a heavier weight (Android passes `fontWeight` next to the style).
+        public func weighted(_ weight: FontWeightToken?) -> Spec {
+            guard let weight else { return self }
+            return Spec(size: size, lineHeight: lineHeight, weight: weight, trackingEm: trackingEm)
+        }
         /// Extra space between lines on top of the font's own line height.
         public func lineSpacing(fontLineHeight: Double) -> Double { max(0, lineHeight - fontLineHeight) }
     }
