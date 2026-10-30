@@ -101,13 +101,18 @@ targets:
       # Runs before code signing. Release never reads the fixture bundle (sample names and
       # messages for previews and the fake server), so it is not shipped (IS-09).
       # The bundle is declared as input and output so the script sandbox lets it be removed.
+      # That makes the phase a mutating task, and Xcode 26 requires such a task to produce one
+      # more output to order it by (swift-build `BuildDescription`: "mutable output but no
+      # other virtual output node"), so the phase also writes a stamp file.
       - name: Remove test fixtures from Release
         basedOnDependencyAnalysis: false
         inputFiles:
           - $(TARGET_BUILD_DIR)/$(WRAPPER_NAME)/WaiveraFixtures_WaiveraFixtures.bundle
         outputFiles:
           - $(TARGET_BUILD_DIR)/$(WRAPPER_NAME)/WaiveraFixtures_WaiveraFixtures.bundle
+          - $(DERIVED_FILE_DIR)/remove-test-fixtures.stamp
         script: |
+          touch "${DERIVED_FILE_DIR}/remove-test-fixtures.stamp"
           if [ "${CONFIGURATION}" != "Release" ]; then exit 0; fi
           fixtures="${TARGET_BUILD_DIR}/${WRAPPER_NAME}/WaiveraFixtures_WaiveraFixtures.bundle"
           rm -rf "${fixtures}"
