@@ -58,13 +58,27 @@ appears and nothing is lost. Settings → Notifications shows the system status
 
 Bottom tabs, in order: **Today** (`sun.max`), **Chat** (`bubble.left.and.bubble.right`),
 **Schedule** (`calendar`). Each tab has its own `NavigationStack` bound to
-`NavigationState.path(for:)`. Today and Chat show the avatar menu (`AvatarMenuButton`) in the
-leading top bar slot with Profile, People, Bookmarks and Settings; those push onto the selected
-tab. Feature navigation closures push onto the selected tab (`AppModel.push`). Deep links and
-push taps replace the target tab's stack, so a push-opened chat backs out to the inbox.
+`NavigationState.path(for:)`. The system `TabView` keeps each tab's state, but its bar is hidden
+and the shell draws `WaiveraTabBar` (the approved Android navigation bar: the sliding violet pill,
+the icon pop and the Chat unread count in `navBadge`). As on Android the bar shows on tab roots
+only; a pushed screen gets the full height. This departs from spec §10 (keep the system tab bar)
+because the owner approved the Android bar.
 
-iOS 26: the tab bar adopts Liquid Glass from the SDK; `tabBarMinimizeBehavior(.onScrollDown)` is
-applied behind `#available(iOS 26, *)`.
+Every tab root draws its own hero bar (`HeroTopBar`, no system navigation bar) with the signed-in
+avatar. Tapping it opens the account menu, `AccountMenuSheet` (Android `AccountMenuSheet`): the
+person (opens Profile), People, Bookmarks and Settings. Picking a row closes the sheet and pushes
+onto the selected tab, so back returns to the tab the menu was opened on. The shell passes
+`AppModel.presentAccountMenu` to every root (`onOpenAccount` / `onAccount`), and also provides
+it, with the avatar photo it loads for the signed-in person, through
+`\.waiveraAccountMenu` (`AccountMenuEntry`), which any `HeroTopBar` without an account of its own
+falls back to. Chat's hero bar also carries the "+" for a new chat.
+
+Feature navigation closures push onto the selected tab (`AppModel.push`). Deep links and push
+taps replace the target tab's stack, so a push-opened chat backs out to the inbox.
+
+The status bar should be light over the plum hero. SwiftUI has no per-screen status bar style
+without a navigation bar, so this needs a UIKit hosting controller override; it is listed in
+`reviews/ios-macos-compile-risks.md` for the macOS pass.
 
 ## Routes
 
@@ -73,41 +87,44 @@ validated (`Identifier.positiveInt`, `Identifier.opaque`).
 
 | Route | Arguments | Deep link | Entry view | Module |
 | --- | --- | --- | --- | --- |
-| Today root | — | `waivera://today` | `TodayView(onOpenConversation: (conversationID, targetMessageID?), onOpenThread: (rootMessageID, conversationID?, targetMessageID?), onOpenEvent: (eventID), onOpenSchedule: (), onOpenActivity: ())` | TodayFeature |
+| Today root | — | `waivera://today` | `TodayView(onOpenConversation: (conversationID, targetMessageID?), onOpenThread: (rootMessageID, conversationID?, targetMessageID?), onOpenEvent: (eventID), onOpenSchedule: (), onOpenActivity: (), onOpenAccount: ()?)` — "Send wishes" on a celebration card opens its chat through `onOpenConversation` | TodayFeature |
 | `.activity` | — | `waivera://activity` | `ActivityView(onOpenConversation:onOpenThread:)` (same closure shapes as Today) | TodayFeature |
-| Chat root | — | `waivera://chats` | `ConversationListView(onOpenConversation: (conversationID), onOpenPerson: (userID), onNewChat: ())` | ChatFeature |
+| Chat root | — | `waivera://chats` | `ConversationListView(onOpenConversation: (conversationID), onOpenPerson: (userID), onNewChat: (), accountName: String?, accountLabel: String?, onAccount: ()?)` — `onNewChat` is the hero bar's "+" | ChatFeature |
 | sheet `.newChat` | — | `waivera://chats/new` | `NewChatView(onOpenConversation: (conversationID), onDismiss: ())` | ChatFeature |
-| `.conversation` | `conversationID: Int`, `targetMessageID: Int?` | `waivera://chats/{id}[?messageId=]` | `ConversationView(conversationID:targetMessageID:onOpenThread: (rootMessageID, targetMessageID?), onOpenPerson: (userID))` | ChatFeature |
+| `.conversation` | `conversationID: Int`, `targetMessageID: Int?` | `waivera://chats/{id}[?messageId=]` | `ConversationView(conversationID:targetMessageID:onOpenThread: (rootMessageID, targetMessageID?), onOpenPerson: (userID), onOpenMembers: (conversationID)?)` — a group's "N members" line calls `onOpenMembers` | ChatFeature |
+| `.groupMembers` | `conversationID: Int` | `waivera://chats/{id}/members` | `GroupMembersView(channelID:onOpenPerson: (userID), onOpenConversation: (conversationID))` — a full pushed screen; back keeps its search | ChatFeature |
 | `.thread` | `rootMessageID: Int`, `conversationID: Int?`, `targetMessageID: Int?` | `waivera://chats/thread/{rootId}[?conversationId=&messageId=]` or `waivera://chats/{id}/thread/{rootId}[?messageId=]` | `ThreadView(rootMessageID:conversationID:targetMessageID:onOpenPerson:)` | ChatFeature |
-| Schedule root | — | `waivera://schedule`, `waivera://calendar` | `ScheduleView(onOpenEvent: (eventID))` | ScheduleFeature |
+| Schedule root | — | `waivera://schedule`, `waivera://calendar` | `ScheduleView(onOpenEvent: (eventID), onOpenConversation: (conversationID)?, onOpenAccount: ()?)` — without `onOpenConversation` the celebration cards hide "Send wishes" | ScheduleFeature |
 | `.calendarEvent` | `eventID: String` | `waivera://calendar/{eventId}`, `waivera://calendar?eventId=` | `CalendarEventView(eventID:onOpenConversation: (conversationID))` | ScheduleFeature |
 | `.profile` | — | `waivera://profile` | `ProfileView(onOpenOrganization: (), onOpenSettings: ())` | ProfileFeature |
 | `.organization` | — | `waivera://profile/organization` | `OrganizationView()` | ProfileFeature |
 | `.people` | — | `waivera://people` | `PeopleView(onOpenPerson: (userID))` | ProfileFeature |
-| `.person` | `userID: String` | `waivera://people/{userId}` | `PersonView(userID:onOpenConversation: (conversationID))` | ProfileFeature |
+| `.person` | `userID: String` | `waivera://people/{userId}` | `PersonView(userID:onOpenConversation: (conversationID))` — Message and Send wishes open the chat | ProfileFeature |
 | `.bookmarks` | — | `waivera://bookmarks` | `BookmarksView(onOpenMessage: (conversationID, messageID, threadRootMessageID?))` — a thread bookmark opens the thread by its **root** id | ProfileFeature |
-| `.settings` | — | `waivera://settings` | `SettingsView(onOpenNotifications:onOpenAppearance:onOpenAccount:)` | SettingsFeature |
+| `.settings` | — | `waivera://settings`, `waivera://settings/account` (older links) | `SettingsView(onOpenNotifications: (), onOpenAppearance: (), onOpenChangePassword: ()?, onSignOut: ())` — Preferences, Security and Account on one screen, as on Android; Sign out asks on the shared confirmation sheet before calling `onSignOut` | SettingsFeature |
 | `.notificationSettings` | — | `waivera://settings/notifications` | `NotificationSettingsView(systemStatus: SystemNotificationStatus, onRequestPermission: (), onOpenSystemSettings: ())` | SettingsFeature |
 | `.appearanceSettings` | — | `waivera://settings/appearance` | `AppearanceSettingsView()` | SettingsFeature |
-| `.accountSettings` | — | `waivera://settings/account` | `AccountSettingsView(onChangePassword: ()?, onSignOut: ())` — shows the shared confirmation sheet before calling `onSignOut`; without `onChangePassword` the row opens the feature's own sheet | SettingsFeature |
-| `.changePassword` | — | `waivera://settings/account/password` | `PasswordChangeView(onDone: ())` — the voluntary change; `onDone` runs after the saved confirmation | AuthFeature |
+| `.changePassword` | — | `waivera://settings/password`, `waivera://settings/account/password` (older links) | `PasswordChangeView(onDone: ())` — the voluntary change; `onDone` runs after the saved confirmation | AuthFeature |
 
 `waivera://` links for profile, people, bookmarks and settings open on the selected tab. Anything
-unrecognised or invalid is ignored (`DeepLink.destination` returns `nil`).
+unrecognised or invalid leaves the stacks as they are (`DeepLink.destination` returns `nil`) and
+the tabs show "That link can't be opened in Waivera." in the shared snackbar above the tab bar
+(`AppModel.unopenableLink`, Android UI2-22).
 
 Links opened from inside the app (message text, attachments, event details) go through
 `RootView`'s `OpenURLAction`, which asks `LinkPolicy.decide(_:)`: a `waivera://` link for a
 known route navigates (an unknown path is blocked), an `http` or `https` link with a host opens in
-the browser, and every other scheme (`javascript:`, `file:`, `tel:` and so on) is blocked. Chat's own open-in-app and
+the browser, and every other scheme (`javascript:`, `file:`, `tel:` and so on) is blocked. A
+blocked `waivera://` link gets the same snackbar; other schemes are dropped quietly. Chat's own open-in-app and
 open-externally actions check `SafeLinks.isAllowed` too.
 
-Entry views are placeholders (`FeaturePlaceholder`) until each feature lands; keep the initializer
-signatures, or update this table and the app router in the same change. Data comes from the data
+Keep the entry view initializer signatures, or update this table, `TabRootView` and
+`RouteDestinationView` in the same change. Data comes from the data
 layer, not through these initializers: read `@Environment(\.dataEnvironment) private var data`
 (a `DataEnvironment?`, `nil` only in an unconfigured build, which never shows a feature screen)
 and build the feature model from the repositories it needs. Previews use
 `.fakeDataEnvironment(.demo | .empty | .failing | .slow)` from WaiveraTestSupport inside `#if DEBUG`
-(example in `ChatScreens.swift`).
+(example in `ConversationView.swift`).
 
 ## Push notifications
 
@@ -172,6 +189,17 @@ Payload → route (`PushPayloadParser`, `PushPayload.destination`):
   presence). Shown only on the tabs, never over a gate, for `FeedbackTiming.inAppBanner` (longer
   with VoiceOver, announced). Open routes like a push tap (`ChatDestination`, threads by root);
   Dismiss or a newer alert replaces it.
+- **Unopenable links**: the "That link can't be opened in Waivera." snackbar (see Deep links),
+  above the tab bar, announced to VoiceOver and closed after `FeedbackTiming`.
+
+Not sent: `ConversationsRepository.failedSends()` replays the ids of conversations whose newest
+outbox send failed (fed by `ChatEngine`'s outbox, cleared on sign-out). The Chat inbox row and
+Today's Needs you both read it, so a failed send shows "Not sent" in both until it goes out or is
+discarded.
+
+The account avatar: `MainTabView` loads the signed-in person's photo through
+`AvatarRepository.avatar(userId:)` once per user and shares it with every hero bar and the account
+menu; the initials tile shows until it arrives or when there is none.
 
 ## Composition root and fake mode
 
@@ -198,7 +226,7 @@ change (`phase != .background`, so `.inactive` keeps the hub), including the ini
 | --- | --- |
 | `-WaiveraFakeServer` | fake backend and hub (above) |
 | `-WaiveraFakeScenario <name>` | with `-WaiveraFakeServer`: `demo` (default), `empty`, `failing`, `slow`, `signedOut`, `passwordChange` |
-| `-WaiveraRoute <name>` | open a `RouteCatalog` entry on launch: a gate (`loading`, `sign-in`, `bootstrap-failed`, `configuration-missing`, `password-change`, `onboarding-required`, `notification-primer`) or a route name from the table above (`today`, `activity`, `chat`, `chat-new`, `conversation`, `conversation-target`, `thread`, `schedule`, `calendar-event`, `profile`, `organization`, `people`, `person`, `bookmarks`, `settings`, `settings-notifications`, `settings-appearance`, `settings-account`) |
+| `-WaiveraRoute <name>` | open a `RouteCatalog` entry on launch: a gate (`loading`, `sign-in`, `bootstrap-failed`, `configuration-missing`, `password-change`, `onboarding-required`, `notification-primer`) or a route name from the table above (`today`, `activity`, `chat`, `chat-new`, `conversation`, `conversation-target`, `thread`, `schedule`, `calendar-event`, `profile`, `organization`, `people`, `person`, `bookmarks`, `settings`, `settings-notifications`, `settings-appearance`, `settings-change-password`, `group-members`) |
 | `-WaiveraAppearance light\|dark` | force the colour scheme |
 | `-WaiveraDisableAnimations` | UIKit animations off, for fast settled screenshots |
 | `-UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL` | system: largest text size |
