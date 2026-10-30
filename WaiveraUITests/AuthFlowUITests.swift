@@ -44,7 +44,7 @@ final class AuthFlowUITests: XCTestCase {
         password.typeText(demoPassword)
         XCTAssertFalse(error.exists)
         app.buttons["Sign in"].tap()
-        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.waiveraTabBar.waitForExistence(timeout: 10))
     }
 
     @MainActor
@@ -52,13 +52,13 @@ final class AuthFlowUITests: XCTestCase {
         let app = launch(scenario: "passwordChange")
         let current = app.secureTextFields["Current password"]
         XCTAssertTrue(current.waitForExistence(timeout: 15))
-        XCTAssertFalse(app.tabBars.firstMatch.exists)
+        XCTAssertFalse(app.waiveraTabBar.exists)
 
         // A link cannot get past the gate.
         let link = try XCTUnwrap(URL(string: "waivera://chats/7"))
         app.open(link)
         XCTAssertTrue(current.waitForExistence(timeout: 5))
-        XCTAssertFalse(app.tabBars.firstMatch.exists)
+        XCTAssertFalse(app.waiveraTabBar.exists)
 
         current.tap()
         current.typeText(demoPassword)
@@ -69,6 +69,6 @@ final class AuthFlowUITests: XCTestCase {
         confirmation.tap()
         confirmation.typeText("a brand new phrase")
         app.buttons["Update password"].tap()
-        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.waiveraTabBar.waitForExistence(timeout: 10))
     }
 }
