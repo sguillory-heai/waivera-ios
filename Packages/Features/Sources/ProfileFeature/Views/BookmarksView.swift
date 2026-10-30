@@ -202,7 +202,7 @@
                             options: BookmarkFilter.allCases.map {
                                 SegmentedChips<BookmarkFilter>.Option($0, title: ProfileStrings.filter($0))
                             },
-                            selection: Binding(get: { state.filter }, set: actions.selectFilter)
+                            selection: Binding(get: { state.filter }, set: { actions.selectFilter($0) })
                         )
                         .padding(.horizontal, -Spacing.medium)
                         .accessibilityLabel(Text(ProfileStrings.bookmarksFilterLabel))
