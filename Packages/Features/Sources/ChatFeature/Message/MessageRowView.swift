@@ -65,7 +65,9 @@
         var progress: Double
         let mine: Bool
 
-        var animatableData: Double {
+        // Nonisolated so the Animatable conformance does not cross into the main actor that
+        // ViewModifier infers for the type; `progress` is a Sendable stored value.
+        nonisolated var animatableData: Double {
             get { progress }
             set { progress = newValue }
         }
