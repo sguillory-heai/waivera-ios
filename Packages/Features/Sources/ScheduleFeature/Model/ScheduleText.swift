@@ -82,8 +82,10 @@ final class ScheduleText {
 
     /// "S" … "S": the month headers at the largest text sizes (Android `TextStyle.NARROW`).
     var weekdayHeadersNarrow: [String] {
-        let symbols = formatter(for: "EEEEE").veryShortWeekdaySymbols ?? []
-        return symbols.count == 7 ? symbols : ["S", "M", "T", "W", "T", "F", "S"]
+        // Darwin types this as `[String]!` and Linux as `[String]`; the annotation reads both without a warning.
+        let symbols: [String]? = formatter(for: "EEEEE").veryShortWeekdaySymbols
+        guard let symbols, symbols.count == 7 else { return ["S", "M", "T", "W", "T", "F", "S"] }
+        return symbols
     }
 
     func title(_ title: PeriodTitle) -> String {
