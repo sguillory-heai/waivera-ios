@@ -250,11 +250,51 @@ struct TodayModelTests {
         let harness = TodayHarness(conversations: conversations)
         let model = harness.todayModel()
         await running(model) {
-            #expect(await eventually { model.state.needsYou.hiddenCount == 2 })
+            #expect(await eventually { model.state.needsYou.hiddenCount == 4 })
             model.toggleNeedsYouExpanded()
             #expect(model.state.needsYou.items.count == 7)
             model.toggleNeedsYouExpanded()
-            #expect(model.state.needsYou.items.count == 5)
+            #expect(model.state.needsYou.items.count == 3)
+        }
+    }
+
+    // MARK: Hero
+
+    @Test func theHeroGreetsTheSignedInPersonAndCountsAnAnsweredInvitationAsHandled() async {
+        let invite = Fixture.event("invite", "2026-11-02T15:00:00Z", "2026-11-02T16:00:00Z", response: .pending)
+        let harness = TodayHarness(.empty, events: [invite])
+        await harness.fakes.session.start()
+        let model = harness.todayModel()
+        await running(model) {
+            #expect(await eventually { model.state.handledObservation != nil })
+            #expect(
+                model.state.greeting?.firstName
+                    == GreetingRules.firstName(
+                        harness.fakes.data.user.firstName,
+                        displayName: harness.fakes.data.user.displayName
+                    )
+            )
+            #expect(model.state.progress == TodayProgress(handled: 0, open: 1))
+            #expect(model.state.needsYou.kinds == [.invitation: 1])
+            #expect(!model.state.isAllCaughtUp)
+            model.respond(toEventId: "invite", accept: true)
+            #expect(model.state.progress == TodayProgress(handled: 1, open: 0))
+            #expect(model.state.isAllCaughtUp, "nine of nine: the reward hero")
+            #expect(harness.handledStore.load()?.handled == 1, "the tally is saved for the next launch")
+        }
+        let relaunched = harness.todayModel()
+        await running(relaunched) {
+            #expect(await eventually { relaunched.state.progress?.handled == 1 })
+        }
+    }
+
+    @Test func loadingTheHeroWaitsForNeedsYouAndTheStatsShowDashes() async {
+        let harness = TodayHarness(.slow)
+        let model = harness.todayModel()
+        await running(model) {
+            #expect(model.state.progress == nil)
+            #expect(model.state.stats == TodayStats())
+            #expect(model.state.day == nil)
         }
     }
 }

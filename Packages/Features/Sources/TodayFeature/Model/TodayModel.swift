@@ -40,15 +40,22 @@ final class TodayModel {
     @ObservationIgnored private var scheduleAnchors: [CalendarDate] = []
     @ObservationIgnored private var scheduleTask: Task<Void, Never>?
     @ObservationIgnored private var failingSources: Set<String> = []
+    @ObservationIgnored private let handledStore: any HandledTallyStore
+    @ObservationIgnored private var handled: HandledTally?
+    @ObservationIgnored private var user: CurrentUser?
 
     init(
         environment: DataEnvironment,
         clock: any WaiveraClock,
-        uptime: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
+        uptime: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
+        handledStore: any HandledTallyStore = KeyValueHandledTallyStore(store: UserDefaultsKeyValueStore())
     ) {
         self.environment = environment
         self.clock = clock
         self.uptime = uptime
+        self.handledStore = handledStore
+        handled = handledStore.load()
+        user = environment.session.currentState.user
         now = clock.now
         activity = ActivityController(repository: environment.activity, feedback: feedback, tasks: tasks)
         activity.onChange = { [weak self] in self?.rebuild() }
@@ -69,6 +76,7 @@ final class TodayModel {
             group.addTask { await self.activity.observe() }
             group.addTask { await self.observeMilestones() }
             group.addTask { await self.observeConnection() }
+            group.addTask { await self.observeSession() }
             group.addTask { await self.tick() }
             group.addTask { await self.refreshStaleSources() }
         }
@@ -100,6 +108,7 @@ final class TodayModel {
 
     func setFilter(_ filter: ActivityFilter) { activity.setFilter(filter) }
     func toggleUnreadOnly() { activity.toggleUnreadOnly() }
+    func clearActivityFilters() { activity.clearFilters() }
     func markRead(_ activityId: Int64) { activity.markRead(activityId) }
     func markAllRead() { activity.markAllRead() }
     func loadMoreActivity() { activity.loadMoreIfPossible() }
@@ -156,6 +165,15 @@ final class TodayModel {
     private func observeMilestones() async {
         for await value in environment.calendar.milestones() {
             sources.milestones = value
+            rebuild()
+        }
+    }
+
+    /// Who is signed in, for the greeting, the hero bar and the handled tally.
+    private func observeSession() async {
+        for await session in environment.session.states() {
+            guard let signedIn = session.user, signedIn != user else { continue }
+            user = signedIn
             rebuild()
         }
     }
@@ -264,6 +282,10 @@ final class TodayModel {
         current.activity = activity.resource
         let zone = zone
         let context = TodayContext(
+            accountName: user.map(Self.accountName) ?? "",
+            myUserId: user?.id,
+            firstName: GreetingRules.firstName(user?.firstName, displayName: user?.displayName),
+            handled: handled,
             zone: zone.zone,
             usesFallbackTimeZone: zone.isFallback,
             now: now,
@@ -272,8 +294,24 @@ final class TodayModel {
             activity: activity.local
         )
         let next = TodayAssembler.assemble(current, context: context)
+        record(next.handledObservation)
         if next != state { state = next }
         noticeFailures(current)
+    }
+
+    /// Saves the tally as the ring already shows it (`HandledRules.progress` worked it out from
+    /// the same observation), so the ring and the store never disagree.
+    private func record(_ observation: HandledObservation?) {
+        guard let observation else { return }
+        let advanced = HandledToday.advance(handled, observation)
+        guard advanced != handled else { return }
+        handled = advanced
+        handledStore.save(advanced)
+    }
+
+    private static func accountName(_ user: CurrentUser) -> String {
+        let full = [user.firstName, user.lastName].compactMap { $0?.trimmedNonEmpty }.joined(separator: " ")
+        return user.displayName?.trimmedNonEmpty ?? full.trimmedNonEmpty ?? user.email ?? ""
     }
 
     /// A refresh that failed while cached content is on screen gets one quiet toast; the cached

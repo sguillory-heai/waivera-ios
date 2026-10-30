@@ -2,6 +2,7 @@
     import Foundation
     import WaiveraAPI
     import WaiveraData
+    import WaiveraDesign
 
     /// Fixed screen states for previews and snapshot tests. Times are the demo "today":
     /// Sunday 1 November 2026 in America/Chicago, the day DST ends.
@@ -13,9 +14,18 @@
 
         static func populated() -> TodayState {
             var state = base()
-            state.needsYou = NeedsYouSection(items: needsYouItems, hiddenCount: 2, isReady: true)
+            state.needsYou = NeedsYouSection(
+                items: Array(needsYouItems.prefix(NeedsYouSection.collapsedCount)),
+                totalCount: needsYouItems.count,
+                hiddenCount: max(0, needsYouItems.count - NeedsYouSection.collapsedCount),
+                isReady: true,
+                kinds: NeedsYouItem.kinds(needsYouItems)
+            )
             state.nextUp = NextUpSection(items: nextUpItems, isReady: true)
             state.celebrations = celebrationItems
+            state.progress = TodayProgress(handled: 4, open: needsYouItems.count)
+            state.stats = TodayStats(eventsToday: 3, unreadChats: 2, eventsThisWeek: 14)
+            state.day = day()
             state.activity = ActivitySection(
                 rows: activityRows,
                 unreadCount: 3,
@@ -29,7 +39,10 @@
         static func caughtUp() -> TodayState {
             var state = base()
             state.needsYou = NeedsYouSection(isReady: true)
-            state.nextUp = NextUpSection(isReady: true)
+            state.nextUp = NextUpSection(items: Array(nextUpItems.dropFirst()), isReady: true)
+            state.progress = TodayProgress(handled: 9, open: 0)
+            state.stats = TodayStats(eventsToday: 3, unreadChats: 0, eventsThisWeek: 14)
+            state.day = day()
             state.activity = ActivitySection(
                 rows: [
                     ActivityRow(
@@ -80,7 +93,86 @@
         static func loading() -> TodayState {
             var state = base()
             state.isInitialLoad = true
+            state.stats = TodayStats()
             return state
+        }
+
+        /// The long-content and long-name rules (wave 28, wave 29): a 60-character name, an
+        /// unbroken 40-character word, an emoji name and two-digit counts.
+        static func longContent() -> TodayState {
+            var state = populated()
+            let long = "Maria-Fernanda Rodriguez-Villanueva de la Cruz Montenegro"
+            let unbroken = "Supercalifragilisticexpialidociousnesses"
+            state.greeting = Greeting(part: .afternoon, firstName: unbroken)
+            let items: [NeedsYouItem] = [
+                .notSent(NotSentItem(conversationId: 3, name: long)),
+                .directMessage(
+                    DirectMessageItem(
+                        conversationId: 7,
+                        name: long,
+                        snippet: .text(String(repeating: "Can you cover the late visit? ", count: 4)),
+                        unreadCount: 128,
+                        when: .minutesAgo(5)
+                    )
+                ),
+                .mention(
+                    MentionItem(
+                        activityId: 501,
+                        destination: .conversation(id: 12, targetMessageId: 9320),
+                        actorName: "🌻 Sunny 🌻",
+                        summary: .server("\(long) mentioned you: \"\(unbroken) \(unbroken)\""),
+                        when: .yesterday
+                    )
+                ),
+                .ticket(
+                    TicketItem(
+                        conversationId: 14,
+                        ticketNumber: "WAIV-2527",
+                        ticketTitle: unbroken,
+                        snippet: .text(unbroken),
+                        unreadCount: 3,
+                        when: .onDate(today.adding(days: -9))
+                    )
+                ),
+            ]
+            state.needsYou = NeedsYouSection(
+                items: items,
+                totalCount: 14,
+                hiddenCount: 10,
+                isReady: true,
+                kinds: [.notSent: 1, .message: 6, .mention: 4, .invitation: 2, .ticket: 1]
+            )
+            state.progress = TodayProgress(handled: 12, open: 14)
+            state.celebrations = [CelebrationItem(userId: "u_long", name: long, isBirthday: true, anniversaryYears: 12)]
+            return state
+        }
+
+        /// Everything handled with a name too long for the line.
+        static func caughtUpLongName() -> TodayState {
+            var state = caughtUp()
+            state.greeting = Greeting(part: .evening, firstName: "Maria-Fernanda Rodriguez-Villanueva")
+            state.progress = TodayProgress(handled: 12, open: 0)
+            return state
+        }
+
+        /// A day on the track: a visit, an overlapping call and an afternoon shift, with now at 9:00.
+        static func day() -> DayTimeline {
+            DayTimeline(
+                windowStart: ClockTime(hour: 8, minute: 0),
+                windowEnd: ClockTime(hour: 18, minute: 0),
+                blocks: [
+                    DayBlock(eventId: "evt_visit", start: 0.142, end: 0.25, tone: 0),
+                    DayBlock(eventId: "evt_call", start: 0.3, end: 0.35, tone: 1),
+                    DayBlock(eventId: "evt_shift", start: 0.6, end: 0.8, tone: 2),
+                ],
+                ticks: (1..<10).map { Double($0) / 10 },
+                labels: stride(from: 8, through: 18, by: 2).map {
+                    DayHourLabel(at: Double($0 - 8) / 10, time: ClockTime(hour: $0, minute: 0))
+                },
+                now: 0.1,
+                eventCount: 3,
+                scheduled: 3.5 * 3_600
+            )
         }
 
         static func filteredEmpty() -> TodayState {
@@ -104,6 +196,7 @@
         }
 
         private static let needsYouItems: [NeedsYouItem] = [
+            .notSent(NotSentItem(conversationId: 3, name: "Sam Ortiz")),
             .directMessage(
                 DirectMessageItem(
                     conversationId: 7,
@@ -117,9 +210,8 @@
                 MentionItem(
                     activityId: 501,
                     destination: .thread(rootMessageId: 9330, conversationId: 12, targetMessageId: 9333),
-                    summary: .server(
-                        "Jordan Lee mentioned you in #care-team: @Alex can you confirm the meds list?"
-                    ),
+                    actorName: "Jordan Lee",
+                    summary: .server("Jordan Lee mentioned you: \"@Alex can you confirm the meds list?\""),
                     when: .todayAt(ClockTime(hour: 8, minute: 12))
                 )
             ),
@@ -152,7 +244,8 @@
                 end: ClockTime(hour: 10, minute: 0),
                 endsOnLaterDay: true,
                 location: "Lakeview home",
-                isOnline: false
+                isOnline: false,
+                startsToday: true
             ),
             NextUpItem(
                 eventId: "evt_visit",
@@ -162,7 +255,8 @@
                 end: ClockTime(hour: 10, minute: 30),
                 endsOnLaterDay: false,
                 location: "1200 W Lake St",
-                isOnline: false
+                isOnline: false,
+                startsToday: true
             ),
             NextUpItem(
                 eventId: "evt_dst",
@@ -210,6 +304,8 @@
 
         private static func base() -> TodayState {
             var state = TodayState()
+            state.accountName = "Alex Rivera"
+            state.greeting = Greeting(part: .morning, firstName: "Alex")
             state.date = today
             state.timeZone = zone
             state.isInitialLoad = false

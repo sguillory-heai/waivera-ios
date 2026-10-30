@@ -2,15 +2,18 @@
     import SwiftUI
     import WaiveraDesign
 
-    /// What the Today list can ask for. Navigation goes through `open`, which the screen maps
+    /// What the Today screen can ask for. Navigation goes through `open`, which the screen maps
     /// to the router closures.
     struct TodayActions {
         var reload: () -> Void = {}
         var open: (TodayDestination, Int64?) -> Void = { _, _ in }
+        /// The hero bar's avatar; nil hides the button's action until the app wires the account menu.
+        var openAccount: (() -> Void)?
         var respond: (String, Bool) -> Void = { _, _ in }
         var toggleNeedsYou: () -> Void = {}
         var setFilter: (ActivityFilter) -> Void = { _ in }
         var toggleUnreadOnly: () -> Void = {}
+        var clearFilters: () -> Void = {}
         var markRead: (Int64) -> Void = { _ in }
         var markAllRead: () -> Void = {}
         var loadMore: () -> Void = {}
@@ -23,66 +26,74 @@
         static let shared = TodayFormatter()
     }
 
-    /// The stateless Today screen: one pull-to-refresh list in priority order. Loads under
-    /// ~300 ms show nothing rather than flashing a skeleton.
+    /// The stateless Today screen: the plum hero, then the sheet in priority order. A working day
+    /// goes Needs you, Your day, Up next, Celebrations, Activity; all caught up leads with Up next
+    /// and Celebrations under the reward. Loads under ~300 ms show nothing rather than flashing a
+    /// skeleton; slower ones cross-fade from the skeleton.
     struct TodayContent: View {
         let state: TodayState
         let actions: TodayActions
         let onRefresh: @Sendable () async -> Void
+        @State private var windowHeight: CGFloat = 0
 
         private var formatter: TodayFormatter { TodayFormatting.shared }
+        private var compact: Bool { HeroMetrics.isShortWindow(height: Double(windowHeight)) }
 
         var body: some View {
-            LoadingContent(isLoading: state.isInitialLoad && state.loadError == nil) {
-                list
-            } skeleton: {
-                TodaySkeleton()
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .background(Palette.background)
-        }
-
-        private var list: some View {
-            List {
-                dateHeader
-                if let error = state.loadError {
-                    EmptyStateView.error(
-                        title: TodayStrings.text("today.error.title"),
-                        message: error.userMessage,
-                        onRetry: actions.reload
-                    )
-                    .todayListRow()
-                } else {
-                    needsYouRows
-                    nextUpRows
-                    celebrationRows
-                    activityRows
+            ScrollView {
+                VStack(spacing: 0) {
+                    TodayHero(state: state, actions: actions, compact: compact)
+                    sheet
                 }
+                .padding(.bottom, Spacing.extraLarge)
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .environment(\.defaultMinListRowHeight, 0)
+            .environment(\.todayCompactWindow, compact)
+            .onGeometryChange(for: CGFloat.self) { proxy in
+                proxy.size.height + proxy.safeAreaInsets.top + proxy.safeAreaInsets.bottom
+            } action: { height in
+                windowHeight = height
+            }
+            .background(Palette.background)
             .refreshable { [onRefresh] in await onRefresh() }
             .waiveraAnimation(.layout, value: state)
             .accessibilityIdentifier("today.list")
         }
 
-        // MARK: Date and quiet line
-
-        @ViewBuilder private var dateHeader: some View {
-            if let date = state.date {
-                Text(formatter.longDay(date))
-                    .font(WaiveraFont.subtitle)
-                    .foregroundStyle(Palette.textSecondary)
-                    .padding(.horizontal, Spacing.medium)
-                    .padding(.top, Spacing.small)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .todayListRow()
+        @ViewBuilder private var sheet: some View {
+            if let error = state.loadError {
+                EmptyStateView.error(
+                    title: TodayStrings.text("today.error.title"),
+                    message: error.userMessage,
+                    onRetry: actions.reload
+                )
+            } else {
+                LoadingContent(isLoading: state.isInitialLoad) {
+                    LazyVStack(spacing: 0) {
+                        quietLine
+                        needsYouSection
+                        if state.isAllCaughtUp {
+                            nextUpSection
+                            celebrationSection
+                            yourDay
+                        } else {
+                            yourDay
+                            nextUpSection
+                            celebrationSection
+                        }
+                        activitySection
+                    }
+                } skeleton: {
+                    TodaySkeleton()
+                }
             }
+        }
+
+        // MARK: Quiet line
+
+        @ViewBuilder private var quietLine: some View {
             if let quiet = state.quietStatus {
                 QuietLine(text: formatter.quiet(quiet), systemImage: Self.icon(quiet))
                     .accessibilityIdentifier("today.quietLine")
-                    .todayListRow()
             }
         }
 
@@ -95,40 +106,57 @@
 
         // MARK: Needs you
 
-        @ViewBuilder private var needsYouRows: some View {
+        /// All caught up is the hero's reward, so the sheet goes straight on to the day.
+        @ViewBuilder private var needsYouSection: some View {
             let section = state.needsYou
-            if state.isAllCaughtUp {
-                AllCaughtUpView().todayListRow()
-            } else if section.failed {
-                TodaySectionHeader(title: TodayStrings.text("today.section.needsYou")).todayListRow()
-                SectionErrorView(message: TodayStrings.text("today.needsYou.failed"), onRetry: actions.reload)
-                    .todayListRow()
-            } else if !section.items.isEmpty {
-                TodaySectionHeader(title: TodayStrings.text("today.section.needsYou")).todayListRow()
-                ForEach(section.items) { item in
-                    NeedsYouRow(item: item, formatter: formatter, onOpen: actions.open, onRespond: actions.respond)
-                        .todayListRow()
+            if !state.isAllCaughtUp && (section.failed || !section.items.isEmpty) {
+                TodaySectionHeader(
+                    title: TodayStrings.text("today.section.needsYou"),
+                    first: true,
+                    count: section.failed ? nil : section.totalCount
+                ) {
+                    needsYouToggle(section)
                 }
-                if section.hiddenCount > 0 || section.isExpanded {
-                    TodayTextButton(
-                        title: section.isExpanded
-                            ? TodayStrings.text("today.needsYou.showLess")
-                            : TodayStrings.showMore(section.hiddenCount),
-                        action: actions.toggleNeedsYou
-                    )
-                    .padding(.horizontal, Spacing.medium)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .accessibilityIdentifier("today.needsYou.toggle")
-                    .todayListRow()
+                if section.failed {
+                    SectionErrorView(message: TodayStrings.text("today.needsYou.failed"), onRetry: actions.reload)
+                } else {
+                    ForEach(section.items) { item in
+                        NeedsYouRow(item: item, formatter: formatter, onOpen: actions.open, onRespond: actions.respond)
+                            .transition(.opacity)
+                    }
                 }
             }
         }
 
-        // MARK: Next up
+        /// "Show all" (VoiceOver: "Show 2 more") while items are folded away, "Show less" once open.
+        @ViewBuilder private func needsYouToggle(_ section: NeedsYouSection) -> some View {
+            if section.isExpanded {
+                TodayTextButton(title: TodayStrings.text("today.needsYou.showLess"), action: actions.toggleNeedsYou)
+                    .accessibilityIdentifier("today.needsYou.toggle")
+            } else if section.hiddenCount > 0 {
+                TodayTextButton(title: TodayStrings.text("today.needsYou.showAll"), action: actions.toggleNeedsYou)
+                    .accessibilityLabel(Text(TodayStrings.showMore(section.hiddenCount)))
+                    .accessibilityIdentifier("today.needsYou.toggle")
+            }
+        }
 
-        @ViewBuilder private var nextUpRows: some View {
+        // MARK: Your day
+
+        @ViewBuilder private var yourDay: some View {
+            if let day = state.day {
+                let next = state.nextUp.items.first { $0.startsToday && $0.start != nil }
+                YourDayCard(day: day, next: next) { actions.open(.event(id: $0), nil) }
+                    .padding(.horizontal, Spacing.gutter)
+                    .padding(.top, Spacing.mediumPlus)
+                    .padding(.bottom, Spacing.extraSmall)
+            }
+        }
+
+        // MARK: Up next
+
+        @ViewBuilder private var nextUpSection: some View {
             let section = state.nextUp
-            TodaySectionHeader(title: TodayStrings.text("today.section.nextUp")) {
+            TodaySectionHeader(title: TodayStrings.text("today.section.nextUp"), first: state.isAllCaughtUp) {
                 TodayTextButton(
                     title: TodayStrings.text("today.seeSchedule"),
                     hint: TodayStrings.text("today.seeSchedule.hint"),
@@ -136,18 +164,18 @@
                 )
                 .accessibilityIdentifier("today.seeSchedule")
             }
-            .todayListRow()
             if section.failed {
                 SectionErrorView(message: TodayStrings.text("today.nextUp.failed"), onRetry: actions.reload)
-                    .todayListRow()
             } else if !section.isReady {
-                SkeletonList(rows: 2).todayListRow()
+                SectionSkeleton()
             } else if section.items.isEmpty {
-                QuietLine(text: TodayStrings.text("today.nextUp.empty")).todayListRow()
+                QuietLine(text: TodayStrings.text("today.nextUp.empty"))
             } else {
-                ForEach(section.items) { item in
+                if let first = section.featured {
+                    UpNextCard(item: first, formatter: formatter) { actions.open(.event(id: first.eventId), nil) }
+                }
+                ForEach(section.others) { item in
                     NextUpRow(item: item, formatter: formatter) { actions.open(.event(id: item.eventId), nil) }
-                        .todayListRow()
                 }
             }
             if state.usesFallbackTimeZone {
@@ -155,48 +183,42 @@
                     text: TodayStrings.format("today.nextUp.fallbackZone", state.timeZone.identifier),
                     systemImage: "globe"
                 )
-                .todayListRow()
             }
         }
 
         // MARK: Celebrations
 
-        @ViewBuilder private var celebrationRows: some View {
+        @ViewBuilder private var celebrationSection: some View {
             if !state.celebrations.isEmpty || state.celebrationsFailed {
-                TodaySectionHeader(title: TodayStrings.text("today.section.celebrations")).todayListRow()
+                TodaySectionHeader(title: TodayStrings.text("today.section.celebrations"))
                 if state.celebrationsFailed {
                     SectionErrorView(message: TodayStrings.text("today.celebration.failed"), onRetry: actions.reload)
-                        .todayListRow()
                 }
                 ForEach(state.celebrations) { item in
-                    CelebrationRow(item: item) { actions.open(.schedule, nil) }
-                        .todayListRow()
+                    CelebrationCard(item: item) { actions.open(.schedule, nil) }
                 }
             }
         }
 
         // MARK: Activity
 
-        @ViewBuilder private var activityRows: some View {
+        @ViewBuilder private var activitySection: some View {
             let section = state.activity
             ActivityHeader(
                 section: section,
                 onSeeAll: { actions.open(.activity, nil) },
                 onMarkAllRead: actions.markAllRead
             )
-            .todayListRow()
             if section.failed {
                 SectionErrorView(message: TodayStrings.text("today.activity.failed"), onRetry: actions.reload)
-                    .todayListRow()
             } else if !section.isReady {
-                SkeletonList(rows: 3).todayListRow()
+                SectionSkeleton()
             } else if section.isEmpty {
                 EmptyStateView(
-                    systemImage: "checkmark.circle",
+                    illustration: .activity,
                     title: TodayStrings.text("today.activity.empty.title"),
                     message: TodayStrings.text("today.activity.empty.message")
                 )
-                .todayListRow()
             } else {
                 ActivityFilterBar(
                     filter: section.filter,
@@ -204,14 +226,14 @@
                     onFilter: actions.setFilter,
                     onToggleUnread: actions.toggleUnreadOnly
                 )
-                .todayListRow()
                 if section.isFilteredEmpty {
                     EmptyStateView(
-                        systemImage: "magnifyingglass",
+                        illustration: .search,
                         title: TodayStrings.text("today.activity.filtered.title"),
-                        message: TodayStrings.text("today.activity.filtered.message")
+                        message: TodayStrings.text("today.activity.filtered.message"),
+                        actionTitle: TodayStrings.text("today.activity.clearFilters"),
+                        action: actions.clearFilters
                     )
-                    .todayListRow()
                 }
                 ForEach(section.rows) { row in
                     ActivityItemRow(
@@ -220,10 +242,8 @@
                         onOpen: { actions.open(.chat(row.destination), row.id) },
                         onMarkRead: { actions.markRead(row.id) }
                     )
-                    .todayListRow()
                 }
                 ActivityFooter(section: section, onLoadMore: actions.loadMore, onRetry: actions.retryMore)
-                    .todayListRow()
             }
         }
     }

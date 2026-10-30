@@ -25,9 +25,19 @@ enum Fixture {
         now: Date = now,
         connection: ConnectionBanner = .hidden,
         local: TodayLocalState = TodayLocalState(),
-        activity: ActivityLocalState = ActivityLocalState()
+        activity: ActivityLocalState = ActivityLocalState(),
+        userId: String? = nil,
+        handled: HandledTally? = nil
     ) -> TodayContext {
-        TodayContext(zone: chicago, now: now, connection: connection, local: local, activity: activity)
+        TodayContext(
+            myUserId: userId,
+            handled: handled,
+            zone: chicago,
+            now: now,
+            connection: connection,
+            local: local,
+            activity: activity
+        )
     }
 
     static func loaded<Value>(_ value: Value, at updatedAt: Date = now) -> Resource<Value> {

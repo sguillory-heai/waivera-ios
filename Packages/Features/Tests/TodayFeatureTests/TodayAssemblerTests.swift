@@ -47,8 +47,16 @@ struct TodayAssemblerTests {
                 ]
             )
         )
-        #expect(state.needsYou.items.map(\.id) == ["mention-1", "dm-7", "invite-invite", "ticket-14"])
-        guard case .ticket(let ticket) = state.needsYou.items.last else {
+        #expect(state.needsYou.items.map(\.id) == ["mention-1", "dm-7", "invite-invite"], "folds after three")
+        #expect(state.needsYou.totalCount == 4)
+        #expect(state.needsYou.kinds == [.mention: 1, .message: 1, .invitation: 1, .ticket: 1])
+        let all = TodayAssembler.assemble(
+            Fixture.sources(
+                conversations: [Fixture.direct(7, unread: 2, at: "2026-11-01T16:00:00Z"), Fixture.bot(14, unread: 1)]
+            ),
+            context: Fixture.context()
+        )
+        guard case .ticket(let ticket) = all.needsYou.items.last else {
             Issue.record("the last row is not a ticket")
             return
         }
@@ -87,13 +95,14 @@ struct TodayAssemblerTests {
         #expect(assemble(Fixture.sources(events: events), Fixture.context(local: local)).needsYou.items.isEmpty)
     }
 
-    @Test func needsYouCollapsesToFiveRowsWithACountOfTheRest() {
+    @Test func needsYouCollapsesToThreeRowsWithACountOfTheRest() {
         let conversations = (1...7).map { index in
             Fixture.direct(index, unread: 1, at: WaiveraInstant.format(Fixture.now - Double(index * 60)))
         }
         let collapsed = assemble(Fixture.sources(conversations: conversations)).needsYou
-        #expect(collapsed.items.count == 5)
-        #expect(collapsed.hiddenCount == 2)
+        #expect(collapsed.items.count == 3)
+        #expect(collapsed.hiddenCount == 4)
+        #expect(collapsed.totalCount == 7, "the hero counts the folded rows too")
         #expect(!collapsed.isExpanded)
         #expect(collapsed.items.first?.id == "dm-1")
 

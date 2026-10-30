@@ -2,7 +2,7 @@
 "today.title" = "Today";
 "activity.title" = "Activity";
 "today.loading" = "Loading today";
-"today.error.title" = "Today couldn't load";
+"today.error.title" = "Today didn't load";
 "today.retry" = "Retry";
 "today.dismiss" = "Dismiss";
 "today.separator" = "%1$@ · %2$@";
@@ -19,7 +19,7 @@
 
 /* Section headers */
 "today.section.needsYou" = "Needs you";
-"today.section.nextUp" = "Next up";
+"today.section.nextUp" = "Up next";
 "today.section.celebrations" = "Celebrations";
 "today.section.activity" = "Activity";
 "today.seeSchedule" = "See schedule";
@@ -30,7 +30,7 @@
 /* Needs you */
 "today.needsYou.showMore" = "Show %ld more";
 "today.needsYou.showLess" = "Show less";
-"today.needsYou.failed" = "Messages couldn't load.";
+"today.needsYou.failed" = "Messages didn't load.";
 "today.dm.fallbackName" = "Direct message";
 "today.kind.mention" = "Mention";
 "today.kind.reply" = "Thread reply";
@@ -84,21 +84,21 @@
 "today.past.yesterday" = "Yesterday";
 
 /* Next up */
-"today.nextUp.empty" = "Nothing else on your schedule for the next two weeks.";
-"today.nextUp.failed" = "Your schedule couldn't load.";
+"today.nextUp.empty" = "Your next two weeks are clear.";
+"today.nextUp.failed" = "Your schedule didn't load.";
 "today.nextUp.happeningNow" = "Happening now";
 "today.nextUp.fallbackZone" = "Times are in %@ because your profile has no saved time zone.";
 
 /* Celebrations */
-"today.celebration.nameFallback" = "This employee";
-"today.celebration.birthday" = "It's %@'s birthday today!";
-"today.celebration.anniversary" = "Celebrating %1$@'s %2$ld-year work anniversary!";
-"today.celebration.both" = "It's %1$@'s birthday and %2$ld-year work anniversary!";
-"today.celebration.failed" = "Celebrations couldn't load.";
+"today.celebration.nameFallback" = "Teammate";
+"today.celebration.birthday" = "Happy birthday, %@!";
+"today.celebration.anniversary" = "Happy %2$ld-year work anniversary, %1$@!";
+"today.celebration.both" = "Happy birthday and %2$ld-year work anniversary, %1$@!";
+"today.celebration.failed" = "Celebrations didn't load.";
 
 /* All caught up: the one celebrated empty state */
-"today.caughtUp.title" = "You're all caught up";
-"today.caughtUp.message" = "New messages, mentions and invitations will show up here.";
+"today.caughtUp.title" = "You're all caught up\U00A0🎉";
+"today.caughtUp.message" = "Enjoy the calm. Anything new will show up here.";
 
 /* Activity */
 "today.filter.all" = "All";
@@ -126,7 +126,7 @@
 "today.activity.filtered.message" = "Try another filter.";
 "today.activity.filtered.searchMessage" = "Try another filter or search term.";
 "today.activity.clearFilters" = "Clear filters";
-"today.activity.failed" = "Activity couldn't load.";
+"today.activity.failed" = "Activity didn't load.";
 "today.activity.error.title" = "Activity couldn't load";
 "today.activity.moreFailed" = "More activity couldn't load.";
 "today.activity.loadingMore" = "Loading more activity";
@@ -142,3 +142,88 @@
 "today.toast.accepted" = "Invitation accepted";
 "today.toast.declined" = "Invitation declined";
 "today.toast.invitationFailed" = "Your response wasn't saved.";
+
+/* Hero: greeting in the employee's time zone. No emoji: they belong to celebrations only. */
+"today.greeting.morning" = "Good morning";
+"today.greeting.afternoon" = "Good afternoon";
+"today.greeting.evening" = "Good evening";
+"today.greeting.morning.named" = "Good morning, %@";
+"today.greeting.afternoon.named" = "Good afternoon, %@";
+"today.greeting.evening.named" = "Good evening, %@";
+"today.account" = "Account and settings";
+
+/* Hero summary card. The ring shows only the count ("5/9"); this is what VoiceOver reads for it. */
+"today.ring.label" = "%1$ld of %2$ld handled today";
+"today.needsYouCount.one" = "%ld thing needs you";
+"today.needsYouCount.other" = "%ld things need you";
+"today.needsYouCount.none" = "Nothing needs you right now";
+"today.loadingSummary" = "Loading what needs you";
+/* What is waiting, by kind: "2 messages · 1 invite · 1 ticket". The count and noun are joined by a no-break space. */
+"today.kind.notSent.one" = "%ld\U00A0not\U00A0sent";
+"today.kind.notSent.other" = "%ld\U00A0not\U00A0sent";
+"today.kind.messages.one" = "%ld\U00A0message";
+"today.kind.messages.other" = "%ld\U00A0messages";
+"today.kind.mentions.one" = "%ld\U00A0mention";
+"today.kind.mentions.other" = "%ld\U00A0mentions";
+"today.kind.invites.one" = "%ld\U00A0invite";
+"today.kind.invites.other" = "%ld\U00A0invites";
+"today.kind.tickets.one" = "%ld\U00A0ticket";
+"today.kind.tickets.other" = "%ld\U00A0tickets";
+/* No-break spaces, so at large text the kicker never breaks as "NEXT ·" over its time. */
+"today.next" = "Next\U00A0·\U00A0%@";
+"today.next.label" = "Next: %1$@, %2$@";
+
+/* Hero stat tiles. The number sits above the label, so the label has no number in it. */
+"today.stat.eventsToday.one" = "event today";
+"today.stat.eventsToday.other" = "events today";
+"today.stat.unreadChats.one" = "unread chat";
+"today.stat.unreadChats.other" = "unread chats";
+"today.stat.eventsWeek.one" = "event this week";
+"today.stat.eventsWeek.other" = "events this week";
+"today.stat.handled" = "handled";
+"today.stat.fraction" = "%1$ld/%2$ld";
+"today.stat.label" = "%1$ld %2$@";
+"today.stat.unknown" = "–";
+"today.stat.loading" = "%@, still loading";
+
+/* All caught up. The emoji is in the headline only. */
+"today.caughtUp.named.one" = "%1$ld handled today. Nice work, %2$@.";
+"today.caughtUp.named.other" = "All %1$ld handled today. Nice work, %2$@.";
+"today.caughtUp.count.one" = "%ld handled today. Nice work.";
+"today.caughtUp.count.other" = "All %ld handled today. Nice work.";
+
+/* Section headers */
+"today.sectionCount.one" = "%ld item";
+"today.sectionCount.other" = "%ld items";
+"today.needsYou.showAll" = "Show all";
+
+/* Your day */
+"today.day.title" = "Your day";
+"today.day.events.one" = "%ld event";
+"today.day.events.other" = "%ld events";
+"today.day.hours" = "%ld hr scheduled";
+"today.day.hoursMinutes" = "%1$ld hr %2$ld min scheduled";
+"today.day.minutes" = "%ld min scheduled";
+"today.day.open" = "Your day is wide open.";
+"today.day.track" = "%1$@, from %2$@ to %3$@";
+"today.until" = "Until %@";
+/* The leading no-break space is the gap after "AM", so the dash has the same space either side. */
+"today.until.dash" = "\U00A0–\U00A0%@";
+"today.until.nextDay" = "\U00A0–\U00A0%@ next day";
+
+/* Needs you cards */
+"today.mentionedYou" = "%@ mentioned you";
+"today.mentionedYou.unknown" = "You were mentioned";
+"today.notSent" = "Not sent";
+"today.notSent.headline" = "Your message to %@ wasn't sent";
+"today.notSent.supporting" = "Open the chat to retry";
+"today.notSent.hint" = "Opens the chat to retry";
+"today.notSent.label" = "%1$@. %2$@. %3$@";
+"today.notSent.group" = "%1$@ and %2$ld others";
+"today.notSent.channel" = "#%@";
+"today.notSent.fallback" = "a chat";
+
+/* Celebration cards */
+"today.celebration.label.birthday" = "Birthday";
+"today.celebration.label.anniversary" = "Work anniversary";
+"today.celebration.label.both" = "Birthday and work anniversary";
