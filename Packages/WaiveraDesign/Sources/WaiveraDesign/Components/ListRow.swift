@@ -84,14 +84,7 @@
 
         /// A title line, the 2pt gap and a subtitle line plus half a line of slack, at this size.
         private var standardHeight: CGFloat {
-            let traits = UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(dynamicTypeSize))
-            return CGFloat(
-                LeadingTileAlignment.twoLineRowContentHeight(
-                    titleLine: Double(TextStyleToken.titleSmall.scaledLineHeight(compatibleWith: traits)),
-                    gap: Double(Spacing.xxSmall),
-                    subtitleLine: Double(TextStyleToken.bodySmall.scaledLineHeight(compatibleWith: traits))
-                )
-            )
+            LeadingPinLayout.standardHeight(title: .titleSmall, subtitle: .bodySmall, dynamicTypeSize: dynamicTypeSize)
         }
     }
 
@@ -148,6 +141,25 @@
         public init(spacing: CGFloat = Spacing.mediumSmall, standardHeight: CGFloat) {
             self.spacing = spacing
             self.standardHeight = standardHeight
+        }
+
+        /// The content height of a standard two-line row set in `title` over `subtitle` at
+        /// `dynamicTypeSize` (a title line, the 2pt gap, a subtitle line and half a line of slack),
+        /// for feature cards that are not a `ListRow` but follow the same leading-pin rule.
+        public static func standardHeight(
+            title: TextStyleToken,
+            subtitle: TextStyleToken,
+            gap: CGFloat = Spacing.xxSmall,
+            dynamicTypeSize: DynamicTypeSize
+        ) -> CGFloat {
+            let traits = UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(dynamicTypeSize))
+            return CGFloat(
+                LeadingTileAlignment.twoLineRowContentHeight(
+                    titleLine: Double(title.scaledLineHeight(compatibleWith: traits)),
+                    gap: Double(gap),
+                    subtitleLine: Double(subtitle.scaledLineHeight(compatibleWith: traits))
+                )
+            )
         }
 
         public func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) -> CGSize {
