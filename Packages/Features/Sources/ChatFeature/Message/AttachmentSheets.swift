@@ -3,7 +3,9 @@
     import UIKit
     import WaiveraDesign
 
-    /// Save to Files or Open / Share for a downloaded file (03 §8).
+    /// Save to Files or Open / Share for a downloaded file (03 §8; Android `FileActionsContent`):
+    /// the name as the title, a line on what each does, a busy line while the file downloads, and
+    /// the two actions full width, Save first.
     struct FileActionsSheet: View {
         let fileName: String
         let isBusy: Bool
@@ -13,40 +15,46 @@
         let onFinish: (_ completed: Bool) -> Void
 
         var body: some View {
-            VStack(alignment: .leading, spacing: Spacing.medium) {
+            VStack(alignment: .leading, spacing: Spacing.mediumSmall) {
                 Text(fileName)
-                    .font(WaiveraFont.sectionTitle)
+                    .waiveraTextStyle(.titleLarge)
                     .foregroundStyle(Palette.text)
-                    .lineLimit(2)
+                    .lineLimit(3)
                     .accessibilityAddTraits(.isHeader)
                 Text(ConversationStrings.text("file.sheet.message"))
-                    .font(WaiveraFont.body)
+                    .waiveraTextStyle(.bodyMedium)
                     .foregroundStyle(Palette.textSecondary)
                 if isBusy {
-                    Label(ConversationStrings.text("file.preparing"), systemImage: "hourglass")
-                        .font(WaiveraFont.caption)
-                        .foregroundStyle(Palette.textSecondary)
+                    HStack(spacing: Spacing.small) {
+                        BusyIndicator()
+                        Text(ConversationStrings.text("file.preparing"))
+                            .waiveraTextStyle(.bodyMedium)
+                            .foregroundStyle(Palette.textSecondary)
+                    }
+                    .accessibilityElement(children: .combine)
                 }
                 WaiveraButton(
                     ConversationStrings.text("file.save"),
-                    systemImage: "square.and.arrow.down",
-                    isLoading: isBusy
-                ) {
-                    onSave()
-                }
+                    systemImage: "arrow.down.to.line",
+                    fillsWidth: true,
+                    action: onSave
+                )
                 .disabled(isBusy)
                 WaiveraButton(
                     ConversationStrings.text("file.share"),
                     variant: .secondary,
-                    systemImage: "square.and.arrow.up"
-                ) {
-                    onShare()
-                }
+                    systemImage: "square.and.arrow.up",
+                    fillsWidth: true,
+                    action: onShare
+                )
                 .disabled(isBusy)
             }
-            .padding(Spacing.large)
+            .padding(.horizontal, Spacing.gutter)
+            .padding(.top, Spacing.large)
+            .padding(.bottom, Spacing.large)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Palette.surface)
+            .waiveraAnimation(.state, value: isBusy)
             .sheet(item: preparedBinding) { file in
                 switch file.purpose {
                 case .share: ShareSheet(url: file.url, onFinish: onFinish)
@@ -126,7 +134,9 @@
         }
     }
 
-    /// Full-screen image with pinch and double-tap zoom, 1× to 5× (03 §8).
+    /// Full-screen image with pinch and double-tap zoom, 1× to 5× (03 §8; Android
+    /// `ImagePreviewDialog`), on an almost black scrim with white ink: the close button on its
+    /// own dark disc, the spinner without its track, and the zoom hint at the bottom.
     struct ImagePreviewView: View {
         let messageId: Int
         let title: String
@@ -140,17 +150,26 @@
 
         var body: some View {
             ZStack(alignment: .topTrailing) {
-                Palette.scrim.ignoresSafeArea()
+                Palette.previewScrim.ignoresSafeArea()
                 content
                 Button(action: onClose) {
                     Image(systemName: "xmark")
-                        .font(WaiveraFont.bodyEmphasis)
+                        .fontWeight(.semibold)
                         .foregroundStyle(Palette.onAccent)
-                        .frame(width: ControlSize.minHitTarget, height: ControlSize.minHitTarget)
+                        .frame(width: ControlSize.iconButton, height: ControlSize.iconButton)
                         .background(Palette.scrim, in: Circle())
+                        .contentShape(Circle())
                 }
-                .padding(Spacing.medium)
+                .buttonStyle(.press(.compact))
+                .padding(Spacing.small)
                 .accessibilityLabel(ConversationStrings.text("image.close"))
+            }
+            .overlay(alignment: .bottom) {
+                Text(ConversationStrings.text("image.zoom.hint"))
+                    .waiveraTextStyle(.labelMedium)
+                    .foregroundStyle(Palette.onAccent)
+                    .padding(Spacing.medium)
+                    .accessibilityHidden(true)
             }
             .task(id: messageId) {
                 do {
@@ -177,10 +196,18 @@
                     .accessibilityLabel(title)
                     .accessibilityHint(ConversationStrings.text("image.zoom.hint"))
             } else if failed {
-                AttachmentNotice(text: ConversationStrings.text("image.unavailable"), systemImage: "photo")
+                Text(ConversationStrings.text("image.unavailable"))
+                    .waiveraTextStyle(.bodyMedium)
+                    .foregroundStyle(Palette.onAccent)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ProgressView().tint(Palette.onAccent).frame(maxWidth: .infinity, maxHeight: .infinity)
+                BusyIndicator(
+                    color: Palette.onAccent,
+                    trackColor: .clear,
+                    size: ControlSize.progressLarge,
+                    lineWidth: ControlSize.progressStrokeLarge
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
 
