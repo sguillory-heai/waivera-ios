@@ -158,14 +158,20 @@
             isSecure && !isRevealed ? .secure : .plain
         }
 
+        /// The placeholder in the secondary ink, as Android draws it; the system default is a pale
+        /// grey that read as an empty white field.
+        private var prompt: Text {
+            Text(placeholder).foregroundStyle(Palette.textSecondary)
+        }
+
         @ViewBuilder private var field: some View {
             if isSecure {
                 ZStack {
-                    inner(SecureField(placeholder, text: $text), as: .secure)
-                    inner(TextField(placeholder, text: $text), as: .plain)
+                    inner(SecureField(placeholder, text: $text, prompt: prompt), as: .secure)
+                    inner(TextField(placeholder, text: $text, prompt: prompt), as: .plain)
                 }
             } else {
-                inner(TextField(placeholder, text: $text), as: .plain)
+                inner(TextField(placeholder, text: $text, prompt: prompt), as: .plain)
             }
         }
 

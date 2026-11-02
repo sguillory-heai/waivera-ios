@@ -167,7 +167,7 @@
                     if isUploading {
                         BusyIndicator(color: ink)
                     } else {
-                        Image(systemName: isEditing ? "checkmark" : "arrow.up")
+                        Image(systemName: isEditing ? "checkmark" : "paperplane")
                             .resizable()
                             .scaledToFit()
                             .fontWeight(.bold)

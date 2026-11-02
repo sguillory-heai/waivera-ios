@@ -76,8 +76,8 @@
 "delete.confirm" = "Delete";
 "delete.failed" = "Delete failed";
 "edit.failed" = "Edit failed";
-"composer.placeholder" = "Message";
-"composer.reply.placeholder" = "Reply";
+"composer.placeholder" = "Write a message…";
+"composer.reply.placeholder" = "Write a reply…";
 "composer.edit.placeholder" = "Edit your message…";
 "attach.image" = "Attach image";
 "send" = "Send message";
