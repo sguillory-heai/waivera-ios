@@ -14,11 +14,12 @@
 "schedule.zone.notice" = "Times shown in %@";
 "schedule.zone.fallback" = "Your profile has no time zone, so times are shown in %@.";
 "schedule.loading" = "Loading your calendar…";
-"schedule.error.title" = "Calendar could not load";
+"schedule.error.title" = "Your schedule didn’t load";
+"schedule.event.error.title" = "This event didn’t load";
 "schedule.empty.title" = "Nothing scheduled";
 "schedule.empty.message" = "This day is clear.";
 "schedule.refreshFailed" = "Couldn't refresh your schedule. Showing what was saved.";
-"schedule.milestonesFailed" = "Team celebrations couldn't load.";
+"schedule.milestonesFailed" = "Team celebrations didn’t load.";
 "schedule.offline" = "You're offline. Showing your saved schedule.";
 "schedule.retry" = "Retry";
 "schedule.grid.label" = "Calendar";

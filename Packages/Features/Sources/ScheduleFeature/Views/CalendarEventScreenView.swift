@@ -34,7 +34,7 @@
                 )
             case .error(let error):
                 EmptyStateView.error(
-                    title: ScheduleStrings.text("schedule.error.title"),
+                    title: ScheduleStrings.text("schedule.event.error.title"),
                     message: error.userMessage,
                     onRetry: { actions.retry() }
                 )

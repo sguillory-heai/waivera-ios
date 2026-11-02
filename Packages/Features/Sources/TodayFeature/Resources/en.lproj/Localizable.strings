@@ -141,8 +141,8 @@
 "today.activity.filtered.searchMessage" = "Try another filter or search term.";
 "today.activity.clearFilters" = "Clear filters";
 "today.activity.failed" = "Activity didn't load.";
-"today.activity.error.title" = "Activity couldn't load";
-"today.activity.moreFailed" = "More activity couldn't load.";
+"today.activity.error.title" = "Activity didn’t load";
+"today.activity.moreFailed" = "More activity didn’t load.";
 "today.activity.loadingMore" = "Loading more activity";
 "today.activity.loading" = "Loading activity";
 "today.activity.search" = "Filter activity";

@@ -84,7 +84,7 @@
             let signOutInline = dynamicTypeSize.isLargeText
             AuthScaffold(pinnedAtLargeText: true) {
                 AuthHeader(
-                    systemImage: model.isOffline ? "icloud.slash" : "exclamationmark.triangle.fill",
+                    systemImage: model.isOffline ? "icloud.slash" : "exclamationmark.circle",
                     title: model.isOffline ? AuthStrings.bootstrapOfflineTitle : AuthStrings.bootstrapFailedTitle,
                     // The title already says "offline"; the body says what to do instead.
                     message: model.isOffline

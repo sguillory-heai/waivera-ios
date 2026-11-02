@@ -37,7 +37,7 @@ final class AuthFlowUITests: XCTestCase {
         password.typeText("not the password")
         signIn.tap()
 
-        let message = "That email and password don't match. Please try again."
+        let message = "That email and password don’t match. Try again."
         let error = app.descendants(matching: .any)
             .matching(NSPredicate(format: "label CONTAINS %@", message))
             .firstMatch
