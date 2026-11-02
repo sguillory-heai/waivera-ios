@@ -44,7 +44,11 @@
                         onOpenMembers: onOpenMembers
                     )
                 } else {
-                    Palette.background.ignoresSafeArea()
+                    // The plum bar from the first frame, so the push never starts with the system bar
+                    // and jumps when the model arrives.
+                    Palette.background
+                        .ignoresSafeArea(edges: .bottom)
+                        .waiveraTopBar { WaiveraTopBar { EmptyView() } }
                 }
             }
             .task(id: conversationID) {

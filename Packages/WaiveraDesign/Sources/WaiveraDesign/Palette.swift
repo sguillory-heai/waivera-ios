@@ -101,6 +101,10 @@
         public static let buttonEdge = Color(token: .buttonEdge)
         public static let buttonGlow = Color(token: .buttonGlow)
         public static let buttonRaise = Color(token: .buttonRaise)
+        /// The colours to give SwiftUI's `shadow`: the Android tokens scaled the way Android draws
+        /// them (`Elevation.androidShadowShare`). Use these, not the raw tokens, for shadows.
+        public static let glowShadow = buttonGlow.opacity(Elevation.androidShadowShare)
+        public static let liftShadow = buttonRaise.opacity(Elevation.androidShadowShare)
     }
 
     /// The plum hero's colours.

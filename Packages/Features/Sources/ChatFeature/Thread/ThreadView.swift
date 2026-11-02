@@ -34,7 +34,11 @@
                 if let model {
                     ThreadScreen(model: model, avatars: data?.avatars, onOpenPerson: onOpenPerson)
                 } else {
-                    Palette.background.ignoresSafeArea()
+                    // The plum bar from the first frame, so the push never starts with the system bar
+                    // and jumps when the model arrives.
+                    Palette.background
+                        .ignoresSafeArea(edges: .bottom)
+                        .waiveraTopBar { WaiveraTopBar { EmptyView() } }
                 }
             }
             .task(id: rootMessageID) {

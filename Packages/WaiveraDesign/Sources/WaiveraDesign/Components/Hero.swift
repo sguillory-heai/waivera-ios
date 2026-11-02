@@ -351,7 +351,7 @@
                     .strokeBorder(Palette.border, lineWidth: Spacing.hairline)
             )
             .shadow(
-                color: Palette.buttonRaise.opacity(Elevation.androidShadowShare),
+                color: Palette.liftShadow,
                 radius: Elevation.shadow(for: Elevation.card).radius,
                 x: 0,
                 y: Elevation.shadow(for: Elevation.card).y

@@ -172,6 +172,7 @@
                     .padding(.bottom, Spacing.large)
                 }
             }
+            .plumStatusBarWhenScrolled()
         }
 
         private var name: String { state.name ?? ProfileStrings.unknownPerson }

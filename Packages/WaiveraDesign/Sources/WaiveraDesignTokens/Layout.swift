@@ -112,6 +112,12 @@ public enum ControlSize {
     public static let milestoneYearsMinAvatar: CGFloat = 40
     public static let unreadDot: CGFloat = 10
     public static let badgeMinWidth: CGFloat = 20
+    /// The switch, Material 3's sizes as Android draws it: track, knob on and off, off outline.
+    public static let switchWidth: CGFloat = 52
+    public static let switchHeight: CGFloat = 32
+    public static let switchKnobOn: CGFloat = 24
+    public static let switchKnobOff: CGFloat = 16
+    public static let switchOutline: CGFloat = 2
     public static let navBadgeMin: CGFloat = 18
     public static let navBadgeRing: CGFloat = 2
     public static let navIndicatorWidth: CGFloat = 56
@@ -180,6 +186,8 @@ public enum Elevation {
 /// Opacity steps.
 public enum Emphasis {
     public static let disabled: Double = 0.5
+    /// A blocked "on" switch's track: the accent at this alpha, so it recedes (Android UI3-12).
+    public static let disabledCheckedTrack: Double = 0.38
     /// Kept for existing call sites.
     public static let pressed: Double = 0.82
     /// Under Reduce Motion a press answers with a tint instead of a scale (Android M1-12).

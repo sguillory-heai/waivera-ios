@@ -16,19 +16,19 @@
         }
 
         public var body: some View {
-            let knob = isOn ? SwitchMetrics.knobOn : SwitchMetrics.knobOff
-            let travel = (SwitchMetrics.width - SwitchMetrics.height) / 2
+            let knob = isOn ? ControlSize.switchKnobOn : ControlSize.switchKnobOff
+            let travel = (ControlSize.switchWidth - ControlSize.switchHeight) / 2
             ZStack {
                 Capsule()
                     .fill(trackColor)
                 Capsule()
-                    .strokeBorder(isOn ? Color.clear : outlineColor, lineWidth: SwitchMetrics.outline)
+                    .strokeBorder(isOn ? Color.clear : outlineColor, lineWidth: ControlSize.switchOutline)
                 Circle()
                     .fill(knobColor)
                     .frame(width: knob, height: knob)
                     .offset(x: isOn ? travel : -travel)
             }
-            .frame(width: SwitchMetrics.width, height: SwitchMetrics.height)
+            .frame(width: ControlSize.switchWidth, height: ControlSize.switchHeight)
             .animation(Motion.animation(.state, reduceMotion: reduceMotion), value: isOn)
             .accessibilityHidden(true)
         }
@@ -36,7 +36,7 @@
         private var trackColor: Color {
             switch (isOn, isEnabled) {
             case (true, true): Palette.accentFill
-            case (true, false): Palette.accent.opacity(SwitchMetrics.disabledCheckedTrackAlpha)
+            case (true, false): Palette.accent.opacity(Emphasis.disabledCheckedTrack)
             case (false, _): Palette.surfaceMuted
             }
         }
@@ -51,16 +51,6 @@
         }
 
         private var outlineColor: Color { isEnabled ? Palette.borderStrong : Palette.textSecondary }
-    }
-
-    /// Material 3 switch sizes, in points (Android dp).
-    enum SwitchMetrics {
-        static let width: CGFloat = 52
-        static let height: CGFloat = 32
-        static let knobOn: CGFloat = 24
-        static let knobOff: CGFloat = 16
-        static let outline: CGFloat = 2
-        static let disabledCheckedTrackAlpha = 0.38
     }
 
     /// A `Toggle` drawn with `WaiveraSwitch`: the whole control flips it, and VoiceOver keeps the

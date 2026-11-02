@@ -146,8 +146,12 @@
                 VStack(spacing: 0) {
                     WaiveraTopBar(title: ProfileStrings.title)
                     ScrollView {
-                        EmptyStateView.error(title: ProfileStrings.errorTitle, message: error.userMessage, onRetry: onRetry)
-                            .padding(.top, Spacing.extraLarge)
+                        EmptyStateView.error(
+                            title: ProfileStrings.errorTitle,
+                            message: error.userMessage,
+                            onRetry: onRetry
+                        )
+                        .padding(.top, Spacing.extraLarge)
                     }
                 }
             case .loading, .loaded:
@@ -204,6 +208,7 @@
                     .padding(.bottom, Spacing.large)
                 }
             }
+            .plumStatusBarWhenScrolled()
         }
     }
 

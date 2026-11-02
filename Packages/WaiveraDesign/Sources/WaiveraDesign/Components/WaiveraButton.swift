@@ -147,7 +147,7 @@
         private var fill: some View {
             shape
                 .fill(container)
-                .shadow(color: liftColor.opacity(Elevation.androidShadowShare), radius: liftRadius, x: 0, y: liftRadius / 2)
+                .shadow(color: liftColor, radius: liftRadius, x: 0, y: liftRadius / 2)
         }
 
         /// The filled button's light: a 1pt white edge along the top and a sheen that fades out by
@@ -199,8 +199,8 @@
         private var liftColor: Color {
             guard isEnabled else { return .clear }
             switch variant.finish {
-            case .glow: return Palette.buttonGlow
-            case .raised: return Palette.buttonRaise
+            case .glow: return Palette.glowShadow
+            case .raised: return Palette.liftShadow
             case .flat, .sheen: return .clear
             }
         }

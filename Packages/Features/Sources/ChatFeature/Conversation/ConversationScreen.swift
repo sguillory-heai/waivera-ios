@@ -150,19 +150,19 @@
             )
         }
 
-        /// The call button, white on the plum as on Android. While a call opens, a second tap
-        /// does nothing.
+        /// The call button, white on the plum as on Android: dimmed until the chat has loaded,
+        /// a spinner while the call opens.
         private var barActions: [TopBarAction] {
             guard state.call.isAvailable else { return [] }
             let model = model
-            let canOpen = !state.call.isOpening && state.title != nil
             return [
                 TopBarAction(
                     id: "call",
                     systemImage: "video",
-                    accessibilityLabel: ConversationStrings.text(state.call.isLive ? "call.join" : "call.start")
+                    accessibilityLabel: ConversationStrings.text(state.call.isLive ? "call.join" : "call.start"),
+                    isEnabled: state.title != nil,
+                    isBusy: state.call.isOpening
                 ) {
-                    guard canOpen else { return }
                     Task { await model.openCall() }
                 }
             ]
@@ -263,6 +263,7 @@
                 .accessibilityElement(children: .combine)
                 .accessibilityHint(ConversationStrings.text("members.show"))
                 .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier("topBar.title")
             } else {
                 VStack(alignment: .leading, spacing: 0) {
                     titleLine
@@ -273,6 +274,7 @@
                 }
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier("topBar.title")
             }
         }
 

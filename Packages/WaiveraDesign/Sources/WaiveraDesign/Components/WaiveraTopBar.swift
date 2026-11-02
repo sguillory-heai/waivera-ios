@@ -7,6 +7,10 @@
         public let systemImage: String
         public let accessibilityLabel: String
         public let badgeCount: Int
+        /// Dimmed and not tappable (a call before the chat has loaded).
+        public let isEnabled: Bool
+        /// A white spinner in place of the glyph while the action runs (a call opening).
+        public let isBusy: Bool
         public let action: () -> Void
 
         public init(
@@ -14,12 +18,16 @@
             systemImage: String,
             accessibilityLabel: String,
             badgeCount: Int = 0,
+            isEnabled: Bool = true,
+            isBusy: Bool = false,
             action: @escaping () -> Void
         ) {
             self.id = id
             self.systemImage = systemImage
             self.accessibilityLabel = accessibilityLabel
             self.badgeCount = badgeCount
+            self.isEnabled = isEnabled
+            self.isBusy = isBusy
             self.action = action
         }
     }
@@ -101,16 +109,24 @@
                 .padding(.leading, Spacing.xxSmall)
                 ForEach(actions) { item in
                     Button(action: item.action) {
-                        Image(systemName: item.systemImage)
-                            .font(.system(size: ControlSize.icon - Spacing.xxSmall, weight: .semibold))
-                            .foregroundStyle(HeroPalette.onHeader)
-                            .frame(width: ControlSize.iconButton, height: ControlSize.iconButton)
-                            .contentShape(Rectangle())
-                            .overlay(alignment: .topTrailing) {
-                                CountBadge(count: item.badgeCount)
+                        Group {
+                            if item.isBusy {
+                                ProgressView().tint(HeroPalette.onHeader)
+                            } else {
+                                Image(systemName: item.systemImage)
+                                    .font(.system(size: ControlSize.icon - Spacing.xxSmall, weight: .semibold))
+                                    .foregroundStyle(HeroPalette.onHeader)
                             }
+                        }
+                        .frame(width: ControlSize.iconButton, height: ControlSize.iconButton)
+                        .contentShape(Rectangle())
+                        .overlay(alignment: .topTrailing) {
+                            CountBadge(count: item.badgeCount)
+                        }
                     }
                     .buttonStyle(.press(.compact))
+                    .disabled(!item.isEnabled || item.isBusy)
+                    .opacity(item.isEnabled ? 1 : Emphasis.disabled)
                     .accessibilityLabel(Text(item.accessibilityLabel))
                     .accessibilityIdentifier("topBar.\(item.id)")
                 }
@@ -207,6 +223,53 @@
             return safeAreaInset(edge: .top, spacing: 0) { bar }
                 .toolbar(.hidden, for: .navigationBar)
                 .swipeBackEnabled()
+        }
+    }
+
+    public extension View {
+        /// For a scroll view whose hero scrolls away (Today, Schedule, Profile, Person): once the
+        /// page has scrolled, the plum fills the status bar again. The status bar is light
+        /// app-wide (project.yml), so without it the clock would sit white on page-coloured cards.
+        /// At rest the hero itself shows there, glows included. iOS 17 cannot read the scroll
+        /// offset, so there the band always shows.
+        func plumStatusBarWhenScrolled() -> some View {
+            modifier(PlumStatusBarWhenScrolled())
+        }
+    }
+
+    private struct PlumStatusBarWhenScrolled: ViewModifier {
+        @State private var isScrolled = false
+
+        func body(content: Content) -> some View {
+            tracked(content)
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    Color.clear
+                        .frame(height: 0)
+                        .background(alignment: .bottom) {
+                            HeroPalette.headerTop
+                                .ignoresSafeArea(edges: .top)
+                                .opacity(showsBand ? 1 : 0)
+                        }
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+        }
+
+        private var showsBand: Bool {
+            if #available(iOS 18, *) { return isScrolled }
+            return true
+        }
+
+        @ViewBuilder private func tracked(_ content: Content) -> some View {
+            if #available(iOS 18, *) {
+                content.onScrollGeometryChange(for: Bool.self) { geometry in
+                    geometry.contentOffset.y + geometry.contentInsets.top > Spacing.hairline
+                } action: { _, scrolled in
+                    isScrolled = scrolled
+                }
+            } else {
+                content
+            }
         }
     }
 
