@@ -197,7 +197,6 @@ public enum Emphasis {
     /// With motion on, rows and cards also tint lightly on touch-down (Android M3-08).
     public static let standardPressedTint: Double = 0.06
     public static let disabledSupporting: Double = 0.8
-    public static let disabledCheckedTrack: Double = 0.38
     /// The busy spinner's track inside a filled button, as a share of the label's ink.
     public static let busyTrack: Double = 0.35
     /// The still ring that replaces the spinner under Reduce Motion.
