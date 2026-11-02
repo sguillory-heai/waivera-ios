@@ -107,7 +107,7 @@
                 .padding(.vertical, Spacing.small)
                 .background(Palette.surface, in: Capsule())
                 .overlay(Capsule().strokeBorder(Palette.borderStrong, lineWidth: Spacing.hairline))
-                .shadow(color: Palette.buttonRaise, radius: shadow.radius, x: 0, y: shadow.y)
+                .shadow(color: Palette.buttonRaise.opacity(Elevation.androidShadowShare), radius: shadow.radius, x: 0, y: shadow.y)
                 .frame(minHeight: ControlSize.minHitTarget)
                 .contentShape(Capsule())
             }

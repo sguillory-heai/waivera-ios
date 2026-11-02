@@ -66,7 +66,7 @@
                 }
             }
             .navigationTitle(AuthStrings.passwordChangeTitle)
-            .navigationBarTitleDisplayMode(.inline)
+            .waiveraTopBar(AuthStrings.passwordChangeTitle)
             .screenIdentifier("screen.password-change-voluntary")
         }
     }

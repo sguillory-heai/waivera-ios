@@ -25,7 +25,7 @@
             }
             .clipShape(shape)
             .shadow(
-                color: Palette.buttonRaise,
+                color: Palette.buttonRaise.opacity(Elevation.androidShadowShare),
                 radius: Elevation.shadow(for: Elevation.overlay).radius,
                 x: 0,
                 y: Elevation.shadow(for: Elevation.overlay).y

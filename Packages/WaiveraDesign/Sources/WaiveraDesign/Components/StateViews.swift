@@ -73,10 +73,10 @@
         /// the danger tile.
         public static func error(title: String, message: String, onRetry: (() -> Void)?) -> EmptyStateView {
             EmptyStateView(
-                art: .icon("exclamationmark.triangle", .danger),
+                art: .icon("exclamationmark.circle", .danger),
                 title: title,
                 message: message,
-                actionTitle: onRetry == nil ? nil : DesignStrings.retry,
+                actionTitle: onRetry == nil ? nil : DesignStrings.tryAgain,
                 dense: false,
                 action: onRetry
             )

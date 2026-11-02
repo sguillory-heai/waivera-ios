@@ -27,9 +27,8 @@ final class LaunchTests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["composer.field"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.waiveraTabBar.exists)
         // A push or link opened chat backs out to the inbox, with the Chat tab selected.
-        let back = app.navigationBars.buttons
-            .matching(NSPredicate(format: "identifier == 'BackButton' OR label == 'Chats'"))
-            .firstMatch
+        // The plum top bar's own back arrow (the system navigation bar is hidden).
+        let back = app.buttons["topBar.back"]
         XCTAssertTrue(back.waitForExistence(timeout: 5))
         back.tap()
         XCTAssertTrue(app.waiveraTab("chat").waitForExistence(timeout: 5))

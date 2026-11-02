@@ -138,6 +138,10 @@ targets:
         WaiveraFirebaseSenderID: $(WAIVERA_FIREBASE_SENDER_ID)
         WaiveraFirebaseProjectID: $(WAIVERA_FIREBASE_PROJECT_ID)
         # No NSAppTransportSecurity exceptions: every environment is HTTPS.
+        # Every screen opens on the plum header, as on Android, so the status bar is always light.
+        # SwiftUI cannot set it per screen while the system navigation bar is hidden.
+        UIViewControllerBasedStatusBarAppearance: false
+        UIStatusBarStyle: UIStatusBarStyleLightContent
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.waivera.waivera

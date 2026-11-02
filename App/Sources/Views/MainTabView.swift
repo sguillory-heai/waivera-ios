@@ -137,8 +137,9 @@ extension AppTab {
 
     var systemImage: String {
         switch self {
-        case .today: "sun.max"
-        case .chat: "bubble.left.and.bubble.right"
+        // Android's outline glyphs: a house, one speech bubble, a calendar.
+        case .today: "house"
+        case .chat: "bubble.left"
         case .schedule: "calendar"
         }
     }

@@ -18,9 +18,8 @@
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Palette.background)
                 .safeAreaInset(edge: .bottom, spacing: 0) { bottomBar }
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .principal) {
+                .waiveraTopBar {
+                    WaiveraTopBar {
                         // "Thread" and a one-line "In <channel>" (wave 28 M3); VoiceOver reads it whole.
                         ChatHeaderTitle(
                             title: ConversationStrings.text("thread.screen.title"),

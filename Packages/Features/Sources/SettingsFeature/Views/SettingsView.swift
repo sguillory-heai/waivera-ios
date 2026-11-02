@@ -39,6 +39,7 @@
                 }
             }
             .navigationTitle(SettingsStrings.title)
+            .waiveraTopBar(SettingsStrings.title)
             .screenIdentifier("screen.settings")
         }
     }

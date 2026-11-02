@@ -15,7 +15,6 @@
 
         // Profile
         static var title: String { text("profile.title") }
-        static var refresh: String { text("profile.refresh") }
         static var refreshing: String { text("profile.refreshing") }
         static var refreshFailed: String { text("profile.refreshFailed") }
         static var errorTitle: String { text("profile.error.title") }
@@ -129,7 +128,6 @@
 
         // People
         static var peopleTitle: String { text("profile.people.title") }
-        static var peopleRefresh: String { text("profile.people.refresh") }
         static var peopleSearch: String { text("profile.people.search") }
         static var peopleRefreshFailed: String { text("profile.people.refreshFailed") }
         static var peopleErrorTitle: String { text("profile.people.error.title") }

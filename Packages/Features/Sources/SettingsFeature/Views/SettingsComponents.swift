@@ -62,11 +62,7 @@
                 ListRow(title: title, subtitle: subtitle) {
                     IconTile(systemImage: systemImage, tone: isEnabled ? tone : .neutral)
                 } trailing: {
-                    Toggle(isOn: .constant(isOn)) { EmptyView() }
-                        .labelsHidden()
-                        .tint(Palette.accentFill)
-                        .allowsHitTesting(false)
-                        .accessibilityHidden(true)
+                    WaiveraSwitch(isOn: isOn, isEnabled: isEnabled)
                 }
             }
             .buttonStyle(.press(.row))

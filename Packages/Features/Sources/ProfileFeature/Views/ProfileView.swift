@@ -27,14 +27,21 @@
                         onOpenSettings: onOpenSettings
                     )
                 } else {
-                    EmptyStateView(
-                        systemImage: "person.crop.circle.badge.exclamationmark",
-                        title: ProfileStrings.unavailableTitle
-                    )
+                    VStack(spacing: 0) {
+                        WaiveraTopBar(title: ProfileStrings.title)
+                        EmptyStateView(
+                            systemImage: "person.crop.circle.badge.exclamationmark",
+                            title: ProfileStrings.unavailableTitle
+                        )
+                        Spacer(minLength: 0)
+                    }
                 }
             }
             .background(Palette.background)
             .navigationTitle(ProfileStrings.title)
+            // The plum top bar is drawn by the content: it scrolls with the hero once loaded.
+            .toolbar(.hidden, for: .navigationBar)
+            .swipeBackEnabled()
         }
     }
 
@@ -58,18 +65,9 @@
                 onOpenOrganization: onOpenOrganization,
                 onOpenSettings: onOpenSettings
             )
+            // Pull to refresh, as on Android; no refresh button in the bar, so an error shows one
+            // button, Try again (Sheldon, 2026-11-02).
             .refreshable { await model.refresh() }
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    if model.phase != .unavailable {
-                        RefreshToolbarButton(
-                            title: ProfileStrings.refresh,
-                            busyTitle: ProfileStrings.refreshing,
-                            isRefreshing: model.isRefreshing
-                        ) { refreshRequest += 1 }
-                    }
-                }
-            }
             .task { await model.run() }
             .task(id: refreshRequest) {
                 guard refreshRequest > 0 else { return }
@@ -131,25 +129,35 @@
 
         var body: some View {
             switch state.phase {
+            // With no one to show, the plain bar stays put over the state (Android).
             case .unavailable:
-                ScrollView {
-                    EmptyStateView(
-                        systemImage: "person.crop.circle.badge.exclamationmark",
-                        title: ProfileStrings.unavailableTitle,
-                        message: ProfileStrings.unavailableMessage
-                    )
-                    .padding(.top, Spacing.extraLarge)
+                VStack(spacing: 0) {
+                    WaiveraTopBar(title: ProfileStrings.title)
+                    ScrollView {
+                        EmptyStateView(
+                            systemImage: "person.crop.circle.badge.exclamationmark",
+                            title: ProfileStrings.unavailableTitle,
+                            message: ProfileStrings.unavailableMessage
+                        )
+                        .padding(.top, Spacing.extraLarge)
+                    }
                 }
             case .failed(let error):
-                ScrollView {
-                    EmptyStateView.error(title: ProfileStrings.errorTitle, message: error.userMessage, onRetry: onRetry)
-                        .padding(.top, Spacing.extraLarge)
+                VStack(spacing: 0) {
+                    WaiveraTopBar(title: ProfileStrings.title)
+                    ScrollView {
+                        EmptyStateView.error(title: ProfileStrings.errorTitle, message: error.userMessage, onRetry: onRetry)
+                            .padding(.top, Spacing.extraLarge)
+                    }
                 }
             case .loading, .loaded:
                 LoadingContent(isLoading: state.phase == .loading) {
                     loaded
                 } skeleton: {
-                    ScrollView { ProfileSkeleton() }
+                    VStack(spacing: 0) {
+                        WaiveraTopBar(title: ProfileStrings.title)
+                        ScrollView { ProfileSkeleton() }
+                    }
                 }
             }
         }
@@ -157,9 +165,8 @@
         private var loaded: some View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    HeroSection(trail: .none) {
-                        EmptyView()
-                    } content: {
+                    // Your profile opens on its hero, which scrolls with the page (Android).
+                    WaiveraTopBar(title: ProfileStrings.title) {
                         ProfileHeroIdentity(state: state)
                     }
                     VStack(alignment: .leading, spacing: Spacing.mediumSmall) {
@@ -197,7 +204,6 @@
                     .padding(.bottom, Spacing.large)
                 }
             }
-            .heroUnderNavigationBar()
         }
     }
 

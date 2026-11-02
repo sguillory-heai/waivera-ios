@@ -30,15 +30,21 @@
                         onOpenConversation: onOpenConversation
                     )
                 } else {
-                    EmptyStateView(
-                        systemImage: "person.crop.circle.badge.exclamationmark",
-                        title: ProfileStrings.personErrorTitle
-                    )
+                    VStack(spacing: 0) {
+                        WaiveraTopBar(title: ProfileStrings.personTitle)
+                        EmptyStateView(
+                            systemImage: "person.crop.circle.badge.exclamationmark",
+                            title: ProfileStrings.personErrorTitle
+                        )
+                        Spacer(minLength: 0)
+                    }
                 }
             }
             .background(Palette.background)
             .navigationTitle(ProfileStrings.personTitle)
-            .navigationBarTitleDisplayMode(.inline)
+            // The plum top bar is drawn by the content and scrolls with the hero (Android).
+            .toolbar(.hidden, for: .navigationBar)
+            .swipeBackEnabled()
         }
     }
 
@@ -69,7 +75,6 @@
                 },
                 onDismissError: { model.dismissMessageError() }
             )
-            .heroUnderNavigationBar()
             .refreshable { await model.load() }
             .task { await model.run() }
             .task(id: retryRequest) {
@@ -140,9 +145,7 @@
                 VStack(alignment: .leading, spacing: 0) {
                     // The bar names the screen and the hero names the person, so the name is
                     // not said twice.
-                    HeroSection(trail: .none) {
-                        EmptyView()
-                    } content: {
+                    WaiveraTopBar(title: ProfileStrings.personTitle) {
                         PersonHero(state: state)
                     }
                     VStack(alignment: .leading, spacing: Spacing.mediumSmall) {

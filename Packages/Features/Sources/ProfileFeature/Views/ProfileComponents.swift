@@ -191,31 +191,6 @@
         }
     }
 
-    /// A toolbar refresh button that turns into a spinner while a refresh runs.
-    struct RefreshToolbarButton: View {
-        let title: String
-        let busyTitle: String
-        let isRefreshing: Bool
-        let action: () -> Void
-
-        var body: some View {
-            if isRefreshing {
-                ProgressView()
-                    .tint(Palette.accent)
-                    .frame(width: ControlSize.minHitTarget, height: ControlSize.minHitTarget)
-                    .accessibilityLabel(Text(busyTitle))
-            } else {
-                Button(action: action) {
-                    Image(systemName: "arrow.clockwise")
-                        .frame(width: ControlSize.minHitTarget, height: ControlSize.minHitTarget)
-                        .contentShape(Rectangle())
-                }
-                .foregroundStyle(Palette.accent)
-                .accessibilityLabel(Text(title))
-            }
-        }
-    }
-
     /// The skeleton for the profile and person screens: a hero block and two cards.
     struct ProfileSkeleton: View {
         var body: some View {

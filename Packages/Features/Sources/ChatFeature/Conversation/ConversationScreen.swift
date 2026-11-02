@@ -29,8 +29,9 @@
                     }
                 }
                 .safeAreaInset(edge: .bottom, spacing: 0) { bottomBar }
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar { toolbar }
+                .waiveraTopBar {
+                    WaiveraTopBar(actions: barActions) { headerTitle }
+                }
                 .chatSheets(model.interactions, context: sheetContext)
                 .environment(
                     \.openURL,
@@ -138,36 +139,33 @@
             )
         }
 
-        @ToolbarContentBuilder private var toolbar: some ToolbarContent {
-            ToolbarItem(placement: .principal) {
-                ChatHeaderTitle(
-                    title: ConversationStrings.title(state.title),
-                    groupName: groupName,
-                    groupOthers: groupOthers,
-                    subtitle: state.memberCount == nil ? state.subtitle.map(ConversationStrings.subtitle) : nil,
-                    memberCount: state.memberCount,
-                    onOpenMembers: onOpenMembers.map { open in { open(model.conversationID) } }
-                )
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                if state.call.isAvailable {
-                    Button {
-                        Task { await model.openCall() }
-                    } label: {
-                        Group {
-                            if state.call.isOpening {
-                                ProgressView()
-                            } else {
-                                Image(systemName: "video.fill").foregroundStyle(Palette.accent)
-                            }
-                        }
-                        .frame(width: ControlSize.minHitTarget, height: ControlSize.minHitTarget)
-                        .background(Palette.accentSoft, in: Circle())
-                    }
-                    .disabled(state.call.isOpening || state.title == nil)
-                    .accessibilityLabel(ConversationStrings.text(state.call.isLive ? "call.join" : "call.start"))
+        private var headerTitle: some View {
+            ChatHeaderTitle(
+                title: ConversationStrings.title(state.title),
+                groupName: groupName,
+                groupOthers: groupOthers,
+                subtitle: state.memberCount == nil ? state.subtitle.map(ConversationStrings.subtitle) : nil,
+                memberCount: state.memberCount,
+                onOpenMembers: onOpenMembers.map { open in { open(model.conversationID) } }
+            )
+        }
+
+        /// The call button, white on the plum as on Android. While a call opens, a second tap
+        /// does nothing.
+        private var barActions: [TopBarAction] {
+            guard state.call.isAvailable else { return [] }
+            let model = model
+            let canOpen = !state.call.isOpening && state.title != nil
+            return [
+                TopBarAction(
+                    id: "call",
+                    systemImage: "video",
+                    accessibilityLabel: ConversationStrings.text(state.call.isLive ? "call.join" : "call.start")
+                ) {
+                    guard canOpen else { return }
+                    Task { await model.openCall() }
                 }
-            }
+            ]
         }
 
         private var groupName: String? {
@@ -244,7 +242,7 @@
         var body: some View {
             if let memberCount, let onOpenMembers {
                 Button(action: onOpenMembers) {
-                    VStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 0) {
                         titleLine
                         HStack(spacing: Spacing.xxSmall) {
                             Text(ConversationStrings.members(memberCount))
@@ -256,7 +254,7 @@
                                 .frame(width: ControlSize.iconSmall / 2, height: ControlSize.iconSmall / 2)
                                 .accessibilityHidden(true)
                         }
-                        .foregroundStyle(Palette.textSecondary)
+                        .foregroundStyle(HeroPalette.onHeaderSecondary)
                     }
                     .frame(minHeight: ControlSize.minHitTarget)
                     .contentShape(Rectangle())
@@ -266,11 +264,11 @@
                 .accessibilityHint(ConversationStrings.text("members.show"))
                 .accessibilityAddTraits(.isHeader)
             } else {
-                VStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 0) {
                     titleLine
                     if let line = subtitle ?? memberCount.map(ConversationStrings.members) {
                         OneLineName(line, style: .labelMedium)
-                            .foregroundStyle(Palette.textSecondary)
+                            .foregroundStyle(HeroPalette.onHeaderSecondary)
                     }
                 }
                 .accessibilityElement(children: .combine)
@@ -280,11 +278,11 @@
 
         @ViewBuilder private var titleLine: some View {
             if let groupName {
-                ShortenedNameText(groupTitle: title, firstName: groupName, others: groupOthers, style: .titleSmall)
-                    .foregroundStyle(Palette.text)
+                ShortenedNameText(groupTitle: title, firstName: groupName, others: groupOthers, style: .headlineSmall)
+                    .foregroundStyle(HeroPalette.onHeader)
             } else {
-                OneLineName(title, style: .titleSmall)
-                    .foregroundStyle(Palette.text)
+                OneLineName(title, style: .headlineSmall)
+                    .foregroundStyle(HeroPalette.onHeader)
             }
         }
     }

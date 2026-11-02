@@ -173,6 +173,7 @@
             }
             .background(Palette.background)
             .navigationTitle(ProfileStrings.organizationTitle)
+            .waiveraTopBar(ProfileStrings.organizationTitle)
         }
     }
 

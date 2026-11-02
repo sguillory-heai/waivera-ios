@@ -164,6 +164,12 @@ public enum Elevation {
     /// Sheets and floating banners.
     public static let overlay: CGFloat = 8
 
+    /// The share of a shadow colour's alpha that Android actually draws. Android scales a
+    /// shadow's colour by the theme's shadow alphas (spot about 0.19, plus a faint ambient), so a
+    /// glow token of 0.55 shows at about a quarter of that. SwiftUI draws the colour as given, so
+    /// iOS shadows multiply by this to look the same (Sheldon, 2026-11-02: iOS buttons glowed more).
+    public static let androidShadowShare: Double = 0.3
+
     /// A SwiftUI shadow that reads like an Android elevation of `level`: blur radius equal to the
     /// elevation and the light from above, so the shadow falls half the elevation below.
     public static func shadow(for level: CGFloat) -> (radius: CGFloat, y: CGFloat) {

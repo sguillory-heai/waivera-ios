@@ -17,6 +17,9 @@
         static var selected: String { String(localized: "design.selected", bundle: .module) }
         static var appName: String { String(localized: "design.appName", bundle: .module) }
         static var accountMenu: String { String(localized: "design.accountMenu", bundle: .module) }
+        static var goBack: String { String(localized: "design.goBack", bundle: .module) }
+        static var tryAgain: String { String(localized: "design.tryAgain", bundle: .module) }
+        static var clearSearch: String { String(localized: "design.search.clear", bundle: .module) }
 
         static func unreadCount(_ count: Int) -> String {
             String(localized: "design.badge.unread \(count)", bundle: .module)

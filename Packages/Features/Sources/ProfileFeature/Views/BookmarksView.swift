@@ -25,6 +25,7 @@
             }
             .background(Palette.background)
             .navigationTitle(ProfileStrings.bookmarksTitle)
+            .waiveraTopBar(ProfileStrings.bookmarksTitle)
         }
     }
 
@@ -50,27 +51,31 @@
         }
 
         var body: some View {
-            BookmarksContentView(
-                state: BookmarksDisplayState(model: model, actionError: actionError, returningID: returningID),
-                actions: BookmarksActions(
-                    retry: { refreshRequest += 1 },
-                    clearSearch: { model.query = "" },
-                    selectFilter: { model.filter = $0 },
-                    open: { row in onOpenMessage(row.conversationID, row.messageID, row.threadRootID) },
-                    remove: { row in removeRequest = row },
-                    dismissError: {
-                        actionError = nil
-                        model.dismissRestoreError()
-                    }
+            VStack(spacing: 0) {
+                // In the page: the plum top bar replaces the system bar `.searchable` needs.
+                SearchField(
+                    ProfileStrings.bookmarksSearch,
+                    placeholder: ProfileStrings.bookmarksSearch,
+                    query: $model.query,
+                    identifier: "bookmarks.search"
                 )
-            )
-            .searchable(
-                text: $model.query,
-                placement: .navigationBarDrawer(displayMode: .always),
-                prompt: ProfileStrings.bookmarksSearch
-            )
-            .autocorrectionDisabled()
-            .textInputAutocapitalization(.never)
+                .padding(.horizontal, Spacing.gutter)
+                .padding(.bottom, Spacing.small)
+                BookmarksContentView(
+                    state: BookmarksDisplayState(model: model, actionError: actionError, returningID: returningID),
+                    actions: BookmarksActions(
+                        retry: { refreshRequest += 1 },
+                        clearSearch: { model.query = "" },
+                        selectFilter: { model.filter = $0 },
+                        open: { row in onOpenMessage(row.conversationID, row.messageID, row.threadRootID) },
+                        remove: { row in removeRequest = row },
+                        dismissError: {
+                            actionError = nil
+                            model.dismissRestoreError()
+                        }
+                    )
+                )
+            }
             .refreshable { await model.refresh() }
             .undoToast(item: $toast) { _ in undoRequest = lastRemoved }
             .task {
@@ -306,7 +311,7 @@
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Palette.surface, in: RoundedRectangle(cornerRadius: Radius.sheetCard, style: .continuous))
             .shadow(
-                color: Palette.buttonRaise,
+                color: Palette.buttonRaise.opacity(Elevation.androidShadowShare),
                 radius: Elevation.shadow(for: Elevation.card).radius,
                 x: 0,
                 y: Elevation.shadow(for: Elevation.card).y

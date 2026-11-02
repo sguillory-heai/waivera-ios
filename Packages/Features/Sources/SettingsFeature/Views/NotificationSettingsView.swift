@@ -47,6 +47,7 @@
                 }
             }
             .navigationTitle(SettingsStrings.notificationsTitle)
+            .waiveraTopBar(SettingsStrings.notificationsTitle)
             .screenIdentifier("screen.settings-notifications")
         }
 

@@ -243,7 +243,8 @@
         }
     }
 
-    /// A list section's heading (Android `WaiveraSectionHeader`): an uppercase eyebrow.
+    /// A list section's heading (Android `WaiveraSectionHeader`): the title in sentence case at
+    /// title size in the body ink, as Android shows it ("Preferences", not "PREFERENCES").
     public struct SectionHeader: View {
         private let title: String
 
@@ -252,9 +253,9 @@
         }
 
         public var body: some View {
-            Text(title.uppercased())
-                .waiveraTextStyle(.eyebrow)
-                .foregroundStyle(Palette.textSecondary)
+            Text(title)
+                .waiveraTextStyle(.titleMedium)
+                .foregroundStyle(Palette.text)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, Spacing.medium)
                 .padding(.top, Spacing.large)

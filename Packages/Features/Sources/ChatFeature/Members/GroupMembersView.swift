@@ -110,9 +110,8 @@
                 messageTask?.cancel()
                 messageTask = nil
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
+            .waiveraTopBar {
+                WaiveraTopBar {
                     ChatHeaderTitle(
                         title: ConversationStrings.text("members.title"),
                         subtitle: state.totalCount > 0 ? ConversationStrings.members(state.totalCount) : nil

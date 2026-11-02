@@ -29,6 +29,7 @@
             }
             .background(Palette.background)
             .navigationTitle(ProfileStrings.peopleTitle)
+            .waiveraTopBar(ProfileStrings.peopleTitle)
         }
     }
 
@@ -43,28 +44,24 @@
         }
 
         var body: some View {
-            PeopleContentView(
-                state: PeopleDisplayState(model: model),
-                onRetry: { refreshRequest += 1 },
-                onOpenPerson: onOpenPerson
-            )
-            .searchable(
-                text: $model.query,
-                placement: .navigationBarDrawer(displayMode: .always),
-                prompt: ProfileStrings.peopleSearch
-            )
-            .autocorrectionDisabled()
-            .textInputAutocapitalization(.never)
-            .refreshable { await model.refresh() }
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    RefreshToolbarButton(
-                        title: ProfileStrings.peopleRefresh,
-                        busyTitle: ProfileStrings.peopleRefresh,
-                        isRefreshing: model.isRefreshing
-                    ) { refreshRequest += 1 }
-                }
+            VStack(spacing: 0) {
+                // In the page: the plum top bar replaces the system bar `.searchable` needs.
+                SearchField(
+                    ProfileStrings.peopleSearch,
+                    placeholder: ProfileStrings.peopleSearch,
+                    query: $model.query,
+                    identifier: "people.search"
+                )
+                .padding(.horizontal, Spacing.gutter)
+                .padding(.bottom, Spacing.small)
+                PeopleContentView(
+                    state: PeopleDisplayState(model: model),
+                    onRetry: { refreshRequest += 1 },
+                    onOpenPerson: onOpenPerson
+                )
             }
+            // Pull to refresh, as on Android; no refresh button in the bar.
+            .refreshable { await model.refresh() }
             .task { await model.run() }
             .task(id: refreshRequest) {
                 guard refreshRequest > 0 else { return }

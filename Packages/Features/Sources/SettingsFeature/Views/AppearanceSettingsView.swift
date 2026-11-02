@@ -29,6 +29,7 @@
                 }
             }
             .navigationTitle(SettingsStrings.appearanceTitle)
+            .waiveraTopBar(SettingsStrings.appearanceTitle)
             .screenIdentifier("screen.settings-appearance")
         }
     }

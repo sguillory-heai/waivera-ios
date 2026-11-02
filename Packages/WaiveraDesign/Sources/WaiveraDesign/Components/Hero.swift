@@ -122,23 +122,25 @@
 
     /// The top of a tab screen (Android `WaiveraHeroSection`): the plum hero behind the status bar,
     /// holding the hero bar and `content`, ending in the first band of the rounded sheet the rest
-    /// of the screen sits on. Put it first in the screen's scroll view on the page colour. Pair
-    /// with `.toolbarColorScheme(.dark, for: .navigationBar)` so the status bar reads on the plum,
-    /// or with `heroUnderNavigationBar()` when a visible navigation bar sits over it.
+    /// of the screen sits on. Put it first in the screen, with the system navigation bar hidden;
+    /// pushed screens use `WaiveraTopBar`, which builds on it. The status bar is light app-wide.
     public struct HeroSection<TopBar: View, Content: View>: View {
         private let trail: HeroTrail
         private let topBar: TopBar
         private let content: Content
         private let compact: Bool
+        private let sheetColor: Color
 
         public init(
             trail: HeroTrail = .tab,
             compact: Bool = false,
+            sheetColor: Color = Palette.background,
             @ViewBuilder topBar: () -> TopBar,
             @ViewBuilder content: () -> Content
         ) {
             self.trail = trail
             self.compact = compact
+            self.sheetColor = sheetColor
             self.topBar = topBar()
             self.content = content()
         }
@@ -161,7 +163,7 @@
                             topTrailingRadius: lip,
                             style: .continuous
                         )
-                        .fill(Palette.background)
+                        .fill(sheetColor)
                         .frame(height: lip)
                     }
             }
@@ -349,7 +351,7 @@
                     .strokeBorder(Palette.border, lineWidth: Spacing.hairline)
             )
             .shadow(
-                color: Palette.buttonRaise,
+                color: Palette.buttonRaise.opacity(Elevation.androidShadowShare),
                 radius: Elevation.shadow(for: Elevation.card).radius,
                 x: 0,
                 y: Elevation.shadow(for: Elevation.card).y

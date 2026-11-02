@@ -80,11 +80,10 @@ final class AuthFlowUITests: XCTestCase {
         // the tab bar (tab roots only). Backing out lands on the tabs.
         XCTAssertTrue(app.descendants(matching: .any)["composer.field"].waitForExistence(timeout: 10))
         // Chat 7 is the fake server's 1:1 with Priya Raman.
-        XCTAssertTrue(app.navigationBars.staticTexts["Priya Raman"].exists)
+        XCTAssertTrue(app.staticTexts["Priya Raman"].exists)
         XCTAssertFalse(app.waiveraTabBar.exists)
-        let back = app.navigationBars.buttons
-            .matching(NSPredicate(format: "identifier == 'BackButton' OR label == 'Chats'"))
-            .firstMatch
+        // The plum top bar's own back arrow (the system navigation bar is hidden).
+        let back = app.buttons["topBar.back"]
         XCTAssertTrue(back.waitForExistence(timeout: 5))
         back.tap()
         XCTAssertTrue(app.waiveraTabBar.waitForExistence(timeout: 5))

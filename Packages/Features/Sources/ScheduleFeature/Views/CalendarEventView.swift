@@ -32,7 +32,7 @@
                 }
             }
             .navigationTitle(ScheduleStrings.text("schedule.event.title"))
-            .navigationBarTitleDisplayMode(.inline)
+            .waiveraTopBar(ScheduleStrings.text("schedule.event.title"))
             .task(id: eventID) {
                 if model?.eventID != eventID, let data {
                     model = CalendarEventModel(eventID: eventID, data: data)

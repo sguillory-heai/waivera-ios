@@ -27,7 +27,7 @@
                     }
                 }
             }
-            .tint(Palette.accentFill)
+            .toggleStyle(.waivera)
             .padding(.vertical, Spacing.small)
             .padding(.horizontal, Spacing.medium)
             .frame(minHeight: ControlSize.listRowMinHeight)

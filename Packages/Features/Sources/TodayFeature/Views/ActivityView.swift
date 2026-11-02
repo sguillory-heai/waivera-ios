@@ -34,7 +34,7 @@
             }
             .background(Palette.background)
             .navigationTitle(TodayStrings.text("activity.title"))
-            .navigationBarTitleDisplayMode(.inline)
+            .waiveraTopBar(TodayStrings.text("activity.title"))
             .task {
                 let current =
                     model ?? data.map { ActivityFeedModel(environment: $0, clock: $0.clock) }
@@ -57,16 +57,24 @@
         @State private var query = ""
 
         var body: some View {
-            ActivityContent(state: model.state, actions: actions, onRefresh: { [model] in await model.refresh() })
-                .searchable(text: $query, prompt: Text(TodayStrings.text("today.activity.search")))
-                .autocorrectionDisabled()
-                .textInputAutocapitalization(.never)
-                .onChange(of: query) { model.setQuery(query) }
-                .onChange(of: model.state.section.query) {
-                    // Clear filters also clears the search field.
-                    if model.state.section.query != query { query = model.state.section.query }
-                }
-                .todayFeedback(model.feedback, onAction: { model.retry($0) })
+            VStack(spacing: 0) {
+                // In the page: the plum top bar replaces the system bar `.searchable` needs.
+                SearchField(
+                    TodayStrings.text("today.activity.search"),
+                    placeholder: TodayStrings.text("today.activity.search"),
+                    query: $query,
+                    identifier: "activity.search"
+                )
+                .padding(.horizontal, Spacing.gutter)
+                .padding(.bottom, Spacing.small)
+                ActivityContent(state: model.state, actions: actions, onRefresh: { [model] in await model.refresh() })
+            }
+            .onChange(of: query) { model.setQuery(query) }
+            .onChange(of: model.state.section.query) {
+                // Clear filters also clears the search field.
+                if model.state.section.query != query { query = model.state.section.query }
+            }
+            .todayFeedback(model.feedback, onAction: { model.retry($0) })
         }
 
         private var actions: ActivityActions {

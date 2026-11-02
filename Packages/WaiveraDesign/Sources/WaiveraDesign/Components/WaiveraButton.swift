@@ -147,7 +147,7 @@
         private var fill: some View {
             shape
                 .fill(container)
-                .shadow(color: liftColor, radius: liftRadius, x: 0, y: liftRadius / 2)
+                .shadow(color: liftColor.opacity(Elevation.androidShadowShare), radius: liftRadius, x: 0, y: liftRadius / 2)
         }
 
         /// The filled button's light: a 1pt white edge along the top and a sheen that fades out by

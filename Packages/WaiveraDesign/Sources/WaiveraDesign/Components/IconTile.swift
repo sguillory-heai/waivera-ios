@@ -23,13 +23,21 @@
 
         public var body: some View {
             TileFrame(tone: tone, size: size) {
-                Image(systemName: systemImage)
+                Image(systemName: Self.outline(systemImage))
                     .resizable()
                     .scaledToFit()
                     .fontWeight(.medium)
                     .foregroundStyle(tone.contentColor)
                     .frame(width: glyphSize * 0.8, height: glyphSize * 0.8)
             }
+        }
+    }
+
+    extension IconTile {
+        /// Android's tile glyphs are outline icons, so a tile always draws the outline form of a
+        /// symbol, whichever form the caller named.
+        static func outline(_ name: String) -> String {
+            name.hasSuffix(".fill") ? String(name.dropLast(".fill".count)) : name
         }
     }
 

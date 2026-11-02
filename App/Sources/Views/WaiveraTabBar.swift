@@ -32,10 +32,11 @@ struct WaiveraTabBar: View {
                 }
             }
         }
-        // At the largest text the count sits beside the glyph's top edge, so the bar keeps
-        // room above it.
-        .padding(.top, dynamicTypeSize.isExtraLargeText ? Spacing.mediumSmall : Spacing.extraSmall)
-        .padding(.bottom, Spacing.extraSmall)
+        // Android's bar keeps 12pt above the pill, so the count, which rises above the glyph,
+        // stays inside the bar (Sheldon, 2026-11-02: it reached the bar's top edge at 4pt).
+        // At the largest text the count sits beside the glyph's top edge instead.
+        .padding(.top, dynamicTypeSize.isExtraLargeText ? Spacing.medium : Spacing.mediumSmall)
+        .padding(.bottom, Spacing.small)
         .frame(maxWidth: .infinity)
         .background(Palette.navBar.ignoresSafeArea(edges: .bottom))
         .overlay(alignment: .top) {
@@ -94,7 +95,8 @@ private struct TabBarItem: View {
             Image(systemName: tab.systemImage)
                 .resizable()
                 .scaledToFit()
-                .symbolVariant(isSelected ? .fill : .none)
+                .symbolVariant(.none)
+                .fontWeight(.medium)
                 .frame(width: ControlSize.icon, height: ControlSize.icon)
                 .foregroundStyle(isSelected ? Palette.onAccent : Palette.textSecondary)
                 .overlay(alignment: .topTrailing) {
