@@ -41,7 +41,7 @@
                     SignInHost(session: data?.session, legalLinks: legalLinks)
                 }
             }
-            .accessibilityIdentifier("screen.sign-in")
+            .screenIdentifier("screen.sign-in")
         }
     }
 

@@ -37,17 +37,47 @@
                     // A looping pulse or spinner would land on a different frame each run.
                     .environment(\.waiveraEndlessMotionDisabled, true)
                 assertSnapshot(
-                    of: framed,
-                    as: .image(
-                        perceptualPrecision: 0.98,
-                        layout: .fixed(width: size.width, height: size.height),
-                        traits: UITraitCollection(userInterfaceStyle: variant.style)
-                    ),
+                    of: settledImage(of: framed, style: variant.style),
+                    as: .image(perceptualPrecision: 0.98),
                     named: "\(name)__\(variant.name)",
                     testName: testName
                 )
             }
         }
+
+        /// Draws the screen after it has been on screen for a moment. The timeline is a lazy list
+        /// pinned to its bottom: drawn in a single pass (the library's SwiftUI strategy) a
+        /// conversation taller than the phone came out blank, because the rows near the bottom
+        /// are only made on a later layout pass (CI run 41381753860). A real window and a short
+        /// run loop give it those passes, as a phone does.
+        private func settledImage(of view: some View, style: UIUserInterfaceStyle) -> UIImage {
+            let host = UIHostingController(rootView: view)
+            // Laid out at the scale it is drawn at (the iPhone SE's), whatever simulator runs it.
+            host.traitOverrides.displayScale = renderScale
+            let window = UIWindow(frame: CGRect(origin: .zero, size: size))
+            window.overrideUserInterfaceStyle = style
+            window.rootViewController = host
+            window.isHidden = false
+            for _ in 0..<settlePasses {
+                window.layoutIfNeeded()
+                RunLoop.main.run(until: Date().addingTimeInterval(settleStep))
+            }
+            window.layoutIfNeeded()
+            let format = UIGraphicsImageRendererFormat()
+            format.scale = renderScale
+            let image = UIGraphicsImageRenderer(bounds: window.bounds, format: format).image { context in
+                window.layer.render(in: context.cgContext)
+            }
+            window.isHidden = true
+            window.rootViewController = nil
+            return image
+        }
+
+        private let renderScale: CGFloat = 2
+
+        /// About a second in all: past the opening scroll to the newest message.
+        private let settlePasses = 10
+        private let settleStep: TimeInterval = 0.1
 
         func testConversationStates() {
             for state in ConversationPreviewVariant.allCases {

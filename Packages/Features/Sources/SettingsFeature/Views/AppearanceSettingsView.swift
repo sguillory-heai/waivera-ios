@@ -29,7 +29,7 @@
                 }
             }
             .navigationTitle(SettingsStrings.appearanceTitle)
-            .accessibilityIdentifier("screen.settings-appearance")
+            .screenIdentifier("screen.settings-appearance")
         }
     }
 

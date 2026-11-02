@@ -131,6 +131,11 @@ class ScreenshotTourBase: XCTestCase {
             issues.append("Audit could not run: \(error.localizedDescription)")
         }
         guard !issues.isEmpty else { return }
+        // Also in the log: the attachment lives only in the result bundle, which a run that hits
+        // its time limit may not close (CI run 41381753860 showed counts and nothing else).
+        for issue in issues {
+            print("AUDIT \(screen): \(issue)")
+        }
         let report = XCTAttachment(string: issues.joined(separator: "\n"))
         report.name = "\(screen)__accessibility"
         report.lifetime = .keepAlways

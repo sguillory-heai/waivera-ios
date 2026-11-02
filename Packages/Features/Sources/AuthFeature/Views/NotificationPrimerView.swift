@@ -65,7 +65,7 @@
                     notNow
                 }
             }
-            .accessibilityIdentifier("screen.notification-primer")
+            .screenIdentifier("screen.notification-primer")
         }
 
         private var notNow: some View {

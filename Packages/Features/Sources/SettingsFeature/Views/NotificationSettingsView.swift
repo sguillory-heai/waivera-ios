@@ -47,7 +47,7 @@
                 }
             }
             .navigationTitle(SettingsStrings.notificationsTitle)
-            .accessibilityIdentifier("screen.settings-notifications")
+            .screenIdentifier("screen.settings-notifications")
         }
 
         private var actions: NotificationSettingsActions {

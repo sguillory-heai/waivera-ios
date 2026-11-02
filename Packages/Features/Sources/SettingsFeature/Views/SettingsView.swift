@@ -39,7 +39,7 @@
                 }
             }
             .navigationTitle(SettingsStrings.title)
-            .accessibilityIdentifier("screen.settings")
+            .screenIdentifier("screen.settings")
         }
     }
 

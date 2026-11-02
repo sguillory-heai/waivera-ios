@@ -46,7 +46,7 @@
                     )
                 }
             }
-            .accessibilityIdentifier("screen.bootstrap-failed")
+            .screenIdentifier("screen.bootstrap-failed")
         }
     }
 
@@ -152,7 +152,7 @@
                         .accessibilityIdentifier("configuration.details")
                 }
             }
-            .accessibilityIdentifier("screen.configuration-missing")
+            .screenIdentifier("screen.configuration-missing")
         }
     }
 
@@ -182,7 +182,7 @@
                     OnboardingHost(session: data?.session, onSignOut: onSignOut)
                 }
             }
-            .accessibilityIdentifier("screen.onboarding-required")
+            .screenIdentifier("screen.onboarding-required")
         }
     }
 

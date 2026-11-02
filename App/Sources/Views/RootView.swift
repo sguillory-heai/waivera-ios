@@ -47,7 +47,7 @@ struct RootView: View {
         case .loading:
             LoadingStateView(caption: AppStrings.loading)
                 .background(Palette.background)
-                .accessibilityIdentifier("screen.loading")
+                .screenIdentifier("screen.loading")
         case .signIn:
             SignInView(legalLinks: LegalLinks.from(webBase: AppConfiguration.main.webBaseURL))
         case .bootstrapFailed:

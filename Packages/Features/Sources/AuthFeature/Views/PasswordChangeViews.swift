@@ -34,7 +34,7 @@
                     PasswordChangeHost(mode: .required, session: data?.session, onSignOut: onSignOut, onDone: {})
                 }
             }
-            .accessibilityIdentifier("screen.password-change")
+            .screenIdentifier("screen.password-change")
         }
     }
 
@@ -67,7 +67,7 @@
             }
             .navigationTitle(AuthStrings.passwordChangeTitle)
             .navigationBarTitleDisplayMode(.inline)
-            .accessibilityIdentifier("screen.password-change-voluntary")
+            .screenIdentifier("screen.password-change-voluntary")
         }
     }
 
