@@ -19,6 +19,14 @@
         func body(content: Content) -> some View {
             let bar =
                 content
+                // The hero is scroll content, so it starts below the bar and cannot reach up behind
+                // it (CI run 41405894585 still showed a page-coloured band). This fills exactly the
+                // top safe area, the status bar and the navigation bar, with the hero's top colour.
+                .background(alignment: .top) {
+                    HeroPalette.headerTop
+                        .frame(height: 0)
+                        .ignoresSafeArea(edges: .top)
+                }
                 .toolbarColorScheme(.dark, for: .navigationBar)
                 .toolbarBackground(HeroPalette.headerTop, for: .navigationBar)
                 .toolbarBackground(.automatic, for: .navigationBar)
