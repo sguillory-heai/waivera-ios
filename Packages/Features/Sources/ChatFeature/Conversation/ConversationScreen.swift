@@ -121,6 +121,9 @@
                         )
                     }
                 }
+                // Only as tall as its contents: a view that takes all the height offered would
+                // otherwise fill the inset and leave the messages no room (CI run 41395581871).
+                .fixedSize(horizontal: false, vertical: true)
                 .background(Palette.background)
             }
         }

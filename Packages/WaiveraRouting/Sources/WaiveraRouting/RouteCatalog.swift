@@ -56,7 +56,7 @@ public enum RouteCatalog {
         ("conversation", "waivera://chats/7"),
         ("conversation-target", "waivera://chats/7?messageId=9312"),
         ("thread", "waivera://chats/thread/9330?conversationId=7"),
-        ("group-members", "waivera://chats/11/members"),
+        ("group-members", "waivera://chats/63/members"),
         ("schedule", "waivera://schedule"),
         ("calendar-event", "waivera://calendar/evt_8f2b19c4"),
         ("profile", "waivera://profile"),

@@ -76,6 +76,17 @@ final class AuthFlowUITests: XCTestCase {
         confirmation.tap()
         confirmation.typeText("a brand new phrase")
         app.buttons["passwordChange.submit"].tap()
-        XCTAssertTrue(app.waiveraTabBar.waitForExistence(timeout: 10))
+        // The link was held, not dropped: past the gate it opens the conversation, which hides
+        // the tab bar (tab roots only). Backing out lands on the tabs.
+        XCTAssertTrue(app.descendants(matching: .any)["composer.field"].waitForExistence(timeout: 10))
+        // Chat 7 is the fake server's 1:1 with Priya Raman.
+        XCTAssertTrue(app.navigationBars.staticTexts["Priya Raman"].exists)
+        XCTAssertFalse(app.waiveraTabBar.exists)
+        let back = app.navigationBars.buttons
+            .matching(NSPredicate(format: "identifier == 'BackButton' OR label == 'Chats'"))
+            .firstMatch
+        XCTAssertTrue(back.waitForExistence(timeout: 5))
+        back.tap()
+        XCTAssertTrue(app.waiveraTabBar.waitForExistence(timeout: 5))
     }
 }

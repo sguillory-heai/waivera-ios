@@ -197,8 +197,7 @@
                     .padding(.bottom, Spacing.large)
                 }
             }
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbarBackground(.hidden, for: .navigationBar)
+            .heroUnderNavigationBar()
         }
     }
 

@@ -76,7 +76,15 @@
                         .lineLimit(1)
                         .transition(.opacity)
                 } else {
-                    Color.clear.accessibilityHidden(true)
+                    // One hidden line of the same style holds the slot, so it is as tall empty as
+                    // when someone types, at every text size. Not a bare `Color.clear`: that takes
+                    // all the height it is offered, which in the bottom inset was the whole screen
+                    // and left the messages none (blank conversation, CI run 41395581871).
+                    Text(verbatim: " ")
+                        .waiveraTextStyle(.labelMedium)
+                        .lineLimit(1)
+                        .hidden()
+                        .accessibilityHidden(true)
                 }
             }
             .frame(maxWidth: .infinity, minHeight: ChatMetrics.typingSlot, alignment: .leading)

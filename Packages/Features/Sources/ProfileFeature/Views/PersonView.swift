@@ -39,8 +39,6 @@
             .background(Palette.background)
             .navigationTitle(ProfileStrings.personTitle)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbarBackground(.hidden, for: .navigationBar)
         }
     }
 
@@ -71,6 +69,7 @@
                 },
                 onDismissError: { model.dismissMessageError() }
             )
+            .heroUnderNavigationBar()
             .refreshable { await model.load() }
             .task { await model.run() }
             .task(id: retryRequest) {

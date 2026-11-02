@@ -123,7 +123,8 @@
     /// The top of a tab screen (Android `WaiveraHeroSection`): the plum hero behind the status bar,
     /// holding the hero bar and `content`, ending in the first band of the rounded sheet the rest
     /// of the screen sits on. Put it first in the screen's scroll view on the page colour. Pair
-    /// with `.toolbarColorScheme(.dark, for: .navigationBar)` so the status bar reads on the plum.
+    /// with `.toolbarColorScheme(.dark, for: .navigationBar)` so the status bar reads on the plum,
+    /// or with `heroUnderNavigationBar()` when a visible navigation bar sits over it.
     public struct HeroSection<TopBar: View, Content: View>: View {
         private let trail: HeroTrail
         private let topBar: TopBar
