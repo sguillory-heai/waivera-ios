@@ -136,7 +136,10 @@
 
     /// Full-screen image with pinch and double-tap zoom, 1× to 5× (03 §8; Android
     /// `ImagePreviewDialog`), on an almost black scrim with white ink: the close button on its
-    /// own dark disc, the spinner without its track, and the zoom hint at the bottom.
+    /// own dark disc, the spinner without its track, and the zoom hint at the bottom. While not
+    /// zoomed, a vertical swipe closes it (`ImageDismiss`): the image follows the finger and the
+    /// backdrop and chrome fade in proportion. Reduce Motion keeps the image still and fades only
+    /// the backdrop.
     struct ImagePreviewView: View {
         let messageId: Int
         let title: String
@@ -147,10 +150,16 @@
         @State private var failed = false
         @State private var scale: CGFloat = 1
         @State private var settledScale: CGFloat = 1
+        @State private var dragOffset: CGFloat = 0
+        /// A pinch is in progress: a vertical drift of the fingers must not move or close the image.
+        @State private var isPinching = false
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+        private var fade: Double { 1 - Double(ImageDismiss.progress(offset: dragOffset)) }
 
         var body: some View {
             ZStack(alignment: .topTrailing) {
-                Palette.previewScrim.ignoresSafeArea()
+                Palette.previewScrim.opacity(fade).ignoresSafeArea()
                 content
                 Button(action: onClose) {
                     Image(systemName: "xmark")
@@ -162,6 +171,7 @@
                 }
                 .buttonStyle(.press(.compact))
                 .padding(Spacing.small)
+                .opacity(fade)
                 .accessibilityLabel(ConversationStrings.text("image.close"))
             }
             .overlay(alignment: .bottom) {
@@ -169,8 +179,11 @@
                     .waiveraTextStyle(.labelMedium)
                     .foregroundStyle(Palette.onAccent)
                     .padding(Spacing.medium)
+                    .opacity(fade)
                     .accessibilityHidden(true)
             }
+            // Clear, so the conversation shows through as the backdrop fades during a swipe.
+            .presentationBackground(.clear)
             .task(id: messageId) {
                 do {
                     image = UIImage(data: try await load(messageId))
@@ -187,7 +200,9 @@
                     .resizable()
                     .scaledToFit()
                     .scaleEffect(scale)
+                    .offset(y: reduceMotion ? 0 : dragOffset)
                     .gesture(zoom)
+                    .simultaneousGesture(swipeToClose, including: scale > 1 ? .subviews : .all)
                     .onTapGesture(count: 2) {
                         scale = scale > 1 ? 1 : ChatMetrics.doubleTapZoom
                         settledScale = scale
@@ -214,9 +229,47 @@
         private var zoom: some Gesture {
             MagnifyGesture()
                 .onChanged { value in
+                    isPinching = true
                     scale = min(max(settledScale * value.magnification, 1), ChatMetrics.maxZoom)
                 }
-                .onEnded { _ in settledScale = scale }
+                .onEnded { _ in
+                    isPinching = false
+                    settledScale = scale
+                    springBack()
+                }
+        }
+
+        private var swipeToClose: some Gesture {
+            DragGesture(minimumDistance: Spacing.medium)
+                .onChanged { value in
+                    guard scale <= 1, !isPinching else { return }
+                    dragOffset = value.translation.height
+                }
+                .onEnded { value in
+                    guard scale <= 1, !isPinching, dragOffset != 0 else { return springBack() }
+                    if ImageDismiss.shouldClose(offset: dragOffset, velocity: value.velocity.height) {
+                        close(towards: dragOffset)
+                    } else {
+                        springBack()
+                    }
+                }
+        }
+
+        /// Sends the image off the screen the way it was going, then closes, so an upward swipe
+        /// does not end in the cover sliding down. Reduce Motion closes straight away.
+        private func close(towards offset: CGFloat) {
+            guard !reduceMotion else { return onClose() }
+            let away = (offset < 0 ? -1 : 1) * ImageDismiss.offScreen
+            withAnimation(Motion.animation(.layout, reduceMotion: false)) {
+                dragOffset = away
+            } completion: {
+                onClose()
+            }
+        }
+
+        private func springBack() {
+            guard dragOffset != 0 else { return }
+            withAnimation(Motion.animation(.layout, reduceMotion: reduceMotion)) { dragOffset = 0 }
         }
     }
 #endif

@@ -3,10 +3,10 @@
     import WaiveraData
     import WaiveraDesign
 
-    /// One message: avatar and name for others, the bubble, reactions, the thread chip and the
-    /// time line (03 §4-6). A live arrival comes in per `BubbleArrival`: my own pops on the send
-    /// spring, someone else's glides up on the layout spring. History and Reduce Motion arrive
-    /// at rest.
+    /// One message: name above and avatar beside for others, the bubble, then reactions
+    /// and replies under it, and the time line (03 §4-6). A live arrival comes in per
+    /// `BubbleArrival`: my own pops on the send spring, someone else's glides up on the layout
+    /// spring. History and Reduce Motion arrive at rest.
     struct MessageRowView: View {
         let row: MessageRow
         let context: RowContext
@@ -19,27 +19,37 @@
         private var isHighlighted: Bool { context.highlightKey == row.key }
 
         var body: some View {
-            HStack(alignment: .top, spacing: Spacing.small) {
-                if row.isMine {
-                    Spacer(minLength: Spacing.huge)
-                } else {
-                    AuthorAvatar(row: row, name: context.authorName(message), actions: actions)
+            VStack(alignment: .leading, spacing: 0) {
+                // The author line sits above the avatar's row, so the avatar starts level with the
+                // bubble at every text size instead of hanging on a fixed offset beside the line.
+                if !row.isMine, !row.groupedWithPrevious {
+                    AuthorLine(name: context.authorName(message), isBot: row.isBot)
+                        .padding(.leading, ControlSize.avatarSmall + Spacing.small)
                 }
-                VStack(alignment: row.isMine ? .trailing : .leading, spacing: Spacing.extraSmall) {
-                    if !row.isMine, !row.groupedWithPrevious {
-                        AuthorLine(name: context.authorName(message), isBot: row.isBot)
+                HStack(alignment: .top, spacing: Spacing.small) {
+                    if row.isMine {
+                        Spacer(minLength: Spacing.huge)
+                    } else {
+                        AuthorAvatar(row: row, name: context.authorName(message), actions: actions)
                     }
-                    MessageBubble(row: row, context: context, actions: actions)
-                    MessageFooter(row: row, context: context)
-                }
-                .frame(maxWidth: .infinity, alignment: row.isMine ? .trailing : .leading)
-                if !row.isMine, !row.isBot {
-                    Spacer(minLength: Spacing.large)
+                    VStack(alignment: row.isMine ? .trailing : .leading, spacing: 0) {
+                        MessageBubble(row: row, context: context, actions: actions)
+                        if MessageEngagementRow.isVisible(row, actions: actions) {
+                            MessageEngagementRow(row: row, actions: actions)
+                        }
+                        MessageFooter(row: row, context: context)
+                    }
+                    .frame(maxWidth: .infinity, alignment: row.isMine ? .trailing : .leading)
+                    if !row.isMine, !row.isBot {
+                        Spacer(minLength: Spacing.large)
+                    }
                 }
             }
             .padding(.horizontal, Spacing.medium)
-            .padding(.top, row.groupedWithPrevious ? Spacing.hairline : Spacing.small)
-            .padding(.bottom, row.isBot ? Spacing.small : Spacing.hairline)
+            // Half the run gap on each side of a grouped bubble, so a run is held together by
+            // exactly `ChatMetrics.runGap` whatever its rows show.
+            .padding(.top, row.groupedWithPrevious ? ChatMetrics.runGap / 2 : Spacing.small)
+            .padding(.bottom, row.isBot ? Spacing.small : ChatMetrics.runGap / 2)
             .background(isHighlighted ? Palette.accentWash : Color.clear)
             .overlay {
                 if isHighlighted {
@@ -116,7 +126,6 @@
                 }
             }
             .frame(width: ControlSize.avatarSmall, alignment: .topLeading)
-            .padding(.top, row.groupedWithPrevious ? 0 : ChatMetrics.avatarTopOffset)
         }
     }
 

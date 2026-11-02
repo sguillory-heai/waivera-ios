@@ -8,7 +8,6 @@ enum ChatMetrics {
     static let bubbleGroupedRadius: CGFloat = 6
     static let bubbleMinWidth: CGFloat = 54
     static let bubbleMaxWidthFraction: CGFloat = 0.82
-    static let avatarTopOffset: CGFloat = 18
     /// How far an author avatar's touch area reaches past its 32pt square, to make 44pt.
     static let avatarHitOutset: CGFloat = (ControlSize.minHitTarget - ControlSize.avatarSmall) / 2
     static let imageWidth: CGFloat = 250
@@ -19,7 +18,13 @@ enum ChatMetrics {
     /// The square behind an image's expand glyph.
     static let imageBadge: CGFloat = 28
     static let fileCardWidth: CGFloat = 250
-    static let reactionPillHeight: CGFloat = 30
+    /// Grouped bubbles of one run sit exactly this far apart, whatever their rows show.
+    static let runGap: CGFloat = Spacing.xxSmall
+    /// The engagement row (reactions, then replies) under a bubble.
+    static let engagementTop: CGFloat = Spacing.extraSmall
+    static let engagementGap: CGFloat = Spacing.extraSmall + Spacing.xxSmall
+    static let engagementChipPaddingX: CGFloat = Spacing.small
+    static let engagementChipPaddingY: CGFloat = Spacing.extraSmall
     static let typingSlot: CGFloat = 22
     static let composerMaxLines = 6
     static let stagedThumbnail: CGFloat = 50

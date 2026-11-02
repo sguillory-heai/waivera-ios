@@ -3,7 +3,8 @@
     import WaiveraData
     import WaiveraDesign
 
-    /// The bubble: body, attachment, reactions and the thread chip. A tap opens its time line;
+    /// The bubble: body and attachment only; reactions and replies sit under it
+    /// (`MessageEngagementRow`). A tap opens its time line;
     /// a long press sinks it and opens the focus overlay over it (spec §9.1). Silent.
     struct MessageBubble: View {
         let row: MessageRow
@@ -47,12 +48,6 @@
                     .accessibilityHint(ConversationStrings.text("show.time"))
                 if let attachment = message.attachment, !message.isDeleted {
                     AttachmentView(message: message, attachment: attachment, actions: actions)
-                }
-                if !row.reactions.isEmpty {
-                    ReactionPills(row: row, actions: actions)
-                }
-                if let openThread = actions.openThread, !message.isThreadReply, message.threadReplyCount > 0 {
-                    ThreadChip(count: message.threadReplyCount) { openThread(message) }
                 }
             }
             .padding(.horizontal, hasBody ? Spacing.mediumSmall - Spacing.hairline : 0)
@@ -206,26 +201,6 @@
                 }
             }
             .padding(.top, Spacing.extraSmall)
-        }
-    }
-
-    struct ThreadChip: View {
-        let count: Int
-        let action: () -> Void
-
-        var body: some View {
-            Button(action: action) {
-                Label(ConversationStrings.replies(count), systemImage: "arrowshape.turn.up.left.2")
-                    .font(WaiveraFont.captionEmphasis)
-                    .foregroundStyle(Palette.accent)
-                    .padding(.horizontal, Spacing.small)
-                    .padding(.vertical, Spacing.extraSmall)
-                    .background(Palette.accentWash, in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous))
-                    .frame(minHeight: ControlSize.minHitTarget)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.pressScale)
-            .accessibilityHint(ConversationStrings.text("open.thread"))
         }
     }
 #endif

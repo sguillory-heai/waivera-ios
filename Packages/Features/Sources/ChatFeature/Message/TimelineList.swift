@@ -239,25 +239,28 @@
 
         private func incoming(_ fraction: CGFloat) -> some View {
             let column = column(withAvatar: true)
-            return HStack(alignment: .top, spacing: Spacing.small) {
-                SkeletonBlock(
-                    width: ControlSize.avatarSmall,
-                    height: ControlSize.avatarSmall,
-                    cornerRadius: AvatarGeometry.cornerRadius(size: ControlSize.avatarSmall)
-                )
-                .padding(.top, ChatMetrics.avatarTopOffset)
-                VStack(alignment: .leading, spacing: 0) {
-                    SkeletonBlock(width: column * Self.authorFraction, height: ControlSize.skeletonLine)
-                        .padding(.bottom, Spacing.xxSmall)
+            // Shaped like the row: the author line above, the avatar level with the bubble.
+            return VStack(alignment: .leading, spacing: 0) {
+                SkeletonBlock(width: column * Self.authorFraction, height: ControlSize.skeletonLine)
+                    .padding(.leading, ControlSize.avatarSmall + Spacing.small)
+                    .padding(.bottom, Spacing.xxSmall)
+                HStack(alignment: .top, spacing: Spacing.small) {
                     SkeletonBlock(
-                        width: column * fraction,
-                        height: ChatMetrics.skeletonBubbleHeight,
-                        cornerRadius: ChatMetrics.bubbleRadius
+                        width: ControlSize.avatarSmall,
+                        height: ControlSize.avatarSmall,
+                        cornerRadius: AvatarGeometry.cornerRadius(size: ControlSize.avatarSmall)
                     )
-                    SkeletonBlock(width: column * Self.timeFraction, height: ControlSize.skeletonLine)
-                        .padding(.top, Spacing.extraSmall)
+                    VStack(alignment: .leading, spacing: 0) {
+                        SkeletonBlock(
+                            width: column * fraction,
+                            height: ChatMetrics.skeletonBubbleHeight,
+                            cornerRadius: ChatMetrics.bubbleRadius
+                        )
+                        SkeletonBlock(width: column * Self.timeFraction, height: ControlSize.skeletonLine)
+                            .padding(.top, Spacing.extraSmall)
+                    }
+                    Spacer(minLength: 0)
                 }
-                Spacer(minLength: 0)
             }
             .padding(.horizontal, Spacing.gutter)
             .padding(.top, Spacing.small)

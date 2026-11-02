@@ -3,24 +3,47 @@
     import WaiveraData
     import WaiveraDesign
 
-    /// Reaction pills inside the bubble (03 §13; Android `ReactionPills`): they flow onto as many
-    /// lines as they need, from the bubble's own side. Tap toggles mine, long press shows who
-    /// reacted. Read-only, they are inert. Each pill says its emoji, count and whether I
-    /// reacted, never colour alone.
-    struct ReactionPills: View {
+    /// The engagement row under a bubble, as on the web and Android (`MessageEngagementRow`):
+    /// reaction chips first, then "N replies", side by side and wrapping onto more lines from the
+    /// bubble's own side. Every chip is a soft rounded square sized from its text, so it grows
+    /// evenly with Dynamic Type. A reaction chip toggles mine on tap and shows who reacted on long
+    /// press; read-only, it is inert. Each one says its emoji, count and whether I reacted, never
+    /// colour alone.
+    struct MessageEngagementRow: View {
         let row: MessageRow
         let actions: MessageRowActions
 
+        private var message: ChatMessage { row.message }
+        private var openThread: (@MainActor (ChatMessage) -> Void)? { Self.openThread(row, actions: actions) }
+
+        /// "N replies" shows only on a thread root with replies, where the screen can open threads.
+        private static func openThread(
+            _ row: MessageRow,
+            actions: MessageRowActions
+        ) -> (@MainActor (ChatMessage) -> Void)? {
+            guard !row.message.isThreadReply, row.message.threadReplyCount > 0 else { return nil }
+            return actions.openThread
+        }
+
+        /// Whether the row has anything to show, so an empty one takes no space.
+        static func isVisible(_ row: MessageRow, actions: MessageRowActions) -> Bool {
+            !row.reactions.isEmpty || openThread(row, actions: actions) != nil
+        }
+
         var body: some View {
-            ReactionFlowLayout(spacing: Spacing.extraSmall, alignEnd: row.isMine) {
+            ReactionFlowLayout(spacing: ChatMetrics.engagementGap, alignEnd: row.isMine) {
                 ForEach(row.reactions) { reaction in
-                    ReactionPill(reaction: reaction, messageId: row.message.id, actions: actions)
+                    ReactionChip(reaction: reaction, messageId: message.id, actions: actions)
+                }
+                if let openThread {
+                    RepliesChip(count: message.threadReplyCount) { openThread(message) }
                 }
             }
+            .padding(.top, ChatMetrics.engagementTop)
         }
     }
 
-    /// Rows of pills that wrap like Android's `FlowRow`, packed to the leading or trailing edge.
+    /// Rows of chips that wrap like Android's `FlowRow`, packed to the leading or trailing edge.
     private struct ReactionFlowLayout: Layout {
         let spacing: CGFloat
         let alignEnd: Bool
@@ -73,18 +96,49 @@
         }
     }
 
-    /// One pill (Android `ReactionPill`): mine on the soft accent with an accent outline, others
-    /// on the page with a hairline. The count always shows, 1 included. Adding or taking back a
-    /// reaction, or someone else's landing, pops the pill.
-    private struct ReactionPill: View {
+    /// The inside of every engagement chip: padded from its text, on the chip shape. The 44pt
+    /// touch target grows outside the layout (`ChipHitShape`), so it never pushes the row away
+    /// from the bubble.
+    private struct EngagementChipBody<Content: View>: View {
+        let fill: Color
+        let outline: Color
+        let outlineWidth: CGFloat
+        @ViewBuilder let content: Content
+
+        private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: Radius.chip, style: .continuous) }
+
+        var body: some View {
+            HStack(spacing: Spacing.extraSmall) { content }
+                .padding(.horizontal, ChatMetrics.engagementChipPaddingX)
+                .padding(.vertical, ChatMetrics.engagementChipPaddingY)
+                .background(fill, in: shape)
+                .overlay(shape.strokeBorder(outline, lineWidth: outlineWidth))
+                .contentShape(ChipHitShape())
+        }
+    }
+
+    /// A chip's touch area: at least 44pt tall, but never reaching up into the bubble (it stops
+    /// at the gap above the row) or sideways into the next chip, so it grows downward instead.
+    private struct ChipHitShape: Shape {
+        func path(in rect: CGRect) -> Path {
+            let top = min(ChatMetrics.engagementTop, max(ControlSize.minHitTarget - rect.height, 0))
+            let height = max(rect.height + top, ControlSize.minHitTarget)
+            let side = ChatMetrics.engagementGap / 2
+            return Path(CGRect(x: rect.minX - side, y: rect.minY - top, width: rect.width + 2 * side, height: height))
+        }
+    }
+
+    /// One reaction (Android `ReactionChip`): mine on the soft accent with an accent outline,
+    /// others on the surface with a hairline. The count always shows, 1 included. Adding or
+    /// taking back a reaction, or someone else's landing, pops the chip.
+    private struct ReactionChip: View {
         let reaction: ReactionSummary
         let messageId: Int
         let actions: MessageRowActions
 
         var body: some View {
             if let react = actions.react {
-                pill
-                    .frame(minHeight: ControlSize.minHitTarget)
+                chip
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(ConversationStrings.reactionLabel(reaction))
                     .accessibilityAddTraits(reaction.mine ? .isSelected : [])
@@ -95,29 +149,50 @@
                         onLongPress: { actions.reactionDetails?(messageId, reaction.emoji) }
                     )
             } else {
-                pill
+                chip
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(ConversationStrings.reactionLabel(reaction))
             }
         }
 
-        private var pill: some View {
-            HStack(spacing: Spacing.extraSmall) {
+        private var chip: some View {
+            EngagementChipBody(
+                fill: reaction.mine ? Palette.accentSoft : Palette.surface,
+                outline: reaction.mine ? Palette.accent : Palette.border,
+                outlineWidth: reaction.mine ? ControlSize.selectedOutline : Spacing.hairline
+            ) {
                 Text(reaction.emoji).waiveraTextStyle(.bodySmall)
                 Text(verbatim: "\(reaction.count)")
-                    .waiveraTextStyle(.labelSmall, weight: reaction.mine ? .semibold : nil)
+                    .waiveraTextStyle(.labelMedium, weight: reaction.mine ? .semibold : nil)
                     .foregroundStyle(reaction.mine ? Palette.onAccentSoft : Palette.textSecondary)
             }
-            .padding(.horizontal, Spacing.small)
-            .frame(minHeight: ChatMetrics.reactionPillHeight)
-            .background(reaction.mine ? Palette.accentSoft : Palette.background, in: Capsule())
-            .overlay(
-                Capsule().strokeBorder(
-                    reaction.mine ? Palette.accent : Palette.border,
-                    lineWidth: reaction.mine ? ControlSize.selectedOutline : Spacing.hairline
-                )
-            )
             .popOnChange(of: [reaction.count, reaction.mine ? 1 : 0])
+        }
+    }
+
+    /// "N replies" (Android `RepliesChip`) on the accent wash. The glyph takes its size from the
+    /// label's font, so it is never taller than the text at any Dynamic Type size.
+    private struct RepliesChip: View {
+        let count: Int
+        let action: () -> Void
+
+        var body: some View {
+            Button(action: action) {
+                EngagementChipBody(
+                    fill: Palette.accentWash,
+                    outline: Palette.accentBorder,
+                    outlineWidth: Spacing.hairline
+                ) {
+                    Image(systemName: "arrowshape.turn.up.left.2")
+                        .imageScale(.small)
+                        .accessibilityHidden(true)
+                    Text(ConversationStrings.replies(count))
+                }
+                .waiveraTextStyle(.labelMedium)
+                .foregroundStyle(Palette.accent)
+            }
+            .buttonStyle(.pressScale)
+            .accessibilityHint(ConversationStrings.text("open.thread"))
         }
     }
 
