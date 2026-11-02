@@ -89,7 +89,7 @@
 "schedule.event.youOrganize" = "You're the organizer";
 "schedule.event.online" = "Online meeting";
 "schedule.event.location" = "Location";
-"schedule.event.time" = "Time";
+"schedule.event.openInMaps" = "Opens in Maps";
 "schedule.event.details" = "Details";
 "schedule.event.linkedTask" = "Linked task";
 "schedule.event.attendees" = "Attendees";

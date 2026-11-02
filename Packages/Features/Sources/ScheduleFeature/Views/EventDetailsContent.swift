@@ -3,8 +3,8 @@
     import WaiveraDesign
 
     /// The loaded event in Android's `EventBody` order: what it is and when first, then what the
-    /// person can do (answer, join, message the organizer), then who organizes it and who is
-    /// coming. A failed refresh is a warning with a title, since the saved copy still shows.
+    /// person can do (answer, join, message the organizer), then who organizes it, the notes, and who
+    /// is coming. A failed refresh is a warning with a title, since the saved copy still shows.
     struct EventDetailsContent: View {
         let details: EventDetailsUI
         let actions: EventActions
@@ -13,8 +13,7 @@
 
         var body: some View {
             VStack(alignment: .leading, spacing: Spacing.medium) {
-                EventHeader(details: details)
-                EventFactsCard(details: details)
+                EventHero(details: details)
                 if let notice = details.refreshNotice {
                     BannerView(
                         .warning,
@@ -48,6 +47,20 @@
                 }
                 if let organizer = details.organizer {
                     OrganizerBlock(organizer: organizer, isMe: details.isOrganizer)
+                }
+                if let text = details.details {
+                    EventNoteBlock(
+                        kicker: ScheduleStrings.text("schedule.event.details"),
+                        text: text,
+                        strongBorder: false
+                    )
+                }
+                if let task = details.taskTitle {
+                    EventNoteBlock(
+                        kicker: ScheduleStrings.text("schedule.event.linkedTask"),
+                        text: task,
+                        strongBorder: true
+                    )
                 }
                 AttendeesSection(details: details)
             }

@@ -256,9 +256,11 @@
                     .fixedSize()
                     .accessibilityAddTraits(.isHeader)
                 if let count, count > 0 {
-                    StatusBadge(String(count), tone: .accent)
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(Text(TodayStrings.plural("today.sectionCount", count)))
+                    // Solid rose with white, as Android's section count: these are waiting on you.
+                    CountPill(
+                        text: BadgeFormatter.text(for: count) ?? String(count),
+                        accessibilityText: TodayStrings.plural("today.sectionCount", count)
+                    )
                 }
                 Spacer(minLength: Spacing.small)
                 trailing()

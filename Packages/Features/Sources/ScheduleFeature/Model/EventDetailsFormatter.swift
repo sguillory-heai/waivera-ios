@@ -56,7 +56,7 @@ struct EventDetailsFormatter {
             timePrimary: time.primary,
             timeSecondary: time.secondary,
             isOnline: event.isOnline || event.isSprout,
-            location: event.isOnline ? (event.location ?? event.meetingDetails) : event.location,
+            location: placeText(event),
             details: event.details,
             taskTitle: event.taskTitle,
             attendees: attendees.map(person),
@@ -94,6 +94,14 @@ struct EventDetailsFormatter {
             let until = sameDay ? text.clock(end) : text.dateTime(end, currentYear: today.year)
             return (primary, ScheduleStrings.format("schedule.until", until))
         }
+    }
+
+    /// The place line, as Android's `locationText`: the location, else the meeting details,
+    /// skipping either when it is only the meeting link (the Join button covers that).
+    private func placeText(_ event: CalendarEvent) -> String? {
+        [event.location, event.meetingDetails]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty && !WebLinks.isWebURL(URL(string: $0)) }
     }
 
     private func organizer(_ event: CalendarEvent, isOrganizer: Bool, today: CalendarDate) -> EventDetailsUI.Person? {
