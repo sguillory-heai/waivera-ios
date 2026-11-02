@@ -115,7 +115,7 @@
                         .frame(width: ControlSize.iconButton, height: ControlSize.iconButton)
                         .contentShape(Rectangle())
                         .overlay(alignment: .topTrailing) {
-                            CountBadge(count: item.badgeCount)
+                            TopBarCountBadge(count: item.badgeCount)
                         }
                     }
                     .buttonStyle(.press(.compact))
@@ -239,7 +239,7 @@
     }
 
     /// The small count on a top bar action (white on rose, ringed in the plum).
-    private struct CountBadge: View {
+    private struct TopBarCountBadge: View {
         let count: Int
 
         var body: some View {
