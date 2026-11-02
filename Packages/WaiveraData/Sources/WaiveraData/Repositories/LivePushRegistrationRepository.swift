@@ -19,6 +19,10 @@ public actor LivePushRegistrationRepository: PushRegistrationRepository {
     /// had nothing to send, or was superseded.
     private var pending: Task<WaiveraError?, Never>?
     private var generation = 0
+    /// The stored fingerprint only skips repeats within one launch: the server can deactivate a
+    /// row on its own (an FCM "unregistered" answer, the token signed in elsewhere), and a skip
+    /// that outlived that would leave the device silent until sign-out.
+    private var registeredThisLaunch = false
 
     /// `deviceIdentifiers` is the Keychain on device (IF-13); without it the id stays in `store`.
     public init(
@@ -146,14 +150,19 @@ public actor LivePushRegistrationRepository: PushRegistrationRepository {
             previewContentEnabled: preferences.previewContent
         )
         let fingerprint = Self.fingerprint(request)
-        // Re-registering resets `lastRegisteredAt` and can drop an in-flight push (G-08).
-        guard store.value(String.self, forKey: StorageKey.pushFingerprint) != fingerprint else { return nil }
+        // Re-registering resets `lastRegisteredAt` and can drop an in-flight push (G-08), so a
+        // repeat is skipped, but only within this launch (see `registeredThisLaunch`): one call per
+        // launch is the cost of never staying silent after the server deactivated the row.
+        if registeredThisLaunch, store.value(String.self, forKey: StorageKey.pushFingerprint) == fingerprint {
+            return nil
+        }
         var failure = WaiveraError.invalidResponse
         for attempt in 1...Self.maxAttempts {
             guard generation == current, !Task.isCancelled else { return nil }
             do {
                 try await api.registerForPush(request)
                 store.setValue(fingerprint, forKey: StorageKey.pushFingerprint)
+                registeredThisLaunch = true
                 return nil
             } catch {
                 failure = WaiveraError.from(error)

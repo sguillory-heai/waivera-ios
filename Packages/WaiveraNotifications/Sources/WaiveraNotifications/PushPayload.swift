@@ -110,6 +110,13 @@ public enum PushPayloadParser {
         if let legacyType = nonEmpty(data["NotificationType"]) {
             return parseLegacy(type: legacyType, data: data)
         }
+        // No type at all but a message in a conversation: treat it as a chat rather than drop it.
+        // Both ids are required, so a typeless call or meeting push with only a conversation is
+        // not mistaken for a message.
+        let hasMessage = nonEmpty(data["messageId"]).flatMap(Identifier.positiveInt) != nil
+        if hasMessage, nonEmpty(data["conversationId"]).flatMap(Identifier.positiveInt) != nil {
+            return parseModern(type: "chat", data: data)
+        }
         return .unknown(type: nil)
     }
 

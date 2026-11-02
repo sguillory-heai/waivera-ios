@@ -87,6 +87,19 @@ struct PushPayloadTests {
         #expect(PushPayloadParser.parse(data: [:]).destination == .inbox)
     }
 
+    @Test func aPushWithoutAnyTypeButWithAMessageInAConversationIsAChat() {
+        #expect(
+            PushPayloadParser.parse(data: ["conversationId": "7", "messageId": "8"])
+                == .chat(ChatPush(conversationID: 7, messageID: 8))
+        )
+        #expect(
+            PushPayloadParser.parse(userInfo: ["conversationId": 7, "messageId": 8])
+                == .chat(ChatPush(conversationID: 7, messageID: 8))
+        )
+        // A conversation alone could be a call or a meeting: it stays unknown and opens the inbox.
+        #expect(PushPayloadParser.parse(data: ["conversationId": "7"]) == .unknown(type: nil))
+    }
+
     @Test func typeTakesPrecedenceOverLegacyKey() {
         let payload = PushPayloadParser.parse(data: [
             "type": "chat", "conversationId": "3", "NotificationType": "meeting",

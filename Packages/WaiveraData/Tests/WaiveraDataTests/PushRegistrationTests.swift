@@ -48,6 +48,27 @@ struct PushRegistrationTests {
         #expect(await transport.count(registerRoute) == 1)
     }
 
+    @Test func theFirstRegistrationInANewLaunchIsAlwaysSent() async throws {
+        let made = await make()
+        await made.push.register(token: "fcm-1", preferences: NotificationPreferences())
+        await settle()
+        await made.clock.advance(by: 0.5)
+        await made.push.settle()
+        #expect(await made.transport.count(registerRoute) == 1)
+
+        // The server may have deactivated the row since; only this launch's own repeat is skipped.
+        let nextLaunch = LivePushRegistrationRepository(
+            api: makeAPI(made.transport),
+            store: made.store,
+            clock: made.clock
+        )
+        await nextLaunch.register(token: "fcm-1", preferences: NotificationPreferences())
+        await settle()
+        await made.clock.advance(by: 0.5)
+        await nextLaunch.settle()
+        #expect(await made.transport.count(registerRoute) == 2)
+    }
+
     @Test func burstsAreDebouncedAndTokenRotationReregisters() async throws {
         let made = await make()
         let push = made.push
