@@ -49,7 +49,7 @@
                 }
                 .padding(.bottom, Spacing.extraLarge)
             }
-            .plumStatusBarWhenScrolled()
+            .plumStatusBar()
             .environment(\.todayCompactWindow, compact)
             .onGeometryChange(for: CGFloat.self) { proxy in
                 proxy.size.height + proxy.safeAreaInsets.top + proxy.safeAreaInsets.bottom

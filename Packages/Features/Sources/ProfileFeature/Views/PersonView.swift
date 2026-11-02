@@ -33,7 +33,7 @@
                     VStack(spacing: 0) {
                         WaiveraTopBar(title: ProfileStrings.personTitle)
                         EmptyStateView(
-                            systemImage: "person.crop.circle.badge.exclamationmark",
+                            illustration: .connections,
                             title: ProfileStrings.personErrorTitle
                         )
                         Spacer(minLength: 0)
@@ -172,7 +172,7 @@
                     .padding(.bottom, Spacing.large)
                 }
             }
-            .plumStatusBarWhenScrolled()
+            .plumStatusBar()
         }
 
         private var name: String { state.name ?? ProfileStrings.unknownPerson }

@@ -14,10 +14,11 @@
 "messages.loading" = "Loading messages";
 "messages.error.title" = "Messages didn't load";
 "messages.empty.title" = "No messages yet";
-"messages.empty" = "No messages yet. Start the conversation.";
+"messages.empty" = "Say hello and get the conversation going.";
 "messages.stale" = "Showing saved messages. We couldn't refresh them.";
 "thread.error.title" = "Thread didn't load";
-"thread.empty" = "No replies yet.";
+"thread.empty" = "No replies yet";
+"thread.empty.message" = "Be the first to reply.";
 "thread.loading" = "Loading thread";
 "older.loading" = "Loading older messages";
 "older.failed" = "Couldn't load older messages.";

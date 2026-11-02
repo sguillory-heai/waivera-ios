@@ -43,7 +43,7 @@
         @ViewBuilder private var content: some View {
             switch state.content {
             case .invalid:
-                EmptyStateView(systemImage: "exclamationmark.bubble", title: ConversationStrings.text("thread.invalid"))
+                EmptyStateView(illustration: .search, title: ConversationStrings.text("thread.invalid"))
             case .loading:
                 LoadingContent(isLoading: true) {
                     EmptyView()
@@ -99,11 +99,11 @@
                 .padding(.vertical, Spacing.smallPlus)
                 .accessibilityAddTraits(.isHeader)
                 if state.replies.isEmpty {
-                    Text(ConversationStrings.text("thread.empty"))
-                        .font(WaiveraFont.body)
-                        .foregroundStyle(Palette.textSecondary)
-                        .frame(maxWidth: .infinity)
-                        .padding(Spacing.large)
+                    EmptyStateView(
+                        illustration: .chats,
+                        title: ConversationStrings.text("thread.empty"),
+                        message: ConversationStrings.text("thread.empty.message")
+                    )
                 }
             }
             .id(state.root?.key ?? "thread-root")

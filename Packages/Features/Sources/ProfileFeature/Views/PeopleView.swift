@@ -118,7 +118,7 @@
             case .empty:
                 ScrollView {
                     EmptyStateView(
-                        systemImage: "person.2",
+                        illustration: .connections,
                         title: ProfileStrings.peopleEmptyTitle,
                         message: ProfileStrings.peopleEmptyMessage
                     )
@@ -140,7 +140,7 @@
                 Section {
                     if state.phase == .noMatches {
                         EmptyStateView(
-                            systemImage: "magnifyingglass",
+                            illustration: .search,
                             title: ProfileStrings.peopleNoMatchTitle,
                             message: ProfileStrings.peopleNoMatchMessage
                         )

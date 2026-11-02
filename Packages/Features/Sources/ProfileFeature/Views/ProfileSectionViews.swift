@@ -248,7 +248,7 @@
                         }
                         .padding(Spacing.medium)
                     } else {
-                        EmptyStateView(systemImage: "building.2", title: ProfileStrings.organizationUnavailable)
+                        EmptyStateView(illustration: .connections, title: ProfileStrings.organizationUnavailable)
                             .padding(.top, Spacing.extraLarge)
                     }
                 }

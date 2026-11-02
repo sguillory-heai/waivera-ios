@@ -192,48 +192,37 @@
     }
 
     public extension View {
-        /// For a scroll view whose hero scrolls away (Today, Schedule, Profile, Person): once the
-        /// page has scrolled, the plum fills the status bar again. The status bar is light
-        /// app-wide (project.yml), so without it the clock would sit white on page-coloured cards.
-        /// At rest the hero itself shows there, glows included. iOS 17 cannot read the scroll
-        /// offset, so there the band always shows.
-        func plumStatusBarWhenScrolled() -> some View {
-            modifier(PlumStatusBarWhenScrolled())
+        /// For a scroll view whose hero scrolls with the page (Today, Schedule, Profile, Person).
+        /// Scroll content starts below the status bar, so the hero cannot reach up behind it: this
+        /// fills the status bar with the hero's top colour at all times, the way Android draws its
+        /// hero edge to edge. Without it the light clock sat on a white band (CI run 41429532327).
+        /// From iOS 26 the scroll edge effect is off too, since it washes that band to the page
+        /// colour as content scrolls under it.
+        func plumStatusBar() -> some View {
+            modifier(PlumStatusBar())
         }
     }
 
-    private struct PlumStatusBarWhenScrolled: ViewModifier {
-        @State private var isScrolled = false
-
+    private struct PlumStatusBar: ViewModifier {
         func body(content: Content) -> some View {
-            tracked(content)
-                .safeAreaInset(edge: .top, spacing: 0) {
+            // A zero-height strip on the content's top edge whose fill ignores the top safe area,
+            // so it grows up over exactly the status bar. As an overlay it stays above the content
+            // whatever the scroll view does underneath.
+            let banded =
+                content
+                .overlay(alignment: .top) {
                     Color.clear
                         .frame(height: 0)
                         .background(alignment: .bottom) {
-                            HeroPalette.headerTop
-                                .ignoresSafeArea(edges: .top)
-                                .opacity(showsBand ? 1 : 0)
+                            HeroPalette.headerTop.ignoresSafeArea(edges: .top)
                         }
                         .allowsHitTesting(false)
                         .accessibilityHidden(true)
                 }
-        }
-
-        private var showsBand: Bool {
-            if #available(iOS 18, *) { return isScrolled }
-            return true
-        }
-
-        @ViewBuilder private func tracked(_ content: Content) -> some View {
-            if #available(iOS 18, *) {
-                content.onScrollGeometryChange(for: Bool.self) { geometry in
-                    geometry.contentOffset.y + geometry.contentInsets.top > Spacing.hairline
-                } action: { _, scrolled in
-                    isScrolled = scrolled
-                }
+            if #available(iOS 26, *) {
+                banded.scrollEdgeEffectHidden(true, for: .top)
             } else {
-                content
+                banded
             }
         }
     }

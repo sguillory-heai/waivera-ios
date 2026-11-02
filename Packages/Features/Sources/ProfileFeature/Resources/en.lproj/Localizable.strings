@@ -16,8 +16,8 @@
 "profile.refreshing" = "Refreshing profile";
 "profile.refreshFailed" = "Couldn't refresh your profile. Showing your saved details.";
 "profile.error.title" = "Your profile didn’t load";
-"profile.unavailable.title" = "Profile unavailable";
-"profile.unavailable.message" = "We couldn't find your employee record. Sign out and sign back in, or ask your administrator to check your account.";
+"profile.unavailable.title" = "We can’t find your profile";
+"profile.unavailable.message" = "Your employee record didn’t come up. Sign out and back in, or ask your administrator to check your account.";
 "profile.section.personal" = "Personal information";
 "profile.section.professional" = "Work details";
 "profile.email" = "Email";
@@ -71,7 +71,7 @@
 "profile.people.refreshFailed" = "Couldn't refresh the directory. Showing the last list.";
 "profile.people.error.title" = "People didn’t load";
 "profile.people.empty.title" = "No one here yet";
-"profile.people.empty.message" = "No coworkers were returned by the directory.";
+"profile.people.empty.message" = "Your coworkers will show up here once they’re added.";
 "profile.people.noMatch.title" = "No people match";
 "profile.people.noMatch.message" = "Try another name.";
 "profile.people.open %@" = "%@, open profile";
@@ -91,8 +91,8 @@
 "profile.bookmarks.fallback" = "Some saved messages took longer to load. The list may be incomplete until the next refresh.";
 "profile.bookmarks.error.title" = "Bookmarks didn’t load";
 "profile.bookmarks.error.message" = "Please try again in a moment.";
-"profile.bookmarks.empty.title" = "No saved messages yet";
-"profile.bookmarks.empty.message" = "Long-press a chat message and save it for quick access here.";
+"profile.bookmarks.empty.title" = "Nothing saved yet";
+"profile.bookmarks.empty.message" = "Press and hold any message, then tap Bookmark to keep it here for later.";
 "profile.bookmarks.noMatch.title" = "No saved messages match";
 "profile.bookmarks.noMatch.message" = "Try another keyword, message phrase, or person.";
 "profile.bookmarks.open %@" = "Open saved message from %@";

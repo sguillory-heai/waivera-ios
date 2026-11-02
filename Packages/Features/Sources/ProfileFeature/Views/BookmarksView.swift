@@ -187,7 +187,7 @@
             case .empty:
                 ScrollView {
                     EmptyStateView(
-                        systemImage: "bookmark",
+                        illustration: .bookmarks,
                         title: ProfileStrings.bookmarksEmptyTitle,
                         message: ProfileStrings.bookmarksEmptyMessage
                     )
@@ -247,7 +247,7 @@
             switch state.emptyReason {
             case .noneInFilter(let filter):
                 EmptyStateView(
-                    systemImage: "bookmark",
+                    illustration: .bookmarks,
                     title: ProfileStrings.noneInFilterTitle(filter),
                     message: ProfileStrings.noneInFilterMessage(filter),
                     actionTitle: ProfileStrings.bookmarksShowAll,
@@ -256,7 +256,7 @@
                 .padding(.top, Spacing.large)
             case .noMatch, nil:
                 EmptyStateView(
-                    systemImage: "magnifyingglass",
+                    illustration: .search,
                     title: ProfileStrings.bookmarksNoMatchTitle,
                     message: ProfileStrings.bookmarksNoMatchMessage,
                     actionTitle: ProfileStrings.clearSearch,

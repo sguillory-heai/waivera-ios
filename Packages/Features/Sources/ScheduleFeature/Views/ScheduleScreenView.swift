@@ -71,7 +71,7 @@
                     .padding(.bottom, Spacing.large)
                 }
             }
-            .plumStatusBarWhenScrolled()
+            .plumStatusBar()
             .background(Palette.background)
             .refreshable { [refresh] in await refresh() }
             .accessibilityAction(named: Text(ScheduleStrings.text("schedule.refresh"))) {

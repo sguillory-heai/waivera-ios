@@ -46,7 +46,7 @@
             switch state.content {
             case .invalid:
                 EmptyStateView(
-                    systemImage: "exclamationmark.bubble",
+                    illustration: .search,
                     title: ConversationStrings.text("conversation.invalid")
                 )
             case .loading:
@@ -63,7 +63,7 @@
                 )
             case .empty:
                 EmptyStateView(
-                    systemImage: "bubble.left.and.bubble.right",
+                    illustration: .chats,
                     title: ConversationStrings.text("messages.empty.title"),
                     message: ConversationStrings.text("messages.empty")
                 )

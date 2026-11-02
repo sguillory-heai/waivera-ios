@@ -30,7 +30,7 @@
                     VStack(spacing: 0) {
                         WaiveraTopBar(title: ProfileStrings.title)
                         EmptyStateView(
-                            systemImage: "person.crop.circle.badge.exclamationmark",
+                            illustration: .connections,
                             title: ProfileStrings.unavailableTitle
                         )
                         Spacer(minLength: 0)
@@ -139,7 +139,7 @@
                     WaiveraTopBar(title: ProfileStrings.title)
                     ScrollView {
                         EmptyStateView(
-                            systemImage: "person.crop.circle.badge.exclamationmark",
+                            illustration: .connections,
                             title: ProfileStrings.unavailableTitle,
                             message: ProfileStrings.unavailableMessage
                         )
@@ -212,7 +212,7 @@
                     .padding(.bottom, Spacing.large)
                 }
             }
-            .plumStatusBarWhenScrolled()
+            .plumStatusBar()
         }
     }
 
