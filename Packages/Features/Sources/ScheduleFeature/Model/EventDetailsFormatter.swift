@@ -96,10 +96,12 @@ struct EventDetailsFormatter {
         }
     }
 
-    /// The place line, as Android's `locationText`: the location, else the meeting details,
-    /// skipping either when it is only the meeting link (the Join button covers that).
+    /// The place line, as Android's `locationText`: the location, else (online only) the meeting
+    /// details, skipping either when it is only the meeting link (the Join button covers that).
+    /// An in-person place opens in Maps, so dial-in text never stands in for an address.
     private func placeText(_ event: CalendarEvent) -> String? {
-        [event.location, event.meetingDetails]
+        let online = event.isOnline || event.isSprout
+        return [event.location, online ? event.meetingDetails : nil]
             .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
             .first { !$0.isEmpty && !WebLinks.isWebURL(URL(string: $0)) }
     }

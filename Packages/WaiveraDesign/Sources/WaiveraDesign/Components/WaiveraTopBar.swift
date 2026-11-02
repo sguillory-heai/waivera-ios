@@ -44,8 +44,6 @@
         private let subtitle: String?
         private let actions: [TopBarAction]
         private let onBack: (() -> Void)?
-        private let onSubtitle: (() -> Void)?
-        private let subtitleActionLabel: String?
         private let sheetColor: Color
         private let heroContent: HeroContent
 
@@ -55,8 +53,6 @@
             actions: [TopBarAction] = [],
             sheetColor: Color = Palette.background,
             onBack: (() -> Void)? = nil,
-            onSubtitle: (() -> Void)? = nil,
-            subtitleActionLabel: String? = nil,
             @ViewBuilder heroContent: () -> HeroContent
         ) {
             self.title = AnyView(
@@ -71,8 +67,6 @@
             self.actions = actions
             self.sheetColor = sheetColor
             self.onBack = onBack
-            self.onSubtitle = onSubtitle
-            self.subtitleActionLabel = subtitleActionLabel
             self.heroContent = heroContent()
         }
 
@@ -135,28 +129,12 @@
             .frame(minHeight: CGFloat(HeroMetrics.barHeight))
         }
 
-        @ViewBuilder private func subtitleView(_ subtitle: String) -> some View {
-            let line = Text(subtitle)
+        private func subtitleView(_ subtitle: String) -> some View {
+            Text(subtitle)
                 .waiveraTextStyle(.labelMedium)
                 .foregroundStyle(HeroPalette.onHeaderSecondary)
                 .lineLimit(2)
-            if let onSubtitle {
-                Button(action: onSubtitle) {
-                    HStack(spacing: Spacing.xxSmall) {
-                        line
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: ControlSize.iconSmall - Spacing.xxSmall, weight: .semibold))
-                            .foregroundStyle(HeroPalette.onHeaderSecondary)
-                    }
-                    .frame(minHeight: ControlSize.minHitTarget / 2)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.press(.compact))
-                .accessibilityHint(Text(subtitleActionLabel ?? ""))
                 .accessibilityIdentifier("topBar.subtitle")
-            } else {
-                line.accessibilityIdentifier("topBar.subtitle")
-            }
         }
     }
 
@@ -178,18 +156,14 @@
             subtitle: String? = nil,
             actions: [TopBarAction] = [],
             sheetColor: Color = Palette.background,
-            onBack: (() -> Void)? = nil,
-            onSubtitle: (() -> Void)? = nil,
-            subtitleActionLabel: String? = nil
+            onBack: (() -> Void)? = nil
         ) {
             self.init(
                 title: title,
                 subtitle: subtitle,
                 actions: actions,
                 sheetColor: sheetColor,
-                onBack: onBack,
-                onSubtitle: onSubtitle,
-                subtitleActionLabel: subtitleActionLabel
+                onBack: onBack
             ) { EmptyView() }
         }
     }
@@ -201,19 +175,10 @@
             _ title: String,
             subtitle: String? = nil,
             actions: [TopBarAction] = [],
-            sheetColor: Color = Palette.background,
-            onSubtitle: (() -> Void)? = nil,
-            subtitleActionLabel: String? = nil
+            sheetColor: Color = Palette.background
         ) -> some View {
             waiveraTopBar {
-                WaiveraTopBar(
-                    title: title,
-                    subtitle: subtitle,
-                    actions: actions,
-                    sheetColor: sheetColor,
-                    onSubtitle: onSubtitle,
-                    subtitleActionLabel: subtitleActionLabel
-                )
+                WaiveraTopBar(title: title, subtitle: subtitle, actions: actions, sheetColor: sheetColor)
             }
         }
 

@@ -68,6 +68,10 @@
             // Pull to refresh, as on Android; no refresh button in the bar, so an error shows one
             // button, Try again (Sheldon, 2026-11-02).
             .refreshable { await model.refresh() }
+            // Pull to refresh has no VoiceOver or Switch Control path, so name the action too.
+            .accessibilityAction(named: Text(ProfileStrings.refresh)) {
+                Task { await model.refresh() }
+            }
             .task { await model.run() }
             .task(id: refreshRequest) {
                 guard refreshRequest > 0 else { return }

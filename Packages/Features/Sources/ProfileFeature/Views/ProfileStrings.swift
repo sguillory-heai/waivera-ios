@@ -15,6 +15,7 @@
 
         // Profile
         static var title: String { text("profile.title") }
+        static var refresh: String { text("profile.refresh") }
         static var refreshing: String { text("profile.refreshing") }
         static var refreshFailed: String { text("profile.refreshFailed") }
         static var errorTitle: String { text("profile.error.title") }
