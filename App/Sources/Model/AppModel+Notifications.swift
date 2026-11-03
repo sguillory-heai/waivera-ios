@@ -76,6 +76,7 @@ extension AppModel {
     /// the handler returns. The reply is on disk before the first attempt, and a background task
     /// keeps the app running for the send itself, up to `replyTimeout`. If it is still not
     /// confirmed, a local notification says so; the outbox keeps it for the next launch.
+    @MainActor
     private func sendNotificationReply(
         text: String,
         conversationID: Int,
@@ -161,16 +162,27 @@ extension AppModel {
 
 /// One `UIApplication` background task, ended exactly once: by its owner, or by iOS when the
 /// time runs out.
+///
+/// `end()` always ends the task on the main thread. Ending the last task of an app that is in
+/// the background makes UIKit update its snapshot, which aborts off the main thread; a crash
+/// report from a TestFlight build (2026-11-03) showed exactly that from a Swift task.
+@MainActor
 final class BackgroundActivity {
     private var identifier = UIBackgroundTaskIdentifier.invalid
 
     init(name: String) {
         identifier = UIApplication.shared.beginBackgroundTask(withName: name) { [weak self] in
-            MainActor.assumeIsolated { self?.end() }
+            MainActor.assumeIsolated { self?.endOnMain() }
         }
     }
 
-    func end() {
+    nonisolated func end() {
+        DispatchQueue.main.async { [self] in
+            MainActor.assumeIsolated { endOnMain() }
+        }
+    }
+
+    private func endOnMain() {
         guard identifier != .invalid else { return }
         UIApplication.shared.endBackgroundTask(identifier)
         identifier = .invalid
