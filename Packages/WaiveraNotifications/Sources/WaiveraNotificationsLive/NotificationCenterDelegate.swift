@@ -19,19 +19,28 @@
             self.onResponse = onResponse
         }
 
+        // The completion-handler forms, not the async ones: iOS runs UIKit snapshot work when the
+        // handler is called, and an async delegate method returns on a background thread, which
+        // aborts the app when a tap opens it from the background. The handlers are called on main.
+
         public func userNotificationCenter(
             _ center: UNUserNotificationCenter,
-            willPresent notification: UNNotification
-        ) async -> UNNotificationPresentationOptions {
+            willPresent notification: UNNotification,
+            withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+        ) {
             let payload = PushPayloadParser.parse(userInfo: notification.request.content.userInfo)
-            let decision = await presenter(payload)
-            return Self.options(for: decision)
+            let done = MainThreadCompletion(completionHandler)
+            Task { @MainActor in
+                let decision = presenter(payload)
+                done.call(Self.options(for: decision))
+            }
         }
 
         public func userNotificationCenter(
             _ center: UNUserNotificationCenter,
-            didReceive response: UNNotificationResponse
-        ) async {
+            didReceive response: UNNotificationResponse,
+            withCompletionHandler completionHandler: @escaping () -> Void
+        ) {
             let request = response.notification.request
             let event = NotificationResponseEvent(
                 key: "\(request.identifier):\(response.actionIdentifier)",
@@ -40,7 +49,11 @@
                 userText: (response as? UNTextInputNotificationResponse)?.userText,
                 deliveredAt: response.notification.date
             )
-            await onResponse(event)
+            let done = MainThreadCompletion(completionHandler)
+            Task { @MainActor in
+                await onResponse(event)
+                done.call(())
+            }
         }
 
         static func options(for decision: PresentationDecision) -> UNNotificationPresentationOptions {
@@ -49,6 +62,25 @@
             if decision.showInList { options.insert(.list) }
             if decision.playSound { options.insert(.sound) }
             return options
+        }
+    }
+
+    /// Carries a UserNotifications completion handler into a main-actor task. `@unchecked`: the
+    /// handler is only ever called once, from the main actor.
+    private struct MainThreadCompletion<Value>: @unchecked Sendable {
+        private let handler: (Value) -> Void
+
+        init(_ handler: @escaping (Value) -> Void) {
+            self.handler = handler
+        }
+
+        init(_ handler: @escaping () -> Void) where Value == Void {
+            self.handler = { _ in handler() }
+        }
+
+        @MainActor
+        func call(_ value: Value) {
+            handler(value)
         }
     }
 
