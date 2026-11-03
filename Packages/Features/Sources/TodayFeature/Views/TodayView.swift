@@ -16,6 +16,8 @@
         let onOpenThread: (_ rootMessageID: Int, _ conversationID: Int?, _ targetMessageID: Int?) -> Void
         let onOpenEvent: (_ eventID: String) -> Void
         let onOpenSchedule: () -> Void
+        let onOpenScheduleToday: () -> Void
+        let onOpenScheduleWeek: () -> Void
         let onOpenActivity: () -> Void
         let onOpenAccount: (() -> Void)?
 
@@ -28,12 +30,16 @@
             onOpenEvent: @escaping (_ eventID: String) -> Void,
             onOpenSchedule: @escaping () -> Void,
             onOpenActivity: @escaping () -> Void,
-            onOpenAccount: (() -> Void)? = nil
+            onOpenAccount: (() -> Void)? = nil,
+            onOpenScheduleToday: (() -> Void)? = nil,
+            onOpenScheduleWeek: (() -> Void)? = nil
         ) {
             self.onOpenConversation = onOpenConversation
             self.onOpenThread = onOpenThread
             self.onOpenEvent = onOpenEvent
             self.onOpenSchedule = onOpenSchedule
+            self.onOpenScheduleToday = onOpenScheduleToday ?? onOpenSchedule
+            self.onOpenScheduleWeek = onOpenScheduleWeek ?? onOpenSchedule
             self.onOpenActivity = onOpenActivity
             self.onOpenAccount = onOpenAccount
         }
@@ -63,6 +69,8 @@
             case .chat(.thread(let root, let conversation, let target)): onOpenThread(root, conversation, target)
             case .event(let id): onOpenEvent(id)
             case .schedule: onOpenSchedule()
+            case .scheduleToday: onOpenScheduleToday()
+            case .scheduleWeek: onOpenScheduleWeek()
             case .activity: onOpenActivity()
             }
         }

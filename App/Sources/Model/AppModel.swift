@@ -1,5 +1,6 @@
 import ChatFeature
 import Observation
+import ScheduleFeature
 import SwiftUI
 import UIKit
 import WaiveraAPI
@@ -34,6 +35,9 @@ final class AppModel {
     private(set) var unreadTotal = 0
     /// The account menu sheet, opened from the avatar in a tab root's top bar.
     var isAccountMenuPresented = false
+    /// What Today's stats asked the schedule to show, until the schedule has applied it.
+    private(set) var scheduleFocus: ScheduleFocusRequest?
+    @ObservationIgnored private var scheduleFocusRequests = 0
     /// A `waivera://` link arrived that the app cannot open; the tabs say so once (Android
     /// `unopenableLink`, UI2-22). A new value shows the snackbar again.
     private(set) var unopenableLink: UUID?
@@ -333,6 +337,19 @@ extension AppModel {
 
     func select(_ tab: AppTab) {
         navigation.select(tab)
+    }
+
+    /// Today's "events today" and "events this week" stats: the schedule tab on that day or week.
+    func openSchedule(_ focus: ScheduleFocus) {
+        scheduleFocusRequests += 1
+        scheduleFocus = ScheduleFocusRequest(focus: focus, id: scheduleFocusRequests)
+        // At the tab's root, so the day or week shows even when an event was left open there.
+        navigation.setPath([], for: .schedule)
+        select(.schedule)
+    }
+
+    func scheduleFocusHandled() {
+        scheduleFocus = nil
     }
 
     func presentAccountMenu() {

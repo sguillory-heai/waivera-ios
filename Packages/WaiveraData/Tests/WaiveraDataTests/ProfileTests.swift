@@ -70,12 +70,44 @@ struct ProfileTests {
         #expect(await latest(repository.profile())?.error == .notFound)
     }
 
-    @Test func directoryIsSortedAndDeduplicated() async {
+    @Test func directoryIsTheCallersOrganizationSortedWithoutParticipants() async {
         let transport = RoutingTransport()
-        await transport.set("GET api/Authentication/get-username-list", .fixture("rest-auth-get-username-list"))
+        await transport.set("GET api/users", .fixture("rest-users-list"))
         let people = LivePeopleRepository(api: makeAPI(transport), store: InMemoryLocalStore(), clock: TestClock())
         await people.refresh()
         let names = await latest(people.directory())?.value?.map(\.name)
         #expect(names == ["Alex Rivera", "Jordan Lee", "Priya Raman"])
+    }
+
+    @Test func directoryDropsDuplicatesDeactivatedAndNamelessRows() async {
+        let transport = RoutingTransport()
+        await transport.set("GET api/users", .json(#"""
+        [{"id":"usr_a","firstName":"Ann","lastName":"Bell"},{"id":"usr_a","displayName":"Ann Again"},
+         {"id":"usr_gone","displayName":"Gone","deactivated":true},{"id":"usr_mail","email":"m@example.com"},
+         {"id":" ","displayName":"Blank"},{"id":"usr_none"}]
+        """#))
+        let people = LivePeopleRepository(api: makeAPI(transport), store: InMemoryLocalStore(), clock: TestClock())
+        await people.refresh()
+        let directory = await latest(people.directory())?.value
+        #expect(directory?.map(\.id) == ["usr_a", "usr_mail"])
+        #expect(directory?.map(\.name) == ["Ann Bell", "m@example.com"])
+    }
+
+    @Test func anOldCrossOrganizationCacheIsDeletedNotShown() async {
+        let store = InMemoryLocalStore()
+        await store.save([DirectoryPerson(id: "usr_other_agency", name: "Other Agency")], for: .legacyDirectory)
+        let people = LivePeopleRepository(api: makeAPI(RoutingTransport()), store: store, clock: TestClock())
+        await people.begin()
+        #expect(await latest(people.directory())?.value == nil)
+        #expect(await store.data(for: .legacyDirectory) == nil)
+    }
+
+    @Test func directoryNeverReadsTheCrossOrganizationList() async {
+        let transport = RoutingTransport()
+        await transport.set("GET api/users", .fixture("rest-users-list"))
+        let people = LivePeopleRepository(api: makeAPI(transport), store: InMemoryLocalStore(), clock: TestClock())
+        await people.refresh()
+        #expect(await transport.count("GET api/Authentication/get-username-list") == 0)
+        #expect(await transport.count("GET api/users") == 1)
     }
 }

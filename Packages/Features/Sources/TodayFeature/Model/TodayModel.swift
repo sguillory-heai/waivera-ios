@@ -8,6 +8,10 @@ enum TodayDestination: Hashable, Sendable {
     case chat(ChatDestination)
     case event(id: String)
     case schedule
+    /// The "events today" stat: the schedule's Day view on today.
+    case scheduleToday
+    /// The "events this week" stat: the schedule's Week view on this week.
+    case scheduleWeek
     case activity
 }
 

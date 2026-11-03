@@ -2,16 +2,19 @@
     import SwiftUI
     import WaiveraDesign
 
-    /// One stat on the hero: its number, its label and what VoiceOver reads for it.
+    /// One stat on the hero: its number, its label, what VoiceOver reads for it and, when the
+    /// stat opens something, where (the schedule's day or week).
     struct TodayStat: Hashable {
         var value: String
         var label: String
         var spoken: String
+        var opens: TodayDestination?
 
-        init(_ parts: StatText) {
+        init(_ parts: StatText, opens: TodayDestination? = nil) {
             value = parts.value
             label = parts.label
             spoken = parts.spoken
+            self.opens = opens
         }
     }
 
@@ -22,6 +25,7 @@
         @Environment(\.dynamicTypeSize) private var dynamicTypeSize
         let stats: [TodayStat]
         var compact = false
+        var onOpen: (TodayDestination) -> Void = { _ in }
         @State private var width: CGFloat = 0
 
         var body: some View {
@@ -31,7 +35,7 @@
                 } else {
                     HStack(spacing: Spacing.small) {
                         ForEach(stats, id: \.self) { stat in
-                            tile(stat)
+                            opening(stat, depth: .card) { tile(stat) }
                         }
                     }
                     .fixedSize(horizontal: false, vertical: true)
@@ -81,20 +85,39 @@
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .glassTile()
+            .contentShape(RoundedRectangle(cornerRadius: Radius.statTile, style: .continuous))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(stat.spoken))
+        }
+
+        /// A stat that opens something is a button that presses at `depth`; others are plain.
+        @ViewBuilder private func opening<Content: View>(
+            _ stat: TodayStat,
+            depth: PressDepth,
+            @ViewBuilder content: () -> Content
+        ) -> some View {
+            if let destination = stat.opens {
+                Button { onOpen(destination) } label: { content() }
+                    .buttonStyle(.press(depth))
+                    .frame(minHeight: ControlSize.minHitTarget)
+            } else {
+                content()
+            }
         }
 
         private var card: some View {
             VStack(spacing: 0) {
                 ForEach(stats, id: \.self) { stat in
-                    HStack(spacing: Spacing.small) {
-                        StatNumber(value: stat.value)
-                        label(stat).frame(maxWidth: .infinity, alignment: .leading)
+                    opening(stat, depth: .row) {
+                        HStack(spacing: Spacing.small) {
+                            StatNumber(value: stat.value)
+                            label(stat).frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .padding(.vertical, Spacing.extraSmall + Spacing.xxSmall)
+                        .contentShape(Rectangle())
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(Text(stat.spoken))
                     }
-                    .padding(.vertical, Spacing.extraSmall + Spacing.xxSmall)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(Text(stat.spoken))
                 }
             }
             .padding(.horizontal, Spacing.mediumSmall)

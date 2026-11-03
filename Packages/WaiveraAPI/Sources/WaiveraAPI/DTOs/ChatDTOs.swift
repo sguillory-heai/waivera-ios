@@ -14,6 +14,7 @@ public struct UserInfoResponse: Codable, Sendable, Hashable {
     public var isExternal: Bool?
     public var avatarUrl: String?
     public var employeeRole: String?
+    public var deactivated: Bool?
 
     public init(
         id: String?,

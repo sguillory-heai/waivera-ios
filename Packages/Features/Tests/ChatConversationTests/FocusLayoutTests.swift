@@ -73,6 +73,19 @@ struct FocusLayoutTests {
         #expect(placed.menu.x == near.maxX - menuDefault.width, "the menu lines up with my bubble's end")
     }
 
+    /// The anchor is read while the bubble is sunk under the finger (scaled about its centre);
+    /// holding the lift to that narrower width wrapped a short message.
+    @Test func aSunkBubbleLiftsAtItsOwnWidthWhereItWas() {
+        let scale = PressDepth.button.longPressScale
+        let full = CGRect(x: 194, y: 400, width: 150, height: 40)
+        let sunk = full.insetBy(dx: full.width * (1 - scale) / 2, dy: full.height * (1 - scale) / 2)
+        let anchor = FocusGeometry.unscaledAnchor(sunk, size: full.size)
+        #expect(abs(anchor.minX - full.minX) < 0.001 && abs(anchor.minY - full.minY) < 0.001)
+        #expect(anchor.size == full.size)
+        let layout = geometry(window: CGSize(width: 360, height: 640), menu: menuDefault, anchor: anchor)
+        #expect(layout.frame().bubbleMaxWidth == full.width, "the lifted bubble may be as wide as it was")
+    }
+
     @Test func aLongMessageIsClampedSoTheMenuNeverLeavesTheScreen() {
         let tall = CGRect(x: 48, y: -640, width: 296, height: 1190)
         for menu in [menuDefault, menuLarge] {

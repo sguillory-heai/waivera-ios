@@ -12,7 +12,10 @@ public struct CacheKey: Hashable, Sendable, RawRepresentable {
     public static let conversations = CacheKey(rawValue: "chat.conversations")
     public static let outbox = CacheKey(rawValue: "chat.outbox")
     public static let activity = CacheKey(rawValue: "chat.activity")
-    public static let directory = CacheKey(rawValue: "people.directory")
+    /// The organization-scoped directory. Builds before 2026-11-03 cached the cross-organization
+    /// list under `legacyDirectory`; it is deleted, never read.
+    public static let directory = CacheKey(rawValue: "people.directory.organization")
+    public static let legacyDirectory = CacheKey(rawValue: "people.directory")
     public static let milestones = CacheKey(rawValue: "calendar.milestones")
     public static let profile = CacheKey(rawValue: "profile.own")
     /// The last successful bootstrap, for an offline cold start (IF-10).

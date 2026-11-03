@@ -62,7 +62,7 @@
                 GeometryReader { proxy in
                     let box = anchor
                     Color.clear.onChange(of: proxy.frame(in: .global), initial: true) { _, frame in
-                        box.frame = frame
+                        box.frame = FocusGeometry.unscaledAnchor(frame, size: proxy.size)
                     }
                 }
             }

@@ -27,6 +27,21 @@ struct FocusGeometry: Hashable, Sendable {
     var fallbackBubbleWidth: CGFloat
 }
 
+extension FocusGeometry {
+    /// The pressed bubble's own frame. The long press fires while the bubble is sunk under the
+    /// finger and its global frame carries that scale, so it is narrower than the bubble; lifting
+    /// it at that width wrapped a short message onto two lines. The layout size is unscaled and
+    /// the sink scales about the centre, so the frame is that size around the scaled centre.
+    static func unscaledAnchor(_ scaled: CGRect, size: CGSize) -> CGRect {
+        CGRect(
+            x: scaled.midX - size.width / 2,
+            y: scaled.midY - size.height / 2,
+            width: size.width,
+            height: size.height
+        )
+    }
+}
+
 /// The arrangement and the most room the lifted bubble may take in it.
 struct FocusFrame: Hashable, Sendable {
     var arrangement: FocusArrangement

@@ -1,0 +1,73 @@
+[
+  {
+    "id": "usr_alex_rivera",
+    "firstName": "Alex",
+    "lastName": "Rivera",
+    "email": "alex.rivera@example.com",
+    "displayName": "Alex Rivera",
+    "scId": "SC-1001",
+    "isParticipant": false,
+    "isExternal": false,
+    "deactivated": false,
+    "joinDate": "2024-02-12T00:00:00",
+    "organization": { "id": 3, "name": "Example Care Agency", "abbreviation": "ECA" },
+    "regions": [ { "regionId": 7, "regionName": "North" } ],
+    "participantCount": 0,
+    "employeeRole": "Support Coordinator"
+  },
+  {
+    "id": "usr_priya_raman",
+    "firstName": "Priya",
+    "lastName": "Raman",
+    "email": "priya.raman@example.com",
+    "displayName": "Priya Raman",
+    "isParticipant": false,
+    "isExternal": false,
+    "deactivated": false,
+    "organization": { "id": 3, "name": "Example Care Agency", "abbreviation": "ECA" },
+    "regions": [],
+    "participantCount": 0,
+    "employeeRole": "Supervisor"
+  },
+  {
+    "id": "usr_jordan_lee",
+    "firstName": "Jordan",
+    "lastName": "Lee",
+    "email": "jordan.lee@example.com",
+    "displayName": "Jordan Lee",
+    "isParticipant": false,
+    "isExternal": false,
+    "deactivated": false,
+    "organization": { "id": 3, "name": "Example Care Agency", "abbreviation": "ECA" },
+    "regions": [],
+    "participantCount": 0
+  },
+  {
+    "id": "usr_taylor_brooks",
+    "firstName": "Taylor",
+    "lastName": "Brooks",
+    "email": "taylor.brooks@example.com",
+    "displayName": "Taylor Brooks",
+    "isParticipant": false,
+    "isExternal": false,
+    "deactivated": false,
+    "organization": { "id": 3, "name": "Example Care Agency", "abbreviation": "ECA" },
+    "regions": [],
+    "participantCount": 0,
+    "employeeRole": "Participant"
+  },
+  {
+    "id": "par_casey_nguyen",
+    "firstName": "Casey",
+    "lastName": "Nguyen",
+    "email": "casey.nguyen@example.com",
+    "displayName": "Casey Nguyen",
+    "isParticipant": true,
+    "isExternal": false,
+    "deactivated": false,
+    "organization": { "id": 3, "name": "Example Care Agency", "abbreviation": "ECA" },
+    "regions": [],
+    "participantCount": 0,
+    "employeeRole": "Participant"
+  }
+]

@@ -114,7 +114,8 @@ public struct OrganizationResponse: Codable, Sendable, Equatable {
     public var isSandbox: Bool?
 }
 
-/// Mirrors `GetUserNameResponseVM` (`get-username-list`, the staff directory).
+/// Mirrors `GetUserNameResponseVM` (`get-username-list`). Not used: that endpoint is not scoped
+/// to the caller's organization; the directory is `organizationUsers()`.
 public struct GetUserNameResponseVM: Codable, Sendable, Equatable {
     public var userId: String
     public var userName: String?

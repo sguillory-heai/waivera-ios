@@ -205,6 +205,12 @@ public final class ScheduleModel {
         rebuild()
     }
 
+    /// Opened from Today's stats: today's date in `focusView` (Day for today, Week for this week).
+    public func showToday(in focusView: CalendarPeriod) {
+        view = focusView
+        goToToday()
+    }
+
     /// The screen became active again, so "today" moves on after midnight or a long pause.
     public func resume() {
         now = clock.now

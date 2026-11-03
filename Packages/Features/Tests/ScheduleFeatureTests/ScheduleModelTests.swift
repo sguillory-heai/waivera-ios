@@ -229,6 +229,19 @@ struct ScheduleModelTests {
         #expect(rig.model.state.isTodaySelected)
     }
 
+    @Test func todaysStatsOpenTodayInTheDayOrWeekView() {
+        let rig = harness()
+        rig.model.step(1)
+        rig.model.showToday(in: .day)
+        #expect(rig.model.view == .day)
+        #expect(rig.model.selectedDate == day(2026, 10, 27))
+        rig.model.select(date: day(2026, 11, 20))
+        rig.model.showToday(in: .week)
+        #expect(rig.model.view == .week)
+        #expect(rig.model.selectedDate == day(2026, 10, 27))
+        #expect(rig.model.state.cells.count == 7)
+    }
+
     @Test func resumeAfterMidnightMovesToday() {
         let rig = harness(now: instant("2026-10-28T04:50:00Z"))
         #expect(rig.model.today == day(2026, 10, 27))

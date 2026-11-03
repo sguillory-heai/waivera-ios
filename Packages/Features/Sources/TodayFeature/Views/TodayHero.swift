@@ -21,9 +21,9 @@
                 )
             } content: {
                 if state.isAllCaughtUp {
-                    RewardHeroBody(state: state)
+                    RewardHeroBody(state: state, onOpen: { actions.open($0, nil) })
                 } else {
-                    DayHeroBody(state: state, compact: compact, onOpenEvent: { actions.open(.event(id: $0), nil) })
+                    DayHeroBody(state: state, compact: compact, onOpen: { actions.open($0, nil) })
                 }
             }
         }
@@ -34,7 +34,7 @@
         @Environment(\.dynamicTypeSize) private var dynamicTypeSize
         let state: TodayState
         let compact: Bool
-        let onOpenEvent: (String) -> Void
+        let onOpen: (TodayDestination) -> Void
         /// The summary keeps the day it showed while it goes back to loading and fades out.
         @State private var shownProgress: TodayProgress?
 
@@ -65,11 +65,18 @@
                     .padding(.bottom, compact ? Spacing.small : Spacing.small + Spacing.xxSmall)
                 TodayStatGroup(
                     stats: [
-                        TodayStat(TodayStrings.stat(state.stats.eventsToday, label: "today.stat.eventsToday")),
+                        TodayStat(
+                            TodayStrings.stat(state.stats.eventsToday, label: "today.stat.eventsToday"),
+                            opens: .scheduleToday
+                        ),
                         TodayStat(TodayStrings.stat(state.stats.unreadChats, label: "today.stat.unreadChats")),
-                        TodayStat(TodayStrings.stat(state.stats.eventsThisWeek, label: "today.stat.eventsWeek")),
+                        TodayStat(
+                            TodayStrings.stat(state.stats.eventsThisWeek, label: "today.stat.eventsWeek"),
+                            opens: .scheduleWeek
+                        ),
                     ],
-                    compact: compact && !dynamicTypeSize.isLargeText
+                    compact: compact && !dynamicTypeSize.isLargeText,
+                    onOpen: onOpen
                 )
                 .padding(.horizontal, Spacing.gutter)
                 .padding(.bottom, Spacing.mediumSmall)
@@ -92,7 +99,7 @@
                                 kinds: state.needsYou.kinds,
                                 next: state.nextUp.featured,
                                 compact: compact,
-                                onOpenEvent: onOpenEvent
+                                onOpenEvent: { onOpen(.event(id: $0)) }
                             )
                         }
                     } skeleton: {
@@ -288,6 +295,7 @@
     /// Confetti plays once per day in the employee's zone, remembered across launches.
     private struct RewardHeroBody: View {
         let state: TodayState
+        let onOpen: (TodayDestination) -> Void
         @AppStorage(RewardBurst.storageKey) private var lastBurstDay = ""
         @State private var burstTrigger: String?
 
@@ -319,11 +327,20 @@
                 .padding(.horizontal, Spacing.gutter)
                 .padding(.vertical, Spacing.extraSmall)
                 .overlay { CelebrationBurst(trigger: burstTrigger, seed: RewardBurst.seed(state.date)) }
-                TodayStatGroup(stats: [
-                    TodayStat(TodayStrings.handledStat(state.progress)),
-                    TodayStat(TodayStrings.stat(state.stats.eventsToday, label: "today.stat.eventsToday")),
-                    TodayStat(TodayStrings.stat(state.stats.eventsThisWeek, label: "today.stat.eventsWeek")),
-                ])
+                TodayStatGroup(
+                    stats: [
+                        TodayStat(TodayStrings.handledStat(state.progress)),
+                        TodayStat(
+                            TodayStrings.stat(state.stats.eventsToday, label: "today.stat.eventsToday"),
+                            opens: .scheduleToday
+                        ),
+                        TodayStat(
+                            TodayStrings.stat(state.stats.eventsThisWeek, label: "today.stat.eventsWeek"),
+                            opens: .scheduleWeek
+                        ),
+                    ],
+                    onOpen: onOpen
+                )
                 .padding(.horizontal, Spacing.gutter)
                 .padding(.top, Spacing.mediumPlus + Spacing.xxSmall)
                 .padding(.bottom, Spacing.mediumSmall)

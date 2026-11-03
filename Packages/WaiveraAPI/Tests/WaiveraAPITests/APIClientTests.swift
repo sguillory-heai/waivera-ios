@@ -63,7 +63,21 @@ struct APIClientTests {
 
     @Test func noContentListsAreEmpty() async throws {
         let transport = StubTransport([.empty(204)])
-        #expect(try await makeClient(transport).usernameList().isEmpty)
+        #expect(try await makeClient(transport).combinedUserList().isEmpty)
+    }
+
+    @Test func noContentOrganizationUsersAreEmpty() async throws {
+        let transport = StubTransport([.empty(204)])
+        #expect(try await makeClient(transport).organizationUsers().isEmpty)
+    }
+
+    @Test func organizationUsersAskForActiveUsersOnly() async throws {
+        let transport = StubTransport([try .fixture("rest-users-list")])
+        let users = try await makeClient(transport).organizationUsers()
+        #expect(users.count == 5)
+        let url = try #require(await transport.requests.first?.url)
+        #expect(url.path == "/api/users")
+        #expect(url.query == "onlyActive=true")
     }
 
     @Test func emptyOrganizationListIsA404AndMapsToEmpty() async throws {

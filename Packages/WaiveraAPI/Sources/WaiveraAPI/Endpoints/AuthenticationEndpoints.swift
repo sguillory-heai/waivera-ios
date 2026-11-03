@@ -26,15 +26,22 @@ extension APIClient {
         }
     }
 
-    /// The staff directory. 204 (no `data`) means no users.
-    public func usernameList() async throws -> [GetUserNameResponseVM] {
-        let rows: LossyArray<GetUserNameResponseVM>? = try await envelopedIfPresent(
-            APIRequest(.get, "api/Authentication/get-username-list")
+    /// `GET /api/users`, bare: the caller's own organization plus their caseload participants,
+    /// the list the web chat uses. The staff directory must come from here, never from
+    /// `get-username-list`, which lists every organization's staff.
+    public func organizationUsers(onlyActive: Bool = true) async throws -> [UserInfoResponse] {
+        let request = APIRequest(
+            .get,
+            "api/users",
+            query: [URLQueryItem(name: "onlyActive", value: onlyActive ? "true" : "false")]
         )
-        return rows?.elements ?? []
+        // An empty body (a 204) is no users, not a failure.
+        let data = try await send(request)
+        guard !data.isEmpty else { return [] }
+        return try Self.decodeBody(LossyArray<UserInfoResponse>.self, from: data).elements
     }
 
-    /// Includes waiver participants; the staff apps use `usernameList()` instead (11 §1.4).
+    /// Includes waiver participants; the staff apps use `organizationUsers()` instead (11 §1.4).
     public func combinedUserList() async throws -> [GetUserNameResponseDBVM] {
         try await envelopedIfPresent(APIRequest(.get, "api/Authentication/get-combined-user-list")) ?? []
     }

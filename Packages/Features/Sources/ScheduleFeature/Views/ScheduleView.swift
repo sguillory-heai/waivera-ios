@@ -18,6 +18,8 @@
         let onOpenEvent: (_ eventID: String) -> Void
         let onOpenConversation: ((_ conversationId: Int) -> Void)?
         let onOpenAccount: (() -> Void)?
+        let focus: ScheduleFocusRequest?
+        let onFocusHandled: () -> Void
 
         @Environment(\.dataEnvironment) private var data
         @State private var model: ScheduleModel?
@@ -26,11 +28,15 @@
         public init(
             onOpenEvent: @escaping (_ eventID: String) -> Void,
             onOpenConversation: ((_ conversationId: Int) -> Void)? = nil,
-            onOpenAccount: (() -> Void)? = nil
+            onOpenAccount: (() -> Void)? = nil,
+            focus: ScheduleFocusRequest? = nil,
+            onFocusHandled: @escaping () -> Void = {}
         ) {
             self.onOpenEvent = onOpenEvent
             self.onOpenConversation = onOpenConversation
             self.onOpenAccount = onOpenAccount
+            self.focus = focus
+            self.onFocusHandled = onFocusHandled
         }
 
         public var body: some View {
@@ -49,8 +55,20 @@
             .toolbar(.hidden, for: .navigationBar)
             .task {
                 if model == nil, let data { model = ScheduleModel(data: data) }
+                applyFocus()
                 await loadAvatar()
             }
+            .onChange(of: focus) { applyFocus() }
+        }
+
+        /// Applies a pending request from another tab once the model exists, then clears it.
+        private func applyFocus() {
+            guard let focus, let model else { return }
+            switch focus.focus {
+            case .today: model.showToday(in: .day)
+            case .thisWeek: model.showToday(in: .week)
+            }
+            onFocusHandled()
         }
 
         private var account: ScheduleAccount? {

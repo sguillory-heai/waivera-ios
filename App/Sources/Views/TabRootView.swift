@@ -21,7 +21,9 @@ struct TabRootView: View {
                 onOpenEvent: { model.push(.calendarEvent(eventID: $0)) },
                 onOpenSchedule: { model.select(.schedule) },
                 onOpenActivity: { model.push(.activity) },
-                onOpenAccount: { model.presentAccountMenu() }
+                onOpenAccount: { model.presentAccountMenu() },
+                onOpenScheduleToday: { model.openSchedule(.today) },
+                onOpenScheduleWeek: { model.openSchedule(.thisWeek) }
             )
         case .chat:
             ConversationListView(
@@ -37,7 +39,9 @@ struct TabRootView: View {
                 onOpenEvent: { model.push(.calendarEvent(eventID: $0)) },
                 // "Send wishes" on a celebration card opens the chat it started.
                 onOpenConversation: { model.push(.conversation(conversationID: $0, targetMessageID: nil)) },
-                onOpenAccount: { model.presentAccountMenu() }
+                onOpenAccount: { model.presentAccountMenu() },
+                focus: model.scheduleFocus,
+                onFocusHandled: { model.scheduleFocusHandled() }
             )
         }
     }

@@ -11,33 +11,41 @@ import WaiveraRouting
 /// shell draws `WaiveraTabBar` (the sliding pill and the icon pop, Android
 /// `WaiveraNavigationBar`). As on Android the bar shows on tab roots only: a pushed screen gets
 /// the full height and the bar slides away under it.
+///
+/// The bar floats over the tabs and each tab root reserves its measured height itself: a
+/// `safeAreaInset` on the `TabView` does not reliably reach the tabs' scroll views, which left
+/// the end of Schedule under the bar on device.
 struct MainTabView: View {
     @Bindable var model: AppModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dataEnvironment) private var data
     /// The signed-in person's photo for the hero bars and the account menu; initials until it loads.
     @State private var accountImage: Image?
+    @State private var tabBarHeight: CGFloat = 0
 
     var body: some View {
         TabView(selection: selection) {
             ForEach(AppTab.allCases, id: \.self) { tab in
-                TabStack(model: model, tab: tab)
+                TabStack(model: model, tab: tab, rootBottomInset: tabBarHeight)
                     .tag(tab)
             }
         }
-        // Inside the tab bar's inset, so the snackbar sits above the bar.
-        .overlay(alignment: .bottom) { linkSnackbar }
-        .animation(Motion.animation(.layout, reduceMotion: reduceMotion), value: model.unopenableLink)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        .overlay(alignment: .bottom) {
             if showsTabBar {
                 WaiveraTabBar(
                     selected: model.navigation.selectedTab,
                     unreadTotal: model.unreadTotal,
                     onSelect: { model.select($0) }
                 )
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { tabBarHeight = $0 }
                 .transition(Motion.transition(edge: .bottom, reduceMotion: reduceMotion))
             }
         }
+        // Above the bar, which is drawn under it.
+        .overlay(alignment: .bottom) {
+            linkSnackbar.padding(.bottom, showsTabBar ? tabBarHeight : 0)
+        }
+        .animation(Motion.animation(.layout, reduceMotion: reduceMotion), value: model.unopenableLink)
         .animation(Motion.animation(.layout, reduceMotion: reduceMotion), value: showsTabBar)
         .environment(\.waiveraAccountMenu, accountMenu)
         .modifier(ShellBanners(model: model))
@@ -108,10 +116,13 @@ struct MainTabView: View {
 private struct TabStack: View {
     @Bindable var model: AppModel
     let tab: AppTab
+    /// The shell's bar height; only the root reserves it, since pushed screens hide the bar.
+    let rootBottomInset: CGFloat
 
     var body: some View {
         NavigationStack(path: path) {
             TabRootView(model: model, tab: tab)
+                .safeAreaPadding(.bottom, rootBottomInset)
                 .toolbar(.hidden, for: .tabBar)
                 .navigationDestination(for: AppRoute.self) { route in
                     // Every screen hides the system bar; the shell draws its own on tab roots.
