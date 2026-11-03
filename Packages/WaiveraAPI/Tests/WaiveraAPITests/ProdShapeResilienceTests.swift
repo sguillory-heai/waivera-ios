@@ -55,6 +55,21 @@ struct ProdShapeResilienceTests {
         #expect((list[1].participants ?? []).isEmpty)
     }
 
+    /// `LastMessageDto.BotId` is an `int?`; a number there dropped the automation chat's preview.
+    @Test func aBotLastMessageWithANumericBotIdDecodes() throws {
+        let json = #"""
+            {"id": 12, "isBotDirect": true, "participants": [], "unreadCount": 0,
+             "lastMessage": {"id": 9400, "conversationId": 12, "userId": null, "botId": 3,
+               "messageContent": "Ticket #42 was updated", "createDate": "2026-11-03T08:00:00",
+               "messageType": "USER", "contentFormat": 0, "threadReplyCount": 0}}
+            """#
+        let conversation = try decode(ConversationResponse.self, json)
+        let last = try #require(conversation.lastMessage)
+        #expect(last.botId == "3")
+        #expect(last.authorId == "bot:3")
+        #expect(last.messageContent == "Ticket #42 was updated")
+    }
+
     @Test func allConversationsWithAnUnknownChannelTypeDecode() throws {
         let json = #"""
             {"data": [

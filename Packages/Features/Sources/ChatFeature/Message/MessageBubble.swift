@@ -47,7 +47,12 @@
                     .accessibilityLabel(accessibilityLabel)
                     .accessibilityHint(ConversationStrings.text("show.time"))
                 if let attachment = message.attachment, !message.isDeleted {
-                    AttachmentView(message: message, attachment: attachment, actions: actions)
+                    AttachmentView(
+                        message: message,
+                        attachment: attachment,
+                        actions: actions,
+                        onLongPress: canOpenActions ? openActions : nil
+                    )
                 }
             }
             .padding(.horizontal, hasBody ? Spacing.mediumSmall - Spacing.hairline : 0)

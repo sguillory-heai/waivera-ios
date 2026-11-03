@@ -87,8 +87,8 @@
             }
         }
 
-        /// Floats over the timeline, so it is lifted off the bubbles with a shadow and a strong
-        /// hairline, with accent ink on the surface (Android `JumpToLatestPill`).
+        /// Floats over the timeline as a solid violet pill with a shadow, no outline (Android
+        /// `JumpToLatestPill`).
         private func jumpButton(_ action: @escaping () -> Void) -> some View {
             let shadow = Elevation.shadow(for: Elevation.level3)
             return Button(action: action) {
@@ -102,11 +102,10 @@
                     Text(ConversationStrings.text("jump.to.latest"))
                         .waiveraTextStyle(.labelLarge)
                 }
-                .foregroundStyle(Palette.accent)
+                .foregroundStyle(Palette.onAccent)
                 .padding(.horizontal, Spacing.mediumSmall)
                 .padding(.vertical, Spacing.small)
-                .background(Palette.surface, in: Capsule())
-                .overlay(Capsule().strokeBorder(Palette.borderStrong, lineWidth: Spacing.hairline))
+                .background(Palette.accent, in: Capsule())
                 .shadow(color: Palette.liftShadow, radius: shadow.radius, x: 0, y: shadow.y)
                 .frame(minHeight: ControlSize.minHitTarget)
                 .contentShape(Capsule())
@@ -129,7 +128,12 @@
 
         private func scrollToLatest(_ proxy: ScrollViewProxy, animated: Bool = true) {
             let animation = animated ? Motion.animation(.layout, reduceMotion: reduceMotion) : nil
-            withAnimation(animation) { proxy.scrollTo(Self.bottomId, anchor: .bottom) }
+            withAnimation(animation) {
+                proxy.scrollTo(Self.bottomId, anchor: .bottom)
+                // A proxy scroll does not write `scrollPosition` back, so "Jump to latest" stayed
+                // up until the next drag; the bottom is now the position as well.
+                bottomVisibleId = Self.bottomId
+            }
         }
     }
 

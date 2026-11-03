@@ -202,6 +202,9 @@
         let message: ChatMessage
         let attachment: Attachment
         let actions: MessageRowActions
+        /// The bubble's long press. A photo sent alone has no other surface to hold, and as its
+        /// own tap target it would otherwise swallow the gesture.
+        var onLongPress: (() -> Void)?
 
         var body: some View {
             switch attachment.scanStatus {
@@ -214,9 +217,11 @@
                 AttachmentNotice(text: ConversationStrings.text("attachment.scanning"), systemImage: "info.circle")
             default:
                 if AttachmentRules.isImage(attachment) {
-                    ImageAttachment(message: message, actions: actions)
+                    ImageAttachment(message: message, actions: actions, onLongPress: onLongPress)
                 } else {
-                    FileAttachment(message: message, attachment: attachment) { actions.openAttachment(message) }
+                    FileAttachment(message: message, attachment: attachment, onLongPress: onLongPress) {
+                        actions.openAttachment(message)
+                    }
                 }
             }
         }
@@ -226,6 +231,7 @@
     private struct ImageAttachment: View {
         let message: ChatMessage
         let actions: MessageRowActions
+        let onLongPress: (() -> Void)?
 
         @State private var image: UIImage?
         @State private var failed = false
@@ -237,20 +243,16 @@
         var body: some View {
             Group {
                 if let image {
-                    Button {
-                        actions.openAttachment(message)
-                    } label: {
-                        Image(uiImage: image)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: ChatMetrics.imageWidth, height: ChatMetrics.imageHeight)
-                            .clipShape(shape)
-                            .overlay(shape.strokeBorder(Palette.border, lineWidth: Spacing.hairline))
-                            .overlay(alignment: .topTrailing) { expandBadge }
-                            .contentShape(shape)
-                    }
-                    .buttonStyle(.press(.card))
-                    .accessibilityLabel(ConversationStrings.text("open.image"))
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: ChatMetrics.imageWidth, height: ChatMetrics.imageHeight)
+                        .clipShape(shape)
+                        .overlay(shape.strokeBorder(Palette.border, lineWidth: Spacing.hairline))
+                        .overlay(alignment: .topTrailing) { expandBadge }
+                        .contentShape(shape)
+                        .attachmentPress(onTap: { actions.openAttachment(message) }, onLongPress: onLongPress)
+                        .accessibilityLabel(ConversationStrings.text("open.image"))
                 } else if failed {
                     AttachmentNotice(text: ConversationStrings.text("image.unavailable"), systemImage: "photo")
                 } else {
@@ -301,6 +303,7 @@
     private struct FileAttachment: View {
         let message: ChatMessage
         let attachment: Attachment
+        let onLongPress: (() -> Void)?
         let onOpen: () -> Void
 
         @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -310,7 +313,7 @@
         var body: some View {
             let kind = AttachmentRules.kind(attachment, messageId: message.id)
             let name = AttachmentRules.fileName(attachment, messageId: message.id)
-            Button(action: onOpen) {
+            Group {
                 Group {
                     if dynamicTypeSize.isLargeText {
                         VStack(alignment: .leading, spacing: Spacing.small) {
@@ -350,8 +353,8 @@
                 .overlay(shape.strokeBorder(Palette.border, lineWidth: Spacing.hairline))
                 .contentShape(shape)
             }
-            .buttonStyle(.press(.card))
             .accessibilityElement(children: .ignore)
+            .attachmentPress(onTap: onOpen, onLongPress: onLongPress)
             // A bare file name reads as a code to VoiceOver; say what it is first.
             .accessibilityLabel(Text(ConversationStrings.format("file.label", name)))
             .accessibilityHint(ConversationStrings.text("file.caption"))
@@ -391,6 +394,25 @@
             .frame(maxWidth: ChatMetrics.fileCardWidth, minHeight: ControlSize.minHitTarget, alignment: .leading)
             .background(Palette.surfaceMuted, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             .accessibilityElement(children: .combine)
+        }
+    }
+
+    extension View {
+        /// An attachment's press: a card button that opens it, and with the bubble's long press
+        /// when there is one, so holding the picture opens the message's actions like its text.
+        @ViewBuilder
+        fileprivate func attachmentPress(onTap: @escaping () -> Void, onLongPress: (() -> Void)?) -> some View {
+            if let onLongPress {
+                waiveraPressable(
+                    depth: .card,
+                    longPressActionName: ConversationStrings.text("open.actions"),
+                    onTap: onTap,
+                    onLongPress: onLongPress
+                )
+            } else {
+                Button(action: onTap) { self }
+                    .buttonStyle(.press(.card))
+            }
         }
     }
 #endif

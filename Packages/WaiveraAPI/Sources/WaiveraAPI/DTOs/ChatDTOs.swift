@@ -103,6 +103,47 @@ public struct MessageSendResponse: Codable, Sendable, Hashable {
         self.conversationId = conversationId
     }
 
+    /// Decoded field by field as synthesized, except `botId`: `LastMessageDto.BotId` is an `int?`
+    /// on `/api/chat/all` while other payloads send a string, and a number there used to fail the
+    /// whole last message, so automation chats showed "No messages yet".
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+        clientMessageId = try container.decodeIfPresent(String.self, forKey: .clientMessageId)
+        author = try container.decodeIfPresent(UserInfoResponse.self, forKey: .author)
+        userId = try container.decodeIfPresent(String.self, forKey: .userId)
+        botId =
+            container.lenient(String.self, forKey: .botId)
+            ?? container.lenientInt(forKey: .botId).map(String.init)
+        conversationId = try container.decodeIfPresent(Int.self, forKey: .conversationId)
+        messageContent = try container.decodeIfPresent(String.self, forKey: .messageContent)
+        createDate = try container.decodeIfPresent(Date.self, forKey: .createDate)
+        attachmentUrl = try container.decodeIfPresent(String.self, forKey: .attachmentUrl)
+        attachmentType = try container.decodeIfPresent(String.self, forKey: .attachmentType)
+        attachmentOriginalName = try container.decodeIfPresent(String.self, forKey: .attachmentOriginalName)
+        attachmentName = try container.decodeIfPresent(String.self, forKey: .attachmentName)
+        attachmentContentType = try container.decodeIfPresent(String.self, forKey: .attachmentContentType)
+        attachmentSize = try container.decodeIfPresent(Int64.self, forKey: .attachmentSize)
+        attachmentScanStatus = try container.decodeIfPresent(String.self, forKey: .attachmentScanStatus)
+        messageType = try container.decodeIfPresent(MessageType.self, forKey: .messageType)
+        reactions = try container.decodeIfPresent([ReactionResponse].self, forKey: .reactions)
+        callRecordId = try container.decodeIfPresent(Int.self, forKey: .callRecordId)
+        isBot = try container.decodeIfPresent(Bool.self, forKey: .isBot)
+        systemEventType = try container.decodeIfPresent(String.self, forKey: .systemEventType)
+        systemEventData = try container.decodeIfPresent(JSONValue.self, forKey: .systemEventData)
+        isEdited = try container.decodeIfPresent(Bool.self, forKey: .isEdited)
+        updateDate = try container.decodeIfPresent(Date.self, forKey: .updateDate)
+        isDeleted = try container.decodeIfPresent(Bool.self, forKey: .isDeleted)
+        deletedAt = try container.decodeIfPresent(Date.self, forKey: .deletedAt)
+        isBookmarked = try container.decodeIfPresent(Bool.self, forKey: .isBookmarked)
+        contentFormat = try container.decodeIfPresent(Int.self, forKey: .contentFormat)
+        messageDoc = try container.decodeIfPresent(JSONValue.self, forKey: .messageDoc)
+        messagePlaintext = try container.decodeIfPresent(String.self, forKey: .messagePlaintext)
+        parentMessageId = try container.decodeIfPresent(Int.self, forKey: .parentMessageId)
+        threadRootMessageId = try container.decodeIfPresent(Int.self, forKey: .threadRootMessageId)
+        threadReplyCount = try container.decodeIfPresent(Int.self, forKey: .threadReplyCount)
+    }
+
     /// `messageDoc` as an object, re-parsing the stringified form `/api/chat/all` sends.
     public var parsedMessageDoc: JSONValue? {
         switch messageDoc {
