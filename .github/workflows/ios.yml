@@ -6,6 +6,12 @@ name: iOS
 # lists what failed.
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "full: lint, tests and screenshot tours. device: only an unsigned iPhone build (.ipa) to sideload."
+        type: choice
+        options: [full, device]
+        default: full
 
 concurrency:
   group: ios-${{ github.ref }}
@@ -18,6 +24,7 @@ jobs:
   # Foundation-only packages on Linux: cheap, and covers parsing, routing, token logic, the data
   # layer and the fake environment. Apple-only files in them are behind #if canImport(...).
   packages-linux:
+    if: inputs.mode != 'device'
     runs-on: ubuntu-latest
     container: swift:6.2
     timeout-minutes: 30
@@ -83,6 +90,7 @@ jobs:
   # later. Xcode is pinned rather than latest-stable so a runner image update cannot change the
   # compiler between two runs of the same commit; 26.6 is the image default since July 2026.
   app-macos:
+    if: inputs.mode != 'device'
     runs-on: macos-26
     # Write access only to force-push the screenshots branch (last steps); nothing else pushes.
     permissions:
@@ -387,3 +395,83 @@ jobs:
           [ "${{ steps.publish.outcome }}" = success ] || failed="$failed screenshot-branch"
           if [ -n "$failed" ]; then echo "Failed checks:$failed"; exit 1; fi
           echo "All checks passed"
+
+  # An unsigned Release build for a real iPhone, with no lint, tests or tours. Sideloading tools
+  # (Sideloadly, AltStore) sign it with the tester's own Apple ID on their computer, so no
+  # certificate or provisioning profile is stored here. Prod values come from repository secrets
+  # into the git-ignored Config/Local.Release.xcconfig; push stays off (no aps-environment
+  # entitlement, and Firebase Messaging is configured only when all four Firebase values exist).
+  device-ipa:
+    if: inputs.mode == 'device'
+    runs-on: macos-26
+    timeout-minutes: 40
+    env:
+      DERIVED: DerivedData
+    steps:
+      - uses: actions/checkout@v5
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26.6"
+      - name: Install tools
+        run: brew install xcodegen
+      - name: Write the Release configuration from secrets
+        env:
+          API_BASE_URL: ${{ secrets.WAIVERA_API_BASE_URL }}
+          WEB_BASE_URL: ${{ secrets.WAIVERA_WEB_BASE_URL }}
+          FIREBASE_API_KEY: ${{ secrets.WAIVERA_FIREBASE_API_KEY }}
+        run: |
+          missing=""
+          [ -n "$API_BASE_URL" ] || missing="$missing WAIVERA_API_BASE_URL"
+          [ -n "$WEB_BASE_URL" ] || missing="$missing WAIVERA_WEB_BASE_URL"
+          [ -n "$FIREBASE_API_KEY" ] || missing="$missing WAIVERA_FIREBASE_API_KEY"
+          if [ -n "$missing" ]; then echo "Missing repository secrets:$missing"; exit 1; fi
+          # xcconfig reads // as a comment, so https:// is written https:/$()/
+          xc_url() { printf '%s' "$1" | sed 's|//|/$()/|'; }
+          {
+            echo "WAIVERA_API_BASE_URL = $(xc_url "$API_BASE_URL")"
+            echo "WAIVERA_WEB_BASE_URL = $(xc_url "$WEB_BASE_URL")"
+            echo "WAIVERA_FIREBASE_API_KEY = $FIREBASE_API_KEY"
+          } > Config/Local.Release.xcconfig
+      - name: Generate project
+        run: xcodegen generate
+      - name: Restore SwiftPM cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ${{ env.DERIVED }}/SourcePackages
+            ~/Library/Caches/org.swift.swiftpm
+            ~/Library/org.swift.swiftpm
+          key: spm-macos-${{ hashFiles('project.yml', 'Packages/*/Package.swift', '**/Package.resolved') }}
+          restore-keys: spm-macos-
+      - name: Build for iPhone (unsigned Release)
+        timeout-minutes: 30
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project Waivera.xcodeproj -scheme Waivera -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$DERIVED" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" 2>&1 \
+            | tee device-build.log | grep -E "error:|\*\* BUILD" || true
+          test -d "$DERIVED/Build/Products/Release-iphoneos/Waivera.app"
+      - name: Package the .ipa
+        run: |
+          mkdir Payload
+          cp -R "$DERIVED/Build/Products/Release-iphoneos/Waivera.app" Payload/
+          rm -f Config/Local.Release.xcconfig
+          zip -qry "Waivera-${GITHUB_SHA::7}-unsigned.ipa" Payload
+          ls -lh ./*.ipa
+      - name: Upload the .ipa
+        uses: actions/upload-artifact@v5
+        with:
+          name: waivera-ios-unsigned-ipa
+          path: "*.ipa"
+          retention-days: 14
+          if-no-files-found: error
+      - name: Upload the build log
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: device-build-log
+          path: device-build.log
+          if-no-files-found: ignore
