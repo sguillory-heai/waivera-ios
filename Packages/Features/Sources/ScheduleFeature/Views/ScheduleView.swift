@@ -62,11 +62,20 @@
         }
 
         /// Applies a pending request from another tab once the model exists, then clears it.
+        ///
+        /// Without animation: the tab is switching at the same moment, and an animated swap of
+        /// the grid then ran on SwiftUI's asynchronous renderer, which evaluated the grid's
+        /// main-actor `ForEach` content off the main thread and crashed (TestFlight report,
+        /// 2026-11-03: Today's "events today", Home, then "this week").
         private func applyFocus() {
             guard let focus, let model else { return }
-            switch focus.focus {
-            case .today: model.showToday(in: .day)
-            case .thisWeek: model.showToday(in: .week)
+            var transaction = Transaction(animation: nil)
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                switch focus.focus {
+                case .today: model.showToday(in: .day)
+                case .thisWeek: model.showToday(in: .week)
+                }
             }
             onFocusHandled()
         }
