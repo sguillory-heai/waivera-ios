@@ -70,6 +70,7 @@
                     }
                 }
                 .waiveraAnimation(.state, value: isAtLatest)
+                .modifier(PastTheEndRepair { scrollToLatest(proxy, animated: false) })
                 .onChange(of: items.last?.id) { _, _ in
                     if isAtLatest { scrollToLatest(proxy, animated: false) }
                 }
@@ -134,6 +135,41 @@
                 // up until the next drag; the bottom is now the position as well.
                 bottomVisibleId = Self.bottomId
             }
+        }
+    }
+
+    /// Rows whose measured height comes in shorter than the lazy stack's estimate (a photo's
+    /// placeholder, a folded long message) can leave the list resting below its last row: the
+    /// screen looks empty until a drag makes the scroll view settle. When the list is at rest
+    /// past its end, it is put back on the newest row. Needs the iOS 18 scroll geometry APIs.
+    private struct PastTheEndRepair: ViewModifier {
+        let repair: () -> Void
+        @State private var isIdle = true
+        @State private var isPast = false
+
+        func body(content: Content) -> some View {
+            if #available(iOS 18.0, *) {
+                content
+                    .onScrollPhaseChange { _, phase in
+                        isIdle = phase == .idle
+                        if isIdle && isPast { repair() }
+                    }
+                    .onScrollGeometryChange(for: Bool.self, of: Self.isPastTheEnd) { _, past in
+                        isPast = past
+                        if past && isIdle { repair() }
+                    }
+            } else {
+                content
+            }
+        }
+
+        @available(iOS 18.0, *)
+        private static func isPastTheEnd(_ geometry: ScrollGeometry) -> Bool {
+            let maxOffset = max(
+                geometry.contentSize.height + geometry.contentInsets.bottom - geometry.containerSize.height,
+                -geometry.contentInsets.top
+            )
+            return geometry.contentSize.height > 0 && geometry.contentOffset.y > maxOffset + Spacing.hairline
         }
     }
 
