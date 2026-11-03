@@ -161,8 +161,9 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_STYLE: Automatic
-        # Push needs the aps-environment entitlement. It is not added yet: entitlements change only
-        # with approval and need Apple Developer account access (AGENTS.md safety rules).
+        # Push (approved by Sheldon 2026-11-03). Production APNs: the only device builds are
+        # TestFlight and App Store, and the team's APNs key in Firebase covers both environments.
+        CODE_SIGN_ENTITLEMENTS: App/Waivera.entitlements
       configs:
         # The script sandbox grants the declared fixtures bundle but not the files inside it, so
         # "Remove test fixtures from Release" could not delete them (run 41582136133). Only

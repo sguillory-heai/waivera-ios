@@ -411,8 +411,11 @@ jobs:
   #   package bundle (run 41581451895). The build
   #   number is the UTC date and time, so every upload is higher than the last.
   # Prod values come from repository secrets into the git-ignored Config/Local.Release.xcconfig.
-  # Push stays off: no aps-environment entitlement, and Firebase Messaging is configured only
-  # when all four Firebase values exist.
+  # Push: Firebase Messaging is configured only when all four Firebase values exist. The sender ID
+  # is the second field of the Firebase iOS app ID. The archive is unsigned, so its app is
+  # ad-hoc signed with App/Waivera.entitlements before export: the export signs with the
+  # entitlements it finds on the archived app, and without them the build has no
+  # aps-environment and cannot receive pushes.
   device:
     if: inputs.mode == 'device' || inputs.mode == 'testflight'
     runs-on: macos-26
@@ -432,18 +435,31 @@ jobs:
           API_BASE_URL: ${{ secrets.WAIVERA_API_BASE_URL }}
           WEB_BASE_URL: ${{ secrets.WAIVERA_WEB_BASE_URL }}
           FIREBASE_API_KEY: ${{ secrets.WAIVERA_FIREBASE_API_KEY }}
+          FIREBASE_APP_ID: ${{ secrets.WAIVERA_FIREBASE_APP_ID }}
+          FIREBASE_PROJECT_ID: ${{ secrets.WAIVERA_FIREBASE_PROJECT_ID }}
         run: |
           missing=""
           [ -n "$API_BASE_URL" ] || missing="$missing WAIVERA_API_BASE_URL"
           [ -n "$WEB_BASE_URL" ] || missing="$missing WAIVERA_WEB_BASE_URL"
           [ -n "$FIREBASE_API_KEY" ] || missing="$missing WAIVERA_FIREBASE_API_KEY"
+          [ -n "$FIREBASE_APP_ID" ] || missing="$missing WAIVERA_FIREBASE_APP_ID"
+          [ -n "$FIREBASE_PROJECT_ID" ] || missing="$missing WAIVERA_FIREBASE_PROJECT_ID"
           if [ -n "$missing" ]; then echo "Missing repository secrets:$missing"; exit 1; fi
+          # 1:<sender ID>:ios:<hash>
+          sender_id=$(printf '%s' "$FIREBASE_APP_ID" | cut -d: -f2)
+          case "$FIREBASE_APP_ID" in
+            1:*:ios:*) ;;
+            *) echo "WAIVERA_FIREBASE_APP_ID is not a Firebase iOS app ID"; exit 1 ;;
+          esac
           # xcconfig reads // as a comment, so https:// is written https:/$()/
           xc_url() { printf '%s' "$1" | sed 's|//|/$()/|'; }
           {
             echo "WAIVERA_API_BASE_URL = $(xc_url "$API_BASE_URL")"
             echo "WAIVERA_WEB_BASE_URL = $(xc_url "$WEB_BASE_URL")"
             echo "WAIVERA_FIREBASE_API_KEY = $FIREBASE_API_KEY"
+            echo "WAIVERA_FIREBASE_APP_ID = $FIREBASE_APP_ID"
+            echo "WAIVERA_FIREBASE_SENDER_ID = $sender_id"
+            echo "WAIVERA_FIREBASE_PROJECT_ID = $FIREBASE_PROJECT_ID"
           } > Config/Local.Release.xcconfig
       - name: Write the App Store Connect key
         if: inputs.mode == 'testflight'
@@ -532,6 +548,16 @@ jobs:
             CURRENT_PROJECT_VERSION="$BUILD_NUMBER" "${version_setting[@]}" 2>&1 \
             | tee device-build.log | grep -E "error:|\*\* ARCHIVE" || true
           test -d "$ARCHIVE"
+      - name: Carry the push entitlement into the archive
+        if: inputs.mode == 'testflight'
+        run: |
+          app="$ARCHIVE/Products/Applications/Waivera.app"
+          if [ -d "$app/Frameworks" ]; then
+            find "$app/Frameworks" -maxdepth 1 \( -name '*.framework' -o -name '*.dylib' \) \
+              -exec codesign --force --sign - {} \;
+          fi
+          codesign --force --sign - --entitlements App/Waivera.entitlements "$app"
+          codesign -d --entitlements - --xml "$app" | grep -q aps-environment
       - name: Upload to TestFlight
         if: inputs.mode == 'testflight'
         timeout-minutes: 20

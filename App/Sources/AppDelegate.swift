@@ -57,8 +57,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         #endif
         model.start()
         privacyCover = PrivacyCoverController { [weak model] in model?.session.isSignedIn ?? false }
-        // Does not prompt. Fails quietly until the aps-environment entitlement exists (pending
-        // Apple Developer account access); Firebase is skipped when unconfigured.
+        // Does not prompt. Firebase is skipped when unconfigured, and the call fails quietly on
+        // builds without the aps-environment entitlement (simulators, sideloaded builds).
         application.registerForRemoteNotifications()
         return true
     }
@@ -77,7 +77,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     }
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: any Error) {
-        // Expected on simulators without push and before the push entitlement exists. Nothing is
+        // Expected on simulators and on builds without the push entitlement. Nothing is
         // logged: the error can carry device identifiers.
     }
 }
