@@ -10,6 +10,13 @@ import PackageDescription
 // `#if DEBUG`, never from release code paths (docs/architecture/data-layer.md).
 let features = ["AuthFeature", "TodayFeature", "ChatFeature", "ScheduleFeature", "ProfileFeature", "SettingsFeature"]
 
+// SwiftUI on iOS 26 can build `ForEach` rows and other view-builder closures on its
+// asynchronous renderer thread. Swift 6 inserts a main-actor check into those closures, so
+// they abort there (TestFlight crash 2026-11-03, the schedule's Day/Week control; Apple
+// forums thread 802729, FB20692404). Turning off only the dynamic check keeps every
+// compile-time concurrency check and matches how SwiftUI runs these closures.
+let swiftUIClosureSettings: [SwiftSetting] = [.unsafeFlags(["-Xfrontend", "-disable-dynamic-actor-isolation"])]
+
 let package = Package(
     name: "Features",
     defaultLocalization: "en",
@@ -32,7 +39,12 @@ let package = Package(
         if name == "SettingsFeature" {
             dependencies.append(.product(name: "WaiveraNotifications", package: "WaiveraNotifications"))
         }
-        return .target(name: name, dependencies: dependencies, resources: [.process("Resources")])
+        return .target(
+            name: name,
+            dependencies: dependencies,
+            resources: [.process("Resources")],
+            swiftSettings: swiftUIClosureSettings
+        )
     } + [
         .testTarget(
             name: "AuthFeatureTests",

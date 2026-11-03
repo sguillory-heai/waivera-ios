@@ -164,6 +164,9 @@ targets:
         # Push (approved by Sheldon 2026-11-03). Production APNs: the only device builds are
         # TestFlight and App Store, and the team's APNs key in Firebase covers both environments.
         CODE_SIGN_ENTITLEMENTS: App/Waivera.entitlements
+        # SwiftUI on iOS 26 runs some view-builder closures on its asynchronous renderer; the
+        # Swift 6 runtime main-actor check aborts there (see Packages/Features/Package.swift).
+        OTHER_SWIFT_FLAGS: $(inherited) -Xfrontend -disable-dynamic-actor-isolation
       configs:
         # The script sandbox grants the declared fixtures bundle but not the files inside it, so
         # "Remove test fixtures from Release" could not delete them (run 41582136133). Only
