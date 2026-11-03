@@ -404,7 +404,9 @@ jobs:
   # - device: unsigned; sideloading tools (Sideloadly, AltStore) sign it with the tester's own
   #   Apple ID on their computer.
   # - testflight: signed in the cloud with an App Store Connect API key (Xcode-managed
-  #   certificates and profiles, nothing stored here) and uploaded to TestFlight. The build
+  #   certificates and profiles, nothing stored here) and uploaded to TestFlight. The archive
+  #   signs for distribution directly: a development profile needs a registered device, and
+  #   the team has none (run 41580293843). The build
   #   number is the UTC date and time, so every upload is higher than the last.
   # Prod values come from repository secrets into the git-ignored Config/Local.Release.xcconfig.
   # Push stays off: no aps-environment entitlement, and Firebase Messaging is configured only
@@ -529,6 +531,7 @@ jobs:
             -authenticationKeyID "$ASC_KEY_ID" \
             -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
             CURRENT_PROJECT_VERSION="$BUILD_NUMBER" "${version_setting[@]}" 2>&1 \
             | tee device-build.log | grep -E "error:|\*\* ARCHIVE" || true
           test -d "$ARCHIVE"
