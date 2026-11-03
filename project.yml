@@ -163,6 +163,12 @@ targets:
         CODE_SIGN_STYLE: Automatic
         # Push needs the aps-environment entitlement. It is not added yet: entitlements change only
         # with approval and need Apple Developer account access (AGENTS.md safety rules).
+      configs:
+        # The script sandbox grants the declared fixtures bundle but not the files inside it, so
+        # "Remove test fixtures from Release" could not delete them (run 41582136133). Only
+        # Release runs that phase; Debug keeps the sandbox.
+        Release:
+          ENABLE_USER_SCRIPT_SANDBOXING: NO
 
   WaiveraUITests:
     type: bundle.ui-testing
