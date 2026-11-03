@@ -51,7 +51,7 @@
                         message: message,
                         attachment: attachment,
                         actions: actions,
-                        onLongPress: canOpenActions ? openActions : nil
+                        onLongPress: attachmentLongPress
                     )
                 }
             }
@@ -80,6 +80,12 @@
 
         private var border: Color {
             row.isBot || row.isMine ? Palette.accentBorder : Palette.border
+        }
+
+        /// Spelled out so the bubble's view expression stays simple for the type checker.
+        private var attachmentLongPress: (() -> Void)? {
+            guard canOpenActions else { return nil }
+            return { openActions() }
         }
 
         private func openActions() {
