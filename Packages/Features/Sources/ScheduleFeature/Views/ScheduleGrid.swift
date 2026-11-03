@@ -28,6 +28,7 @@
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.6)
                                 .frame(maxWidth: .infinity)
+                                .accessibilityIdentifier("fixedTextSize.calendarWeekday")
                                 .padding(.vertical, Spacing.extraSmall)
                         }
                     }

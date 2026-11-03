@@ -72,6 +72,7 @@ private struct TabBarItem: View {
                     .foregroundStyle(isSelected ? Palette.text : Palette.textSecondary)
                     .lineLimit(1)
                     .dynamicTypeSize(...TypeScale.cap(atScale: TypeScale.extraLargeScale).dynamicTypeSize)
+                    .accessibilityIdentifier("fixedTextSize.tab.\(tab.rawValue)")
             }
             .frame(maxWidth: .infinity, minHeight: ControlSize.minHitTarget)
             .contentShape(Rectangle())
@@ -142,6 +143,7 @@ private struct TabBadge: View {
                 .background(Palette.navBar, in: Capsule())
                 .popOnChange(of: text)
                 .dynamicTypeSize(...TypeScale.cap(atScale: TypeScale.ringMaxScale).dynamicTypeSize)
+                .accessibilityIdentifier("fixedTextSize.tabBadge")
         }
         .fixedSize()
         .alignmentGuide(.trailing) { dimensions in

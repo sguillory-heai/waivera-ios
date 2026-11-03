@@ -170,6 +170,8 @@
             .buttonStyle(.pressScale)
             .animation(Motion.animation(.state, reduceMotion: reduceMotion), value: isSelected)
             .accessibilityAddTraits(isSelected ? .isSelected : [])
+            // Fixed height, as on Android: the track scrolls sideways at large text instead.
+            .accessibilityIdentifier("fixedTextSize.segment")
         }
     }
 

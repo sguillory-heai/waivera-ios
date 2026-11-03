@@ -238,8 +238,8 @@
         }
     }
 
-    /// A sheet section header: the title on one line (it never breaks mid-word), an optional
-    /// count and trailing actions with what width is left.
+    /// A sheet section header: the title, an optional count and trailing actions. The title stays
+    /// on one line beside the actions; when they don't fit, the actions move under it.
     struct TodaySectionHeader<Trailing: View>: View {
         let title: String
         var first = false
@@ -248,12 +248,32 @@
         @ViewBuilder let trailing: () -> Trailing
 
         var body: some View {
+            // One row when it fits; at the largest text sizes the actions drop under the title
+            // instead of pushing the row past the screen edge.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: Spacing.small) {
+                    heading.lineLimit(1).fixedSize()
+                    Spacer(minLength: Spacing.small)
+                    trailing()
+                }
+                VStack(alignment: .leading, spacing: Spacing.extraSmall) {
+                    heading
+                    trailing()
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(minHeight: ControlSize.minHitTarget)
+            .padding(.leading, Spacing.gutter + Spacing.extraSmall)
+            .padding(.trailing, Spacing.small)
+            .padding(.top, first ? Spacing.none : Spacing.extraLarge)
+            .padding(.bottom, first ? Spacing.small : Spacing.mediumSmall)
+        }
+
+        private var heading: some View {
             HStack(spacing: Spacing.small) {
                 Text(title)
                     .waiveraTextStyle(.titleMedium)
                     .foregroundStyle(Palette.text)
-                    .lineLimit(1)
-                    .fixedSize()
                     .accessibilityAddTraits(.isHeader)
                 if let count, count > 0 {
                     // Solid rose with white, as Android's section count: these are waiting on you.
@@ -262,14 +282,7 @@
                         accessibilityText: TodayStrings.plural("today.sectionCount", count)
                     )
                 }
-                Spacer(minLength: Spacing.small)
-                trailing()
             }
-            .frame(minHeight: ControlSize.minHitTarget)
-            .padding(.leading, Spacing.gutter + Spacing.extraSmall)
-            .padding(.trailing, Spacing.small)
-            .padding(.top, first ? Spacing.none : Spacing.extraLarge)
-            .padding(.bottom, first ? Spacing.small : Spacing.mediumSmall)
         }
     }
 

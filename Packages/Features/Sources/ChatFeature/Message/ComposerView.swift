@@ -86,6 +86,9 @@
             .padding(.horizontal, Spacing.smallPlus)
             .padding(.vertical, Spacing.small)
             .frame(minHeight: ControlSize.iconButton)
+            // The text itself is one line tall; a tap anywhere in the box focuses it.
+            .contentShape(RoundedRectangle(cornerRadius: Radius.field, style: .continuous))
+            .simultaneousGesture(TapGesture().onEnded { if config.isEnabled { isFocused = true } })
             .background(fieldFill, in: RoundedRectangle(cornerRadius: Radius.field, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.field, style: .continuous)

@@ -60,6 +60,7 @@
                     )
                     .foregroundStyle(inkColor)
                     .lineLimit(1)
+                    .accessibilityIdentifier("fixedTextSize.avatarInitials")
                     .minimumScaleFactor(0.5)
                     .padding(size * 0.1)
             } else {

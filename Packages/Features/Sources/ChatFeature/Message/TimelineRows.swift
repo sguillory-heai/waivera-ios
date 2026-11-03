@@ -49,6 +49,9 @@
                 Text(ConversationStrings.day(DayLabel.of(day, today: today)))
                     .font(WaiveraFont.captionEmphasis)
                     .foregroundStyle(Palette.textSecondary)
+                    .multilineTextAlignment(.center)
+                    // The rules give way first, so the label gets the row's width before it wraps.
+                    .layoutPriority(1)
                 divider
             }
             .padding(.horizontal, Spacing.medium)

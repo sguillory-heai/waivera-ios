@@ -24,6 +24,7 @@
                             .foregroundStyle(cell.isToday ? Palette.link : Palette.textSecondary)
                             .lineLimit(1)
                             .minimumScaleFactor(0.6)
+                            .accessibilityIdentifier("fixedTextSize.calendarWeekday")
                     }
                     square
                     dots
@@ -55,6 +56,7 @@
                     .foregroundStyle(numberColor)
                     .lineLimit(1)
                     .fixedSize()
+                    .accessibilityIdentifier("fixedTextSize.calendarDay")
                 Capsule()
                     .fill(cell.isToday ? Palette.todayMark : Color.clear)
                     .frame(width: CalendarMetrics.todayDashWidth, height: CalendarMetrics.todayDashHeight)

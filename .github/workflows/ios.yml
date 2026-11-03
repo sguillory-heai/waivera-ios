@@ -89,9 +89,10 @@ jobs:
       contents: write
     # Run 41381753860: setup 4 minutes, build 14, shell tests 4, small-phone UI tests over 45,
     # publishing 3. Worst case with every step at its limit: setup 5, build 25, shell tests 12,
-    # small phone 55, large phone 18, export and publish 5 = 120. The test steps stop themselves
-    # before their limits (stop-at-minutes.sh) so their result bundles still close.
-    timeout-minutes: 120
+    # small phone 55, large phone 24, export and publish 5 = 126, plus 4 for the untimed steps.
+    # The test steps stop themselves before their limits (stop-at-minutes.sh) so their result
+    # bundles still close.
+    timeout-minutes: 130
     env:
       DERIVED: DerivedData
     steps:
@@ -244,18 +245,19 @@ jobs:
           exit $status
       # Screenshots only, light only: dark and the largest text are toured (and audited) on the
       # small phone, where they are hardest. Three tours here took over 30 minutes (run
-      # 41381753860). TEST_RUNNER_ variables reach the test runner without the prefix.
+      # 41381753860). TEST_RUNNER_ variables reach the test runner without the prefix. One light
+      # tour was stopped at 14 minutes in testSlowStates in run 41533860726, so it gets 20 (step 24).
       - name: Screenshot tour (large phone)
         id: ui_large
         if: steps.build.outcome == 'success'
         continue-on-error: true
-        timeout-minutes: 18
+        timeout-minutes: 24
         env:
           TEST_RUNNER_WAIVERA_AUDIT: "0"
         run: |
           set +e
           xcrun simctl shutdown "${{ steps.sim.outputs.small }}" || true
-          .github/scripts/stop-at-minutes.sh 14 UILarge.xcresult &
+          .github/scripts/stop-at-minutes.sh 20 UILarge.xcresult &
           watchdog=$!
           xcodebuild test-without-building \
             -project Waivera.xcodeproj -scheme Waivera \

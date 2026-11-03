@@ -352,7 +352,8 @@
             }
             .buttonStyle(.press(.card))
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text(name))
+            // A bare file name reads as a code to VoiceOver; say what it is first.
+            .accessibilityLabel(Text(ConversationStrings.format("file.label", name)))
             .accessibilityHint(ConversationStrings.text("file.caption"))
             .accessibilityAddTraits(.isButton)
         }

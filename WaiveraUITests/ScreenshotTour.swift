@@ -121,14 +121,22 @@ class ScreenshotTourBase: XCTestCase {
     @MainActor
     private func audit(_ app: XCUIApplication, screen: String) {
         var issues: [String] = []
+        var accepted = 0
         do {
             try app.performAccessibilityAudit { issue in
+                if AccessibilityAuditPolicy.accepts(issue) {
+                    accepted += 1
+                    return true
+                }
                 let element = issue.element.map { "\($0.elementType) '\($0.label)'" } ?? "screen"
                 issues.append("[\(issue.auditType)] \(issue.compactDescription) — \(element)")
                 return true
             }
         } catch {
             issues.append("Audit could not run: \(error.localizedDescription)")
+        }
+        if accepted > 0 {
+            print("AUDIT \(screen): \(accepted) finding(s) accepted by AccessibilityAuditPolicy")
         }
         guard !issues.isEmpty else { return }
         // Also in the log: the attachment lives only in the result bundle, which a run that hits

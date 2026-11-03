@@ -24,6 +24,7 @@
                     .accessibilityLabel(
                         Text(TodayStrings.unreadUpdates(section.unreadCount, lowerBound: section.unreadIsLowerBound))
                     )
+                    .accessibilityIdentifier("notTappable.activity.unreadCount")
                 }
                 if section.unreadCount > 0 || section.isMarkingAllRead {
                     TodayTextButton(

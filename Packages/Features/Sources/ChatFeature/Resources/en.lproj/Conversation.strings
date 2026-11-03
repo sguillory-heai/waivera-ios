@@ -116,6 +116,7 @@
 "image.close" = "Close image preview";
 "image.zoom.hint" = "Pinch or double-tap to zoom";
 "file.caption" = "Tap for download options";
+"file.label" = "File, %@";
 "file.sheet.message" = "Choose what you want to do with this attachment.";
 "file.save" = "Save to device";
 "file.share" = "Open / Share";

@@ -60,6 +60,9 @@
                     .waiveraTextStyle(.headlineSmall)
                     .foregroundStyle(HeroPalette.onHeader)
                     .lineLimit(2)
+                    // Past Android's 200% one-word titles like "Organization" break mid-word on a
+                    // small phone; the system navigation bar stops growing too.
+                    .dynamicTypeSize(...TypeScale.cap(atScale: TypeScale.androidMaxScale).dynamicTypeSize)
                     .accessibilityAddTraits(.isHeader)
                     .accessibilityIdentifier("topBar.title")
             )

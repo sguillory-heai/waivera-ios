@@ -83,6 +83,16 @@
         }
 
         public var body: some View {
+            // Screens that give the state a fixed area (a conversation above its composer) would
+            // otherwise truncate it at the largest text sizes, so it scrolls when it can't fit.
+            ViewThatFits(in: .vertical) {
+                content
+                ScrollView { content }
+                    .scrollBounceBehavior(.basedOnSize)
+            }
+        }
+
+        private var content: some View {
             VStack(spacing: Spacing.mediumSmall) {
                 switch art {
                 case .icon(let systemImage, let tone):

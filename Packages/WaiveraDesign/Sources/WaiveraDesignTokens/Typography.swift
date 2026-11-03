@@ -260,6 +260,8 @@ public enum TypeScale {
     public static let largeScale = 1.3
     /// From this scale layouts take their largest-text form (Android `EXTRA_LARGE_FONT_SCALE`, 150%).
     public static let extraLargeScale = 1.5
+    /// Android's largest font scale (200%); chrome that would break words past it stops here.
+    public static let androidMaxScale = 2.0
     /// The ring's count stops growing at 130%.
     public static let ringMaxScale = 1.3
 
