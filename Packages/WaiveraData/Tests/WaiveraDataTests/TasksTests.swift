@@ -291,6 +291,29 @@ struct RequestsTests {
         #expect((await latest(repository.waiting()) ?? nil)?.isEmpty == true)
     }
 
+    /// A page that was already on its way when a decision landed still lists the request; it
+    /// must not bring it back. A page asked for after the decision is the server's word again.
+    @Test func aStalePageNeverBringsBackAJustDecidedRequest() async throws {
+        let (repository, transport) = await make()
+        try await repository.refreshWaiting()
+        let list = try #require(await latest(repository.waiting()) ?? nil)
+        let gate = PageGate()
+        await transport.setBeforeReply { request in
+            guard request.url?.path.contains("pending-approvals") == true else { return }
+            await gate.wait()
+        }
+        let stale = Task { try await repository.refreshWaiting() }
+        while await gate.waiting == 0 { try await Task.sleep(for: .milliseconds(2)) }
+        await transport.set("PUT api/admin/request/approve/5", .json(#"{"success":true}"#))
+        try await repository.decide(list[0], approve: true)
+        await gate.open()
+        try await stale.value
+        #expect((await latest(repository.waiting()) ?? nil)?.map(\.id) == [6])
+
+        try await repository.refreshWaiting()
+        #expect((await latest(repository.waiting()) ?? nil)?.map(\.id) == [5, 6])
+    }
+
     @Test func eligibilityFailsClosedOnAReversedPeriod() {
         let open = RequestMapping.options(
             ComplianceEligibilityResponse(

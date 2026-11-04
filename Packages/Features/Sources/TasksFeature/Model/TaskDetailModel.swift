@@ -137,14 +137,29 @@ final class TaskDetailModel {
         }
     }
 
+    /// Loads the task, its activity, files and options. Each part replaces the same part still in
+    /// flight, so a pull to refresh or a retry never lets an older answer land last.
     func load() {
+        _ = startLoading()
+    }
+
+    /// Pull to refresh: everything again, finishing with the activity it shows.
+    func refresh() async {
+        await startLoading().value
+    }
+
+    func loadActivity() {
+        _ = reloadActivity()
+    }
+
+    private func startLoading() -> Task<Void, Never> {
         if local.task == nil { local.phase = .loading }
         rebuild()
         let tasks = environment.tasks
         let id = taskId
-        bag.run { [weak self] in
+        bag.replace("task") { [weak self] in
             let result = await attempt { try await tasks.task(id: id) }
-            guard let self else { return }
+            guard let self, !Task.isCancelled else { return }
             switch result {
             case .success(let task):
                 self.local.phase = .content
@@ -160,18 +175,28 @@ final class TaskDetailModel {
             }
             self.rebuild()
         }
-        loadActivity()
         loadFiles()
         loadOptions()
+        return reloadActivity()
     }
 
-    func refresh() async {
-        load()
-        await loadActivityNow()
-    }
-
-    func loadActivity() {
-        bag.run { [weak self] in await self?.loadActivityNow() }
+    /// `newSince` marks rows that were not in that set as just added (after Log activity).
+    @discardableResult
+    private func reloadActivity(newSince before: Set<Int>? = nil) -> Task<Void, Never> {
+        let tasks = environment.tasks
+        let id = taskId
+        return bag.replace("activity") { [weak self] in
+            let result = await attempt { try await tasks.activity(taskId: id) }
+            guard let self, !Task.isCancelled else { return }
+            switch result {
+            case .success(let items):
+                self.local.activity = .ready(items)
+                if let before { self.local.newIds = Set(items.map(\.id)).subtracting(before) }
+            case .failure:
+                if self.local.activity.value == nil { self.local.activity = .failed }
+            }
+            self.rebuild()
+        }
     }
 
     func loadFiles() {
@@ -181,9 +206,9 @@ final class TaskDetailModel {
         }
         let tasks = environment.tasks
         let id = taskId
-        bag.run { [weak self] in
+        bag.replace("files") { [weak self] in
             let result = await attempt { try await tasks.attachments(taskId: id) }
-            guard let self else { return }
+            guard let self, !Task.isCancelled else { return }
             switch result {
             case .success(let files): self.local.files = .ready(files)
             case .failure: if self.local.files.value == nil { self.local.files = .failed }
@@ -276,7 +301,7 @@ final class TaskDetailModel {
     func setWhen(date: CalendarDate, minuteOfDay: Int) {
         let zone = environment.calendar.scheduleTimeZone().zone
         updateLog { form in
-            form.completedAt = Self.instant(date: date, minuteOfDay: minuteOfDay, zone: zone)
+            form.completedAt = date.instant(atMinute: minuteOfDay, in: zone)
         }
     }
 
@@ -306,11 +331,7 @@ final class TaskDetailModel {
                 self.local.log = nil
                 self.feedback.show(TasksStrings.text("tasks.log.done"))
                 self.rebuild()
-                if let items = try? await tasks.activity(taskId: self.taskId) {
-                    self.local.activity = .ready(items)
-                    self.local.newIds = Set(items.map(\.id)).subtracting(before)
-                    self.rebuild()
-                }
+                self.reloadActivity(newSince: before)
             } catch {
                 self?.updateLog {
                     $0.isSaving = false
@@ -520,22 +541,13 @@ final class TaskDetailModel {
         }
     }
 
-    private func loadActivityNow() async {
-        let result = await attempt { try await environment.tasks.activity(taskId: taskId) }
-        switch result {
-        case .success(let items): local.activity = .ready(items)
-        case .failure: if local.activity.value == nil { local.activity = .failed }
-        }
-        rebuild()
-    }
-
     /// What may be asked for here, from the same role policies and eligibility check the web uses.
     private func loadOptions() {
         let requests = environment.requests
         let id = taskId
-        bag.run { [weak self] in
+        bag.replace("options") { [weak self] in
             await requests.ensureAccess()
-            guard let options = try? await requests.options(taskId: id) else { return }
+            guard let options = try? await requests.options(taskId: id), !Task.isCancelled else { return }
             self?.local.options = options
             self?.rebuild()
         }
@@ -631,19 +643,5 @@ final class TaskDetailModel {
         next.today = today
         next.zone = zone
         if next != state { state = next }
-    }
-
-    nonisolated static func instant(date: CalendarDate, minuteOfDay: Int, zone: TimeZone) -> Date {
-        // Walk from the start of the day so a DST change that day keeps the wall-clock time.
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = zone
-        let components = DateComponents(
-            year: date.year,
-            month: date.month,
-            day: date.day,
-            hour: minuteOfDay / 60,
-            minute: minuteOfDay % 60
-        )
-        return calendar.date(from: components) ?? date.startInstant(in: zone)
     }
 }

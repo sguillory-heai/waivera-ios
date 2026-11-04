@@ -9,7 +9,7 @@ public enum NoticeMapping {
     public static func notice(_ dto: EventNotificationResponse) -> Notice? {
         guard !dto.id.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
         let resources = dto.notificationResources
-        let taskId = resource("task", in: resources).flatMap { taskNumber(in: $0.resourceId) }
+        let key = resource("task", in: resources).flatMap { Self.taskKey(in: $0.resourceId) }
         let eventId =
             resource("meeting", in: resources).flatMap { eventQuery(in: $0.resourceId) }
             ?? dto.actionUrl.flatMap { $0.hasPrefix("/calendar") ? eventQuery(in: $0) : nil }
@@ -17,7 +17,7 @@ public enum NoticeMapping {
         let request = isRequestType(dto.type)
         let reviewing = request && dto.status?.caseInsensitiveCompare("PENDING") == .orderedSame
         let kind: NoticeKind =
-            if reviewing { .approval } else if request { requestOutcomeKind(dto.type, taskId: taskId) } else {
+            if reviewing { .approval } else if request { requestOutcomeKind(dto.type, taskKey: key) } else {
                 kind(type: dto.type, resources: resources)
             }
         return Notice(
@@ -27,7 +27,7 @@ public enum NoticeMapping {
             message: render(dto.message, resources: resources, author: dto.createdByName),
             createdAt: dto.createdAt,
             isRead: dto.read,
-            taskId: taskId,
+            taskKey: key,
             eventId: eventId,
             webPath: webPath(dto.actionUrl, resources: resources),
             opensRequests: reviewing
@@ -70,10 +70,26 @@ public enum NoticeMapping {
     }
 
     /// `/task/123…` → `123`.
-    static func taskNumber(in path: String) -> String? {
+    /// The task reference in `/task/{key}` ("HEA-1042", "1042"), up to `/`, `?` or `#`. The web's
+    /// task page reads it as a friendly id (sprout_web `TaskPage.getFriendlyIdFromUrl`), and
+    /// sprout_api writes the friendly id there for task notifications.
+    public static func taskKey(in path: String) -> String? {
         guard path.hasPrefix("/task/") else { return nil }
-        let digits = path.dropFirst("/task/".count).prefix { $0.isASCII && $0.isNumber }
-        return digits.isEmpty ? nil : String(digits)
+        let key = path.dropFirst("/task/".count).prefix { $0 != "/" && $0 != "?" && $0 != "#" }
+        return friendlyNumber(String(key)) == nil ? nil : String(key)
+    }
+
+    /// The number in a friendly task reference: "HEA-1042" or "1042" is 1042. Nil for anything else.
+    public static func friendlyNumber(_ key: String) -> Int? {
+        let parts = key.split(separator: "-", omittingEmptySubsequences: false)
+        guard parts.count <= 2, let digits = parts.last, !digits.isEmpty, digits.count <= 9,
+            digits.allSatisfy({ $0.isASCII && $0.isNumber })
+        else { return nil }
+        if parts.count == 2, parts[0].isEmpty || !parts[0].allSatisfy({ $0.isASCII && ($0.isLetter || $0.isNumber) }) {
+            return nil
+        }
+        guard let number = Int(digits), number > 0 else { return nil }
+        return number
     }
 
     /// `?eventId=` or `&eventId=` with an id of up to 128 safe characters.
@@ -93,9 +109,9 @@ public enum NoticeMapping {
     }
 
     /// A decided request reads as news about its task, or as time off.
-    private static func requestOutcomeKind(_ type: String?, taskId: String?) -> NoticeKind {
+    private static func requestOutcomeKind(_ type: String?, taskKey: String?) -> NoticeKind {
         if type?.lowercased().contains("time off") == true { return .timeOff }
-        return taskId != nil ? .taskActivity : .other
+        return taskKey != nil ? .taskActivity : .other
     }
 
     /// Only same-site paths, never a full URL, so a row can only open the configured web app.

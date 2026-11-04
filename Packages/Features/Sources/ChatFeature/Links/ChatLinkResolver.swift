@@ -116,7 +116,7 @@ final class ChatLinkResolver {
             title: task.title,
             state: task.state,
             due: task.due,
-            dueShowsYear: task.due.map { $0.year != today()?.year } ?? false
+            dueLabel: task.due.map { LinkPreviewText.dueLabel($0, showsYear: $0.year != today()?.year) }
         )
     }
 

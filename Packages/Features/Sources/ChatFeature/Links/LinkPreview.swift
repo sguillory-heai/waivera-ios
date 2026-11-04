@@ -29,8 +29,9 @@ enum LinkPreview: Hashable, Sendable {
     case loading(LinkKind)
     /// The person can't see it, or it no longer exists; the server doesn't say which.
     case unavailable(LinkKind)
-    /// `due` is a literal calendar date; `dueShowsYear` when it falls in another year than today.
-    case task(id: Int, key: String, title: String, state: TaskState, due: CalendarDate?, dueShowsYear: Bool)
+    /// `due` is a literal calendar date; `dueLabel` is it as shown ("Nov 12", with the year
+    /// when it falls in another year than today), formatted once when the preview lands.
+    case task(id: Int, key: String, title: String, state: TaskState, due: CalendarDate?, dueLabel: String?)
     case resource(title: String, provider: String?, place: String?)
     case faq(title: String, summary: String?)
 

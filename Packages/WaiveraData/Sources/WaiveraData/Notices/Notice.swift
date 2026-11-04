@@ -10,8 +10,10 @@ public struct Notice: Sendable, Hashable, Identifiable, Codable {
     public var message: String
     public var createdAt: Date?
     public var isRead: Bool
-    /// The task it is about, when it names one; opens the task.
-    public var taskId: String?
+    /// The task it is about as the web names it in `/task/{key}`: the friendly reference
+    /// ("HEA-1042" or "1042"), never the internal id. The web looks the number up in the reader's
+    /// agency, and so does the app before it opens the task.
+    public var taskKey: String?
     /// The calendar event it is about, when it names one; opens the event in the app.
     public var eventId: String?
     /// A web path (`/…`) for everything the app has no screen for, opened in the browser.
@@ -26,7 +28,7 @@ public struct Notice: Sendable, Hashable, Identifiable, Codable {
         message: String,
         createdAt: Date?,
         isRead: Bool,
-        taskId: String? = nil,
+        taskKey: String? = nil,
         eventId: String? = nil,
         webPath: String? = nil,
         opensRequests: Bool = false
@@ -37,7 +39,7 @@ public struct Notice: Sendable, Hashable, Identifiable, Codable {
         self.message = message
         self.createdAt = createdAt
         self.isRead = isRead
-        self.taskId = taskId
+        self.taskKey = taskKey
         self.eventId = eventId
         self.webPath = webPath
         self.opensRequests = opensRequests

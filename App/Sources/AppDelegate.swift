@@ -99,6 +99,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
                 completionHandler(.newData)
             case .notificationRead(let notificationID):
                 await notices?.readElsewhere(notificationId: notificationID)
+                // Also here: in the background the reads observer may not be running yet.
                 await DeliveredNotifications.removeInbox(notificationID: notificationID)
                 completionHandler(.newData)
             default:

@@ -86,14 +86,6 @@ public enum PushPayload: Equatable, Sendable {
         }
     }
 
-    /// A data-only read sync: shows nothing, only clears delivered alerts and badges.
-    public var isSilentReadSync: Bool {
-        switch self {
-        case .chatRead, .notificationRead: true
-        default: false
-        }
-    }
-
     /// The conversation a push belongs to, for the presentation rule and Mark read.
     public var conversationID: Int? {
         switch self {
@@ -174,9 +166,13 @@ public enum PushPayloadParser {
                 threadRootMessageID: nonEmpty(data["threadRootMessageId"]).flatMap(Identifier.positiveInt)
             )
         case "notification.read":
-            let all = nonEmpty(data["all"])?.lowercased() == "true"
-            let id = nonEmpty(data["notificationId"]).flatMap(Identifier.opaque)
-            return .notificationRead(notificationID: all ? nil : id)
+            // One row by id, or every row with `all: "true"` (Android `parseNoticeRead`); a read
+            // with neither is unusable and must never count as "all".
+            if let id = nonEmpty(data["notificationId"]).flatMap(Identifier.opaque) {
+                return .notificationRead(notificationID: id)
+            }
+            if nonEmpty(data["all"])?.lowercased() == "true" { return .notificationRead(notificationID: nil) }
+            return .unknown(type: type)
         default:
             return .unknown(type: type)
         }

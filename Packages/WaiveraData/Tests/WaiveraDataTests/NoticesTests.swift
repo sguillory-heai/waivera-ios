@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 import WaiveraAPI
+import WaiveraRealtime
 
 @testable import WaiveraData
 
@@ -13,7 +14,7 @@ struct NoticesTests {
         [
           {"id":"a1","type":"task.assigned","title":"{author} assigned you {task}","message":"Due {date} soon",
            "createdAt":"2026-11-03T15:00:00Z","read":false,
-           "notificationResources":[{"resourceId":"/task/42","resourceType":"task","resourceName":"Intake review"},
+           "notificationResources":[{"resourceId":"/task/HEA-42","resourceType":"task","resourceName":"Intake review"},
                                     {"resourceId":"u1","resourceType":"user","resourceName":"Dana Cole"}]},
           {"id":7,"type":"Task Extension Request","status":"PENDING","title":"More time asked",
            "createdAt":"2026-11-02T15:00:00Z","read":false,
@@ -40,7 +41,7 @@ struct NoticesTests {
         #expect(items[0].kind == .taskAssigned)
         #expect(items[0].title == "Dana Cole assigned you Intake review")
         #expect(items[0].message == "Due soon")
-        #expect(items[0].taskId == "42")
+        #expect(items[0].taskKey == "HEA-42")
         #expect(items[1].id == "7")
         #expect(items[1].kind == .approval)
         #expect(items[1].opensRequests)
@@ -72,6 +73,58 @@ struct NoticesTests {
         let items = await latest(repository.feed())?.value?.items ?? []
         #expect(items.first { $0.id == "a1" }?.isRead == true)
         #expect(items.first { $0.id == "7" }?.isRead == false)
+    }
+
+    /// A refresh asked for while one runs (a new bell row mid-fetch) gets one follow-up fetch,
+    /// shared by every caller that asked meanwhile, instead of being dropped.
+    @Test func aRefreshDuringARefreshQueuesOneFollowUp() async throws {
+        let (repository, transport) = await make()
+        let gate = PageGate()
+        await transport.setBeforeReply { request in
+            guard request.url?.path.hasSuffix("api/notifications") == true else { return }
+            await gate.wait()
+        }
+        let first = Task { await repository.refresh() }
+        while await gate.waiting == 0 { try await Task.sleep(for: .milliseconds(2)) }
+        let second = Task { await repository.refresh() }
+        let third = Task { await repository.refresh() }
+        try await Task.sleep(for: .milliseconds(20))
+        await gate.open()
+        await first.value
+        await second.value
+        await third.value
+        #expect(await transport.count(list) == 2)
+        await repository.refresh()
+        #expect(await transport.count(list) == 3)
+    }
+
+    /// The hub's `ReceiveNotificationRead`: only `all: true` reads every row; a single read
+    /// without a usable id is ignored instead of read as "all".
+    @Test func aHubReadWithoutAnIdIsIgnored() async {
+        let harness = ChatHarness()
+        await harness.transport.set(list, .json(page))
+        await harness.transport.set(count, .json(#"{"data":5,"success":true}"#))
+        let notices = LiveNoticesRepository(api: harness.api, clock: TestClock())
+        let ingestor = RealtimeIngestor(
+            realtime: harness.realtime,
+            chat: harness.engine,
+            activity: LiveActivityRepository(api: harness.api, store: harness.store, clock: harness.clock),
+            bookmarks: LiveBookmarksRepository(
+                api: harness.api,
+                context: SessionContext(user: CurrentUser(id: "u-alex", firebaseUid: "fb-alex")),
+                chat: harness.engine,
+                clock: harness.clock
+            ),
+            notices: notices
+        )
+        await notices.refresh()
+        await ingestor.route(.notificationRead(NotificationReadDto(notificationId: nil, all: false)))
+        await ingestor.route(.notificationRead(NotificationReadDto(notificationId: "  ", all: false)))
+        #expect(await latest(notices.feed())?.value?.unreadCount == 5)
+        await ingestor.route(.notificationRead(NotificationReadDto(notificationId: "a1", all: false)))
+        #expect(await latest(notices.feed())?.value?.unreadCount == 4)
+        await ingestor.route(.notificationRead(NotificationReadDto(notificationId: nil, all: true)))
+        #expect(await latest(notices.feed())?.value?.unreadCount == 0)
     }
 
     @Test func renderDropsUnknownPlaceholders() {

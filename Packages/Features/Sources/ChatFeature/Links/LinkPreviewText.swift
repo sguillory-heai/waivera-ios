@@ -31,8 +31,7 @@ enum LinkPreviewText {
     static func meta(_ preview: LinkPreview) -> String? {
         switch preview {
         case .unavailable: return ConversationStrings.text("link.unavailable.short")
-        case .task(_, _, _, _, let due, let showsYear):
-            return due.map { ConversationStrings.format("link.due", dueLabel($0, showsYear: showsYear)) }
+        case .task(_, _, _, _, _, let label): return label.map { ConversationStrings.format("link.due", $0) }
         case .resource(_, let provider, let place):
             let parts = [provider, place].compactMap { $0 }
             return parts.isEmpty ? nil : parts.joined(separator: " · ")
@@ -62,16 +61,17 @@ enum LinkPreviewText {
         }
     }
 
-    /// "Nov 12", or "Nov 12, 2027" outside this year. A literal calendar date, so it is formatted
-    /// in UTC and never shifts with a zone.
+    /// "Nov 12", or "Nov 12, 2027" outside this year. A literal calendar date, so it is
+    /// formatted in UTC and never shifts with a zone. Called once per preview as it lands, never
+    /// from a view body.
     static func dueLabel(_ day: CalendarDate, showsYear: Bool, locale: Locale = .current) -> String {
-        let utc = TimeZone(identifier: "UTC") ?? .gmt
-        let formatter = DateFormatter()
-        formatter.locale = locale
-        formatter.timeZone = utc
-        formatter.setLocalizedDateFormatFromTemplate(showsYear ? "MMMdyyyy" : "MMMd")
-        return formatter.string(from: day.startInstant(in: utc))
+        let style = (showsYear ? withYear : withoutYear).locale(locale)
+        return day.startInstant(in: utc).formatted(style)
     }
+
+    private static let utc = TimeZone(identifier: "UTC") ?? .gmt
+    private static let withoutYear = Date.FormatStyle(timeZone: utc).month(.abbreviated).day()
+    private static let withYear = withoutYear.year()
 
     /// What VoiceOver reads for one preview, and what opening it does.
     static func accessibilityLabel(_ preview: LinkPreview) -> String {

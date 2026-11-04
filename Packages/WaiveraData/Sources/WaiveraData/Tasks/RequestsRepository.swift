@@ -50,6 +50,14 @@ public actor LiveRequestsRepository: RequestsRepository {
     private let waitingCell = StateCell<[ChangeRequest]?>(nil)
     /// Requests decided on this device whose answer is still out, so a refresh cannot bring them back.
     private var deciding: Set<Int> = []
+    /// Counts finished decisions; `decided` maps each recently decided id to the count when its
+    /// answer came back. A page that started before that may still list it, so it is left out
+    /// of that page; a page that started after it is the server's word and lets it go.
+    private var decisions = 0
+    private var decided: [Int: Int] = [:]
+    /// Pages land in the order they were asked for: one overtaken by a newer page is dropped.
+    private var pagesAsked = 0
+    private var pageShown = 0
     private var accessLoad: Task<Void, any Error>?
     /// Bumped on sign-out, so an answer still in flight never lands on the next account.
     private var generation = 0
@@ -90,9 +98,20 @@ public actor LiveRequestsRepository: RequestsRepository {
     public func refreshWaiting() async throws {
         guard context.currentUser != nil else { throw WaiveraError.signedOut }
         let started = generation
+        pagesAsked += 1
+        let pageNumber = pagesAsked
+        let decisionsBefore = decisions
         let page = try await api.waitingRequests()
-        guard generation == started else { return }
-        waitingCell.set(page.items.map(RequestMapping.request).filter { !deciding.contains($0.id) })
+        guard generation == started, pageNumber > pageShown else { return }
+        pageShown = pageNumber
+        decided = decided.filter { $0.value > decisionsBefore }
+        let hidden = deciding.union(decided.keys)
+        waitingCell.set(page.items.map(RequestMapping.request).filter { !hidden.contains($0.id) })
+    }
+
+    private func finishedDeciding(_ id: Int) {
+        decisions += 1
+        decided[id] = decisions
     }
 
     public func mine() async throws -> [ChangeRequest] {
@@ -106,10 +125,13 @@ public actor LiveRequestsRepository: RequestsRepository {
         defer { deciding.remove(request.id) }
         do {
             try await api.decideRequest(id: request.id, approve: approve)
+            finishedDeciding(request.id)
         } catch {
             let failure = WaiveraError.from(error)
             // Someone else already decided it: it stays gone. Anything else puts it back where it was.
-            if failure != .notFound {
+            if failure == .notFound {
+                finishedDeciding(request.id)
+            } else {
                 waitingCell.update { current in
                     var list = current ?? []
                     guard !list.contains(where: { $0.id == request.id }) else { return }
@@ -200,6 +222,7 @@ public actor LiveRequestsRepository: RequestsRepository {
         accessLoad?.cancel()
         accessLoad = nil
         deciding = []
+        decided = [:]
         accessCell.set(RequestAccess())
         waitingCell.set(nil)
     }

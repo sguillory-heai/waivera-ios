@@ -87,7 +87,7 @@ struct ChatLinkTests {
             title: "Intake review",
             state: .inProgress,
             due: nil,
-            dueShowsYear: false
+            dueLabel: nil
         )
         let middle = RichDocument(blocks: [
             .paragraph([.text("See "), link("/task/HEA-1042", "/task/HEA-1042"), .text(" today")])
@@ -129,12 +129,14 @@ struct ChatLinkTests {
             row([.text("See "), link("/task/HEA-1042", "/task/HEA-1042")]),
             wanted: &again
         )
-        guard case .task(let id, let key, let title, let state, _, let showsYear) = decorated.links.first?.preview
+        guard case .task(let id, let key, let title, let state, let due, let label) = decorated.links.first?.preview
         else {
             Issue.record("task did not resolve")
             return
         }
-        #expect(id == 12 && key == "HEA-1042" && title == "Intake review" && state == .inProgress && !showsYear)
+        #expect(id == 12 && key == "HEA-1042" && title == "Intake review" && state == .inProgress)
+        // Due this year, so its label leaves the year out.
+        #expect(due.map { LinkPreviewText.dueLabel($0, showsYear: false) } == label)
         #expect(decorated.rich?.blocks == [.paragraph([.text("See ")])])
         #expect(resolver.destination(for: "/task/HEA-1042") == .task(id: 12))
     }
@@ -201,10 +203,11 @@ struct ChatLinkTests {
             title: "Intake review",
             state: .inReview,
             due: CalendarDate(year: 2027, month: 3, day: 14),
-            dueShowsYear: true
+            dueLabel: "Mar 14, 2027"
         )
         let en = Locale(identifier: "en_US")
         #expect(LinkPreviewText.kicker(task) == "Task · HEA-1042")
+        #expect(LinkPreviewText.meta(task) == "Due Mar 14, 2027")
         #expect(
             LinkPreviewText.dueLabel(
                 CalendarDate(year: 2026, month: 11, day: 1) ?? DemoData.today,

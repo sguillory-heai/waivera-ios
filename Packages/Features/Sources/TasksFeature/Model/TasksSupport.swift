@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import WaiveraAPI
+import WaiveraData
 
 /// A section that loads on its own, so a screen shows while one part is still coming.
 enum Loadable<Value: Sendable & Equatable>: Equatable, Sendable {
@@ -70,9 +71,11 @@ final class TaskBag: Sendable {
         tasks.update { $0[id] = task }
     }
 
-    /// Runs `operation` in place of the task last started under `key`, cancelling that one.
+    /// Runs `operation` in place of the task last started under `key`, cancelling that one; the
+    /// operation checks `Task.isCancelled` before it writes, so the last one asked for wins.
     @MainActor
-    func replace(_ key: String, _ operation: @escaping @MainActor () async -> Void) {
+    @discardableResult
+    func replace(_ key: String, _ operation: @escaping @MainActor () async -> Void) -> Task<Void, Never> {
         let id = UUID()
         let task = Task { @MainActor [tasks] in
             await operation()
@@ -86,6 +89,7 @@ final class TaskBag: Sendable {
             if let previous { current.removeValue(forKey: previous)?.cancel() }
             current[id] = task
         }
+        return task
     }
 
     private let keyed = LockedValue<[String: UUID]>([:])
@@ -116,10 +120,5 @@ struct NavigationGuard {
 
 /// A web page for something the phone has no screen for, only on the configured web host.
 enum TasksWeb {
-    static func url(_ path: String, base: URL?) -> URL? {
-        guard let base, let url = URL(string: path, relativeTo: base)?.absoluteURL,
-            url.host == base.host, url.scheme == base.scheme
-        else { return nil }
-        return url
-    }
+    static func url(_ path: String, base: URL?) -> URL? { WebAddress.page(path, on: base) }
 }

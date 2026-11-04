@@ -171,9 +171,15 @@ final class AppModel {
         observe(data.realtimeStatus.banner()) { model, banner in model.connectionBanner = banner }
         observe(data.alerts.alerts()) { model, alert in model.alertArrived(alert) }
         observe(data.conversations.totalUnread()) { model, total in model.unreadTotal = total }
-        // Read on any surface, here or on the web, clears that chat's notifications (IF-07).
+        // Read on any surface, here or on the web, clears that chat's notifications (IF-07);
+        // its threads' alerts stay until each thread is read, as on Android.
         observe(data.alerts.conversationsRead()) { _, conversationID in
-            await DeliveredNotifications.removeAll(conversationID: conversationID)
+            await DeliveredNotifications.removeConversation(conversationID: conversationID)
+        }
+        // A bell row read here (one, or Mark all read) or elsewhere leaves Notification Center,
+        // as Android's `NoticeReadListener` closes its tray entry.
+        observe(data.notices.reads()) { _, notificationID in
+            await DeliveredNotifications.removeInbox(notificationID: notificationID)
         }
         Task { await data.launch() }
     }
@@ -388,10 +394,23 @@ extension AppModel {
     func openNotice(_ destination: NoticeDestination) {
         switch destination {
         case .event(let id): push(.calendarEvent(eventID: id))
-        case .task(let id): navigation.open(.task(id), origin: .inApp)
+        case .task(let number, let web): openTask(number: number, web: web)
         case .requests: navigation.open(.requests, origin: .inApp)
         case .web(let url): UIApplication.shared.open(url)
         case .none: break
+        }
+    }
+
+    /// A notification names its task the way the web does, by friendly number in the reader's
+    /// agency; the task opens once the number resolves, and on the web when it does not.
+    private func openTask(number: Int, web: URL?) {
+        guard let links = dataEnvironment?.links else { return }
+        Task { [weak self] in
+            if let task = try? await links.task(number: number) {
+                self?.navigation.open(.task(task.id), origin: .inApp)
+            } else if let web {
+                UIApplication.shared.open(web)
+            }
         }
     }
 

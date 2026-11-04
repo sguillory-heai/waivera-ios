@@ -356,3 +356,16 @@ func hubEvent(_ fixture: String) throws -> ChatHubEvent {
 func makeAPI(_ transport: RoutingTransport) -> APIClient {
     APIClient(baseURL: testBaseURL, transport: transport, tokens: FakeAuth())
 }
+
+/// Holds requests until opened, counting how many wait.
+actor PageGate {
+    private(set) var waiting = 0
+    private var isOpen = false
+
+    func wait() async {
+        waiting += 1
+        while !isOpen { try? await Task.sleep(for: .milliseconds(2)) }
+    }
+
+    func open() { isOpen = true }
+}

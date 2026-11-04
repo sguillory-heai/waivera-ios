@@ -13,12 +13,7 @@ extension CalendarEventModel {
     }
 
     /// The web calendar on the configured web app's own host; nil when this build has none.
-    public var webCalendarURL: URL? {
-        guard let base = webBaseURL, let url = URL(string: Self.webCalendarPath, relativeTo: base)?.absoluteURL,
-            url.host == base.host, WebLinks.isWebURL(url)
-        else { return nil }
-        return url
-    }
+    public var webCalendarURL: URL? { WebAddress.page(Self.webCalendarPath, on: webBaseURL) }
 
     /// The confirmation sheet's Cancel event. The screen closes once the server agrees; a failure
     /// keeps the event and says so.

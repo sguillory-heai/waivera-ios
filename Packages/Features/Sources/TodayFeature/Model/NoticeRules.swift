@@ -11,7 +11,9 @@ enum NoticeFilter: String, CaseIterable, Hashable, Sendable {
 /// or nowhere it can reach.
 public enum NoticeDestination: Hashable, Sendable {
     case event(id: String)
-    case task(id: Int)
+    /// A task by its friendly number, which the shell looks up before it opens; `web` is its
+    /// page, opened instead when the lookup fails.
+    case task(number: Int, web: URL?)
     case requests
     case web(URL)
     case none
@@ -50,18 +52,20 @@ struct NoticeLinks: Sendable {
     func destination(_ notice: Notice) -> NoticeDestination {
         if let eventId = notice.eventId { return .event(id: eventId) }
         if notice.opensRequests { return .requests }
-        let taskId = notice.taskId.flatMap { Int($0) }
+        let key = notice.taskKey
         let path = notice.webPath
+        let taskPage = key.map { "/task/\($0)" }
         // Only the task's own page; deeper web pages about it (files, history) stay on the web.
-        if let taskId, path == nil || Self.trimmedSlash(path ?? "") == "/task/\(taskId)" {
-            return .task(id: taskId)
+        if let key, let number = NoticeMapping.friendlyNumber(key),
+            path == nil || Self.trimmedSlash(path ?? "") == taskPage
+        {
+            return .task(number: number, web: taskPage.flatMap(sameHost))
         }
-        guard let base = webBase, let target = path ?? notice.taskId.map({ "/task/\($0)" }),
-            let url = URL(string: target, relativeTo: base)?.absoluteURL,
-            url.host == base.host, url.scheme == base.scheme
-        else { return .none }
+        guard let url = (path ?? taskPage).flatMap(sameHost) else { return .none }
         return .web(url)
     }
+
+    private func sameHost(_ path: String) -> URL? { WebAddress.page(path, on: webBase) }
 
     private static func trimmedSlash(_ path: String) -> String {
         var path = path

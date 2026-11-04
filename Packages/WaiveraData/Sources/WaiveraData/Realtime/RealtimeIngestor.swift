@@ -62,7 +62,13 @@ public actor RealtimeIngestor {
             await activity.handle(event)
             await chat.handle(event)
         case .notificationRead(let read):
-            await notices?.readElsewhere(notificationId: read.all ? nil : read.notificationId)
+            // Only `all: true` means every row; a single read without a usable id is ignored,
+            // as on Android, so a malformed event never clears the whole inbox.
+            if read.all {
+                await notices?.readElsewhere(notificationId: nil)
+            } else if let id = read.notificationId?.trimmingCharacters(in: .whitespacesAndNewlines), !id.isEmpty {
+                await notices?.readElsewhere(notificationId: id)
+            }
         case .notification:
             // A new bell row: the list is short, so fetch it rather than map a partial payload.
             await notices?.refresh()

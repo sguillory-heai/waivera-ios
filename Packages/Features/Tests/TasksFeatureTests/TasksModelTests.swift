@@ -97,8 +97,12 @@ struct TasksRulesTests {
     @Test func wallClockPickIsSentAsTheRightInstantOnTheDSTDay() throws {
         let zone = try #require(TimeZone(identifier: "America/Chicago"))
         // 14:00 on Nov 1 is CST (UTC-6) after the change.
-        let instant = TaskDetailModel.instant(date: today, minuteOfDay: 14 * 60, zone: zone)
-        #expect(instant == WaiveraInstant.parse("2026-11-01T20:00:00Z"))
+        #expect(today.instant(atMinute: 14 * 60, in: zone) == WaiveraInstant.parse("2026-11-01T20:00:00Z"))
+        // 1:30 happens twice on Nov 1; the first (CDT) is the one picked, as the web does.
+        #expect(today.instant(atMinute: 90, in: zone) == WaiveraInstant.parse("2026-11-01T06:30:00Z"))
+        // 2:30 does not exist on Mar 8; the clock moves forward to 3:30 CDT.
+        let spring = try #require(CalendarDate(year: 2026, month: 3, day: 8))
+        #expect(spring.instant(atMinute: 150, in: zone) == WaiveraInstant.parse("2026-03-08T08:30:00Z"))
     }
 }
 
@@ -210,6 +214,24 @@ struct TaskDetailModelTests {
         #expect(model.state.activity.value?.last?.byMe == true)
         #expect(await eventually { model.state.askChoices == [.moreTime, .delay, .closure] })
         #expect(model.state.canAsk)
+    }
+
+    /// Pull to refresh reads the task and its activity once each, and a refresh during a load
+    /// replaces it instead of running beside it.
+    @Test func refreshReadsEachPartOnce() async {
+        let fakes = FakeDataEnvironment.make()
+        await fakes.environment.launch()
+        let model = TaskDetailModel(taskId: 12, environment: fakes.environment)
+        let run = Task { await model.run() }
+        defer { run.cancel() }
+        #expect(await eventually { model.state.phase == .content && model.state.activity.value != nil })
+        let before = fakes.tasks.calls.count("activity:12")
+        await model.refresh()
+        #expect(fakes.tasks.calls.count("activity:12") == before + 1)
+        model.load()
+        await model.refresh()
+        #expect(model.state.phase == .content)
+        #expect(model.state.activity.value?.isEmpty == false)
     }
 
     @Test func aDelayedTaskIsNotLate() async {

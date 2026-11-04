@@ -14,7 +14,7 @@ struct NoticeRulesTests {
         _ kind: NoticeKind,
         at raw: String?,
         read: Bool = false,
-        taskId: String? = nil,
+        taskKey: String? = nil,
         webPath: String? = nil
     ) -> Notice {
         Notice(
@@ -24,7 +24,7 @@ struct NoticeRulesTests {
             message: "",
             createdAt: raw.map(Fixture.instant),
             isRead: read,
-            taskId: taskId,
+            taskKey: taskKey,
             webPath: webPath
         )
     }
@@ -49,15 +49,37 @@ struct NoticeRulesTests {
         #expect(!NoticeRules.matches(.meeting, .tasks))
     }
 
+    /// `/task/{key}` names the friendly reference, as the web reads it, so the shell looks the
+    /// number up; deeper pages about the task stay on the web.
     @Test func linksOpenTasksInAppAndOtherPagesOnTheSameHostOnly() {
-        #expect(links.destination(notice("a", .taskAssigned, at: nil, taskId: "42")) == .task(id: 42))
+        let page = URL(string: "https://app.waivera.com/task/HEA-42")
         #expect(
-            links.destination(notice("b", .taskActivity, at: nil, taskId: "42", webPath: "/task/42/")) == .task(id: 42)
+            links.destination(notice("a", .taskAssigned, at: nil, taskKey: "HEA-42")) == .task(number: 42, web: page)
         )
-        let files = links.destination(notice("c", .taskActivity, at: nil, taskId: "42", webPath: "/task/42/files"))
-        #expect(files == .web(URL(string: "https://app.waivera.com/task/42/files")!))
+        #expect(
+            links.destination(notice("b", .taskActivity, at: nil, taskKey: "HEA-42", webPath: "/task/HEA-42/"))
+                == .task(number: 42, web: page)
+        )
+        #expect(
+            links.destination(notice("n", .taskActivity, at: nil, taskKey: "42"))
+                == .task(number: 42, web: URL(string: "https://app.waivera.com/task/42"))
+        )
+        let files = links.destination(
+            notice("c", .taskActivity, at: nil, taskKey: "HEA-42", webPath: "/task/HEA-42/files")
+        )
+        #expect(files == .web(URL(string: "https://app.waivera.com/task/HEA-42/files")!))
         #expect(links.destination(notice("d", .other, at: nil, webPath: "//evil.example/x")) == .none)
+        #expect(links.destination(notice("p", .other, at: nil, webPath: "https://app.waivera.com:8443/x")) == .none)
         #expect(NoticeLinks(webBase: nil).destination(notice("e", .signature, at: nil, webPath: "/esign")) == .none)
+    }
+
+    @Test func taskKeysAreFriendlyReferences() {
+        #expect(NoticeMapping.taskKey(in: "/task/HEA-1042?section=chat") == "HEA-1042")
+        #expect(NoticeMapping.taskKey(in: "/task/1042") == "1042")
+        #expect(NoticeMapping.taskKey(in: "/task/HEA-") == nil)
+        #expect(NoticeMapping.taskKey(in: "/task/A-B-1") == nil)
+        #expect(NoticeMapping.friendlyNumber("hea-0") == nil)
+        #expect(NoticeMapping.friendlyNumber("HEA-1042") == 1042)
     }
 
     @Test func needsYouHoldsUnreadActionsOnly() {

@@ -7,6 +7,8 @@ import WaiveraData
 public final class FakeTasksRepository: TasksRepository, @unchecked Sendable {
     public let failure = LockedValue<WaiveraError?>(nil)
     public let logged = LockedValue<[NewActivity]>([])
+    /// Every read, as "task:12", "activity:12" or "files:12".
+    public let calls = CallLog()
     private let casework: [TaskSummary]
     private let mine: [TaskSummary]
     private let activityLog = LockedValue<[Int: [TaskActivity]]>([:])
@@ -59,6 +61,7 @@ public final class FakeTasksRepository: TasksRepository, @unchecked Sendable {
     }
 
     public func task(id: Int) async throws -> TaskDetail {
+        calls.record("task:\(id)")
         try check()
         guard let row = (casework + mine).first(where: { $0.id == id }) else { throw WaiveraError.notFound }
         return TaskDetail(
@@ -87,6 +90,7 @@ public final class FakeTasksRepository: TasksRepository, @unchecked Sendable {
     }
 
     public func activity(taskId: Int) async throws -> [TaskActivity] {
+        calls.record("activity:\(taskId)")
         try check()
         return activityLog.get()[taskId] ?? []
     }

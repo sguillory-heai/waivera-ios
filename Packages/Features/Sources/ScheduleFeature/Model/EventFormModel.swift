@@ -230,13 +230,7 @@ public final class EventFormModel {
     }
 
     /// "More options on the web": recurrence and linked tasks live in the web calendar.
-    public var webCalendarURL: URL? {
-        guard let base = webBaseURL,
-            let url = URL(string: CalendarEventModel.webCalendarPath, relativeTo: base)?.absoluteURL,
-            url.host == base.host, WebLinks.isWebURL(url)
-        else { return nil }
-        return url
-    }
+    public var webCalendarURL: URL? { WebAddress.page(CalendarEventModel.webCalendarPath, on: webBaseURL) }
 
     private func finishSave(failed: Bool) {
         state.isSaving = false

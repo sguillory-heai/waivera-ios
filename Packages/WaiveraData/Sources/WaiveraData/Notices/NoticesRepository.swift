@@ -27,7 +27,10 @@ public actor LiveNoticesRepository: NoticesRepository {
     private var updatedAt: Date?
     /// Bumped on sign-out, so a fetch still in flight never writes the last account's list back.
     private var generation = 0
-    private var isRefreshing = false
+    /// The refresh in flight, and whether one more was asked for while it ran: a new row that
+    /// arrives mid-fetch may be missing from that page, so it gets one follow-up, not a drop.
+    private var refreshing: Task<Void, Never>?
+    private var refreshAgain = false
     /// Read here but maybe not yet on the server's page; kept read until a page agrees.
     private var readLocally: Set<String> = []
     /// Read on another device: a failed local read never undoes them.
@@ -41,10 +44,27 @@ public actor LiveNoticesRepository: NoticesRepository {
     nonisolated public func feed() -> AsyncStream<Resource<NoticeFeed>> { cell.stream() }
     nonisolated public func reads() -> AsyncStream<String?> { readEvents.stream() }
 
+    /// Callers that ask while a fetch runs wait for one follow-up fetch, shared by all of them.
     public func refresh() async {
-        guard !isRefreshing else { return }
-        isRefreshing = true
-        defer { isRefreshing = false }
+        if let refreshing {
+            refreshAgain = true
+            await refreshing.value
+            return
+        }
+        let task = Task { await self.refreshUntilSettled() }
+        refreshing = task
+        await task.value
+    }
+
+    private func refreshUntilSettled() async {
+        repeat {
+            refreshAgain = false
+            await fetchOnce()
+        } while refreshAgain
+        refreshing = nil
+    }
+
+    private func fetchOnce() async {
         let started = generation
         phase = .loading
         publish()

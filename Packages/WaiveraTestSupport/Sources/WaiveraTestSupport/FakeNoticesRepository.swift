@@ -72,7 +72,7 @@ public final class FakeNoticesRepository: NoticesRepository, @unchecked Sendable
                 message: "Due Friday for Jordan Lee.",
                 createdAt: ago(0.5),
                 isRead: false,
-                taskId: "4211"
+                taskKey: "HEA-1047"
             ),
             Notice(
                 id: "n2",
@@ -81,7 +81,7 @@ public final class FakeNoticesRepository: NoticesRepository, @unchecked Sendable
                 message: "Priya Raman asked to move Intake packet to Nov 12.",
                 createdAt: ago(3),
                 isRead: false,
-                taskId: "4198",
+                taskKey: "HEA-1050",
                 opensRequests: true
             ),
             Notice(
@@ -100,7 +100,7 @@ public final class FakeNoticesRepository: NoticesRepository, @unchecked Sendable
                 message: "Mom asked to move Thursday's visit to the afternoon.",
                 createdAt: ago(80),
                 isRead: true,
-                taskId: "4102"
+                taskKey: "HEA-1053"
             ),
             Notice(
                 id: "n5",

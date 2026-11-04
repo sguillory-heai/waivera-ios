@@ -84,8 +84,11 @@
         }
     }
 
-    /// Clears a conversation's notifications from Notification Center once it is read.
+    /// Clears read chat alerts from Notification Center. A conversation's main chat and its
+    /// threads are cleared separately, as on Android (`ReadAlertMatch`).
     public enum DeliveredNotifications {
+        /// Mark read on an alert: the whole conversation was marked read from it, so every one
+        /// of its alerts leaves, threads included.
         public static func removeAll(conversationID: Int) async {
             let center = UNUserNotificationCenter.current()
             let thread = NotificationCategories.threadIdentifier(conversationID: conversationID)
@@ -95,18 +98,26 @@
             center.removeDeliveredNotifications(withIdentifiers: identifiers)
         }
 
-        /// A read elsewhere (`chat.read`): clears the conversation's alerts, or one thread's, that
-        /// arrived at or before `readAt`, so a late read never clears newer messages.
+        /// The conversation's main chat was read here or elsewhere: its alerts leave, its thread
+        /// replies stay until their thread is read.
+        public static func removeConversation(conversationID: Int) async {
+            await removeRead(conversationID: conversationID, threadRootMessageID: nil, readAt: nil)
+        }
+
+        /// A read (`chat.read`, or a read here): clears the main chat's alerts, or with
+        /// `threadRootMessageID` that thread's, that arrived at or before `readAt`.
         public static func removeRead(conversationID: Int, threadRootMessageID: Int?, readAt: Date?) async {
             let center = UNUserNotificationCenter.current()
             let thread = NotificationCategories.threadIdentifier(conversationID: conversationID)
             let identifiers = await center.deliveredNotifications()
                 .filter { delivered in
                     guard delivered.request.content.threadIdentifier == thread else { return false }
-                    if let readAt, delivered.date > readAt { return false }
-                    guard let threadRootMessageID else { return true }
-                    let root = delivered.request.content.userInfo["threadRootMessageId"].map { "\($0)" }
-                    return root == String(threadRootMessageID)
+                    return ReadAlertMatch.clears(
+                        alertRoot: ReadAlertMatch.threadRoot(delivered.request.content.userInfo),
+                        alertDate: delivered.date,
+                        readRoot: threadRootMessageID,
+                        readAt: readAt
+                    )
                 }
                 .map(\.request.identifier)
             center.removeDeliveredNotifications(withIdentifiers: identifiers)
