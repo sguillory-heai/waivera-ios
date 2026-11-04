@@ -16,6 +16,8 @@
         public var openEvent: @MainActor @Sendable (String) -> Void
         /// "Send wishes" on a celebration card, with the celebrant's user id.
         public var sendWishes: @MainActor @Sendable (String) -> Void
+        /// "New event" in the header; nil hides the button (previews without a data layer).
+        public var newEvent: (@MainActor @Sendable () -> Void)?
 
         public init(
             selectView: @escaping @MainActor @Sendable (CalendarPeriod) -> Void = { _ in },
@@ -25,7 +27,8 @@
             retry: @escaping @MainActor @Sendable () -> Void = {},
             retryMilestones: @escaping @MainActor @Sendable () -> Void = {},
             openEvent: @escaping @MainActor @Sendable (String) -> Void = { _ in },
-            sendWishes: @escaping @MainActor @Sendable (String) -> Void = { _ in }
+            sendWishes: @escaping @MainActor @Sendable (String) -> Void = { _ in },
+            newEvent: (@MainActor @Sendable () -> Void)? = nil
         ) {
             self.selectView = selectView
             self.selectDate = selectDate
@@ -35,6 +38,7 @@
             self.retryMilestones = retryMilestones
             self.openEvent = openEvent
             self.sendWishes = sendWishes
+            self.newEvent = newEvent
         }
     }
 #endif

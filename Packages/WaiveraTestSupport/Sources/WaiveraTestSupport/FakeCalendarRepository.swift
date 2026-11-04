@@ -101,6 +101,114 @@ public final class FakeCalendarRepository: CalendarRepository {
         return lobbyBase.appending(path: "lobby").appending(path: event.id)
     }
 
+    // MARK: Quick events
+
+    /// The invite directory: two coworkers and a participant with an email on file.
+    public static let directory = [
+        AttendeeOption(id: "usr_jordan_lee", name: "Jordan Lee", email: "jordan@example.test"),
+        AttendeeOption(id: "usr_priya_raman", name: "Priya Raman", email: "priya@example.test"),
+        AttendeeOption(id: "par_morgan_hale", name: "Morgan Hale", email: "morgan@example.test", isParticipant: true),
+    ]
+
+    /// Every draft created or saved, in order.
+    public let savedDrafts = LockedValue<[EventDraft]>([])
+
+    public func attendeeOptions(eventId: String?) async throws -> [AttendeeOption] {
+        calls.record("attendeeOptions:\(eventId ?? "new")")
+        if let failure = controls.get().failure { throw failure }
+        return Self.directory
+    }
+
+    public func createEvent(_ draft: EventDraft) async throws {
+        calls.record("createEvent:\(draft.date.isoString)")
+        if let failure = controls.get().failure { throw failure }
+        savedDrafts.update { $0.append(draft) }
+        let id = "evt_new_\(savedDrafts.get().count)"
+        var event = CalendarEvent(id: id, title: draft.title, start: Date(), end: Date())
+        event.ownerId = DemoData.viewerId
+        event.isOwner = true
+        apply(draft, to: &event)
+        publish(
+            feedValue.update { feed -> CalendarFeed in
+                feed = CalendarFeed(events: feed.events + [event], timeOff: feed.timeOff, holidays: feed.holidays)
+                return feed
+            }
+        )
+    }
+
+    public func updateEvent(_ event: CalendarEvent, with draft: EventDraft) async throws {
+        calls.record("updateEvent:\(event.id)")
+        if let failure = controls.get().failure { throw failure }
+        savedDrafts.update { $0.append(draft) }
+        var changed = event
+        apply(draft, to: &changed)
+        publish(
+            feedValue.update { feed -> CalendarFeed in
+                feed.events = feed.events.map { $0.id == event.id ? changed : $0 }
+                return feed
+            }
+        )
+        eventCells.cell(event.id).set(Resource(value: .found(changed), phase: .loaded, updatedAt: clock.now))
+    }
+
+    public func cancelEvent(id: String) async throws {
+        calls.record("cancelEvent:\(id)")
+        if let failure = controls.get().failure { throw failure }
+        publish(
+            feedValue.update { feed -> CalendarFeed in
+                feed.events.removeAll { $0.id == id }
+                return feed
+            }
+        )
+        eventCells.cell(id).set(Resource(value: .notFound, phase: .loaded, updatedAt: clock.now))
+    }
+
+    private func apply(_ draft: EventDraft, to event: inout CalendarEvent) {
+        let payload = EventPayload.build(
+            draft,
+            zone: zone,
+            ownerId: event.ownerId ?? DemoData.viewerId,
+            existing: event
+        )
+        event.title = payload.title
+        event.start = payload.startTime
+        event.end = payload.endTime
+        event.allDay =
+            draft.allDay ? CalendarEvent.AllDaySpan(start: draft.date, endExclusive: draft.date.adding(days: 1)) : nil
+        event.details = payload.description.isEmpty ? nil : payload.description
+        event.location = payload.location.isEmpty ? nil : payload.location
+        event.isSprout = payload.isSprout
+        event.isOnline = true
+        let names = Dictionary(Self.directory.map { ($0.key, $0.name) }, uniquingKeysWith: { first, _ in first })
+        let kept = event.attendees.filter { $0.kind == .external }
+        let coworkers = draft.inviteeIds.map { id in
+            CalendarAttendee(
+                id: "att_\(id)",
+                kind: .employee,
+                ref: id,
+                displayName: names["employee:\(id)"],
+                response: .pending
+            )
+        }
+        let participants = draft.participantIds.map { id in
+            CalendarAttendee(
+                id: "att_\(id)",
+                kind: .waiverParticipant,
+                ref: id,
+                displayName: names["participant:\(id)"],
+                response: .pending
+            )
+        }
+        event.attendees = coworkers + participants + kept
+    }
+
+    private func publish(_ updated: CalendarFeed) {
+        cells.forEachCell { interval, cell in
+            guard cell.current.value != nil else { return }
+            cell.update { $0.value = Self.slice(updated, to: interval, in: self.zone) }
+        }
+    }
+
     static func slice(_ feed: CalendarFeed, to interval: DateInterval, in zone: TimeZone) -> CalendarFeed {
         let first = CalendarDate(interval.start, in: zone)
         let last = CalendarDate(interval.end.addingTimeInterval(-1), in: zone)

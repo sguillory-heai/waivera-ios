@@ -169,6 +169,23 @@ public protocol CalendarRepository: Sendable {
     func refreshMilestones() async
     /// The web lobby URL for a Waivera ("Sprout") meeting (07 §7).
     func meetingURL(for event: CalendarEvent) async throws -> URL
+    /// Coworkers and participants the employee can invite, sorted by name; never the employee.
+    func attendeeOptions(eventId: String?) async throws -> [AttendeeOption]
+    /// Quick events: your own single-day one-off events. Every loaded range refreshes after.
+    func createEvent(_ draft: EventDraft) async throws
+    func updateEvent(_ event: CalendarEvent, with draft: EventDraft) async throws
+    /// Removes the event from every loaded range at once; its lookup turns `.notFound`.
+    func cancelEvent(id: String) async throws
+}
+
+extension CalendarRepository {
+    /// Doubles that do not write events refuse quietly.
+    public func attendeeOptions(eventId: String?) async throws -> [AttendeeOption] { [] }
+    public func createEvent(_ draft: EventDraft) async throws { throw WaiveraError.invalidRequest }
+    public func updateEvent(_ event: CalendarEvent, with draft: EventDraft) async throws {
+        throw WaiveraError.invalidRequest
+    }
+    public func cancelEvent(id: String) async throws { throw WaiveraError.invalidRequest }
 }
 
 /// The own profile screen (08 §1-5).

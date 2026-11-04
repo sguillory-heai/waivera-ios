@@ -74,6 +74,26 @@ public enum EventRules {
     /// `cancelled` and `unknown` never get buttons (PLAN parity fix).
     static let answerable: Set<InvitationState> = [.pending, .accepted, .declined, .tentative]
 
+    /// Series ids are UUIDs; an occurrence's id carries its instant after them.
+    static let eventIdLength = 36
+
+    /// Your own one-off event is edited and cancelled here. Repeating events, single occurrences
+    /// and task meetings need choices the phone does not offer, so they go to the web. So do
+    /// events that span more than one day in `zone`: the phone's form has a single day.
+    public static func manage(_ event: CalendarEvent, myUserId: String?, zone: TimeZone) -> ManageMode? {
+        guard isOrganizer(event, myUserId: myUserId) else { return nil }
+        let oneOff =
+            (event.recurrenceRule ?? "").isEmpty && (event.parentEventId ?? "").isEmpty && event.taskId == nil
+            && event.id.count <= eventIdLength
+        return oneOff && withinOneDay(event, zone: zone) ? .edit : .webOnly
+    }
+
+    static func withinOneDay(_ event: CalendarEvent, zone: TimeZone) -> Bool {
+        if let allDay = event.allDay { return allDay.endExclusive == allDay.start.adding(days: 1) }
+        guard event.end > event.start else { return false }
+        return CalendarDate(event.start, in: zone) == CalendarDate(event.end, in: zone)
+    }
+
     public static func isOrganizer(_ event: CalendarEvent, myUserId: String?) -> Bool {
         event.isOwner || (myUserId != nil && event.ownerId == myUserId)
     }

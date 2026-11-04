@@ -50,6 +50,16 @@ public struct EventDetailsUI: Sendable, Hashable {
     public var chatError: String?
     /// A refresh failed; the saved copy is shown with this banner.
     public var refreshNotice: String?
+    /// Edit and Cancel for your own one-off event, or "Edit on web"; nil for invitees.
+    public var manage: ManageMode? = nil
+    public var isCancelling = false
+    public var cancelFailure: String? = nil
+}
+
+/// How the organizer changes an event from the phone.
+public enum ManageMode: Sendable, Hashable {
+    case edit
+    case webOnly
 }
 
 /// An Undo offer for a just-chosen answer. Undo and the toast's dismissal pass it back, so a

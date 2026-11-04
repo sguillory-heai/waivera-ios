@@ -19,6 +19,8 @@ public final class CalendarEventModel {
     public private(set) var undoOffer: UndoOffer?
     public internal(set) var openRequest: OpenRequest?
     public internal(set) var conversationRequest: ConversationRequest?
+    /// Set once your event is cancelled: the view closes the screen.
+    public internal(set) var closeRequest: UUID?
     /// Haptic triggers: each increments once per moment (choice, saved, failure).
     public private(set) var choiceTicks = 0
     public private(set) var successTicks = 0
@@ -40,6 +42,8 @@ public final class CalendarEventModel {
     @ObservationIgnored var joinTask: Task<Void, Never>?
     @ObservationIgnored var chatTask: Task<Void, Never>?
     @ObservationIgnored private var refreshTask: Task<Void, Never>?
+    @ObservationIgnored var cancelTask: Task<Void, Never>?
+    let webBaseURL: URL?
 
     let calendar: any CalendarRepository
     let conversations: any ConversationsRepository
@@ -55,9 +59,11 @@ public final class CalendarEventModel {
         session: any SessionRepository,
         clock: any WaiveraClock = SystemClock(),
         deviceZone: @escaping @Sendable () -> TimeZone = { TimeZone.current },
-        locale: Locale = .autoupdatingCurrent
+        locale: Locale = .autoupdatingCurrent,
+        webBaseURL: URL? = nil
     ) {
         self.eventID = eventID
+        self.webBaseURL = webBaseURL
         self.calendar = calendar
         self.conversations = conversations
         self.session = session
@@ -78,7 +84,8 @@ public final class CalendarEventModel {
             calendar: data.calendar,
             conversations: data.conversations,
             session: data.session,
-            clock: data.clock
+            clock: data.clock,
+            webBaseURL: data.webBaseURL
         )
     }
 

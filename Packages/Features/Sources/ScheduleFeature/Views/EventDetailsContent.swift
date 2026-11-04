@@ -45,6 +45,9 @@
                         BannerView(.error, message: error)
                     }
                 }
+                if let manage = details.manage {
+                    OrganizerTools(manage: manage, details: details, actions: actions)
+                }
                 if let organizer = details.organizer {
                     OrganizerBlock(organizer: organizer, isMe: details.isOrganizer)
                 }

@@ -10,6 +10,8 @@ struct EventInteraction: Sendable, Hashable {
     var joinError: JoinError?
     var chatBusy = false
     var chatError: WaiveraError?
+    var cancelling = false
+    var cancelFailed = false
 }
 
 /// Builds `EventDetailsUI` from the event, the rules and the schedule zone.
@@ -72,7 +74,10 @@ struct EventDetailsFormatter {
             canMessageOrganizer: EventRules.canMessageOrganizer(event, myUserId: myUserId),
             isOpeningChat: interaction.chatBusy,
             chatError: interaction.chatError.map { ScheduleStrings.format("schedule.chat.failed", $0.userMessage) },
-            refreshNotice: refreshFailed ? ScheduleStrings.text("schedule.event.refreshFailed") : nil
+            refreshNotice: refreshFailed ? ScheduleStrings.text("schedule.event.refreshFailed") : nil,
+            manage: EventRules.manage(event, myUserId: myUserId, zone: timeZone),
+            isCancelling: interaction.cancelling,
+            cancelFailure: interaction.cancelFailed ? ScheduleStrings.text("schedule.cancel.failed") : nil
         )
     }
 

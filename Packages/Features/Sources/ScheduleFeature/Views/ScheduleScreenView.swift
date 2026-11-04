@@ -48,7 +48,8 @@
                         ScheduleHeroBar(
                             showsJumpToToday: state.showsJumpToToday,
                             account: account,
-                            onToday: { actions.goToToday() }
+                            onToday: { actions.goToToday() },
+                            onNewEvent: actions.newEvent.map { newEvent in { newEvent() } }
                         )
                     } content: {
                         EmptyView()
@@ -173,6 +174,7 @@
         let showsJumpToToday: Bool
         let account: ScheduleAccount?
         let onToday: () -> Void
+        let onNewEvent: (() -> Void)?
 
         @Environment(\.waiveraAccountMenu) private var shellAccount
 
@@ -193,6 +195,18 @@
                     .buttonStyle(.press(.compact))
                     .accessibilityLabel(Text(ScheduleStrings.text("schedule.jumpToToday")))
                     .accessibilityHint(Text(ScheduleStrings.text("schedule.today.hint")))
+                }
+                if let onNewEvent {
+                    Button(action: onNewEvent) {
+                        Image(systemName: "plus")
+                            .font(WaiveraFont.bodyEmphasis)
+                            .foregroundStyle(HeroPalette.onHeader)
+                            .frame(width: ControlSize.iconButton, height: ControlSize.iconButton)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.press(.compact))
+                    .accessibilityLabel(Text(ScheduleStrings.text("schedule.newEvent")))
+                    .accessibilityIdentifier("schedule.newEvent")
                 }
                 if let account = resolvedAccount {
                     Button(action: account.open) {

@@ -10,6 +10,11 @@
         public var dismissJoinError: @MainActor @Sendable () -> Void
         public var messageOrganizer: @MainActor @Sendable () -> Void
         public var retry: @MainActor @Sendable () -> Void
+        public var edit: @MainActor @Sendable () -> Void
+        public var cancelEvent: @MainActor @Sendable () -> Void
+        /// Nil when this build has no web app; the note still says where to go.
+        public var editOnWeb: (@MainActor @Sendable () -> Void)?
+        public var dismissCancelFailure: @MainActor @Sendable () -> Void
 
         public init(
             respond: @escaping @MainActor @Sendable (_ accept: Bool) -> Void = { _ in },
@@ -17,7 +22,11 @@
             join: @escaping @MainActor @Sendable () -> Void = {},
             dismissJoinError: @escaping @MainActor @Sendable () -> Void = {},
             messageOrganizer: @escaping @MainActor @Sendable () -> Void = {},
-            retry: @escaping @MainActor @Sendable () -> Void = {}
+            retry: @escaping @MainActor @Sendable () -> Void = {},
+            edit: @escaping @MainActor @Sendable () -> Void = {},
+            cancelEvent: @escaping @MainActor @Sendable () -> Void = {},
+            editOnWeb: (@MainActor @Sendable () -> Void)? = nil,
+            dismissCancelFailure: @escaping @MainActor @Sendable () -> Void = {}
         ) {
             self.respond = respond
             self.retryResponse = retryResponse
@@ -25,6 +34,10 @@
             self.dismissJoinError = dismissJoinError
             self.messageOrganizer = messageOrganizer
             self.retry = retry
+            self.edit = edit
+            self.cancelEvent = cancelEvent
+            self.editOnWeb = editOnWeb
+            self.dismissCancelFailure = dismissCancelFailure
         }
     }
 #endif

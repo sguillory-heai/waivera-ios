@@ -70,6 +70,11 @@ public actor LiveCalendarRepository: CalendarRepository {
     /// an invitation or change made while offline shows without a pull to refresh (05 §2).
     public func refreshObserved() async {
         guard let user = context.currentUser else { return }
+        await refreshFeeds(user: user)
+        await refreshMilestones()
+    }
+
+    private func refreshFeeds(user: CurrentUser) async {
         var intervals = Set(loaded.keys)
         feeds.forEachCell { interval, cell in
             if cell.current.value != nil || cell.current.phase != .idle { intervals.insert(interval) }
@@ -79,7 +84,6 @@ public actor LiveCalendarRepository: CalendarRepository {
                 group.addTask { await self.refresh(interval: interval, user: user) }
             }
         }
-        await refreshMilestones()
     }
 
     private func refresh(interval: DateInterval, user: CurrentUser) async {
@@ -218,5 +222,84 @@ public actor LiveCalendarRepository: CalendarRepository {
 
     public func meetingURL(for event: CalendarEvent) async throws -> URL {
         try await handoff.url(for: event)
+    }
+
+    // MARK: Quick events
+
+    /// The directory names participants "Participant"; events store them as WAIVER_PARTICIPANT.
+    public func attendeeOptions(eventId: String?) async throws -> [AttendeeOption] {
+        let me = context.currentUser?.id
+        let people: [CalendarDirectoryPersonDto]
+        do {
+            people = try await api.attendeeOptions(eventId: eventId).people
+        } catch {
+            throw WaiveraError.from(error)
+        }
+        var seen = Set<String>()
+        return
+            people
+            .compactMap { person -> AttendeeOption? in
+                let participant = person.type.caseInsensitiveCompare("Participant") == .orderedSame
+                let employee = person.type.caseInsensitiveCompare("Employee") == .orderedSame
+                let id = person.id.trimmed
+                guard !id.isEmpty, participant || (employee && id != me) else { return nil }
+                let name = person.name.trimmed
+                return AttendeeOption(
+                    id: id,
+                    name: name.isEmpty ? (person.email ?? "") : name,
+                    email: person.email?.nilIfBlank,
+                    isParticipant: participant
+                )
+            }
+            .filter { seen.insert($0.key).inserted }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    public func createEvent(_ draft: EventDraft) async throws {
+        let user = try context.requireUser()
+        let body = EventPayload.build(draft, zone: user.scheduleTimeZone, ownerId: user.id)
+        do {
+            try await api.createCalendarEvent(body)
+        } catch {
+            throw WaiveraError.from(error)
+        }
+        await refreshFeeds(user: user)
+    }
+
+    public func updateEvent(_ event: CalendarEvent, with draft: EventDraft) async throws {
+        let user = try context.requireUser()
+        let body = EventPayload.build(
+            draft,
+            zone: user.scheduleTimeZone,
+            ownerId: event.ownerId ?? user.id,
+            existing: event
+        )
+        do {
+            try await api.updateCalendarEvent(id: event.id, body)
+        } catch {
+            throw WaiveraError.from(error)
+        }
+        await refreshEvent(id: event.id)
+        await refreshFeeds(user: user)
+    }
+
+    public func cancelEvent(id: String) async throws {
+        let user = try context.requireUser()
+        do {
+            try await api.deleteCalendarEvent(id: id)
+        } catch {
+            throw WaiveraError.from(error)
+        }
+        for (interval, feed) in loaded where feed.events.contains(where: { $0.id == id }) {
+            var updated = feed
+            updated.events.removeAll { $0.id == id }
+            loaded[interval] = updated
+            feeds.cell(interval).update { $0.value = updated }
+            let store = store
+            let saved = updated
+            writes.enqueue { await store.save(saved, for: .calendar(interval)) }
+        }
+        events.cell(id).set(Resource(value: .notFound, phase: .loaded, updatedAt: clock.now))
+        await refreshFeeds(user: user)
     }
 }

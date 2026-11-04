@@ -17,6 +17,9 @@
         @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
         @State private var preferredWeek = false
+        @Environment(\.dataEnvironment) private var data
+        @State private var form: EventFormModel?
+        @State private var created: EventSaved?
 
         private static let tickInterval: Duration = .seconds(60)
 
@@ -33,13 +36,32 @@
                     // Wrapped so the shell's callback, which is not Sendable, is never converted
                     // to the actions' Sendable function type (a strict-concurrency diagnostic).
                     openEvent: { onOpenEvent($0) },
-                    sendWishes: { model.sendWishes(to: $0) }
+                    sendWishes: { model.sendWishes(to: $0) },
+                    newEvent: newEvent
                 ),
                 account: account,
                 canSendWishes: model.canSendWishes && onOpenConversation != nil,
                 refresh: { [model] in await model.refresh() }
             )
             .overlay(alignment: .bottom) { wishesSnackbar }
+            .overlay(alignment: .bottom) { createdSnackbar }
+            .sheet(item: $form) { form in
+                EventFormSheet(
+                    model: form,
+                    onClose: { self.form = nil },
+                    onSaved: { saved in
+                        self.form = nil
+                        created = saved
+                    }
+                )
+            }
+            .task(id: created) {
+                guard let created else { return }
+                AccessibilityNotification.Announcement(created.message).post()
+                let seconds = voiceOver ? FeedbackTiming.undoToastAccessible : FeedbackTiming.undoToast
+                try? await Task.sleep(for: .seconds(seconds))
+                if !Task.isCancelled, self.created == created { self.created = nil }
+            }
             .task { await model.start() }
             .task(id: model.feedKey) { await model.observeFeed() }
             .task {
@@ -71,6 +93,28 @@
             guard !preferredWeek else { return }
             preferredWeek = true
             if dynamicTypeSize.isExtraLargeText, model.view == .month { model.select(view: .week) }
+        }
+
+        private var newEvent: (@MainActor @Sendable () -> Void)? {
+            guard data != nil else { return nil }
+            return { openNewEvent() }
+        }
+
+        /// New event opens on the selected day.
+        private func openNewEvent() {
+            guard let data else { return }
+            form = EventFormModel(date: model.selectedDate, data: data)
+        }
+
+        @ViewBuilder private var createdSnackbar: some View {
+            ZStack {
+                if let created {
+                    SnackbarView(message: created.message)
+                        .padding(Spacing.gutter)
+                        .transition(Motion.transition(edge: .bottom, reduceMotion: reduceMotion))
+                }
+            }
+            .animation(Motion.animation(.layout, reduceMotion: reduceMotion), value: created)
         }
 
         @ViewBuilder private var wishesSnackbar: some View {

@@ -151,3 +151,28 @@ extension CalendarDate: Codable {
         try container.encode(isoString)
     }
 }
+
+extension CalendarDate {
+    /// The instant this date shows `minuteOfDay` on the wall clock in `timeZone`, so 9 AM stays
+    /// 9 AM across a DST change. A wall time the change skips moves forward to the next valid one.
+    public func instant(atMinute minuteOfDay: Int, in timeZone: TimeZone) -> Date {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        let components = DateComponents(
+            year: year,
+            month: month,
+            day: day,
+            hour: minuteOfDay / 60,
+            minute: minuteOfDay % 60
+        )
+        return calendar.date(from: components) ?? startInstant(in: timeZone)
+    }
+
+    /// Minutes since midnight on the wall clock in `timeZone` for `date`.
+    public static func minuteOfDay(_ date: Date, in timeZone: TimeZone) -> Int {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        let parts = calendar.dateComponents([.hour, .minute], from: date)
+        return (parts.hour ?? 0) * 60 + (parts.minute ?? 0)
+    }
+}

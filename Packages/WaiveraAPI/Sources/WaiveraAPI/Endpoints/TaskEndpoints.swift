@@ -170,7 +170,7 @@ extension APIClient {
 
     /// Some writes answer with a bare body and some with an envelope that can say no inside a 200.
     /// The envelope's own message is never shown.
-    private func checkEnvelope(_ request: APIRequest) async throws {
+    func checkEnvelope(_ request: APIRequest) async throws {
         let data = try await send(request)
         guard !data.isEmpty, let body = try? WaiveraJSON.decoder().decode(JSONValue.self, from: data) else { return }
         if case .bool(false) = body["success"] { throw WaiveraError.invalidResponse }

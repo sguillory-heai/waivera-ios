@@ -147,3 +147,116 @@ public struct InternalInvitationResponseReq: Codable, Sendable, Equatable {
         self.userId = userId
     }
 }
+
+/// Mirrors `dto/Request/CalendarEventDto.cs` `AttendeeRequestDto`.
+public struct AttendeeRequestDto: Encodable, Sendable, Hashable {
+    public var type: String
+    public var ref: String?
+    public var email: String?
+
+    public init(type: AttendeeType, ref: String? = nil, email: String? = nil) {
+        self.type = type.rawValue
+        self.ref = ref
+        self.email = email
+    }
+}
+
+/// Mirrors `dto/Request/CalendarEventDto.cs` for `CreateEvent` and `UpdateEventbyId`. Times are
+/// UTC instants; the all-day fields are literal dates. Unset optionals are left out, as the web does.
+public struct CalendarEventDto: Encodable, Sendable, Hashable {
+    public var title: String
+    public var description: String
+    public var location: String
+    public var meetingDetails: String
+    public var ownerUserID: String
+    public var startTime: Date
+    public var endTime: Date
+    public var isAllDay: Bool?
+    public var allDayStart: String?
+    public var allDayEndExclusive: String?
+    public var timeZone: String
+    public var online: Bool
+    public var isSprout: Bool
+    public var notifyParticipants: Bool
+    public var attendees: [AttendeeRequestDto]
+
+    enum CodingKeys: String, CodingKey {
+        case title, description, location, meetingDetails, ownerUserID, startTime, endTime, isAllDay
+        case allDayStart, allDayEndExclusive, online, isSprout, notifyParticipants, attendees
+        case timeZone = "time_zone"
+    }
+
+    public init(
+        title: String,
+        description: String,
+        location: String,
+        meetingDetails: String,
+        ownerUserID: String,
+        startTime: Date,
+        endTime: Date,
+        isAllDay: Bool?,
+        allDayStart: String?,
+        allDayEndExclusive: String?,
+        timeZone: String,
+        online: Bool,
+        isSprout: Bool,
+        notifyParticipants: Bool,
+        attendees: [AttendeeRequestDto]
+    ) {
+        self.title = title
+        self.description = description
+        self.location = location
+        self.meetingDetails = meetingDetails
+        self.ownerUserID = ownerUserID
+        self.startTime = startTime
+        self.endTime = endTime
+        self.isAllDay = isAllDay
+        self.allDayStart = allDayStart
+        self.allDayEndExclusive = allDayEndExclusive
+        self.timeZone = timeZone
+        self.online = online
+        self.isSprout = isSprout
+        self.notifyParticipants = notifyParticipants
+        self.attendees = attendees
+    }
+}
+
+/// Mirrors `dto/Response/Calendar/CalendarDirectoryOptionsDto.cs` (`GET attendee-options`).
+public struct CalendarDirectoryOptionsDto: Decodable, Sendable, Hashable {
+    public var people: [CalendarDirectoryPersonDto]
+
+    public init(people: [CalendarDirectoryPersonDto]) { self.people = people }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        people =
+            try container.decodeIfPresent(LossyArray<CalendarDirectoryPersonDto>.self, forKey: .people)?.elements ?? []
+    }
+
+    enum CodingKeys: String, CodingKey { case people }
+}
+
+public struct CalendarDirectoryPersonDto: Decodable, Sendable, Hashable {
+    public var id: String
+    public var name: String
+    public var email: String?
+    /// "Employee" or "Participant" (the directory's own names).
+    public var type: String
+
+    public init(id: String, name: String, email: String? = nil, type: String) {
+        self.id = id
+        self.name = name
+        self.email = email
+        self.type = type
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(LenientID.self, forKey: .id)?.value ?? ""
+        name = try container.decodeIfPresent(String.self, forKey: .name) ?? ""
+        email = try container.decodeIfPresent(String.self, forKey: .email)
+        type = try container.decodeIfPresent(String.self, forKey: .type) ?? ""
+    }
+
+    enum CodingKeys: String, CodingKey { case id, name, email, type }
+}
