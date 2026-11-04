@@ -409,7 +409,7 @@ extension AppModel {
             if let task = try? await links.task(number: number) {
                 self?.navigation.open(.task(task.id), origin: .inApp)
             } else if let web {
-                UIApplication.shared.open(web)
+                _ = await UIApplication.shared.open(web)
             }
         }
     }
