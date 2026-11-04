@@ -3,7 +3,7 @@
     import WaiveraData
     import WaiveraDesign
 
-    /// The month and day of the due date on a soft tile; a calendar glyph without one.
+    /// The month and day of the due date on a soft tile (Android `DateTile`); the task glyph without one.
     struct DateTile: View {
         let month: String?
         let day: String?
@@ -14,19 +14,31 @@
                 if let month, let day {
                     VStack(spacing: 0) {
                         Text(month.uppercased())
-                            .waiveraTextStyle(.labelSmall, weight: .bold)
+                            .waiveraTextStyle(.kicker)
+                            .lineLimit(1)
+                            .fixedSize()
                         Text(day)
-                            .waiveraTextStyle(.titleMedium, weight: .bold)
+                            .waiveraTextStyle(.titleLarge)
                             .monospacedDigit()
+                            .lineLimit(1)
+                            .fixedSize()
                     }
                     .foregroundStyle(tone.contentColor)
-                    .frame(width: ControlSize.cardTile, height: ControlSize.cardTile)
-                    .background(tone.containerColor, in: RoundedRectangle(cornerRadius: Radius.tile))
+                    .padding(.horizontal, Spacing.small)
+                    .padding(.vertical, Spacing.extraSmall)
+                    .frame(
+                        minWidth: ControlSize.cardTile + Spacing.small,
+                        minHeight: ControlSize.cardTile + Spacing.small
+                    )
+                    .background(
+                        tone.containerColor,
+                        in: RoundedRectangle(cornerRadius: Radius.tile, style: .continuous)
+                    )
                 } else {
                     IconTile(
-                        systemImage: "calendar",
-                        tone: .neutral,
-                        size: ControlSize.cardTile,
+                        systemImage: "list.bullet.clipboard",
+                        tone: tone,
+                        size: ControlSize.cardTile + Spacing.small,
                         glyphSize: ControlSize.cardTileGlyph
                     )
                 }

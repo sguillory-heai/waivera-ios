@@ -14,6 +14,7 @@
         let onOpenFile: (_ taskID: Int, _ attachmentID: Int) -> Void
 
         @Environment(\.dataEnvironment) private var data
+        @Environment(\.openURL) private var openURL
         @State private var model: TaskDetailModel?
 
         /// `onOpenFile` pushes the read-only file viewer for a file the phone can show.
@@ -32,12 +33,26 @@
             }
             .background(Palette.background)
             .navigationTitle(title)
-            .waiveraTopBar(title, subtitle: model?.state.task?.key)
+            .waiveraTopBar(title, subtitle: model?.state.task?.key, actions: barActions)
             .task {
                 let current = model ?? data.map { TaskDetailModel(taskId: taskID, environment: $0) }
                 if model == nil { model = current }
                 await current?.run()
             }
+        }
+
+        /// Open on web sits in the bar, as on Android, once the task has loaded.
+        private var barActions: [TopBarAction] {
+            guard let model, model.state.task != nil else { return [] }
+            return [
+                TopBarAction(
+                    id: "web",
+                    systemImage: "arrow.up.right.square",
+                    accessibilityLabel: TasksStrings.text("tasks.openOnWeb")
+                ) {
+                    if let url = model.webURL() { openURL(url) }
+                },
+            ]
         }
 
         private var title: String { model?.state.task?.title ?? TasksStrings.text("tasks.detail.title") }

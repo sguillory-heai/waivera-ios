@@ -33,9 +33,12 @@
 
         private func detail(_ task: TaskDetail) -> some View {
             ScrollView {
-                VStack(alignment: .leading, spacing: Spacing.medium) {
+                VStack(alignment: .leading, spacing: 0) {
                     if let pending = state.pending {
                         NoteCard(title: pending.title, message: pending.message, systemImage: "hourglass", tone: .amber)
+                            .padding(.horizontal, Spacing.gutter)
+                            .padding(.top, Spacing.small)
+                            .padding(.bottom, Spacing.extraSmall)
                     }
                     if let delay = state.delay {
                         NoteCard(
@@ -44,59 +47,75 @@
                             message: [delay.reason, delay.explanation, TasksStrings.text("tasks.delay.note")]
                                 .compactMap(\.self)
                                 .joined(separator: "\n"),
-                            systemImage: "clock.badge.exclamationmark",
-                            tone: .amber
+                            systemImage: "clock",
+                            tone: .brand
                         )
+                        .padding(.horizontal, Spacing.gutter)
+                        .padding(.top, Spacing.small)
+                        .padding(.bottom, Spacing.extraSmall)
                     }
+                    TaskSectionTitle(
+                        TasksStrings.text("tasks.detail.section"),
+                        first: state.pending == nil && state.delay == nil
+                    )
                     TaskFacts(state: state, task: task)
-                    if let description = task.description {
-                        SectionHeader(TasksStrings.text("tasks.detail.description"))
-                        Text(description)
-                            .waiveraTextStyle(.bodyMedium)
-                            .foregroundStyle(Palette.text)
-                            .textSelection(.enabled)
+                        .padding(.horizontal, Spacing.gutter)
+                    if let description = task.description, !description.isEmpty {
+                        TaskSectionTitle(TasksStrings.text("tasks.detail.description"))
+                        SheetCardGroup {
+                            Text(description)
+                                .waiveraTextStyle(.bodyMedium)
+                                .foregroundStyle(Palette.text)
+                                .textSelection(.enabled)
+                                .padding(Spacing.medium)
+                        }
+                        .padding(.horizontal, Spacing.gutter)
                     }
                     FilesSection(files: state.files, onOpen: actions.openFile, onRetry: actions.retryFiles)
                     ActivitySection(activity: state.activity, onRetry: actions.retryActivity)
-                    buttons
                 }
-                .padding(Spacing.gutter)
+                .padding(.bottom, Spacing.large)
             }
             .refreshable { [onRefresh] in await onRefresh() }
             .waiveraAnimation(.layout, value: state)
+            .safeAreaInset(edge: .bottom, spacing: 0) { actionBar }
         }
 
-        @ViewBuilder private var buttons: some View {
-            VStack(spacing: Spacing.small) {
-                if state.canLog {
-                    WaiveraButton(
-                        TasksStrings.text("tasks.log.title"),
-                        systemImage: "plus",
-                        fillsWidth: true,
-                        action: actions.log
-                    )
-                } else {
-                    Text(TasksStrings.text("tasks.detail.finished"))
-                        .waiveraTextStyle(.bodySmall)
-                        .foregroundStyle(Palette.textSecondary)
+        /// Log activity pinned in thumb reach, as Android's bottom action bar; Ask for a change
+        /// under it while one can be asked.
+        private var actionBar: some View {
+            VStack(spacing: 0) {
+                Rectangle().fill(Palette.border).frame(height: Spacing.hairline)
+                VStack(spacing: Spacing.small) {
+                    if state.canLog {
+                        WaiveraButton(
+                            TasksStrings.text("tasks.log.title"),
+                            size: .large,
+                            systemImage: "plus",
+                            fillsWidth: true,
+                            action: actions.log
+                        )
+                    } else {
+                        Text(TasksStrings.text("tasks.detail.finished"))
+                            .waiveraTextStyle(.bodyMedium)
+                            .foregroundStyle(Palette.textSecondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    if state.canAsk {
+                        WaiveraButton(
+                            TasksStrings.text("tasks.ask.title"),
+                            variant: .text,
+                            size: .large,
+                            fillsWidth: true,
+                            action: actions.ask
+                        )
+                        .transition(.opacity)
+                    }
                 }
-                if state.canAsk {
-                    WaiveraButton(
-                        TasksStrings.text("tasks.ask.title"),
-                        variant: .secondary,
-                        systemImage: "arrow.triangle.2.circlepath",
-                        fillsWidth: true,
-                        action: actions.ask
-                    )
-                }
-                WaiveraButton(
-                    TasksStrings.text("tasks.openOnWeb"),
-                    variant: .text,
-                    systemImage: "arrow.up.right.square",
-                    action: actions.openWeb
-                )
+                .padding(.horizontal, Spacing.gutter)
+                .padding(.vertical, Spacing.mediumSmall)
             }
-            .padding(.top, Spacing.small)
+            .background(Palette.background)
         }
     }
 #endif

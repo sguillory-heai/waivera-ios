@@ -3,50 +3,46 @@
     import WaiveraData
     import WaiveraDesign
 
-    /// One task card: a date tile, the title and number, who it is about, the due line and at
-    /// most one badge. A delay reads "Delayed through …" in place of late.
+    /// At a glance (Android `TaskCard`): the due date as a tile, the title, who it is about, one
+    /// line of facts (lateness in the attention colour or the delay in the link colour, then the
+    /// key, then another owner on its own line) and at most one badge.
     struct TaskCard: View {
+        @Environment(\.dynamicTypeSize) private var dynamicTypeSize
         let row: TaskRow
         let onOpen: () -> Void
 
         var body: some View {
             Button(action: onOpen) {
-                HStack(alignment: .top, spacing: ControlSize.fieldTileGap) {
+                HStack(alignment: .top, spacing: Spacing.mediumSmall) {
                     DateTile(month: row.tileMonth, day: row.tileDay, tone: tileTone)
                     VStack(alignment: .leading, spacing: Spacing.xxSmall) {
                         Text(row.title)
-                            .waiveraTextStyle(.titleSmall, weight: .semibold)
+                            .waiveraTextStyle(.titleSmall)
                             .foregroundStyle(Palette.text)
-                            .lineLimit(2)
-                        Text([row.key, row.about].compactMap(\.self).joined(separator: " · "))
-                            .waiveraTextStyle(.bodySmall)
-                            .foregroundStyle(Palette.textSecondary)
-                            .lineLimit(1)
-                        Text(row.dueLine)
-                            .waiveraTextStyle(.labelMedium, weight: .semibold)
-                            .foregroundStyle(dueColor)
-                        if let assignee = row.assignee {
-                            Text(TasksStrings.format("tasks.row.assignedTo", assignee))
+                            .lineLimit(large ? 4 : 2)
+                        if let about = row.about {
+                            Text(about)
                                 .waiveraTextStyle(.bodySmall)
-                                .foregroundStyle(Palette.textSecondary)
+                                .foregroundStyle(Palette.text)
                                 .lineLimit(1)
                         }
+                        Text(metaLine)
+                            .waiveraTextStyle(.bodySmall)
+                            .foregroundStyle(Palette.textSecondary)
                         if let badge {
                             StatusBadge(badge.title, tone: badge.tone)
-                                .padding(.top, Spacing.extraSmall)
+                                .padding(.top, Spacing.xxSmall)
                         }
                     }
+                    .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    Image(systemName: "chevron.right")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(Palette.textTertiary)
-                        .padding(.top, Spacing.extraSmall)
-                        .accessibilityHidden(true)
+                    // Room for the chevron, which centres on the whole card in the overlay below.
+                    Color.clear.frame(width: ControlSize.iconSmall, height: Spacing.hairline)
                 }
-                .padding(Spacing.medium)
-                .frame(minHeight: ControlSize.listRowMinHeight)
-                .background(Palette.surface, in: RoundedRectangle(cornerRadius: Radius.listCard))
-                .overlay(RoundedRectangle(cornerRadius: Radius.listCard).stroke(Palette.border))
+                .overlay(alignment: .trailing) { TaskChevron() }
+                .padding(Spacing.mediumSmall)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .sheetCard()
                 .contentShape(Rectangle())
             }
             .buttonStyle(.press(.card))
@@ -56,16 +52,41 @@
             .accessibilityAddTraits(.isButton)
         }
 
+        private var large: Bool { dynamicTypeSize >= .accessibility1 }
+
+        /// Really overdue turns the tile red; a delay keeps it brand violet (the web's purple ink).
         private var tileTone: TileTone {
-            if row.delayed { return .amber }
-            if row.daysLate != nil { return .danger }
-            return .brand
+            row.daysLate != nil && !row.delayed ? .danger : .brand
         }
 
-        private var dueColor: Color {
-            if row.delayed { return Palette.warningText }
-            if row.daysLate != nil { return Palette.dangerText }
-            return Palette.textSecondary
+        /// Lateness or the delay, the key, then another owner on its own line. At large text each
+        /// fact stacks.
+        private var metaLine: AttributedString {
+            let separator = large ? "\n" : "\u{00A0}· "
+            var text = AttributedString()
+            if let daysLate = row.daysLate, !row.delayed {
+                var late = AttributedString(TasksStrings.plural("tasks.row.daysLate", daysLate))
+                late.foregroundColor = Palette.dangerText
+                text += late + AttributedString(separator)
+            }
+            if row.delayed {
+                let words = row.delayedThrough
+                    .map { TasksStrings.format("tasks.row.delayedThrough", Self.unbroken($0)) }
+                    ?? TasksStrings.text("tasks.row.delayed")
+                var delay = AttributedString(words)
+                delay.foregroundColor = Palette.link
+                text += delay + AttributedString(separator)
+            }
+            text += AttributedString(row.key)
+            if let assignee = row.assignee {
+                text += AttributedString("\n" + TasksStrings.format("tasks.row.assignedTo", Self.unbroken(assignee)))
+            }
+            return text
+        }
+
+        /// Keeps "Nov 20" or a name on one line.
+        private static func unbroken(_ text: String) -> String {
+            text.replacingOccurrences(of: " ", with: "\u{00A0}")
         }
 
         private var badge: (title: String, tone: BadgeTone)? {
@@ -73,8 +94,21 @@
             case .closureRequested: (TasksStrings.text("tasks.flag.closure"), .warning)
             case .inProgress: (TasksStrings.text("tasks.state.inProgress"), .accent)
             case .inReview: (TasksStrings.text("tasks.state.inReview"), .warning)
-            case nil: row.delayed ? (TasksStrings.text("tasks.row.delayed"), .warning) : nil
+            case nil: nil
             }
+        }
+    }
+
+    /// The trailing chevron on a task or request card, centred on the card.
+    struct TaskChevron: View {
+        var systemImage = "chevron.right"
+
+        var body: some View {
+            Image(systemName: systemImage)
+                .font(.system(size: ControlSize.iconSmall, weight: .semibold))
+                .foregroundStyle(Palette.textSecondary)
+                .frame(width: ControlSize.iconSmall)
+                .accessibilityHidden(true)
         }
     }
 

@@ -48,7 +48,9 @@
             let time = formatter.upcoming(item.time)
             let place = item.location ?? (item.isOnline ? TodayStrings.text("today.online") : nil)
             let range = formatter.range(item)
-            let showsChip = item.isHappeningNow || item.isCountdown
+            let soon = item.isHappeningNow || item.isCountdown
+            let chipText = soon ? time : dayChip
+            let showsChip = chipText != nil
             let chipBelow = dynamicTypeSize.isExtraLargeText
             Button(action: onOpen) {
                 VStack(alignment: .leading, spacing: Spacing.mediumSmall) {
@@ -69,17 +71,17 @@
                                         .lineLimit(2)
                                 }
                                 if showsChip && chipBelow {
-                                    CountdownChip(text: time).padding(.top, Spacing.extraSmall)
+                                    CountdownChip(text: chipText ?? "").padding(.top, Spacing.extraSmall)
                                 }
                             }
                             .multilineTextAlignment(.leading)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            if showsChip && !chipBelow { CountdownChip(text: time) }
+                            if showsChip && !chipBelow { CountdownChip(text: chipText ?? "") }
                         }
                     }
                     if let start = item.start {
                         clock(start)
-                    } else if !showsChip {
+                    } else if !soon {
                         Text(time)
                             .waiveraTextStyle(.clockTime)
                             .foregroundStyle(Palette.text)
@@ -105,6 +107,15 @@
             .accessibilityAddTraits(.isButton)
             .todayCard(radius: Radius.upNextCard)
             .todayCardSpacing()
+        }
+
+        /// The large time has no date, so a card for another day names the day in the chip instead.
+        private var dayChip: String? {
+            switch item.time {
+            case .tomorrowAt: TodayStrings.text("today.tomorrow")
+            case .onDayAt(let date, _): formatter.day(date)
+            default: nil
+            }
         }
 
         /// "11:00" large with a small "AM"; the end time's text starts with the space before its

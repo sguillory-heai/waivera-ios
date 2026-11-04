@@ -3,32 +3,46 @@
     import WaiveraData
     import WaiveraDesign
 
-    struct FactRow: View {
+    /// A labelled fact with its tile (Android `InfoRow`): the field label over its value, the tile
+    /// centred on the row.
+    struct FactRow<Value: View>: View {
         let systemImage: String
         let label: String
-        let value: String
-        var isLate = false
+        var tone: TileTone = .brand
+        @ViewBuilder let value: () -> Value
 
         var body: some View {
-            HStack(alignment: .top, spacing: ControlSize.fieldTileGap) {
+            HStack(spacing: ControlSize.fieldTileGap) {
                 IconTile(
                     systemImage: systemImage,
-                    tone: isLate ? .danger : .brand,
+                    tone: tone,
                     size: ControlSize.fieldTile,
                     glyphSize: ControlSize.fieldTileGlyph
                 )
                 VStack(alignment: .leading, spacing: Spacing.xxSmall) {
                     Text(label)
-                        .waiveraTextStyle(.labelMedium)
+                        .waiveraTextStyle(.fieldLabel)
                         .foregroundStyle(Palette.textSecondary)
-                    Text(value)
-                        .waiveraTextStyle(.bodyLarge, weight: .semibold)
-                        .foregroundStyle(isLate ? Palette.dangerText : Palette.text)
+                    value()
                 }
-                Spacer(minLength: 0)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(Spacing.medium)
+            .padding(.horizontal, Spacing.medium)
+            .padding(.vertical, Spacing.small)
+            .frame(minHeight: ControlSize.minHitTarget)
             .accessibilityElement(children: .combine)
+        }
+    }
+
+    /// A fact's value in the field value style.
+    struct FactValue: View {
+        let text: String
+        var color: Color = Palette.text
+
+        var body: some View {
+            Text(text)
+                .waiveraTextStyle(.fieldValue)
+                .foregroundStyle(color)
         }
     }
 #endif

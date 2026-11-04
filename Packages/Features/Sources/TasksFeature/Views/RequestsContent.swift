@@ -27,19 +27,22 @@
                     retry: actions.retryMine,
                     reviewable: false
                 )
-                VStack(alignment: .leading, spacing: Spacing.small) {
-                    Text(TasksStrings.text("tasks.requests.webNote"))
-                        .waiveraTextStyle(.bodySmall)
-                        .foregroundStyle(Palette.textSecondary)
+                VStack(alignment: .leading, spacing: 0) {
                     WaiveraButton(
                         TasksStrings.text("tasks.requests.openWeb"),
                         variant: .text,
-                        size: .compact,
                         systemImage: "arrow.up.right.square",
+                        fillsWidth: true,
                         action: actions.openWeb
                     )
+                    Text(TasksStrings.text("tasks.requests.webNote"))
+                        .waiveraTextStyle(.bodySmall)
+                        .foregroundStyle(Palette.textSecondary)
+                        .padding(.horizontal, Spacing.extraSmall)
                 }
-                .padding(Spacing.gutter)
+                .padding(.horizontal, Spacing.gutter)
+                .padding(.top, Spacing.medium)
+                .padding(.bottom, Spacing.large)
                 .tasksListRow()
             }
             .listStyle(.plain)
@@ -59,13 +62,16 @@
             retry: @escaping () -> Void,
             reviewable: Bool
         ) -> some View {
-            Text(title)
-                .waiveraTextStyle(.labelLarge, weight: .bold)
-                .foregroundStyle(Palette.text)
-                .accessibilityAddTraits(.isHeader)
-                .padding(.horizontal, Spacing.gutter)
-                .padding(.top, Spacing.medium)
-                .tasksListRow()
+            let waitingCount = reviewable ? (items.value?.count ?? 0) : 0
+            CountedSectionHeader(
+                title,
+                count: waitingCount,
+                countLabel: TasksStrings.plural("tasks.segment.waiting", waitingCount)
+            )
+            .padding(.horizontal, Spacing.gutter)
+            .padding(.top, Spacing.medium)
+            .padding(.bottom, Spacing.extraSmall)
+            .tasksListRow()
             switch items {
             case .loading:
                 SkeletonList(rows: 2)
@@ -83,7 +89,7 @@
                     .tasksListRow()
             case .ready(let list):
                 ForEach(list) { item in
-                    RequestCard(item: item, showsStatus: !reviewable) { actions.review(item) }
+                    RequestCard(item: item, waiting: reviewable) { actions.review(item) }
                         .padding(.horizontal, Spacing.gutter)
                         .padding(.vertical, Spacing.extraSmall)
                         .tasksListRow()

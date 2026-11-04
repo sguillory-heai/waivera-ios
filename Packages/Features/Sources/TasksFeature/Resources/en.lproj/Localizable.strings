@@ -3,7 +3,8 @@
 "tasks.segment.casework" = "Casework";
 "tasks.segment.myWork" = "My work";
 "tasks.segment.requests" = "Requests";
-"tasks.segment.requestsCount" = "Requests %@";
+"tasks.segment.waiting.one" = "%@ waiting on you";
+"tasks.segment.waiting.other" = "%@ waiting on you";
 "tasks.search.casework" = "Search casework";
 "tasks.search.mine" = "Search your tasks";
 "tasks.window.dueSoon" = "Due soon";
@@ -84,6 +85,7 @@
 "tasks.detail.title" = "Task";
 "tasks.detail.loading" = "Loading the task";
 "tasks.detail.error.title" = "Couldn't load this task";
+"tasks.detail.section" = "Details";
 "tasks.detail.description" = "Description";
 "tasks.detail.finished" = "This task is finished, so activity can't be added.";
 "tasks.field.status" = "Status";

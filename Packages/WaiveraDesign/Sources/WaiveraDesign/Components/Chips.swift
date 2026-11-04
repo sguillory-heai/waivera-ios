@@ -82,10 +82,17 @@
         public struct Option {
             public let value: Value
             public let title: String
+            /// Something waiting behind this option (Requests): a rose count after the label,
+            /// hidden at zero and while the option is chosen. Only `SegmentedControl` draws it.
+            public let count: Int
+            /// What VoiceOver reads for the count ("2 waiting on you").
+            public let countLabel: String?
 
-            public init(_ value: Value, title: String) {
+            public init(_ value: Value, title: String, count: Int = 0, countLabel: String? = nil) {
                 self.value = value
                 self.title = title
+                self.count = count
+                self.countLabel = countLabel
             }
         }
 
@@ -152,20 +159,29 @@
             return Button {
                 if !isSelected { selection = option.value }
             } label: {
-                Text(option.title)
-                    .waiveraTextStyle(.labelLarge)
-                    .fontWeight(isSelected ? .heavy : .semibold)
-                    .lineLimit(1)
-                    .fixedSize()
-                    .foregroundStyle(isSelected ? Palette.onSelectedFill : Palette.textSecondary)
-                    .padding(Spacing.small)
-                    .frame(maxWidth: .infinity, minHeight: ControlSize.segmentMinHeight)
-                    .background {
-                        RoundedRectangle(cornerRadius: Radius.segment, style: .continuous)
-                            .fill(Palette.selectedFill)
-                            .opacity(isSelected ? 1 : 0)
+                HStack(spacing: Spacing.extraSmall + Spacing.xxSmall) {
+                    Text(option.title)
+                        .waiveraTextStyle(.labelLarge)
+                        .fontWeight(isSelected ? .heavy : .semibold)
+                        .lineLimit(1)
+                        .fixedSize()
+                        .foregroundStyle(isSelected ? Palette.onSelectedFill : Palette.textSecondary)
+                    // A count asks for attention, so it leaves once that segment is open (Android).
+                    if option.count > 0, !isSelected {
+                        CountPill(
+                            text: BadgeFormatter.text(for: option.count) ?? String(option.count),
+                            accessibilityText: option.countLabel ?? String(option.count)
+                        )
                     }
-                    .contentShape(Rectangle())
+                }
+                .padding(Spacing.small)
+                .frame(maxWidth: .infinity, minHeight: ControlSize.segmentMinHeight)
+                .background {
+                    RoundedRectangle(cornerRadius: Radius.segment, style: .continuous)
+                        .fill(Palette.selectedFill)
+                        .opacity(isSelected ? 1 : 0)
+                }
+                .contentShape(Rectangle())
             }
             .buttonStyle(.pressScale)
             .animation(Motion.animation(.state, reduceMotion: reduceMotion), value: isSelected)

@@ -67,6 +67,7 @@
 "today.upcoming.inHours" = "in %ld hr";
 "today.upcoming.inHoursMinutes" = "in %1$ld hr %2$ld min";
 "today.upcoming.todayAt" = "Today · %@";
+"today.tomorrow" = "Tomorrow";
 "today.upcoming.tomorrowAt" = "Tomorrow · %@";
 "today.upcoming.dayAt" = "%1$@ · %2$@";
 "today.upcoming.allDayToday" = "All day today";

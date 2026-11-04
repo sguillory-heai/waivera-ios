@@ -158,7 +158,7 @@ struct RouteCatalogTests {
         let expected: Set<String> = [
             "activity", "conversation", "thread", "groupMembers", "calendarEvent", "profile", "organization",
             "people", "person", "bookmarks", "settings", "notificationSettings", "appearanceSettings",
-            "changePassword",
+            "changePassword", "notices", "task", "requests",
         ]
         #expect(covered == expected)
         #expect(RouteCatalog.gates.count == GateScreen.allCases.count)

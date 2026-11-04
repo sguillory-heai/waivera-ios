@@ -3,52 +3,66 @@
     import WaiveraData
     import WaiveraDesign
 
-    /// Status, due, start, about, type, assigned to and by: one row per fact that has a value.
+    /// Status, due, about, type, assigned to and by on one lifted card (Android `DetailBody`),
+    /// one row per fact that has a value, with inset hairlines between them.
     struct TaskFacts: View {
         let state: TaskDetailScreenState
         let task: TaskDetail
 
         var body: some View {
-            CardGroup {
-                FactRow(
-                    systemImage: "flag",
-                    label: TasksStrings.text("tasks.field.status"),
-                    value: TaskFormat.stateLabel(task.state),
-                    isLate: state.late
-                )
-                FactRow(
-                    systemImage: "calendar",
-                    label: TasksStrings.text("tasks.field.due"),
-                    value: state.dueDate.map { _ in state.due.text } ?? TasksStrings.text("tasks.due.none"),
-                    isLate: state.late
-                )
-                if let start = state.startDate {
-                    FactRow(
-                        systemImage: "calendar.badge.plus",
-                        label: TasksStrings.text("tasks.field.start"),
-                        value: start
-                    )
+            SheetCardGroup {
+                VStack(spacing: 0) {
+                    FactRow(systemImage: "list.bullet.clipboard", label: TasksStrings.text("tasks.field.status")) {
+                        StatusBadge(TaskFormat.stateLabel(task.state), tone: Self.tone(task.state, late: state.late))
+                    }
+                    InsetDivider()
+                    FactRow(systemImage: "calendar", label: TasksStrings.text("tasks.field.due")) {
+                        FactValue(
+                            text: state.dueDate ?? TasksStrings.text("tasks.due.none"),
+                            color: state.late ? Palette.dangerText : Palette.text
+                        )
+                    }
+                    if let about = task.about {
+                        InsetDivider()
+                        FactRow(systemImage: "person", label: TasksStrings.text("tasks.field.about")) {
+                            FactValue(text: about)
+                        }
+                    }
+                    if let type = task.type {
+                        InsetDivider()
+                        FactRow(systemImage: "number", label: TasksStrings.text("tasks.field.type")) {
+                            FactValue(text: type)
+                        }
+                    }
+                    if let assignee = task.assigneeName {
+                        InsetDivider()
+                        FactRow(systemImage: "person.2", label: TasksStrings.text("tasks.field.assignedTo")) {
+                            FactValue(text: assignee)
+                        }
+                    }
+                    if let by = task.assignedBy {
+                        InsetDivider()
+                        FactRow(systemImage: "person.2", label: TasksStrings.text("tasks.field.assignedBy")) {
+                            FactValue(text: by)
+                        }
+                    }
                 }
-                if let about = task.about {
-                    FactRow(systemImage: "person", label: TasksStrings.text("tasks.field.about"), value: about)
-                }
-                if let type = task.type {
-                    FactRow(systemImage: "tag", label: TasksStrings.text("tasks.field.type"), value: type)
-                }
-                if let assignee = task.assigneeName {
-                    FactRow(
-                        systemImage: "person.crop.circle.badge.checkmark",
-                        label: TasksStrings.text("tasks.field.assignedTo"),
-                        value: assignee
-                    )
-                }
-                if let by = task.assignedBy {
-                    FactRow(
-                        systemImage: "person.badge.plus",
-                        label: TasksStrings.text("tasks.field.assignedBy"),
-                        value: by
-                    )
-                }
+                .padding(.vertical, Spacing.mediumSmall)
+            }
+        }
+
+        /// The status badge's tone (Android `TaskFormat.tone`): finished green, late red, in progress
+        /// violet, in review amber, otherwise neutral.
+        static func tone(_ state: TaskState, late: Bool) -> BadgeTone {
+            switch state {
+            case .completed, .closed: return .success
+            default: break
+            }
+            if late { return .danger }
+            switch state {
+            case .inProgress: return .accent
+            case .inReview: return .warning
+            default: return .neutral
             }
         }
     }

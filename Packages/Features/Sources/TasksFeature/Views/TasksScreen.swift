@@ -40,23 +40,26 @@
 
         private var segments: some View {
             SegmentedControl(
-                options: model.state.segments.map { segment in
-                    SegmentedChips.Option(segment, title: title(segment))
+                options: model.state.segments.map { segment -> SegmentedChips<TasksSegment>.Option in
+                    let count = segment == .requests ? model.state.waitingCount : 0
+                    return SegmentedChips.Option(
+                        segment,
+                        title: title(segment),
+                        count: count,
+                        countLabel: TasksStrings.plural("tasks.segment.waiting", count)
+                    )
                 },
                 selection: Binding(get: { model.state.segment }, set: { model.setSegment($0) })
             )
             .padding(.horizontal, Spacing.gutter)
-            .padding(.vertical, Spacing.small)
+            .padding(.vertical, Spacing.extraSmall)
         }
 
         private func title(_ segment: TasksSegment) -> String {
             switch segment {
             case .casework: TasksStrings.text("tasks.segment.casework")
             case .myWork: TasksStrings.text("tasks.segment.myWork")
-            case .requests:
-                model.state.waitingCount > 0
-                    ? TasksStrings.format("tasks.segment.requestsCount", String(model.state.waitingCount))
-                    : TasksStrings.text("tasks.segment.requests")
+            case .requests: TasksStrings.text("tasks.segment.requests")
             }
         }
     }

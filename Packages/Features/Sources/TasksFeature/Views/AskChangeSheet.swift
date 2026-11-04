@@ -136,16 +136,15 @@
             label(TasksStrings.text("tasks.ask.delayWindow"))
             if let period = form.delay, let today {
                 CardGroup {
-                    FactRow(
-                        systemImage: "calendar",
-                        label: TasksStrings.text("tasks.ask.delayStarts"),
-                        value: TaskFormat.date(period.start, today: today)
-                    )
+                    FactRow(systemImage: "calendar", label: TasksStrings.text("tasks.ask.delayStarts")) {
+                        FactValue(text: TaskFormat.date(period.start, today: today))
+                    }
                     FactRow(
                         systemImage: "calendar.badge.checkmark",
-                        label: TasksStrings.text("tasks.ask.delayThrough"),
-                        value: TaskFormat.date(period.end, today: today)
-                    )
+                        label: TasksStrings.text("tasks.ask.delayThrough")
+                    ) {
+                        FactValue(text: TaskFormat.date(period.end, today: today))
+                    }
                 }
                 Text(TasksStrings.text("tasks.ask.delayFixed"))
                     .waiveraTextStyle(.bodySmall)

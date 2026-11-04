@@ -71,6 +71,10 @@ public enum RouteCatalog {
         ("conversation-bot", "waivera://chats/90"),
         ("calendar-event-invite", "waivera://calendar/evt_demo_invite"),
         ("calendar-event-checkin", "waivera://calendar/evt_demo_checkin"),
+        ("notices", "waivera://inbox"),
+        ("tasks", "waivera://tasks"),
+        ("task", "waivera://task/12"),
+        ("requests", "waivera://requests"),
     ].map { RouteCatalogEntry(name: $0.0, target: .link($0.1)) }
 
     /// Fake server scenarios the state variants run under, with the name suffix each adds.

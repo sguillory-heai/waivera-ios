@@ -17,9 +17,10 @@
                 controls.tasksListRow()
                 if let meta = state.meta {
                     Text(meta)
-                        .waiveraTextStyle(.labelMedium)
+                        .waiveraTextStyle(.bodyMedium)
                         .foregroundStyle(Palette.textSecondary)
-                        .padding(.horizontal, Spacing.gutter)
+                        .padding(.horizontal, Spacing.gutter + Spacing.extraSmall)
+                        .padding(.vertical, Spacing.xxSmall)
                         .tasksListRow()
                 }
                 content
@@ -40,7 +41,7 @@
         }
 
         private var controls: some View {
-            VStack(alignment: .leading, spacing: Spacing.small) {
+            VStack(alignment: .leading, spacing: Spacing.extraSmall) {
                 SearchField(
                     state.searchPlaceholder,
                     placeholder: state.searchPlaceholder,
@@ -78,9 +79,10 @@
                         }
                     }
                     .padding(.horizontal, Spacing.gutter)
+                    .padding(.vertical, Spacing.extraSmall)
                 }
             }
-            .padding(.vertical, Spacing.small)
+            .padding(.vertical, Spacing.extraSmall)
         }
 
         @ViewBuilder private var content: some View {
@@ -111,6 +113,7 @@
                     TaskGroupHeader(section: section)
                         .padding(.horizontal, Spacing.gutter)
                         .padding(.top, Spacing.medium)
+                        .padding(.bottom, Spacing.extraSmall)
                         .tasksListRow()
                     ForEach(section.rows) { row in
                         TaskCard(row: row) { actions.open(row.id) }

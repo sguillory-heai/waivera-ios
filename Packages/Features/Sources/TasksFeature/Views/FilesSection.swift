@@ -15,41 +15,41 @@
             if case .ready(let rows) = files, rows.isEmpty {
                 EmptyView()
             } else {
-                VStack(alignment: .leading, spacing: Spacing.small) {
-                    HStack {
-                        SectionHeader(TasksStrings.text("tasks.files.title"))
-                        Spacer()
-                        if let rows = files.value {
-                            Text(TasksStrings.plural("tasks.files.count", rows.count))
-                                .waiveraTextStyle(.labelMedium)
-                                .foregroundStyle(Palette.textSecondary)
-                        }
-                    }
-                    switch files {
-                    case .loading:
-                        SkeletonList(rows: 1)
-                    case .failed:
-                        EmptyStateView.error(
-                            title: TasksStrings.text("tasks.files.error"),
-                            message: "",
-                            onRetry: onRetry
-                        )
-                    case .ready(let rows):
-                        CardGroup {
-                            ForEach(rows) { row in
-                                Button {
-                                    onOpen(row)
-                                } label: {
-                                    FileRowView(row: row)
+                VStack(alignment: .leading, spacing: 0) {
+                    let count = files.value?.count ?? 0
+                    TaskSectionTitle(
+                        TasksStrings.text("tasks.files.title"),
+                        count: count,
+                        countLabel: TasksStrings.plural("tasks.files.count", count)
+                    )
+                    Group {
+                        switch files {
+                        case .loading:
+                            SkeletonList(rows: 1)
+                        case .failed:
+                            EmptyStateView.error(
+                                title: TasksStrings.text("tasks.files.error"),
+                                message: "",
+                                onRetry: onRetry
+                            )
+                        case .ready(let rows):
+                            SheetCardGroup {
+                                ForEach(rows) { row in
+                                    Button {
+                                        onOpen(row)
+                                    } label: {
+                                        FileRowView(row: row)
+                                    }
+                                    .buttonStyle(.press(.row))
+                                    .accessibilityLabel(Text(row.accessibilityLabel))
+                                    .accessibilityHint(
+                                        Text(TasksStrings.text(row.viewable ? "tasks.file.open" : "tasks.file.openWeb"))
+                                    )
                                 }
-                                .buttonStyle(.press(.row))
-                                .accessibilityLabel(Text(row.accessibilityLabel))
-                                .accessibilityHint(
-                                    Text(TasksStrings.text(row.viewable ? "tasks.file.open" : "tasks.file.openWeb"))
-                                )
                             }
                         }
                     }
+                    .padding(.horizontal, Spacing.gutter)
                 }
             }
         }

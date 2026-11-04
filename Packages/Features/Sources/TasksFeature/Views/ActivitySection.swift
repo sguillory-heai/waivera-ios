@@ -9,34 +9,36 @@
         let onRetry: () -> Void
 
         var body: some View {
-            VStack(alignment: .leading, spacing: Spacing.small) {
-                HStack {
-                    SectionHeader(TasksStrings.text("tasks.activity.title"))
-                    Spacer()
-                    if let rows = activity.value, !rows.isEmpty {
-                        Text(TasksStrings.plural("tasks.activity.count", rows.count))
-                            .waiveraTextStyle(.labelMedium)
+            VStack(alignment: .leading, spacing: 0) {
+                let count = activity.value?.count ?? 0
+                TaskSectionTitle(
+                    TasksStrings.text("tasks.activity.title"),
+                    count: count,
+                    countLabel: TasksStrings.plural("tasks.activity.count", count)
+                )
+                SheetCardGroup {
+                    switch activity {
+                    case .loading:
+                        SkeletonList(rows: 2).padding(Spacing.medium)
+                    case .failed:
+                        EmptyStateView.error(
+                            title: TasksStrings.text("tasks.activity.error"),
+                            message: "",
+                            onRetry: onRetry
+                        )
+                    case .ready(let rows) where rows.isEmpty:
+                        Text(TasksStrings.text("tasks.activity.empty"))
+                            .waiveraTextStyle(.bodyMedium)
                             .foregroundStyle(Palette.textSecondary)
+                            .padding(Spacing.medium)
+                    case .ready(let rows):
+                        ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                            if index > 0 { InsetDivider(inset: Spacing.medium) }
+                            ActivityItemView(row: row)
+                        }
                     }
                 }
-                switch activity {
-                case .loading:
-                    SkeletonList(rows: 2)
-                case .failed:
-                    EmptyStateView.error(
-                        title: TasksStrings.text("tasks.activity.error"),
-                        message: "",
-                        onRetry: onRetry
-                    )
-                case .ready(let rows) where rows.isEmpty:
-                    Text(TasksStrings.text("tasks.activity.empty"))
-                        .waiveraTextStyle(.bodyMedium)
-                        .foregroundStyle(Palette.textSecondary)
-                case .ready(let rows):
-                    CardGroup {
-                        ForEach(rows) { ActivityItemView(row: $0) }
-                    }
-                }
+                .padding(.horizontal, Spacing.gutter)
             }
         }
     }
@@ -64,7 +66,7 @@
                     minutes: 15
                 ),
             ]
-            ScrollView { ActivitySection(activity: .ready(rows), onRetry: {}).padding(Spacing.gutter) }
+            ScrollView { ActivitySection(activity: .ready(rows), onRetry: {}) }
                 .background(Palette.background)
         }
     }

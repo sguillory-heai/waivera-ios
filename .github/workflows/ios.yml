@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "full: lint, tests and screenshot tours. device: an unsigned iPhone .ipa to sideload. testflight: sign and upload to TestFlight."
+        description: "full: lint, tests and screenshot tours. screens: lint, build and the light linked-screen tour on the large phone only. device: an unsigned iPhone .ipa to sideload. testflight: sign and upload to TestFlight."
         type: choice
-        options: [full, device, testflight]
+        options: [full, screens, device, testflight]
         default: full
       version:
         description: "testflight only: the version testers see (CFBundleShortVersionString). Empty keeps project.yml's."
@@ -28,7 +28,7 @@ jobs:
   # Foundation-only packages on Linux: cheap, and covers parsing, routing, token logic, the data
   # layer and the fake environment. Apple-only files in them are behind #if canImport(...).
   packages-linux:
-    if: inputs.mode == 'full'
+    if: inputs.mode == 'full' || inputs.mode == 'screens'
     runs-on: ubuntu-latest
     container: swift:6.2
     timeout-minutes: 30
@@ -94,7 +94,8 @@ jobs:
   # later. Xcode is pinned rather than latest-stable so a runner image update cannot change the
   # compiler between two runs of the same commit; 26.6 is the image default since July 2026.
   app-macos:
-    if: inputs.mode == 'full'
+    # screens: a cheap visual check (build plus one light tour of the linked screens).
+    if: inputs.mode == 'full' || inputs.mode == 'screens'
     runs-on: macos-26
     # Write access only to force-push the screenshots branch (last steps); nothing else pushes.
     permissions:
@@ -211,7 +212,7 @@ jobs:
       # recording); the recorded PNGs are uploaded below.
       - name: Shell tests and snapshots (small phone)
         id: unit
-        if: steps.build.outcome == 'success'
+        if: steps.build.outcome == 'success' && inputs.mode == 'full'
         continue-on-error: true
         timeout-minutes: 12
         run: |
@@ -234,7 +235,7 @@ jobs:
           exit $status
       - name: UI tests, screenshot tour and accessibility audits (small phone)
         id: ui_small
-        if: steps.build.outcome == 'success'
+        if: steps.build.outcome == 'success' && inputs.mode == 'full'
         continue-on-error: true
         timeout-minutes: 55
         run: |
@@ -269,13 +270,15 @@ jobs:
         run: |
           set +e
           xcrun simctl shutdown "${{ steps.sim.outputs.small }}" || true
+          tour=WaiveraUITests/ScreenshotTourLight
+          [ "${{ inputs.mode }}" = screens ] && tour=WaiveraUITests/ScreenshotTourLight/testLinkedScreens
           .github/scripts/stop-at-minutes.sh 20 UILarge.xcresult &
           watchdog=$!
           xcodebuild test-without-building \
             -project Waivera.xcodeproj -scheme Waivera \
             -destination "id=${{ steps.sim.outputs.large }}" \
             -derivedDataPath "$DERIVED" \
-            -only-testing:WaiveraUITests/ScreenshotTourLight \
+            -only-testing:"$tour" \
             -parallel-testing-enabled NO \
             -test-timeouts-enabled YES \
             -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 900 \
@@ -392,8 +395,10 @@ jobs:
           [ "${{ steps.xcodegen.outcome }}" = success ] || failed="$failed xcodegen"
           [ "${{ steps.sim.outcome }}" = success ] || failed="$failed simulators"
           [ "${{ steps.build.outcome }}" = success ] || failed="$failed build"
-          [ "${{ steps.unit.outcome }}" = success ] || failed="$failed shell-tests-and-snapshots"
-          [ "${{ steps.ui_small.outcome }}" = success ] || failed="$failed ui-tests-small-phone"
+          if [ "${{ inputs.mode }}" = full ]; then
+            [ "${{ steps.unit.outcome }}" = success ] || failed="$failed shell-tests-and-snapshots"
+            [ "${{ steps.ui_small.outcome }}" = success ] || failed="$failed ui-tests-small-phone"
+          fi
           [ "${{ steps.ui_large.outcome }}" = success ] || failed="$failed screenshot-tour-large-phone"
           [ "${{ steps.export.outcome }}" = success ] || failed="$failed screenshot-export"
           [ "${{ steps.publish.outcome }}" = success ] || failed="$failed screenshot-branch"
