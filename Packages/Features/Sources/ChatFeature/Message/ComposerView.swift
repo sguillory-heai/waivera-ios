@@ -35,6 +35,8 @@
         @State private var pickedItem: PhotosPickerItem?
         /// The image last staged, so its card can fold away after it is removed or sent.
         @State private var shownImage: StagedImage?
+        /// When Send was last tapped, to catch the keyboard's echo (`ComposerEcho`).
+        @State private var sentAt: Date?
 
         var body: some View {
             VStack(spacing: 0) {
@@ -52,7 +54,10 @@
                         isUploading: config.isUploading,
                         isEditing: config.isEditing,
                         label: ConversationStrings.text(config.isEditing ? "save.edit" : config.sendLabelKey),
-                        onSend: onSend
+                        onSend: {
+                            sentAt = Date()
+                            onSend()
+                        }
                     )
                 }
                 .padding(.horizontal, Spacing.small)
@@ -98,7 +103,14 @@
                     )
             )
             .waiveraAnimation(.state, value: isFocused)
-            .onChange(of: draft) { onDraftChanged() }
+            .onChange(of: draft) { old, new in
+                if ComposerEcho.isEcho(sentAt: sentAt, now: Date(), old: old, new: new) {
+                    sentAt = nil
+                    draft = ""
+                    return
+                }
+                onDraftChanged()
+            }
             .accessibilityLabel(ConversationStrings.text(placeholderKey))
             .accessibilityIdentifier("composer.field")
         }
