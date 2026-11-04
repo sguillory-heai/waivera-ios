@@ -1,0 +1,20 @@
+Packages/Features/Sources/TodayFeature/Views/TodayStatGroup.swift:100:25: error: [AddLines] add 1 line break
+Packages/Features/Sources/TodayFeature/Views/TodayStatGroup.swift:100:45: error: [AddLines] add 1 line break
+Packages/Features/Sources/TodayFeature/Views/TodayStatGroup.swift:100:56: error: [AddLines] add 1 line break
+Packages/Features/Sources/TodayFeature/Views/TodayStatGroup.swift:100:66: error: [AddLines] add 1 line break
+Packages/Features/Sources/TodayFeature/Views/TodayStatGroup.swift:101:1: error: [Indentation] unindent by 4 spaces
+Packages/Features/Sources/TodayFeature/Views/TodayStatGroup.swift:102:1: error: [Indentation] unindent by 4 spaces
+Packages/Features/Sources/TasksFeature/Views/TaskDetailView.swift:54:18: error: [TrailingComma] remove trailing comma from the last element in single line collection literal
+Packages/Features/Sources/TasksFeature/Views/TaskCard.swift:73:28: error: [AddLines] add 1 line break
+Packages/WaiveraData/Tests/WaiveraDataTests/ProfileTests.swift:84:29: error: [AddLines] add 1 line break
+Packages/WaiveraData/Tests/WaiveraDataTests/ProfileTests.swift:84:45: error: [AddLines] add 1 line break
+Packages/WaiveraData/Tests/WaiveraDataTests/ProfileTests.swift:84:52: error: [AddLines] add 1 line break
+Packages/WaiveraData/Tests/WaiveraDataTests/ProfileTests.swift:85:1: error: [Indentation] indent by 8 spaces
+Packages/WaiveraData/Tests/WaiveraDataTests/ProfileTests.swift:86:1: error: [Indentation] indent by 8 spaces
+Packages/WaiveraData/Tests/WaiveraDataTests/ProfileTests.swift:87:1: error: [Indentation] indent by 8 spaces
+Packages/WaiveraData/Tests/WaiveraDataTests/ProfileTests.swift:88:1: error: [Indentation] indent by 8 spaces
+Packages/WaiveraData/Tests/WaiveraDataTests/ProfileTests.swift:88:13: error: [AddLines] add 1 line break
+Packages/WaiveraData/Tests/WaiveraDataTests/ProfileTests.swift:88:14: error: [AddLines] add 1 line break
+Packages/WaiveraData/Sources/WaiveraData/Repositories/LivePeopleRepository.swift:55:1: error: [Indentation] unindent by 2 spaces
+Packages/WaiveraData/Sources/WaiveraData/Repositories/LivePeopleRepository.swift:55:78: error: [AddLines] add 1 line break
+Packages/WaiveraData/Sources/WaiveraData/Repositories/LivePeopleRepository.swift:92:1: error: [LineLength] line is too long

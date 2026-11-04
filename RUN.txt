@@ -1,0 +1,6 @@
+run: https://github.com/sguillory-heai/waivera-ios/actions/runs/41849087987 (attempt 1)
+commit: 64d4cf7112a7f877325c883536316ed8155675f9
+branch: claude/project-thread-xighvx
+small phone: 6EAFFF4A-0519-4CD1-A89D-6ADD75235AB2
+large phone: DCA2A4ED-7625-458E-B4A3-EA3CF230C9AB
+outcomes: unit=skipped ui_small=skipped ui_large=success

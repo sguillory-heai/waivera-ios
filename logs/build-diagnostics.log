@@ -1,0 +1,20 @@
+/Users/runner/work/waivera-ios/waivera-ios/Packages/Features/Tests/ScheduleFeatureTests/QuickEventTests.swift:94:36: warning: '#require(_:_:)' is redundant because 'model.state.matches.first { $0.isParticipant }' never equals 'nil' (from macro 'require')
+2026-11-04 14:43:20.096 appintentsmetadataprocessor[6676:28251] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+2026-11-04 14:44:33.999 appintentsmetadataprocessor[7291:31287] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+2026-11-04 14:44:34.608 appintentsmetadataprocessor[7307:31353] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+2026-11-04 14:45:04.195 appintentsmetadataprocessor[7412:32017] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+2026-11-04 14:45:38.739 appintentsmetadataprocessor[7515:32947] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+2026-11-04 14:47:45.912 appintentsmetadataprocessor[9027:38506] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+2026-11-04 14:50:04.142 appintentsmetadataprocessor[11164:45719] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+2026-11-04 14:50:06.579 appintentsmetadataprocessor[11188:45812] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+2026-11-04 14:50:09.048 appintentsmetadataprocessor[11197:45926] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+2026-11-04 14:50:11.352 appintentsmetadataprocessor[11209:45959] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+2026-11-04 14:50:15.970 appintentsmetadataprocessor[11229:46123] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+2026-11-04 14:50:19.736 appintentsmetadataprocessor[11254:46298] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+2026-11-04 14:50:25.099 appintentsmetadataprocessor[11463:46843] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+2026-11-04 14:50:25.125 appintentsmetadataprocessor[11464:46844] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+2026-11-04 14:50:29.067 appintentsmetadataprocessor[11482:46921] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+2026-11-04 14:50:29.137 appintentsmetadataprocessor[11484:46925] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+2026-11-04 14:51:11.728 appintentsmetadataprocessor[13097:51122] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+2026-11-04 14:51:18.383 appintentsmetadataprocessor[13502:51966] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+2026-11-04 14:51:19.726 appintentsmetadataprocessor[13609:52214] warning: Metadata extraction skipped. No AppIntents.framework dependency found.

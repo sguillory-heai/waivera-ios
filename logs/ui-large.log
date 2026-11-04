@@ -1,0 +1,368 @@
+Command line invocation:
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild test-without-building -project Waivera.xcodeproj -scheme Waivera -destination id=DCA2A4ED-7625-458E-B4A3-EA3CF230C9AB -derivedDataPath DerivedData "-only-testing:WaiveraUITests/ScreenshotTourLight/testLinkedScreens" -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 900 -resultBundlePath UILarge.xcresult CODE_SIGNING_ALLOWED=NO
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  gRPC: https://github.com/google/grpc-binary.git @ 1.83.1
+  AppCheck: https://github.com/google/app-check.git @ 12.0.0
+  WaiveraDesign: /Users/runner/work/waivera-ios/waivera-ios/Packages/WaiveraDesign
+  GoogleDataTransport: https://github.com/google/GoogleDataTransport.git @ 10.1.1
+  Promises: https://github.com/google/promises.git @ 2.4.1
+  GoogleAppMeasurement: https://github.com/google/GoogleAppMeasurement.git @ 13.0.1
+  WaiveraRouting: /Users/runner/work/waivera-ios/waivera-ios/Packages/WaiveraRouting
+  swift-syntax: https://github.com/swiftlang/swift-syntax @ 601.0.1
+  swift-custom-dump: https://github.com/pointfreeco/swift-custom-dump @ 1.7.3
+  WaiveraTestSupport: /Users/runner/work/waivera-ios/waivera-ios/Packages/WaiveraTestSupport
+  Features: /Users/runner/work/waivera-ios/waivera-ios/Packages/Features
+  GoogleUtilities: https://github.com/google/GoogleUtilities.git @ 8.1.5
+  swift-snapshot-testing: https://github.com/pointfreeco/swift-snapshot-testing @ 1.18.3
+  SignalRClient: https://github.com/dotnet/signalr-client-swift @ 1.0.0
+  xctest-dynamic-overlay: https://github.com/pointfreeco/xctest-dynamic-overlay @ 1.13.1
+  WaiveraData: /Users/runner/work/waivera-ios/waivera-ios/Packages/WaiveraData
+  leveldb: https://github.com/firebase/leveldb.git @ 1.22.5
+  WaiveraNotifications: /Users/runner/work/waivera-ios/waivera-ios/Packages/WaiveraNotifications
+  WaiveraAPI: /Users/runner/work/waivera-ios/waivera-ios/Packages/WaiveraAPI
+  GTMSessionFetcher: https://github.com/google/gtm-session-fetcher.git @ 5.3.1
+  Firebase: https://github.com/firebase/firebase-ios-sdk @ 13.1.1
+  GoogleAdsOnDeviceConversion: https://github.com/googleads/google-ads-on-device-conversion-ios-sdk @ 3.7.0
+  WaiveraRealtime: /Users/runner/work/waivera-ios/waivera-ios/Packages/WaiveraRealtime
+  InteropForGoogle: https://github.com/google/interop-ios-for-google-sdks.git @ 101.0.0
+  nanopb: https://github.com/firebase/nanopb.git @ 2.30910.1
+  abseil: https://github.com/google/abseil-cpp-binary.git @ 1.2025051202.0
+  WaiveraFixtures: /Users/runner/work/waivera-ios/waivera-ios/Packages/WaiveraFixtures
+
+Writing result bundle at path:
+	/Users/runner/work/waivera-ios/waivera-ios/UILarge.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS Simulator, arch:arm64, id:DCA2A4ED-7625-458E-B4A3-EA3CF230C9AB, OS:26.2, name:iPhone 17 Pro Max }
+{ platform:iOS Simulator, arch:x86_64, id:DCA2A4ED-7625-458E-B4A3-EA3CF230C9AB, OS:26.2, name:iPhone 17 Pro Max }
+2026-11-04 14:55:33.139937+0000 WaiveraUITests-Runner[17785:65559] [Default] Running tests...
+2026-11-04 14:55:33.305634+0000 WaiveraUITests-Runner[17785:67047] [General] Failed to send CA Event for app launch measurements for ca_event_type: 0 event_name: com.apple.app_launch_measurement.FirstFramePresentationMetric
+2026-11-04 14:55:33.354051+0000 WaiveraUITests-Runner[17785:67050] [General] Failed to send CA Event for app launch measurements for ca_event_type: 1 event_name: com.apple.app_launch_measurement.ExtendedLaunchMetrics
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-04 14:56:01.880.
+Test Suite 'WaiveraUITests.xctest' started at 2026-11-04 14:56:01.882.
+Test Suite 'ScreenshotTourLight' started at 2026-11-04 14:56:01.883.
+Test Case '-[WaiveraUITests.ScreenshotTourLight testLinkedScreens]' started.
+    t =     0.00s Start Test at 2026-11-04 14:56:01.888
+    t =     1.46s Set Up
+    t =     1.52s Open com.waivera.waivera
+    t =     1.52s     Launch com.waivera.waivera
+2026-11-04 14:56:17.794 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 14:56:18.046 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    56.77s         Setting up automation session
+    t =    56.88s         Wait for com.waivera.waivera to idle
+    t =    58.05s Wait for com.waivera.waivera to become Running Foreground
+    t =    58.07s Open com.waivera.waivera with URL waivera://today
+    t =    58.07s     Launch com.waivera.waivera
+2026-11-04 14:57:00.884 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 14:57:00.886 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    62.90s         Setting up automation session
+    t =    64.65s         Wait for com.waivera.waivera to idle
+    t =    66.42s Waiting 5.0s for Window (First Match) to exist
+    t =    67.47s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =    67.48s         Checking existence of `Window (First Match)`
+    t =    67.56s Find the Target Application 'com.waivera.waivera'
+    t =    69.38s Added attachment named 'today__iPhone-17-Pro-Max-light'
+    t =    69.39s Open com.waivera.waivera with URL waivera://activity
+    t =    69.39s     Launch com.waivera.waivera
+2026-11-04 14:57:11.332 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 14:57:11.332 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    70.98s         Setting up automation session
+    t =    73.35s         Wait for com.waivera.waivera to idle
+    t =    76.56s Waiting 5.0s for Window (First Match) to exist
+    t =    77.61s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =    77.62s         Checking existence of `Window (First Match)`
+    t =    77.63s Find the Target Application 'com.waivera.waivera'
+    t =    78.16s Added attachment named 'activity__iPhone-17-Pro-Max-light'
+    t =    78.17s Open com.waivera.waivera with URL waivera://chats
+    t =    78.17s     Launch com.waivera.waivera
+2026-11-04 14:57:20.076 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 14:57:20.076 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    79.97s         Setting up automation session
+    t =    82.21s         Wait for com.waivera.waivera to idle
+    t =    83.80s Waiting 5.0s for Window (First Match) to exist
+    t =    84.80s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =    84.81s         Checking existence of `Window (First Match)`
+    t =    84.84s Find the Target Application 'com.waivera.waivera'
+    t =    85.32s Added attachment named 'chat__iPhone-17-Pro-Max-light'
+    t =    85.32s Open com.waivera.waivera with URL waivera://chats/new
+    t =    85.32s     Launch com.waivera.waivera
+2026-11-04 14:57:27.216 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 14:57:27.216 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    87.28s         Setting up automation session
+    t =    88.58s         Wait for com.waivera.waivera to idle
+    t =    90.07s Waiting 5.0s for Window (First Match) to exist
+    t =    91.13s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =    91.13s         Checking existence of `Window (First Match)`
+    t =    91.18s Find the Target Application 'com.waivera.waivera'
+    t =    91.77s Added attachment named 'chat-new__iPhone-17-Pro-Max-light'
+    t =    91.77s Open com.waivera.waivera with URL waivera://chats/7
+    t =    91.77s     Launch com.waivera.waivera
+2026-11-04 14:57:33.666 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 14:57:33.666 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    93.85s         Setting up automation session
+    t =    95.31s         Wait for com.waivera.waivera to idle
+    t =    98.81s Waiting 5.0s for Window (First Match) to exist
+    t =    99.85s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =    99.86s         Checking existence of `Window (First Match)`
+    t =    99.88s Find the Target Application 'com.waivera.waivera'
+    t =   100.42s Added attachment named 'conversation__iPhone-17-Pro-Max-light'
+    t =   100.42s Open com.waivera.waivera with URL waivera://chats/7?messageId=9312
+    t =   100.42s     Launch com.waivera.waivera
+2026-11-04 14:57:42.318 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 14:57:42.318 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =   102.32s         Setting up automation session
+    t =   104.63s         Wait for com.waivera.waivera to idle
+    t =   106.13s Waiting 5.0s for Window (First Match) to exist
+    t =   107.17s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =   107.17s         Checking existence of `Window (First Match)`
+    t =   107.20s Find the Target Application 'com.waivera.waivera'
+    t =   107.63s Added attachment named 'conversation-target__iPhone-17-Pro-Max-light'
+    t =   107.63s Open com.waivera.waivera with URL waivera://chats/thread/9330?conversationId=7
+    t =   107.63s     Launch com.waivera.waivera
+2026-11-04 14:57:49.539 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 14:57:49.540 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =   109.34s         Setting up automation session
+    t =   111.41s         Wait for com.waivera.waivera to idle
+    t =   113.90s Waiting 5.0s for Window (First Match) to exist
+    t =   114.95s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =   114.95s         Checking existence of `Window (First Match)`
+    t =   114.96s Find the Target Application 'com.waivera.waivera'
+    t =   115.19s Added attachment named 'thread__iPhone-17-Pro-Max-light'
+    t =   115.20s Open com.waivera.waivera with URL waivera://chats/63/members
+    t =   115.20s     Launch com.waivera.waivera
+2026-11-04 14:57:57.087 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 14:57:57.087 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =   116.35s         Setting up automation session
+    t =   117.50s         Wait for com.waivera.waivera to idle
+    t =   119.35s Waiting 5.0s for Window (First Match) to exist
+    t =   120.37s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =   120.37s         Checking existence of `Window (First Match)`
+    t =   120.42s Find the Target Application 'com.waivera.waivera'
+    t =   120.70s Added attachment named 'group-members__iPhone-17-Pro-Max-light'
+    t =   120.71s Open com.waivera.waivera with URL waivera://schedule
+    t =   120.71s     Launch com.waivera.waivera
+2026-11-04 14:58:02.596 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 14:58:02.596 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =   122.25s         Setting up automation session
+    t =   123.57s         Wait for com.waivera.waivera to idle
+    t =   125.00s Waiting 5.0s for Window (First Match) to exist
+    t =   126.03s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =   126.03s         Checking existence of `Window (First Match)`
+    t =   126.11s Find the Target Application 'com.waivera.waivera'
+    t =   126.64s Added attachment named 'schedule__iPhone-17-Pro-Max-light'
+    t =   126.64s Open com.waivera.waivera with URL waivera://calendar/evt_8f2b19c4
+    t =   126.64s     Launch com.waivera.waivera
+2026-11-04 14:58:08.576 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 14:58:08.576 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =   128.37s         Setting up automation session
+    t =   129.67s         Wait for com.waivera.waivera to idle
+    t =   132.47s Waiting 5.0s for Window (First Match) to exist
+    t =   133.51s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =   133.51s         Checking existence of `Window (First Match)`
+    t =   133.59s Find the Target Application 'com.waivera.waivera'
+    t =   134.06s Added attachment named 'calendar-event__iPhone-17-Pro-Max-light'
+    t =   134.06s Open com.waivera.waivera with URL waivera://profile
+    t =   134.06s     Launch com.waivera.waivera
+2026-11-04 14:58:16.005 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 14:58:16.005 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =   136.19s         Setting up automation session
+    t =   138.57s         Wait for com.waivera.waivera to idle
+    t =   140.38s Waiting 5.0s for Window (First Match) to exist
+    t =   141.48s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =   141.48s         Checking existence of `Window (First Match)`
+    t =   141.77s Find the Target Application 'com.waivera.waivera'
+    t =   142.33s Added attachment named 'profile__iPhone-17-Pro-Max-light'
+    t =   142.33s Open com.waivera.waivera with URL waivera://profile/organization
+    t =   142.33s     Launch com.waivera.waivera
+2026-11-04 14:58:24.324 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 14:58:24.325 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =   143.98s         Setting up automation session
+    t =   146.89s         Wait for com.waivera.waivera to idle
+    t =   149.77s Waiting 5.0s for Window (First Match) to exist
+    t =   150.81s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =   150.81s         Checking existence of `Window (First Match)`
+    t =   150.84s Find the Target Application 'com.waivera.waivera'
+    t =   151.22s Added attachment named 'organization__iPhone-17-Pro-Max-light'
+    t =   151.22s Open com.waivera.waivera with URL waivera://people
+    t =   151.22s     Launch com.waivera.waivera
+2026-11-04 14:58:33.141 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 14:58:33.141 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =   153.72s         Setting up automation session
+    t =   156.85s         Wait for com.waivera.waivera to idle
+    t =   158.76s Waiting 5.0s for Window (First Match) to exist
+    t =   159.86s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =   159.86s         Checking existence of `Window (First Match)`
+    t =   159.93s Find the Target Application 'com.waivera.waivera'
+    t =   160.56s Added attachment named 'people__iPhone-17-Pro-Max-light'
+    t =   160.57s Open com.waivera.waivera with URL waivera://people/usr_priya_raman
+    t =   160.57s     Launch com.waivera.waivera
+2026-11-04 14:58:42.587 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 14:58:42.588 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =   164.09s         Setting up automation session
+    t =   165.76s         Wait for com.waivera.waivera to idle
+    t =   168.79s Waiting 5.0s for Window (First Match) to exist
+    t =   169.82s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =   169.82s         Checking existence of `Window (First Match)`
+    t =   169.84s Find the Target Application 'com.waivera.waivera'
+    t =   170.21s Added attachment named 'person__iPhone-17-Pro-Max-light'
+    t =   170.21s Open com.waivera.waivera with URL waivera://bookmarks
+    t =   170.21s     Launch com.waivera.waivera
+2026-11-04 14:58:52.128 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 14:58:52.129 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =   172.11s         Setting up automation session
+    t =   173.92s         Wait for com.waivera.waivera to idle
+    t =   175.50s Waiting 5.0s for Window (First Match) to exist
+    t =   176.54s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =   176.54s         Checking existence of `Window (First Match)`
+    t =   176.56s Find the Target Application 'com.waivera.waivera'
+    t =   176.93s Added attachment named 'bookmarks__iPhone-17-Pro-Max-light'
+    t =   176.93s Open com.waivera.waivera with URL waivera://settings
+    t =   176.93s     Launch com.waivera.waivera
+2026-11-04 14:58:58.836 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 14:58:58.836 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =   179.39s         Setting up automation session
+    t =   182.00s         Wait for com.waivera.waivera to idle
+    t =   183.44s Waiting 5.0s for Window (First Match) to exist
+    t =   184.48s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =   184.48s         Checking existence of `Window (First Match)`
+    t =   184.51s Find the Target Application 'com.waivera.waivera'
+    t =   184.80s Added attachment named 'settings__iPhone-17-Pro-Max-light'
+    t =   184.81s Open com.waivera.waivera with URL waivera://settings/notifications
+    t =   184.81s     Launch com.waivera.waivera
+2026-11-04 14:59:06.705 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 14:59:06.705 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =   185.87s         Setting up automation session
+    t =   187.88s         Wait for com.waivera.waivera to idle
+    t =   190.41s Waiting 5.0s for Window (First Match) to exist
+    t =   191.42s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =   191.43s         Checking existence of `Window (First Match)`
+    t =   191.44s Find the Target Application 'com.waivera.waivera'
+    t =   191.77s Added attachment named 'settings-notifications__iPhone-17-Pro-Max-light'
+    t =   191.77s Open com.waivera.waivera with URL waivera://settings/appearance
+    t =   191.77s     Launch com.waivera.waivera
+2026-11-04 14:59:13.682 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 14:59:13.683 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =   193.26s         Setting up automation session
+    t =   194.77s         Wait for com.waivera.waivera to idle
+    t =   196.16s Waiting 5.0s for Window (First Match) to exist
+    t =   197.21s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =   197.21s         Checking existence of `Window (First Match)`
+    t =   197.23s Find the Target Application 'com.waivera.waivera'
+    t =   197.57s Added attachment named 'settings-appearance__iPhone-17-Pro-Max-light'
+    t =   197.57s Open com.waivera.waivera with URL waivera://settings/password
+    t =   197.58s     Launch com.waivera.waivera
+2026-11-04 14:59:19.472 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 14:59:19.473 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =   198.90s         Setting up automation session
+    t =   201.05s         Wait for com.waivera.waivera to idle
+    t =   204.25s Waiting 5.0s for Window (First Match) to exist
+    t =   205.29s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =   205.29s         Checking existence of `Window (First Match)`
+    t =   205.32s Find the Target Application 'com.waivera.waivera'
+    t =   205.64s Added attachment named 'settings-change-password__iPhone-17-Pro-Max-light'
+    t =   205.64s Open com.waivera.waivera with URL waivera://chats/90
+    t =   205.64s     Launch com.waivera.waivera
+2026-11-04 14:59:27.538 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 14:59:27.538 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =   207.69s         Setting up automation session
+    t =   208.81s         Wait for com.waivera.waivera to idle
+    t =   210.23s Waiting 5.0s for Window (First Match) to exist
+    t =   211.29s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =   211.29s         Checking existence of `Window (First Match)`
+    t =   211.31s Find the Target Application 'com.waivera.waivera'
+    t =   211.63s Added attachment named 'conversation-bot__iPhone-17-Pro-Max-light'
+    t =   211.63s Open com.waivera.waivera with URL waivera://calendar/evt_demo_invite
+    t =   211.63s     Launch com.waivera.waivera
+2026-11-04 14:59:33.529 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 14:59:33.529 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =   213.27s         Setting up automation session
+    t =   214.69s         Wait for com.waivera.waivera to idle
+    t =   217.10s Waiting 5.0s for Window (First Match) to exist
+    t =   218.13s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =   218.13s         Checking existence of `Window (First Match)`
+    t =   218.15s Find the Target Application 'com.waivera.waivera'
+    t =   218.52s Added attachment named 'calendar-event-invite__iPhone-17-Pro-Max-light'
+    t =   218.52s Open com.waivera.waivera with URL waivera://calendar/evt_demo_checkin
+    t =   218.52s     Launch com.waivera.waivera
+2026-11-04 14:59:40.416 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 14:59:40.416 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =   219.97s         Setting up automation session
+    t =   221.71s         Wait for com.waivera.waivera to idle
+    t =   223.32s Waiting 5.0s for Window (First Match) to exist
+    t =   224.36s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =   224.36s         Checking existence of `Window (First Match)`
+    t =   224.39s Find the Target Application 'com.waivera.waivera'
+    t =   224.78s Added attachment named 'calendar-event-checkin__iPhone-17-Pro-Max-light'
+    t =   224.79s Open com.waivera.waivera with URL waivera://inbox
+    t =   224.79s     Launch com.waivera.waivera
+2026-11-04 14:59:46.687 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 14:59:46.687 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =   226.39s         Setting up automation session
+    t =   228.31s         Wait for com.waivera.waivera to idle
+    t =   233.25s Waiting 5.0s for Window (First Match) to exist
+    t =   234.25s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =   234.26s         Checking existence of `Window (First Match)`
+    t =   238.51s         Capturing element debug description
+    t =   238.52s     Checking existence of `Window (First Match)`
+    t =   243.81s Find the Target Application 'com.waivera.waivera'
+    t =   254.01s Added attachment named 'notices__iPhone-17-Pro-Max-light'
+    t =   254.01s Open com.waivera.waivera with URL waivera://tasks
+    t =   254.01s     Launch com.waivera.waivera
+2026-11-04 15:00:16.053 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 15:00:16.064 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =   258.69s         Setting up automation session
+    t =   261.02s         Wait for com.waivera.waivera to idle
+    t =   264.88s Waiting 5.0s for Window (First Match) to exist
+    t =   265.94s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =   265.95s         Checking existence of `Window (First Match)`
+    t =   266.04s Find the Target Application 'com.waivera.waivera'
+    t =   266.55s Added attachment named 'tasks__iPhone-17-Pro-Max-light'
+    t =   266.55s Open com.waivera.waivera with URL waivera://task/12
+    t =   266.55s     Launch com.waivera.waivera
+2026-11-04 15:00:28.474 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 15:00:28.474 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =   269.71s         Setting up automation session
+    t =   273.21s         Wait for com.waivera.waivera to idle
+    t =   276.07s Waiting 5.0s for Window (First Match) to exist
+    t =   277.10s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =   277.10s         Checking existence of `Window (First Match)`
+    t =   277.14s Find the Target Application 'com.waivera.waivera'
+    t =   277.53s Added attachment named 'task__iPhone-17-Pro-Max-light'
+    t =   277.53s Open com.waivera.waivera with URL waivera://requests
+    t =   277.53s     Launch com.waivera.waivera
+2026-11-04 15:00:39.438 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-04 15:00:39.438 xcodebuild[15653:57705] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =   279.29s         Setting up automation session
+    t =   281.17s         Wait for com.waivera.waivera to idle
+    t =   283.92s Waiting 5.0s for Window (First Match) to exist
+    t =   284.95s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =   284.95s         Checking existence of `Window (First Match)`
+    t =   284.97s Find the Target Application 'com.waivera.waivera'
+    t =   285.37s Added attachment named 'requests__iPhone-17-Pro-Max-light'
+    t =   285.38s Terminate com.waivera.waivera:25292
+    t =   286.41s Tear Down
+Test Case '-[WaiveraUITests.ScreenshotTourLight testLinkedScreens]' passed (287.376 seconds).
+Test Suite 'ScreenshotTourLight' passed at 2026-11-04 15:00:49.265.
+	 Executed 1 test, with 0 failures (0 unexpected) in 287.376 (287.382) seconds
+Test Suite 'WaiveraUITests.xctest' passed at 2026-11-04 15:00:49.268.
+	 Executed 1 test, with 0 failures (0 unexpected) in 287.376 (287.386) seconds
+Test Suite 'Selected tests' passed at 2026-11-04 15:00:49.268.
+	 Executed 1 test, with 0 failures (0 unexpected) in 287.376 (287.388) seconds
+2026-11-04 15:00:50.252 xcodebuild[15653:57705] [MT] IDETestOperationsObserverDebug: 487.476 elapsed -- Testing started completed.
+2026-11-04 15:00:50.253 xcodebuild[15653:57705] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-04 15:00:50.253 xcodebuild[15653:57705] [MT] IDETestOperationsObserverDebug: 487.476 sec, +487.476 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/runner/work/waivera-ios/waivera-ios/UILarge.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started
