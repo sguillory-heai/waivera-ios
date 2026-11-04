@@ -138,25 +138,42 @@
         }
     }
 
-    /// Rows whose measured height comes in shorter than the lazy stack's estimate (a photo's
-    /// placeholder, a folded long message) can leave the list resting below its last row: the
-    /// screen looks empty until a drag makes the scroll view settle. When the list is at rest
-    /// past its end, it is put back on the newest row. Needs the iOS 18 scroll geometry APIs.
+    /// Keeps a conversation that rests at its newest message there while rows settle.
+    ///
+    /// Rows measure differently from the lazy stack's estimate (a photo's placeholder, a folded
+    /// long message, a link preview that lands later), so the content height keeps changing after
+    /// the list opens at the bottom. The offset then pointed into space the lazy stack had not
+    /// filled, or below the last row, and the screen showed blank until a drag (seen in the
+    /// Waivera notices chat, whose newest messages are photos). While the reader has not dragged
+    /// away from the newest message, every height change puts the list back on it, and a list
+    /// at rest past its end is put back too. Needs the iOS 18 scroll geometry APIs.
     private struct PastTheEndRepair: ViewModifier {
         let repair: () -> Void
         @State private var isIdle = true
-        @State private var isPast = false
+        /// The reader is at the newest message (or has not scrolled yet).
+        @State private var isPinned = true
+
+        private struct Edge: Equatable {
+            var contentHeight: CGFloat
+            var isPast: Bool
+            var isAtEnd: Bool
+        }
 
         func body(content: Content) -> some View {
             if #available(iOS 18.0, *) {
                 content
                     .onScrollPhaseChange { _, phase in
                         isIdle = phase == .idle
-                        if isIdle && isPast { repair() }
                     }
-                    .onScrollGeometryChange(for: Bool.self, of: Self.isPastTheEnd) { _, past in
-                        isPast = past
-                        if past && isIdle { repair() }
+                    .onScrollGeometryChange(for: Edge.self, of: Self.edge) { old, new in
+                        if !isIdle {
+                            // A drag decides: resting at the end pins, anywhere else lets go.
+                            isPinned = new.isAtEnd
+                            return
+                        }
+                        if new.isPast || (isPinned && new.contentHeight != old.contentHeight) {
+                            repair()
+                        }
                     }
             } else {
                 content
@@ -164,12 +181,17 @@
         }
 
         @available(iOS 18.0, *)
-        private static func isPastTheEnd(_ geometry: ScrollGeometry) -> Bool {
+        private static func edge(_ geometry: ScrollGeometry) -> Edge {
             let maxOffset = max(
                 geometry.contentSize.height + geometry.contentInsets.bottom - geometry.containerSize.height,
                 -geometry.contentInsets.top
             )
-            return geometry.contentSize.height > 0 && geometry.contentOffset.y > maxOffset + Spacing.hairline
+            let offset = geometry.contentOffset.y
+            return Edge(
+                contentHeight: geometry.contentSize.height,
+                isPast: geometry.contentSize.height > 0 && offset > maxOffset + Spacing.hairline,
+                isAtEnd: offset >= maxOffset - Spacing.large
+            )
         }
     }
 
