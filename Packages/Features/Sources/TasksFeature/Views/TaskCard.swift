@@ -107,7 +107,7 @@
         var systemImage = "chevron.right"
 
         var body: some View {
-            Image(systemName: systemImage)
+            WaiveraIcon(systemName: systemImage)
                 .font(.system(size: ControlSize.iconSmall, weight: .semibold))
                 .foregroundStyle(Palette.textSecondary)
                 .frame(width: ControlSize.iconSmall)

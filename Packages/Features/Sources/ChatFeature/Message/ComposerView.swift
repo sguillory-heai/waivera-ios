@@ -115,7 +115,7 @@
         private var attachButton: some View {
             let enabled = config.isEnabled && !config.isUploading
             return PhotosPicker(selection: $pickedItem, matching: .images) {
-                Image(systemName: "photo.badge.plus")
+                Image(waivera: "photo.badge.plus")
                     .resizable()
                     .scaledToFit()
                     .fontWeight(.medium)
@@ -170,7 +170,7 @@
                     if isUploading {
                         BusyIndicator(color: ink)
                     } else {
-                        Image(systemName: isEditing ? "checkmark" : "paperplane")
+                        Image(waivera: isEditing ? "checkmark" : "paperplane")
                             .resizable()
                             .scaledToFit()
                             .fontWeight(.bold)
@@ -205,7 +205,7 @@
 
         var body: some View {
             HStack(spacing: Spacing.small) {
-                Image(systemName: "pencil")
+                Image(waivera: "pencil")
                     .resizable()
                     .scaledToFit()
                     .frame(width: ControlSize.iconSmall, height: ControlSize.iconSmall)
@@ -216,7 +216,7 @@
                     .foregroundStyle(Palette.accent)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Button(action: onCancel) {
-                    Image(systemName: "xmark")
+                    WaiveraIcon(systemName: "xmark")
                         .fontWeight(.semibold)
                         .foregroundStyle(Palette.textSecondary)
                         .frame(width: ControlSize.iconButton, height: ControlSize.iconButton)
@@ -247,7 +247,7 @@
                             .resizable()
                             .scaledToFill()
                     } else {
-                        Image(systemName: "photo").foregroundStyle(Palette.textSecondary)
+                        WaiveraIcon(systemName: "photo").foregroundStyle(Palette.textSecondary)
                     }
                 }
                 .frame(width: ChatMetrics.stagedThumbnail, height: ChatMetrics.stagedThumbnail)

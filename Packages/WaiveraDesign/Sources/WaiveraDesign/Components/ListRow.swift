@@ -56,7 +56,7 @@
                     .frame(maxWidth: .infinity, alignment: .leading)
                     trailing
                     if showsChevron {
-                        Image(systemName: "chevron.right")
+                        WaiveraIcon(systemName: "chevron.right")
                             .font(WaiveraFont.captionEmphasis)
                             .foregroundStyle(Palette.textTertiary)
                             .accessibilityHidden(true)

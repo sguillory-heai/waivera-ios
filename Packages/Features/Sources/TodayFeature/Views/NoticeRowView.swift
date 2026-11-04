@@ -32,7 +32,7 @@
                 leading: { TodayTile(systemImage: tile.systemImage, tone: tile.tone) },
                 trailing: {
                     if row.opensOutside {
-                        Image(systemName: "arrow.up.right.square")
+                        WaiveraIcon(systemName: "arrow.up.right.square")
                             .font(WaiveraFont.captionEmphasis)
                             .foregroundStyle(Palette.textSecondary)
                             .padding(Spacing.extraSmall)

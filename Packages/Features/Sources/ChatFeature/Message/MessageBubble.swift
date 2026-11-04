@@ -22,19 +22,6 @@
         /// Previews run down to the bubble's bottom edge unless an attachment follows them.
         private var linksReachBottom: Bool { message.attachment == nil }
         private var sideInset: CGFloat { Spacing.mediumSmall - Spacing.hairline }
-        /// The previews take the bubble's bottom corners when they reach its bottom edge.
-        private var linkClip: UnevenRoundedRectangle {
-            let radii = shape.cornerRadii
-            return UnevenRoundedRectangle(
-                cornerRadii: RectangleCornerRadii(
-                    topLeading: 0,
-                    bottomLeading: linksReachBottom ? radii.bottomLeading : 0,
-                    bottomTrailing: linksReachBottom ? radii.bottomTrailing : 0,
-                    topTrailing: 0
-                ),
-                style: .continuous
-            )
-        }
         private var canOpenActions: Bool { actions.longPress != nil && !message.isDeleted }
         private var shape: UnevenRoundedRectangle {
             BubbleShape.make(isMine: row.isMine, previous: row.groupedWithPrevious, next: row.groupedWithNext)
@@ -65,7 +52,6 @@
                     .accessibilityHint(ConversationStrings.text("show.time"))
                 if showsLinks {
                     LinkSections(links: row.links, inset: sideInset, onOpen: actions.openLink)
-                        .clipShape(linkClip)
                         .padding(.horizontal, -sideInset)
                         .padding(.bottom, linksReachBottom ? -Spacing.small : 0)
                 }
@@ -83,6 +69,9 @@
             .padding(.vertical, hasBody ? Spacing.small : 0)
             .frame(minWidth: hasBody ? ChatMetrics.bubbleMinWidth : nil, alignment: row.isMine ? .trailing : .leading)
             .background(fill, in: shape)
+            // Previews run edge to edge, square under the body; the bubble's own corners round
+            // them at its bottom edge (Android clips the previews to the bubble).
+            .clipShape(BubbleClip(shape: shape, isActive: showsLinks))
             .overlay {
                 if hasBody && !tinted { shape.strokeBorder(border, lineWidth: Spacing.hairline) }
             }
@@ -237,5 +226,19 @@
             }
             .padding(.top, Spacing.extraSmall)
         }
+    }
+
+    /// The bubble's shape while it carries link previews, so they take its corners; otherwise a
+    /// clip far outside the bubble that cuts nothing. One shape either way keeps the bubble's
+    /// contents (and a photo's loaded image) the same view when a link comes or goes.
+    private struct BubbleClip: Shape {
+        let shape: UnevenRoundedRectangle
+        let isActive: Bool
+
+        func path(in rect: CGRect) -> Path {
+            isActive ? shape.path(in: rect) : Path(rect.insetBy(dx: -Self.reach, dy: -Self.reach))
+        }
+
+        private static let reach: CGFloat = 10_000
     }
 #endif

@@ -93,7 +93,7 @@ private struct TabBarItem: View {
             if isSelected {
                 pill
             }
-            Image(systemName: tab.systemImage)
+            Image(waivera: tab.systemImage)
                 .resizable()
                 .scaledToFit()
                 .symbolVariant(.none)

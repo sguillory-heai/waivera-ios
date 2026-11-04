@@ -94,7 +94,7 @@
             let shadow = Elevation.shadow(for: Elevation.level3)
             return Button(action: action) {
                 HStack(spacing: Spacing.extraSmall) {
-                    Image(systemName: "chevron.down")
+                    Image(waivera: "chevron.down")
                         .resizable()
                         .scaledToFit()
                         .fontWeight(.semibold)
@@ -107,7 +107,7 @@
                 .padding(.horizontal, Spacing.mediumSmall)
                 .padding(.vertical, Spacing.small)
                 .background(Palette.accent, in: Capsule())
-                .shadow(color: Palette.liftShadow, radius: shadow.radius, x: 0, y: shadow.y)
+                .shadow(color: Palette.elevationShadow, radius: shadow.radius, x: 0, y: shadow.y)
                 .frame(minHeight: ControlSize.minHitTarget)
                 .contentShape(Capsule())
             }

@@ -20,7 +20,7 @@
 
         public var body: some View {
             HStack(spacing: Spacing.small) {
-                Image(systemName: "magnifyingglass")
+                WaiveraIcon(systemName: "magnifyingglass")
                     .foregroundStyle(Palette.textSecondary)
                     .accessibilityHidden(true)
                 TextField(text: $query, prompt: Text(placeholder).foregroundStyle(Palette.textSecondary)) {
@@ -39,7 +39,7 @@
                     Button {
                         query = ""
                     } label: {
-                        Image(systemName: "xmark.circle.fill")
+                        WaiveraIcon(systemName: "xmark.circle.fill")
                             .foregroundStyle(Palette.textSecondary)
                             .frame(width: ControlSize.minHitTarget, height: ControlSize.minHitTarget)
                             .contentShape(Rectangle())

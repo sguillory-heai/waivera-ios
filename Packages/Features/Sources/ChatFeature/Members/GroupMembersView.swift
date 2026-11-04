@@ -241,7 +241,7 @@
                     .accessibilityLabel(ConversationStrings.format("members.opening", name))
             } else {
                 Button(action: onMessage) {
-                    Image(systemName: "bubble.left")
+                    Image(waivera: "bubble.left")
                         .resizable()
                         .scaledToFit()
                         .frame(width: ControlSize.smallIcon, height: ControlSize.smallIcon)
@@ -262,7 +262,7 @@
 
         var body: some View {
             HStack(spacing: Spacing.small) {
-                Image(systemName: "magnifyingglass")
+                WaiveraIcon(systemName: "magnifyingglass")
                     .foregroundStyle(Palette.textSecondary)
                     .accessibilityHidden(true)
                 TextField(ConversationStrings.text("members.search.placeholder"), text: $query)
@@ -275,7 +275,7 @@
                     Button {
                         query = ""
                     } label: {
-                        Image(systemName: "xmark.circle.fill")
+                        WaiveraIcon(systemName: "xmark.circle.fill")
                             .foregroundStyle(Palette.textSecondary)
                             .frame(width: ControlSize.iconButton, height: ControlSize.iconButton)
                             .contentShape(Rectangle())

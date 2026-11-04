@@ -183,7 +183,7 @@
                     outline: Palette.accentBorder,
                     outlineWidth: Spacing.hairline
                 ) {
-                    Image(systemName: "arrowshape.turn.up.left.2")
+                    WaiveraIcon(systemName: "arrowshape.turn.up.left.2")
                         .imageScale(.small)
                         .accessibilityHidden(true)
                     Text(ConversationStrings.replies(count))
@@ -268,7 +268,7 @@
 
         /// White on the dark scrim, which is the one place the white glyph reads.
         private var expandBadge: some View {
-            Image(systemName: "arrow.up.left.and.arrow.down.right")
+            Image(waivera: "arrow.up.left.and.arrow.down.right")
                 .resizable()
                 .scaledToFit()
                 .frame(width: ControlSize.iconSmall, height: ControlSize.iconSmall)
@@ -362,7 +362,7 @@
         }
 
         private var downloadGlyph: some View {
-            Image(systemName: "arrow.down.to.line")
+            Image(waivera: "arrow.down.to.line")
                 .resizable()
                 .scaledToFit()
                 .frame(width: ControlSize.smallIcon, height: ControlSize.smallIcon)
@@ -380,7 +380,7 @@
 
         var body: some View {
             HStack(spacing: Spacing.small) {
-                Image(systemName: systemImage)
+                Image(waivera: systemImage)
                     .resizable()
                     .scaledToFit()
                     .frame(width: ControlSize.smallIcon, height: ControlSize.smallIcon)

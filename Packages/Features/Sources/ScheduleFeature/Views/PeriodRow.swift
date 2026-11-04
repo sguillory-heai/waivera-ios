@@ -58,7 +58,7 @@
             Button {
                 onStep(direction)
             } label: {
-                Image(systemName: systemImage)
+                WaiveraIcon(systemName: systemImage)
                     .font(WaiveraFont.bodyEmphasis)
                     .foregroundStyle(Palette.text)
                     .frame(width: ControlSize.iconButton, height: ControlSize.iconButton)

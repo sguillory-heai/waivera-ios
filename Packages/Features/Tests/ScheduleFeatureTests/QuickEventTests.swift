@@ -66,6 +66,21 @@ struct QuickEventTests {
         #expect(!model.state.isValid)
     }
 
+    @Test("The day and time fields show the saved zone's wall clock on the DST change day")
+    func pickerTexts() {
+        let fake = FakeDataEnvironment.make(clock: ManualClock())
+        let state = EventFormModel(calendar: fake.calendar, clock: fake.clock).state
+        let posix = Locale(identifier: "en_US_POSIX")
+        let day = EventFormState.text(state.dayInstant, pattern: "EEE, MMM d, yyyy", zone: state.zone, locale: posix)
+        let start = EventFormState.text(state.startInstant, pattern: "h:mm a", zone: state.zone, locale: posix)
+        // 07:30Z is 1:30 AM CST, after the clocks fell back, not 2:30 AM CDT.
+        let fallBack = utc("2026-11-01T07:30:00Z")
+        let early = EventFormState.text(fallBack, pattern: "h:mm a", zone: Zones.chicago, locale: posix)
+        #expect(day == "Sun, Nov 1, 2026")
+        #expect(start == "9:30 AM")
+        #expect(early == "1:30 AM")
+    }
+
     @Test("Moving the start keeps the length; a missing title blocks the save")
     func editingFields() {
         let fake = FakeDataEnvironment.make(clock: ManualClock())

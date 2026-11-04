@@ -173,6 +173,9 @@
 "schedule.form.notify.note" = "Those with an email on file get the invite with a join link. Off, they only see it in Waivera.";
 "schedule.form.notify.edit" = "Sends this change to participants with an email on file, including anyone just added.";
 "schedule.form.onWeb" = "More options on the web";
+"schedule.form.done" = "Done";
+"schedule.form.matches.one" = "%d match";
+"schedule.form.matches.other" = "%d matches";
 "schedule.form.create" = "Create event";
 "schedule.form.save" = "Save changes";
 "schedule.form.saving" = "Saving";

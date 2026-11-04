@@ -12,7 +12,7 @@
         var body: some View {
             HStack(alignment: .top, spacing: Spacing.mediumSmall) {
                 IconTile(
-                    systemImage: "checklist",
+                    systemImage: "waveform.path.ecg",
                     tone: row.isNew ? .teal : .brand,
                     size: ControlSize.fieldTile,
                     glyphSize: ControlSize.fieldTileGlyph

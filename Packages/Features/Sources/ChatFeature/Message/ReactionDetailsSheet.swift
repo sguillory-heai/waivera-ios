@@ -24,7 +24,7 @@
                         .accessibilityAddTraits(.isHeader)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Button(action: onClose) {
-                        Image(systemName: "xmark")
+                        WaiveraIcon(systemName: "xmark")
                             .foregroundStyle(Palette.textSecondary)
                             .frame(width: ControlSize.minHitTarget, height: ControlSize.minHitTarget)
                     }

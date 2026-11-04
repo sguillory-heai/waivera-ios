@@ -19,13 +19,13 @@
                 case .synced:
                     EmptyView()
                 case .pending:
-                    Label(DesignStrings.sending, systemImage: "clock")
+                    Label { Text(DesignStrings.sending) } icon: { WaiveraIcon(systemName: "clock") }
                         .font(WaiveraFont.caption)
                         .foregroundStyle(Palette.textSecondary)
                         .accessibilityIdentifier("sync.pending")
                 case .failed:
                     Button(action: onRetry) {
-                        Label(DesignStrings.tapToRetry, systemImage: "exclamationmark.circle.fill")
+                        Label { Text(DesignStrings.tapToRetry) } icon: { WaiveraIcon(systemName: "exclamationmark.circle.fill") }
                             .font(WaiveraFont.captionEmphasis)
                             .foregroundStyle(Palette.dangerText)
                             .frame(minHeight: ControlSize.minHitTarget)

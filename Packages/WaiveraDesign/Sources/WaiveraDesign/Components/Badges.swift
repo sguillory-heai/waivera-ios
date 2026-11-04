@@ -86,7 +86,7 @@
         public var body: some View {
             HStack(spacing: Spacing.extraSmall) {
                 if let systemImage {
-                    Image(systemName: systemImage)
+                    WaiveraIcon(systemName: systemImage)
                         .imageScale(.small)
                         .accessibilityHidden(true)
                 }

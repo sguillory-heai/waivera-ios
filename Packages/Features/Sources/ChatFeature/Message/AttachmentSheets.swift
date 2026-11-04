@@ -162,7 +162,7 @@
                 Palette.previewScrim.opacity(fade).ignoresSafeArea()
                 content
                 Button(action: onClose) {
-                    Image(systemName: "xmark")
+                    WaiveraIcon(systemName: "xmark")
                         .fontWeight(.semibold)
                         .foregroundStyle(Palette.onAccent)
                         .frame(width: ControlSize.iconButton, height: ControlSize.iconButton)

@@ -119,7 +119,7 @@
                     .accessibilityAddTraits(.isHeader)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Button(action: onDismiss) {
-                    Image(systemName: "xmark")
+                    WaiveraIcon(systemName: "xmark")
                         .foregroundStyle(Palette.textSecondary)
                         .frame(width: ControlSize.minHitTarget, height: ControlSize.minHitTarget)
                         .contentShape(Rectangle())
@@ -255,7 +255,7 @@
                     lineWidth: Spacing.hairline * 2
                 )
                 PopVisibility(isVisible: person.isSelected) {
-                    Image(systemName: "checkmark")
+                    Image(waivera: "checkmark")
                         .resizable()
                         .scaledToFit()
                         .fontWeight(.bold)

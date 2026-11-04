@@ -96,7 +96,7 @@
 
         private func row(inlineAction: Bool, inlineDismiss: Bool) -> some View {
             HStack(alignment: .firstTextBaseline, spacing: Spacing.mediumSmall) {
-                Image(systemName: systemImage)
+                WaiveraIcon(systemName: systemImage)
                     .font(.system(size: ControlSize.icon * 0.8))
                     .foregroundStyle(ink)
                     .accessibilityHidden(true)
@@ -141,7 +141,7 @@
         @ViewBuilder private var dismissButton: some View {
             if let onDismiss {
                 Button(action: onDismiss) {
-                    Image(systemName: "xmark")
+                    WaiveraIcon(systemName: "xmark")
                         .font(WaiveraFont.captionEmphasis)
                         .foregroundStyle(ink)
                         .frame(width: ControlSize.minHitTarget, height: ControlSize.minHitTarget)

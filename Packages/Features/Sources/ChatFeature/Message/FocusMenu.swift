@@ -125,7 +125,7 @@
                 action()
             } label: {
                 HStack(spacing: Spacing.mediumSmall) {
-                    Image(systemName: systemImage)
+                    Image(waivera: systemImage)
                         .resizable()
                         .scaledToFit()
                         .frame(width: ControlSize.iconTileSmallGlyph, height: ControlSize.iconTileSmallGlyph)

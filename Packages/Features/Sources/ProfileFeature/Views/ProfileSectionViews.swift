@@ -128,7 +128,7 @@
                     ForEach(Array(files.enumerated()), id: \.element.id) { index, file in
                         if index > 0 { RowDivider() }
                         HStack(spacing: Spacing.smallPlus) {
-                            Image(systemName: "doc.text.fill")
+                            WaiveraIcon(systemName: "doc.text.fill")
                                 .foregroundStyle(Palette.accent)
                                 .frame(width: ControlSize.minHitTarget, height: ControlSize.minHitTarget)
                                 .background(

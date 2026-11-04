@@ -38,6 +38,20 @@ public struct EventFormState: Sendable, Hashable {
     public var startInstant: Date { date.instant(atMinute: startMinute, in: zone) }
     public var endInstant: Date { date.instant(atMinute: endMinute, in: zone) }
 
+    /// "Wed, Nov 4, 2026", "9:00 AM": the pickers' values in the saved zone, in Android's
+    /// patterns (times are always 12-hour).
+    public var dayText: String { Self.text(dayInstant, pattern: "EEE, MMM d, yyyy", zone: zone) }
+    public var startText: String { Self.text(startInstant, pattern: "h:mm a", zone: zone) }
+    public var endText: String { Self.text(endInstant, pattern: "h:mm a", zone: zone) }
+
+    static func text(_ instant: Date, pattern: String, zone: TimeZone, locale: Locale = .current) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.timeZone = zone
+        formatter.dateFormat = pattern
+        return formatter.string(from: instant)
+    }
+
     public var zoneNote: String {
         let name = zone.localizedName(for: .generic, locale: .current) ?? zone.identifier
         return ScheduleStrings.format("schedule.form.zoneNote", name)

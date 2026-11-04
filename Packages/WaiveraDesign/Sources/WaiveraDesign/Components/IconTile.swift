@@ -23,17 +23,23 @@
 
         public var body: some View {
             TileFrame(tone: tone, size: size) {
-                Image(systemName: Self.outline(systemImage))
+                Image(waivera: Self.outline(systemImage))
                     .resizable()
                     .scaledToFit()
                     .fontWeight(.medium)
                     .foregroundStyle(tone.contentColor)
-                    .frame(width: glyphSize * 0.8, height: glyphSize * 0.8)
+                    .frame(width: glyphFrame, height: glyphFrame)
             }
         }
     }
 
     extension IconTile {
+        /// Android draws a tile's icon at the glyph size; a stand-in SF Symbol fills its frame
+        /// edge to edge, so it gets a smaller one to look the same size.
+        private var glyphFrame: CGFloat {
+            WaiveraIcons.asset(for: Self.outline(systemImage)) != nil ? glyphSize : glyphSize * 0.8
+        }
+
         /// Android's tile glyphs are outline icons, so a tile always draws the outline form of a
         /// symbol, whichever form the caller named.
         static func outline(_ name: String) -> String {

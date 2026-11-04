@@ -60,7 +60,7 @@
         var body: some View {
             Button(action: action) {
                 HStack(spacing: Spacing.extraSmall) {
-                    Image(systemName: "arrow.up")
+                    WaiveraIcon(systemName: "arrow.up")
                         .accessibilityHidden(true)
                     Text(ChatListStrings.string("chat.list.newActivity"))
                 }
@@ -108,7 +108,7 @@
 
         private var field: some View {
             HStack(spacing: Spacing.small) {
-                Image(systemName: "magnifyingglass")
+                WaiveraIcon(systemName: "magnifyingglass")
                     .foregroundStyle(Palette.textSecondary)
                     .accessibilityHidden(true)
                 TextField(text: $query, prompt: Text(placeholder).foregroundStyle(Palette.textSecondary)) {
@@ -128,7 +128,7 @@
                     Button {
                         query = ""
                     } label: {
-                        Image(systemName: "xmark.circle.fill")
+                        WaiveraIcon(systemName: "xmark.circle.fill")
                             .foregroundStyle(Palette.textSecondary)
                             .frame(width: ControlSize.minHitTarget, height: ControlSize.minHitTarget)
                             .contentShape(Rectangle())

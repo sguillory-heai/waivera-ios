@@ -210,7 +210,7 @@
                     .frame(height: Spacing.hairline)
                 Button(action: onOpen) {
                     HStack(alignment: stacked ? .top : .center, spacing: Spacing.small) {
-                        Image(systemName: "clock")
+                        Image(waivera: "clock")
                             .resizable()
                             .scaledToFit()
                             .frame(width: ControlSize.iconTileSmallGlyph, height: ControlSize.iconTileSmallGlyph)

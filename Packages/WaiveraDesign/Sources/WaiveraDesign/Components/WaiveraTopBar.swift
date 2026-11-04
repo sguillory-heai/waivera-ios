@@ -86,7 +86,7 @@
                 Button {
                     if let onBack { onBack() } else { dismiss() }
                 } label: {
-                    Image(systemName: "arrow.left")
+                    WaiveraIcon(systemName: "arrow.left")
                         .font(.system(size: ControlSize.icon - Spacing.xxSmall, weight: .semibold))
                         .foregroundStyle(HeroPalette.onHeader)
                         .frame(width: ControlSize.iconButton, height: ControlSize.iconButton)
@@ -110,7 +110,7 @@
                             if item.isBusy {
                                 ProgressView().tint(HeroPalette.onHeader)
                             } else {
-                                Image(systemName: item.systemImage)
+                                WaiveraIcon(systemName: item.systemImage)
                                     .font(.system(size: ControlSize.icon - Spacing.xxSmall, weight: .semibold))
                                     .foregroundStyle(HeroPalette.onHeader)
                             }

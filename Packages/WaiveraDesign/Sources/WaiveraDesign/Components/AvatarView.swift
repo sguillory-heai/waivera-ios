@@ -19,14 +19,19 @@
         private let size: CGFloat
         private let fill: Fill
         private let milestoneLabel: String?
+        private let tileIndex: Int?
 
+        /// `tileIndex` picks one of `AvatarTiles.pairs` for every name (a picker colouring people
+        /// by kind); left out, the name picks the tile.
         public init(
             name: String,
             image: Image? = nil,
             size: CGFloat = ControlSize.avatarMedium,
             fill: Fill = .standard,
-            milestoneLabel: String? = nil
+            milestoneLabel: String? = nil,
+            tileIndex: Int? = nil
         ) {
+            self.tileIndex = tileIndex
             self.name = name
             self.image = image
             self.size = size
@@ -70,7 +75,7 @@
                     .minimumScaleFactor(0.5)
                     .padding(size * 0.1)
             } else {
-                Image(systemName: "person.fill")
+                Image(waivera: "person.fill")
                     .resizable()
                     .scaledToFit()
                     .foregroundStyle(inkColor)
@@ -98,7 +103,8 @@
 
         /// Gradient, a sheen over the top and a faint inner edge (Android `personTile`).
         private var tile: some View {
-            let pair = AvatarTiles.pair(for: name)
+            var pair = AvatarTiles.pair(for: name)
+            if let tileIndex { pair = AvatarTiles.pairs[tileIndex % AvatarTiles.pairs.count] }
             let edge = size * AvatarTiles.edgeFraction
             return ZStack {
                 LinearGradient(

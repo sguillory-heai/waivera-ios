@@ -199,7 +199,7 @@
                         actions.discard(outgoing.clientMessageId)
                     }
                 } label: {
-                    Image(systemName: "ellipsis")
+                    WaiveraIcon(systemName: "ellipsis")
                         .foregroundStyle(Palette.accent)
                         .frame(width: ControlSize.iconButton, height: ControlSize.iconButton)
                         .contentShape(Rectangle())

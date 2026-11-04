@@ -64,7 +64,7 @@
         /// row stacks when that room is under half the row, or at large text (wave 28 B3).
         private func meta(_ icon: String, _ labelKey: String, _ value: String, muted: Bool = false) -> some View {
             HStack(alignment: .firstTextBaseline, spacing: Spacing.small) {
-                Image(systemName: icon)
+                WaiveraIcon(systemName: icon)
                     .foregroundStyle(Palette.textSecondary)
                     .accessibilityHidden(true)
                 TicketMetaLayout(gap: Spacing.medium, stacks: dynamicTypeSize.isLargeText) {
@@ -271,7 +271,7 @@
                         Palette.textSecondary
                     )
                 }
-                Image(systemName: "chevron.down")
+                WaiveraIcon(systemName: "chevron.down")
                     .foregroundStyle(Palette.textSecondary)
                     .rotationEffect(.degrees(isExpanded ? ChatMetrics.halfTurnDegrees : 0))
                     .accessibilityHidden(true)

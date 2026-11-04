@@ -24,12 +24,12 @@
             Button(action: action) {
                 HStack(spacing: Spacing.extraSmall + Spacing.xxSmall) {
                     if filled {
-                        Image(systemName: "checkmark")
+                        WaiveraIcon(systemName: "checkmark")
                             .font(.system(size: ControlSize.filterChipIcon * 0.75, weight: .bold))
                             .transition(Motion.pop(reduceMotion: reduceMotion))
                             .accessibilityHidden(true)
                     } else if let systemImage {
-                        Image(systemName: systemImage)
+                        WaiveraIcon(systemName: systemImage)
                             .imageScale(.small)
                             .accessibilityHidden(true)
                     }

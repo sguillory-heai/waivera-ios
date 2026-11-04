@@ -235,7 +235,7 @@
                     .accessibilityAddTraits(.isHeader)
                 ForEach(actions) { item in
                     Button(action: item.action) {
-                        Image(systemName: item.systemImage)
+                        WaiveraIcon(systemName: item.systemImage)
                             .font(.system(size: ControlSize.icon, weight: .semibold))
                             .foregroundStyle(HeroPalette.onHeader)
                             .frame(width: ControlSize.iconButton, height: ControlSize.iconButton)

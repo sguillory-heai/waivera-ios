@@ -105,6 +105,8 @@
         /// them (`Elevation.androidShadowShare`). Use these, not the raw tokens, for shadows.
         public static let glowShadow = buttonGlow.opacity(Elevation.androidShadowShare)
         public static let liftShadow = buttonRaise.opacity(Elevation.androidShadowShare)
+        /// An Android `shadow(elevation)` with the default black (floating pills).
+        public static let elevationShadow = Color.black.opacity(Elevation.androidDefaultShadowAlpha)
     }
 
     /// The plum hero's colours.

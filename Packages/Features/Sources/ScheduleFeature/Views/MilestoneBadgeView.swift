@@ -15,7 +15,7 @@
         var body: some View {
             let edge = CGFloat(badge.size)
             HStack(spacing: 0) {
-                Image(systemName: symbol)
+                Image(waivera: symbol)
                     .resizable()
                     .scaledToFit()
                     .fontWeight(.bold)

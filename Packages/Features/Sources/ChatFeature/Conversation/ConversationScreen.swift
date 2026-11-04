@@ -249,7 +249,7 @@
                             Text(ConversationStrings.members(memberCount))
                                 .waiveraTextStyle(.labelMedium)
                                 .lineLimit(1)
-                            Image(systemName: "chevron.right")
+                            Image(waivera: "chevron.right")
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: ControlSize.iconSmall / 2, height: ControlSize.iconSmall / 2)

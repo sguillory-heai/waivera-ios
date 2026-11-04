@@ -34,7 +34,7 @@
                             Button {
                                 model.backToChoices()
                             } label: {
-                                Image(systemName: "chevron.left")
+                                WaiveraIcon(systemName: "chevron.left")
                             }
                             .accessibilityLabel(Text(TasksStrings.text("tasks.ask.back")))
                         }
@@ -177,7 +177,7 @@
                         Text(form.reason?.name ?? TasksStrings.text("tasks.ask.chooseReason"))
                             .foregroundStyle(form.reason == nil ? Palette.textTertiary : Palette.text)
                         Spacer()
-                        Image(systemName: "chevron.up.chevron.down").foregroundStyle(Palette.textSecondary)
+                        WaiveraIcon(systemName: "chevron.up.chevron.down").foregroundStyle(Palette.textSecondary)
                     }
                     .waiveraTextStyle(.bodyLarge)
                     .padding(.horizontal, Spacing.medium)
@@ -233,7 +233,7 @@
                     }
                 } label: {
                     HStack {
-                        Image(systemName: "paperclip")
+                        WaiveraIcon(systemName: "paperclip")
                         Text(form.evidence?.name ?? TasksStrings.text("tasks.ask.chooseFile"))
                         Spacer()
                     }

@@ -181,7 +181,7 @@
                         ListRow(title: SettingsStrings.systemOpen) {
                             IconTile(systemImage: "gearshape.fill", tone: .neutral)
                         } trailing: {
-                            Image(systemName: "arrow.up.forward.square")
+                            WaiveraIcon(systemName: "arrow.up.forward.square")
                                 .foregroundStyle(Palette.textSecondary)
                                 .accessibilityHidden(true)
                         }

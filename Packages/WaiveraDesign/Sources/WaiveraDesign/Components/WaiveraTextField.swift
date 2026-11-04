@@ -101,7 +101,7 @@
                 HStack(spacing: Spacing.small) {
                     if let systemImage {
                         // Decorative (Android `FieldIcon`): the label names the field.
-                        Image(systemName: systemImage)
+                        WaiveraIcon(systemName: systemImage)
                             .font(.system(size: ControlSize.icon * 0.8))
                             .foregroundStyle(Palette.textSecondary)
                             .frame(width: ControlSize.icon)
@@ -113,15 +113,15 @@
                         .tint(Palette.accent)
                         .textContentType(contentType)
                         .keyboardType(keyboard)
-                        .autocorrectionDisabled(isSecure || keyboard == .emailAddress)
-                        .textInputAutocapitalization(isSecure || keyboard == .emailAddress ? .never : .sentences)
+                        .autocorrectionDisabled(isSecure || keyboard == .emailAddress || keyboard == .webSearch)
+                        .textInputAutocapitalization(capitalization)
                         .accessibilityLabel(Text(label))
                         .accessibilityHint(error.map { Text($0) } ?? Text(verbatim: ""))
                     if isSecure {
                         Button {
                             toggleReveal()
                         } label: {
-                            Image(systemName: isRevealed ? "eye.slash" : "eye")
+                            WaiveraIcon(systemName: isRevealed ? "eye.slash" : "eye")
                                 .foregroundStyle(Palette.textSecondary)
                                 .frame(width: ControlSize.minHitTarget, height: ControlSize.minHitTarget)
                                 .contentShape(Rectangle())
@@ -141,7 +141,7 @@
                     )
                 )
                 if let error {
-                    Label(error, systemImage: "exclamationmark.circle.fill")
+                    Label { Text(error) } icon: { WaiveraIcon(systemName: "exclamationmark.circle.fill") }
                         .font(WaiveraFont.caption)
                         .foregroundStyle(Palette.dangerText)
                         .accessibilityHidden(true)
@@ -152,6 +152,13 @@
                 if wanted, focusedInner == nil { focusedInner = visibleInner }
                 if !wanted, focusedInner != nil { focusedInner = nil }
             }
+        }
+
+        /// None for passwords and emails, names for a search (people are looked up by name),
+        /// sentences otherwise.
+        private var capitalization: TextInputAutocapitalization {
+            if isSecure || keyboard == .emailAddress { return .never }
+            return keyboard == .webSearch ? .words : .sentences
         }
 
         private var visibleInner: Inner {

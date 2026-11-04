@@ -21,7 +21,7 @@
                         onSelect(filter)
                     } label: {
                         HStack(spacing: Spacing.mediumSmall) {
-                            Image(systemName: filter == selected ? "largecircle.fill.circle" : "circle")
+                            WaiveraIcon(systemName: filter == selected ? "largecircle.fill.circle" : "circle")
                                 .foregroundStyle(filter == selected ? Palette.accent : Palette.textTertiary)
                                 .accessibilityHidden(true)
                             VStack(alignment: .leading, spacing: Spacing.xxSmall) {

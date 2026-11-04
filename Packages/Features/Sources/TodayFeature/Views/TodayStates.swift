@@ -37,7 +37,7 @@
         var body: some View {
             HStack(alignment: .firstTextBaseline, spacing: Spacing.small) {
                 if let systemImage {
-                    Image(systemName: systemImage)
+                    WaiveraIcon(systemName: systemImage)
                         .foregroundStyle(Palette.textSecondary)
                         .accessibilityHidden(true)
                 }

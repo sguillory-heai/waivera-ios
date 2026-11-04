@@ -8,7 +8,7 @@ struct PrivacyCover: View {
     var body: some View {
         ZStack {
             Palette.background.ignoresSafeArea()
-            Image(systemName: "lock.fill")
+            WaiveraIcon(systemName: "lock.fill")
                 .font(WaiveraFont.sectionTitle)
                 .foregroundStyle(Palette.accent)
                 .accessibilityHidden(true)

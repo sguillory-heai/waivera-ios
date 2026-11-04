@@ -31,7 +31,7 @@
         var body: some View {
             let copy = ConversationStrings.readOnly(reason)
             HStack(spacing: Spacing.mediumSmall) {
-                Image(systemName: "lock.fill")
+                Image(waivera: "lock.fill")
                     .resizable()
                     .scaledToFit()
                     .frame(width: ControlSize.iconSmall, height: ControlSize.iconSmall)
@@ -131,7 +131,7 @@
                     .fill(Palette.accent)
                     .frame(width: ChatMetrics.liveDot, height: ChatMetrics.liveDot)
                     .accessibilityHidden(true)
-                Image(systemName: "video.fill")
+                Image(waivera: "video.fill")
                     .resizable()
                     .scaledToFit()
                     .frame(width: ControlSize.iconSmall, height: ControlSize.iconSmall)

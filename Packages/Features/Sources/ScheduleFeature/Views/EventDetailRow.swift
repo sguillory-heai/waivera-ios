@@ -40,7 +40,7 @@
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 if let trailingSystemImage {
-                    Image(systemName: trailingSystemImage)
+                    WaiveraIcon(systemName: trailingSystemImage)
                         .font(.system(size: ControlSize.iconSmall))
                         .foregroundStyle(Palette.textSecondary)
                         .frame(width: ControlSize.icon, height: ControlSize.icon)

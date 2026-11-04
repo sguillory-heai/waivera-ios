@@ -59,7 +59,7 @@
 
         private var kicker: some View {
             HStack(spacing: Spacing.extraSmall + Spacing.xxSmall) {
-                Image(systemName: glyph)
+                WaiveraIcon(systemName: glyph)
                     .imageScale(.small)
                     .foregroundStyle(Palette.textSecondary)
                 Text(LinkPreviewText.kicker(preview))
@@ -68,7 +68,7 @@
                     .lineLimit(1)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 if preview.opens {
-                    Image(systemName: preview.kind == .task ? "chevron.right" : "arrow.up.right.square")
+                    WaiveraIcon(systemName: preview.kind == .task ? "chevron.right" : "arrow.up.right.square")
                         .imageScale(.small)
                         .foregroundStyle(Palette.accent)
                 }

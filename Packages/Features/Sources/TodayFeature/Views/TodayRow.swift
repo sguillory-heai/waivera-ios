@@ -35,7 +35,7 @@
                             content
                             trailing()
                             if showsChevron {
-                                Image(systemName: "chevron.right")
+                                WaiveraIcon(systemName: "chevron.right")
                                     .font(WaiveraFont.captionEmphasis)
                                     .foregroundStyle(Palette.textSecondary)
                                     .accessibilityHidden(true)
@@ -323,7 +323,7 @@
 
         @ViewBuilder private var label: some View {
             if let systemImage {
-                Label(title, systemImage: systemImage)
+                Label { Text(title) } icon: { WaiveraIcon(systemName: systemImage) }
             } else {
                 Text(title)
             }

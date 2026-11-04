@@ -118,7 +118,7 @@
         @ViewBuilder private var label: some View {
             if let systemImage {
                 HStack(spacing: size == .compact ? Spacing.extraSmall : Spacing.small) {
-                    Image(systemName: systemImage)
+                    WaiveraIcon(systemName: systemImage)
                         .imageScale(size == .compact ? .small : .medium)
                         .accessibilityHidden(true)
                     Text(title)

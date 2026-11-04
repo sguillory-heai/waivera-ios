@@ -22,7 +22,7 @@
                         ChatRowTitle(row: row)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         if row.isReadOnly {
-                            Image(systemName: "lock.fill")
+                            Image(waivera: "lock.fill")
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: ControlSize.iconSmall, height: ControlSize.iconSmall)
@@ -97,7 +97,7 @@
     private struct NotSentLine: View {
         var body: some View {
             HStack(spacing: Spacing.extraSmall) {
-                Image(systemName: "exclamationmark.circle.fill")
+                Image(waivera: "exclamationmark.circle.fill")
                     .resizable()
                     .scaledToFit()
                     .frame(width: ControlSize.iconSmall, height: ControlSize.iconSmall)
@@ -153,7 +153,7 @@
         var body: some View {
             HStack(alignment: .firstTextBaseline, spacing: Spacing.extraSmall) {
                 if row.hasAttachment {
-                    Image(systemName: "paperclip")
+                    Image(waivera: "paperclip")
                         .resizable()
                         .scaledToFit()
                         .frame(width: ControlSize.iconSmall, height: ControlSize.iconSmall)
@@ -220,7 +220,7 @@
                 if isOpening {
                     BusyIndicator(color: Palette.onAccentSoft, size: ControlSize.iconSmall)
                 } else {
-                    Image(systemName: "video.fill")
+                    Image(waivera: "video.fill")
                         .resizable()
                         .scaledToFit()
                         .frame(width: ControlSize.iconSmall, height: ControlSize.iconSmall)

@@ -362,7 +362,7 @@
             Button {
                 removing = true
             } label: {
-                Image(systemName: removing ? "bookmark" : "bookmark.fill")
+                WaiveraIcon(systemName: removing ? "bookmark" : "bookmark.fill")
                     .font(WaiveraFont.bodyEmphasis)
                     .foregroundStyle(removing ? Palette.textSecondary : Palette.accent)
                     .contentTransition(.symbolEffect(.replace))

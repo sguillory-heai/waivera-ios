@@ -83,7 +83,7 @@
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                Image(systemName: row.viewable ? "chevron.right" : "arrow.up.right.square")
+                WaiveraIcon(systemName: row.viewable ? "chevron.right" : "arrow.up.right.square")
                     .font(.system(size: ControlSize.iconSmall))
                     .foregroundStyle(row.viewable ? Palette.textSecondary : Palette.accent)
                     .frame(maxHeight: .infinity)

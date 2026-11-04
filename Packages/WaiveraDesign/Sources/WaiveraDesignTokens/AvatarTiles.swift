@@ -13,6 +13,11 @@ public enum AvatarTiles {
         (RGBColor(hex: 0x6A3FA0), RGBColor(hex: 0xC04FD0)),
     ]
 
+    /// The violet and teal tiles, for pickers that colour people by kind (coworkers violet,
+    /// participants teal) instead of by name.
+    public static let violet = 0
+    public static let teal = 2
+
     /// White over the top of the tile.
     public static let sheenOpacity = 0.16
     /// The sheen's centre above the tile and its radius, as shares of the side.

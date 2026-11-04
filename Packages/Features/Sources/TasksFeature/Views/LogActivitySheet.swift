@@ -66,7 +66,7 @@
                         Text(form.type?.name ?? TasksStrings.text("tasks.log.typePlaceholder"))
                             .foregroundStyle(form.type == nil ? Palette.textTertiary : Palette.text)
                         Spacer()
-                        Image(systemName: "chevron.up.chevron.down").foregroundStyle(Palette.textSecondary)
+                        WaiveraIcon(systemName: "chevron.up.chevron.down").foregroundStyle(Palette.textSecondary)
                     }
                     .waiveraTextStyle(.bodyLarge)
                     .padding(.horizontal, Spacing.medium)
@@ -99,7 +99,7 @@
             Button {
                 model.stepMinutes(up: up)
             } label: {
-                Image(systemName: systemImage)
+                WaiveraIcon(systemName: systemImage)
                     .frame(width: ControlSize.minHitTarget, height: ControlSize.minHitTarget)
                     .background(Palette.accentSoft, in: Circle())
                     .foregroundStyle(Palette.onAccentSoft)

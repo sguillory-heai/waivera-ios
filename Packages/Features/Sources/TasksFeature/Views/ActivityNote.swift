@@ -25,6 +25,11 @@
                     .waiveraTextStyle(.bodySmall)
                     .foregroundStyle(Palette.text)
                     .lineLimit(showsAll ? nil : Self.lines)
+                    // Only the clip's height animates. Letting the text animate its own relayout
+                    // too made it collapse and grow again from the top on Show more.
+                    .transaction { $0.animation = nil }
+                    // Laid out at its own height whatever the clip, so the clip reveals it.
+                    .fixedSize(horizontal: false, vertical: true)
                     .frame(height: shownHeight, alignment: .top)
                     .clipped()
                     .background(alignment: .topLeading) { measures }
