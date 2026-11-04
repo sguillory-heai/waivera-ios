@@ -11,18 +11,21 @@
     /// description and the activity, with Log activity and Ask for a change.
     public struct TaskDetailView: View {
         let taskID: Int
+        let onOpenFile: (_ taskID: Int, _ attachmentID: Int) -> Void
 
         @Environment(\.dataEnvironment) private var data
         @State private var model: TaskDetailModel?
 
-        public init(taskID: Int) {
+        /// `onOpenFile` pushes the read-only file viewer for a file the phone can show.
+        public init(taskID: Int, onOpenFile: @escaping (_ taskID: Int, _ attachmentID: Int) -> Void = { _, _ in }) {
             self.taskID = taskID
+            self.onOpenFile = onOpenFile
         }
 
         public var body: some View {
             Group {
                 if let model {
-                    TaskDetailScreen(model: model)
+                    TaskDetailScreen(model: model, onOpenFile: onOpenFile)
                 } else {
                     Palette.background
                 }
@@ -42,6 +45,7 @@
 
     private struct TaskDetailScreen: View {
         let model: TaskDetailModel
+        let onOpenFile: (Int, Int) -> Void
 
         @Environment(\.openURL) private var openURL
 
@@ -55,7 +59,15 @@
                         if let url = model.webURL() { openURL(url) }
                     },
                     retry: { model.load() },
-                    retryActivity: { model.loadActivity() }
+                    retryActivity: { model.loadActivity() },
+                    openFile: { row in
+                        switch model.open(file: row) {
+                        case .viewer(let attachmentId): onOpenFile(model.taskId, attachmentId)
+                        case .web(let url): openURL(url)
+                        case nil: break
+                        }
+                    },
+                    retryFiles: { model.loadFiles() }
                 ),
                 onRefresh: { [model] in await model.refresh() }
             )
@@ -86,6 +98,8 @@
         var openWeb: () -> Void = {}
         var retry: () -> Void = {}
         var retryActivity: () -> Void = {}
+        var openFile: (FileRow) -> Void = { _ in }
+        var retryFiles: () -> Void = {}
     }
 
     /// The stateless task screen, for the entry view, previews and snapshots.
@@ -141,6 +155,7 @@
                             .foregroundStyle(Palette.text)
                             .textSelection(.enabled)
                     }
+                    FilesSection(files: state.files, onOpen: actions.openFile, onRetry: actions.retryFiles)
                     ActivitySection(activity: state.activity, onRetry: actions.retryActivity)
                     buttons
                 }

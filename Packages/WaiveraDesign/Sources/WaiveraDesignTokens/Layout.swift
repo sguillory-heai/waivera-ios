@@ -87,6 +87,9 @@ public enum ControlSize {
     public static let fieldTileGlyph: CGFloat = 18
     public static let fieldTileGap: CGFloat = 14
     public static let fieldDividerInset: CGFloat = fieldTile + fieldTileGap
+    /// The short file-type word on a field tile ("PDF"), in points so it never outgrows the tile;
+    /// the type is spelled out beside it in text that does scale.
+    public static let tileWord: CGFloat = 11
     public static let emojiInTile: CGFloat = 22
     public static let emojiInTileSmall: CGFloat = 16
     public static let stateIconTile: CGFloat = 56

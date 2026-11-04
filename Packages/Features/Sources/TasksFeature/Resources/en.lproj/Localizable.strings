@@ -255,3 +255,35 @@
 "tasks.decideFailed.approve" = "Couldn't approve it, so it's back in your list.";
 "tasks.decideFailed.reject" = "Couldn't reject it, so it's back in your list.";
 "tasks.alreadyDecided" = "Someone else already decided this request.";
+
+/* Activity notes */
+"tasks.activity.showMore" = "Show more";
+"tasks.activity.showLess" = "Show less";
+"tasks.activity.expanded" = "Showing the full note";
+"tasks.activity.collapsed" = "Note shortened";
+
+/* Files */
+"tasks.files.title" = "Files";
+"tasks.files.count.one" = "%@ file";
+"tasks.files.count.other" = "%@ files";
+"tasks.files.error" = "Couldn't load the files.";
+"tasks.file.addedBy" = "Added by %@";
+"tasks.file.opensOnWeb" = "Opens on the web";
+"tasks.file.tooLarge" = "Too large to view here. Opens on the web";
+"tasks.file.open" = "View file";
+"tasks.file.openWeb" = "Open on the web";
+"tasks.file.short.pdf" = "PDF";
+"tasks.file.short.image" = "IMG";
+"tasks.file.short.word" = "DOC";
+"tasks.file.short.text" = "TXT";
+"tasks.file.short.other" = "FILE";
+"tasks.file.kind.pdf" = "PDF";
+"tasks.file.kind.image" = "Image";
+"tasks.file.kind.word" = "Word";
+"tasks.file.kind.text" = "Text";
+"tasks.file.kind.other" = "File";
+"tasks.file.viewer" = "File";
+"tasks.file.failed" = "Couldn't open this file. Check your connection and try again.";
+"tasks.file.loading" = "Opening the file";
+"tasks.file.textCut" = "This file is long, so only the start is shown. Open the task on the web to see all of it.";
+"tasks.file.page" = "Page %@ of %@";

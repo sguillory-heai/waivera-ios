@@ -186,7 +186,13 @@ public final class FakeTasksRepository: TasksRepository, @unchecked Sendable {
                 - Upload the signed plan
                 """.utf8
             )
-        default:
+        case .word:
+            return Data(base64Encoded: DemoFiles.intakePacket) ?? Data()
+        case .pdf:
+            return Data(DemoFiles.carePlan.utf8)
+        case .image:
+            return Data(base64Encoded: DemoFiles.homePhoto) ?? Data()
+        case .other:
             throw WaiveraError.notFound
         }
     }
@@ -479,4 +485,37 @@ public final class FakeRequestsRepository: RequestsRepository, @unchecked Sendab
             ),
         ]
     }
+}
+
+/// Small real files for the viewer's previews and tests: a one-page PDF, a 4×3 PNG and a .docx
+/// with a title, a heading, a link, a list item, field codes, deleted text and a line break.
+public enum DemoFiles {
+    public static let carePlan = """
+        %PDF-1.4
+        1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj
+        2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj
+        3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Contents 4 0 R/Resources<</Font<</F1 5 0 R>>>>>>endobj
+        4 0 obj<</Length 44>>stream
+        BT /F1 24 Tf 72 700 Td (Care plan 2026) Tj ET
+        endstream endobj
+        5 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj
+        trailer<</Root 1 0 R>>
+        %%EOF
+        """
+
+    public static let homePhoto =
+        "iVBORw0KGgoAAAANSUhEUgAAAAQAAAADCAIAAAA7ljmRAAAAEElEQVR4nGOoCz8ERww4OQBxDBMVEBoxwgAAAABJRU5ErkJggg=="
+
+    public static let intakePacket = """
+        UEsDBBQAAAAIAGlmZF3HHBc8CgAAAAgAAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbLMJqSxILda3AwBQSwMEFAAAAAgAaWZkXbOs
+        lFVwAQAAPAMAABEAAAB3b3JkL2RvY3VtZW50LnhtbIVSTU/DMAy98yui3Fm6HRCq1k4cgA0BmkQR56wxa9Q0qRK3Xf896cdgG9N2
+        aWv7+dnv1fPFrlCkBuuk0RGdTgJKQKdGSL2N6GfydHtPiUOuBVdGQ0RbcHQR38ybUJi0KkAj8QzahU1EM8QyZMylGRTcTUwJ2te+
+        jS04+tBuWWOsKK1JwTk/oFBsFgR3rOBS09hTboxoe+6yi8q17V8f2CogTVhzFdFEogLK4jn7BfQPjFcaeQ6k5GkO2JWxB9kBeoV2
+        CbyTPDvLvDSVg8wocYF1gHZehM6v4J0qLTiwNdD4xavmmihZgyONxIy8mYIckTVh1pZgldT5wWCOBDMg78b6nqzb4nSDc12T6+J1
+        VQwfUtVq70HQie9rK7HPTUdDxoZ/1nwB5KoltXQSTwQNCL5hAzLJKusEb901E6V2aBPYYbx+eH7sEH+ZY3IBqs9u/WV2lX184QfF
+        r1IDGfHY35xlBxVszLn92Hib/ZTx7uMfUEsBAhQDFAAAAAgAaWZkXcccFzwKAAAACAAAABMAAAAAAAAAAAAAAIABAAAAAFtDb250
+        ZW50X1R5cGVzXS54bWxQSwECFAMUAAAACABpZmRds6yUVXABAAA8AwAAEQAAAAAAAAAAAAAAgAE7AAAAd29yZC9kb2N1bWVudC54
+        bWxQSwUGAAAAAAIAAgCAAAAA2gEAAAAA
+        """
+        .replacingOccurrences(of: "\n", with: "")
 }

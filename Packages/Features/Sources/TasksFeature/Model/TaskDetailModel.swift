@@ -64,6 +64,8 @@ struct TaskDetailScreenState: Equatable, Sendable {
     var dueDate: String?
     var startDate: String?
     var activity: Loadable<[ActivityRow]> = .loading
+    /// Newest first; an empty list hides the section.
+    var files: Loadable<[FileRow]> = .loading
     var log: LogForm?
     var error: WaiveraError?
     /// A change request waiting on review, from the server or just sent from here.
@@ -108,6 +110,7 @@ final class TaskDetailModel {
         var phase: TaskDetailScreenState.Phase = .loading
         var task: TaskDetail?
         var activity: Loadable<[TaskActivity]> = .loading
+        var files: Loadable<[TaskAttachment]> = .loading
         var newIds: Set<Int> = []
         var log: LogForm?
         var error: WaiveraError?
@@ -158,6 +161,7 @@ final class TaskDetailModel {
             self.rebuild()
         }
         loadActivity()
+        loadFiles()
         loadOptions()
     }
 
@@ -168,6 +172,36 @@ final class TaskDetailModel {
 
     func loadActivity() {
         bag.run { [weak self] in await self?.loadActivityNow() }
+    }
+
+    func loadFiles() {
+        if local.files.value == nil {
+            local.files = .loading
+            rebuild()
+        }
+        let tasks = environment.tasks
+        let id = taskId
+        bag.run { [weak self] in
+            let result = await attempt { try await tasks.attachments(taskId: id) }
+            guard let self else { return }
+            switch result {
+            case .success(let files): self.local.files = .ready(files)
+            case .failure: if self.local.files.value == nil { self.local.files = .failed }
+            }
+            self.rebuild()
+        }
+    }
+
+    /// What a tap on a file does: the phone's viewer, or the task on the web for a file it
+    /// cannot show (another type, or over the size limit).
+    enum FileOpening: Equatable {
+        case viewer(attachmentId: Int)
+        case web(URL)
+    }
+
+    func open(file row: FileRow) -> FileOpening? {
+        if row.viewable { return .viewer(attachmentId: row.id) }
+        return webURL().map(FileOpening.web)
     }
 
     /// The web app's page for the task, or nil (with a note) when no web app is configured.
@@ -576,6 +610,7 @@ final class TaskDetailModel {
                 )
             }
         }
+        next.files = local.files.map { files in files.map { FileRow.make($0, zone: zone, today: today) } }
         next.log = local.log.map { form in
             var form = form
             form.inFuture = form.completedAt > now

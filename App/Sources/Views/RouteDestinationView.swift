@@ -93,11 +93,11 @@ struct RouteDestinationView: View {
         case .changePassword:
             PasswordChangeView(onDone: { model.pop() })
         case .task(let taskID):
-            TaskDetailView(taskID: taskID)
+            TaskDetailView(taskID: taskID, onOpenFile: { model.push(.taskFile(taskID: $0, attachmentID: $1)) })
         case .requests:
             RequestsView(onOpenTask: { model.push(.task(taskID: $0)) })
-        case .taskFile:
-            FeaturePlaceholder(title: AppStrings.tabTasks, systemImage: "checklist")
+        case .taskFile(let taskID, let attachmentID):
+            TaskFileView(taskID: taskID, attachmentID: attachmentID)
         }
     }
 }
