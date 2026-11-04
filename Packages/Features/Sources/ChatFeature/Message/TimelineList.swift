@@ -145,7 +145,9 @@
     /// filled, or below the last row, and the screen showed blank until a drag (seen in the
     /// Waivera notices chat, whose newest messages are photos). While the reader has not dragged
     /// away from the newest message, every height change puts the list back on it, and a list
-    /// at rest past its end is put back too. Needs the iOS 18 scroll geometry APIs.
+    /// at rest past its end is put back too. That includes the visible height: a long draft grows
+    /// the composer a line at a time, and the system's own bottom anchoring overshot on each
+    /// line until the rows scrolled out of sight. Needs the iOS 18 scroll geometry APIs.
     private struct PastTheEndRepair: ViewModifier {
         let repair: () -> Void
         @State private var isIdle = true
@@ -154,6 +156,8 @@
 
         private struct Edge: Equatable {
             var contentHeight: CGFloat
+            /// The visible height, which shrinks as the composer grows a line or the keyboard rises.
+            var visibleHeight: CGFloat
             var isPast: Bool
             var isAtEnd: Bool
         }
@@ -170,7 +174,9 @@
                             isPinned = new.isAtEnd
                             return
                         }
-                        if new.isPast || (isPinned && new.contentHeight != old.contentHeight) {
+                        let resized =
+                            new.contentHeight != old.contentHeight || new.visibleHeight != old.visibleHeight
+                        if new.isPast || (isPinned && resized) {
                             repair()
                         }
                     }
@@ -188,6 +194,8 @@
             let offset = geometry.contentOffset.y
             return Edge(
                 contentHeight: geometry.contentSize.height,
+                visibleHeight: geometry.containerSize.height - geometry.contentInsets.top
+                    - geometry.contentInsets.bottom,
                 isPast: geometry.contentSize.height > 0 && offset > maxOffset + Spacing.hairline,
                 isAtEnd: offset >= maxOffset - Spacing.large
             )
