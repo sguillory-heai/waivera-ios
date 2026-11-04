@@ -91,7 +91,6 @@
         /// Floats over the timeline as a solid violet pill with a shadow, no outline (Android
         /// `JumpToLatestPill`).
         private func jumpButton(_ action: @escaping () -> Void) -> some View {
-            let shadow = Elevation.shadow(for: Elevation.level3)
             return Button(action: action) {
                 HStack(spacing: Spacing.extraSmall) {
                     Image(waivera: "chevron.down")
@@ -107,7 +106,7 @@
                 .padding(.horizontal, Spacing.mediumSmall)
                 .padding(.vertical, Spacing.small)
                 .background(Palette.accent, in: Capsule())
-                .shadow(color: Palette.elevationShadow, radius: shadow.radius, x: 0, y: shadow.y)
+                .floatingShadow()
                 .frame(minHeight: ControlSize.minHitTarget)
                 .contentShape(Capsule())
             }

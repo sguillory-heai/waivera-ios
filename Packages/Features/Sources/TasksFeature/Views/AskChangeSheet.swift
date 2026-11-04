@@ -13,6 +13,16 @@
         let zone: TimeZone
         let model: TaskDetailModel
 
+        @State private var contentHeight: CGFloat = 0
+        @State private var barHeight: CGFloat = 0
+        @State private var detent: PresentationDetent = .medium
+
+        /// The chooser is a short list, so the sheet fits it exactly; a form opens full height.
+        private var wantedDetent: PresentationDetent {
+            guard form.kind == nil else { return .large }
+            return contentHeight > 0 ? .height(contentHeight + barHeight) : .medium
+        }
+
         var body: some View {
             NavigationStack {
                 ScrollView {
@@ -24,7 +34,9 @@
                         }
                     }
                     .padding(Spacing.gutter)
+                    .onGeometryChange(for: CGFloat.self, of: \.size.height) { contentHeight = $0 }
                 }
+                .onGeometryChange(for: CGFloat.self, of: \.safeAreaInsets.top) { barHeight = $0 }
                 .background(Palette.surface)
                 .navigationTitle(title)
                 .navigationBarTitleDisplayMode(.inline)
@@ -41,6 +53,12 @@
                     }
                 }
             }
+            // The current detent stays allowed for the one update before it moves to the new one.
+            .presentationDetents([wantedDetent, detent], selection: $detent)
+            .onChange(of: wantedDetent, initial: true) { _, wanted in detent = wanted }
+            .presentationDragIndicator(.visible)
+            .presentationCornerRadius(Radius.modalSheet)
+            .presentationBackground(Palette.surface)
         }
 
         private var title: String {

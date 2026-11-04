@@ -54,6 +54,7 @@
                     LinkSections(links: row.links, inset: sideInset, onOpen: actions.openLink)
                         .padding(.horizontal, -sideInset)
                         .padding(.bottom, linksReachBottom ? -Spacing.small : 0)
+                        .anchorPreference(key: LinksFrameKey.self, value: .bounds) { $0 }
                 }
                 if let attachment = message.attachment, !message.isDeleted {
                     AttachmentView(
@@ -68,10 +69,26 @@
             .padding(.horizontal, hasBody ? sideInset : 0)
             .padding(.vertical, hasBody ? Spacing.small : 0)
             .frame(minWidth: hasBody ? ChatMetrics.bubbleMinWidth : nil, alignment: row.isMine ? .trailing : .leading)
-            .background(fill, in: shape)
-            // Previews run edge to edge, square under the body; the bubble's own corners round
-            // them at its bottom edge (Android clips the previews to the bubble).
-            .clipShape(BubbleClip(shape: shape, isActive: showsLinks))
+            // The previews' white is part of the bubble's own fill: square where it meets the
+            // body, and rounded only by the bubble's corners (Android clips the previews to the
+            // bubble). Drawing it here leaves nothing on the previews that could round on its own.
+            .backgroundPreferenceValue(LinksFrameKey.self) { links in
+                if showsLinks, let links {
+                    GeometryReader { proxy in
+                        let frame = proxy[links]
+                        let bottom = linksReachBottom ? proxy.size.height : frame.maxY
+                        ZStack(alignment: .top) {
+                            fill
+                            Palette.surface
+                                .frame(height: max(0, bottom - frame.minY))
+                                .offset(y: frame.minY)
+                        }
+                        .clipShape(shape)
+                    }
+                } else {
+                    shape.fill(fill)
+                }
+            }
             .overlay {
                 if hasBody && !tinted { shape.strokeBorder(border, lineWidth: Spacing.hairline) }
             }
@@ -228,17 +245,12 @@
         }
     }
 
-    /// The bubble's shape while it carries link previews, so they take its corners; otherwise a
-    /// clip far outside the bubble that cuts nothing. One shape either way keeps the bubble's
-    /// contents (and a photo's loaded image) the same view when a link comes or goes.
-    private struct BubbleClip: Shape {
-        let shape: UnevenRoundedRectangle
-        let isActive: Bool
+    /// Where the bubble's link previews sit, so the bubble paints their white behind them.
+    private struct LinksFrameKey: PreferenceKey {
+        static var defaultValue: Anchor<CGRect>? { nil }
 
-        func path(in rect: CGRect) -> Path {
-            isActive ? shape.path(in: rect) : Path(rect.insetBy(dx: -Self.reach, dy: -Self.reach))
+        static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) {
+            value = value ?? nextValue()
         }
-
-        private static let reach: CGFloat = 10_000
     }
 #endif

@@ -106,7 +106,9 @@
         public static let glowShadow = buttonGlow.opacity(Elevation.androidShadowShare)
         public static let liftShadow = buttonRaise.opacity(Elevation.androidShadowShare)
         /// An Android `shadow(elevation)` with the default black (floating pills).
-        public static let elevationShadow = Color.black.opacity(Elevation.androidDefaultShadowAlpha)
+        public static let elevationShadow = Color.black.opacity(Elevation.floatingKeyAlpha)
+        /// The tight shadow right under a floating pill's edge.
+        public static let elevationContact = Color.black.opacity(Elevation.floatingContactAlpha)
     }
 
     /// The plum hero's colours.

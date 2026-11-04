@@ -5,7 +5,8 @@
 
     /// A bubble's link previews (Android `BodyWithAttachedLinks`, style F): on the surface colour
     /// whatever the bubble's tint, edge to edge under the body, with a hairline above each. The
-    /// bubble gives them at least a file card's width, so every preview in a chat lines up.
+    /// bubble paints that colour behind them and gives them at least a file card's width, so
+    /// every preview in a chat lines up.
     struct LinkSections: View {
         let links: [MessageLink]
         /// The bubble's side padding, which the sections reach into so text keeps one left edge.
@@ -21,7 +22,6 @@
                     LinkSection(preview: link.preview, inset: inset) { onOpen(link.href) }
                 }
             }
-            .background(Palette.surface)
         }
     }
 

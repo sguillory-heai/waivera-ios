@@ -178,9 +178,11 @@ public enum Elevation {
     /// glow token of 0.55 shows at about a quarter of that. SwiftUI draws the colour as given, so
     /// iOS shadows multiply by this to look the same (Sheldon, 2026-11-02: iOS buttons glowed more).
     public static let androidShadowShare: Double = 0.3
-    /// Compose's `shadow` with no colour given draws black at the theme's spot alpha; iOS gives
-    /// SwiftUI's shadow black at this opacity to match (the Jump to latest pill).
-    public static let androidDefaultShadowAlpha: Double = 0.22
+    /// A floating pill's key shadow. Compose's `shadow` with no colour draws black at the theme's
+    /// spot alpha plus an ambient layer; one SwiftUI layer at that alpha was too faint to see.
+    public static let floatingKeyAlpha: Double = 0.3
+    /// A floating pill's contact shadow, Compose's ambient layer.
+    public static let floatingContactAlpha: Double = 0.16
 
     /// A SwiftUI shadow that reads like an Android elevation of `level`: blur radius equal to the
     /// elevation and the light from above, so the shadow falls half the elevation below.

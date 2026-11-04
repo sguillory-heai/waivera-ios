@@ -45,7 +45,6 @@
             ) {
                 if let form = model.state.ask {
                     AskChangeSheet(form: form, today: model.state.today, zone: model.state.zone, model: model)
-                        .waiveraSheetPresentation()
                 }
             }
             .tasksFeedback(model.feedback)
