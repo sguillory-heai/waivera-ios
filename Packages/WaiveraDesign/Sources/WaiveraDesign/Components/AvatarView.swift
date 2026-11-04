@@ -4,11 +4,11 @@
     /// A person's avatar (Android `WaiveraAvatar`). Every avatar is the same soft rounded square,
     /// never a circle and never bordered: `image` when the caller has one (from the avatar cache),
     /// otherwise bold initials sized from the avatar (not the text size), otherwise a person
-    /// glyph, on `avatarFill`. A milestone is spoken with the name; the schedule's milestone badge
+    /// glyph, on the person's own tile (`AvatarTiles`, the gradient Android uses too). A milestone is spoken with the name; the schedule's milestone badge
     /// draws it.
     public struct AvatarView: View {
         public enum Fill: Sendable {
-            /// `avatarFill` with the soft accent ink.
+            /// The person's gradient tile with white initials.
             case standard
             /// The hero's glass with white initials (the account button on the plum hero).
             case hero
@@ -37,8 +37,8 @@
         public var body: some View {
             content
                 .frame(width: size, height: size)
-                .background(fillColor)
-                .clipShape(RoundedRectangle(cornerRadius: AvatarGeometry.cornerRadius(size: size), style: .continuous))
+                .background { background }
+                .clipShape(shape)
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Text(accessibilityText))
                 .accessibilityAddTraits(.isImage)
@@ -59,6 +59,12 @@
                         )
                     )
                     .foregroundStyle(inkColor)
+                    .shadow(
+                        color: fill == .standard ? Color(rgb: AvatarTiles.shadow) : .clear,
+                        radius: size * AvatarTiles.shadowBlur,
+                        x: 0,
+                        y: size * AvatarTiles.shadowDrop
+                    )
                     .lineLimit(1)
                     .accessibilityIdentifier("fixedTextSize.avatarInitials")
                     .minimumScaleFactor(0.5)
@@ -77,16 +83,44 @@
 
         private var initials: String { AvatarGeometry.initials(for: name) }
 
-        private var fillColor: Color {
+        private var shape: RoundedRectangle {
+            RoundedRectangle(cornerRadius: AvatarGeometry.cornerRadius(size: size), style: .continuous)
+        }
+
+        /// No tile behind a photo, so a transparent picture never shows a colour through.
+        @ViewBuilder private var background: some View {
             switch fill {
-            case .standard: Palette.avatarFill
             case .hero: HeroPalette.accountFill
+            case .standard where image != nil: Palette.avatarFill
+            case .standard: tile
+            }
+        }
+
+        /// Gradient, a sheen over the top and a faint inner edge (Android `personTile`).
+        private var tile: some View {
+            let pair = AvatarTiles.pair(for: name)
+            let edge = size * AvatarTiles.edgeFraction
+            return ZStack {
+                LinearGradient(
+                    colors: [Color(rgb: pair.start), Color(rgb: pair.end)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                RadialGradient(
+                    colors: [Color.white.opacity(AvatarTiles.sheenOpacity), .clear],
+                    center: UnitPoint(x: 0.5, y: -AvatarTiles.sheenCenter),
+                    startRadius: 0,
+                    endRadius: size * AvatarTiles.sheenRadius
+                )
+                shape
+                    .inset(by: edge / 2)
+                    .stroke(Color.white.opacity(AvatarTiles.edgeOpacity), lineWidth: edge)
             }
         }
 
         private var inkColor: Color {
             switch fill {
-            case .standard: Palette.onAccentSoft
+            case .standard: .white
             case .hero: HeroPalette.onHeader
             }
         }

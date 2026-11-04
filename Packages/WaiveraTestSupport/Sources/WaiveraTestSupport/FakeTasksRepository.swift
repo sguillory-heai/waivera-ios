@@ -197,6 +197,15 @@ public final class FakeTasksRepository: TasksRepository, @unchecked Sendable {
         }
     }
 
+    /// The task whose key ends in `number` ("HEA-1042" for 1042), as `api/tasks/lookup` finds it.
+    public func lookup(number: Int) async throws -> TaskDetail {
+        try check()
+        guard let row = (casework + mine).first(where: { $0.key.hasSuffix("-\(number)") }) else {
+            throw WaiveraError.notFound
+        }
+        return try await task(id: row.id)
+    }
+
     private func check() throws {
         if let error = failure.get() { throw error }
     }

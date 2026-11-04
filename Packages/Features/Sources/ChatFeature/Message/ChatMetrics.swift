@@ -18,6 +18,8 @@ enum ChatMetrics {
     /// The square behind an image's expand glyph.
     static let imageBadge: CGFloat = 28
     static let fileCardWidth: CGFloat = 250
+    /// A loading link preview's title placeholder: most of a file card.
+    static let linkSkeletonWidth: CGFloat = 200
     /// Grouped bubbles of one run sit exactly this far apart, whatever their rows show.
     static let runGap: CGFloat = Spacing.xxSmall
     /// The engagement row (reactions, then replies) under a bubble.

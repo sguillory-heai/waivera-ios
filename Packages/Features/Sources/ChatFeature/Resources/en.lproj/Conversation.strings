@@ -202,3 +202,20 @@
 "members.no.match.title" = "No one matches";
 "members.no.match.message" = "Try another name.";
 "members.offline.saved" = "You’re offline. These are the members saved on this phone.";
+
+/* Link previews */
+"link.task" = "Task";
+"link.resource" = "Resource";
+"link.faq" = "FAQ";
+"link.task.key" = "Task · %@";
+"link.unavailable" = "You don’t have access, or it was removed.";
+"link.unavailable.short" = "Not available to you";
+"link.loading" = "Loading link";
+"link.due" = "Due %@";
+"link.state.not.started" = "Not started";
+"link.state.in.progress" = "In progress";
+"link.state.in.review" = "In review";
+"link.state.completed" = "Completed";
+"link.state.closed" = "Closed";
+"link.open.task" = "Opens the task";
+"link.open.web" = "Opens on the web";

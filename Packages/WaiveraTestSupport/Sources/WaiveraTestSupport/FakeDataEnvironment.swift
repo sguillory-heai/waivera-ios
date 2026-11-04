@@ -44,6 +44,7 @@ public struct FakeDataEnvironment: Sendable {
     public let notices: FakeNoticesRepository
     public let tasks: FakeTasksRepository
     public let requests: FakeRequestsRepository
+    public let links: FakeLinkLookupRepository
     public let environment: DataEnvironment
 
     /// The scenario the launch arguments ask for, or `nil` when the fake was not requested.
@@ -120,6 +121,7 @@ public struct FakeDataEnvironment: Sendable {
         calendar.milestoneResource.setControls(controls)
         tasks.failure.update { $0 = controls.failure }
         requests.failure.update { $0 = controls.failure }
+        links.failure.update { $0 = controls.failure }
     }
 
     private init(
@@ -161,6 +163,8 @@ public struct FakeDataEnvironment: Sendable {
         self.notices = notices
         self.tasks = tasks
         self.requests = requests
+        let links = FakeLinkLookupRepository(tasks: tasks)
+        self.links = links
         environment = DataEnvironment(
             session: session,
             conversations: chat,
@@ -180,6 +184,7 @@ public struct FakeDataEnvironment: Sendable {
             notices: notices,
             tasks: tasks,
             requests: requests,
+            links: links,
             clock: clock,
             webBaseURL: webBaseURL,
             callURL: { conversation in

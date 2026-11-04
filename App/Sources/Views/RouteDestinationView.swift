@@ -34,7 +34,8 @@ struct RouteDestinationView: View {
                     )
                 },
                 onOpenPerson: { model.push(.person(userID: $0)) },
-                onOpenMembers: { model.push(.groupMembers(conversationID: $0)) }
+                onOpenMembers: { model.push(.groupMembers(conversationID: $0)) },
+                onOpenTask: { model.push(.task(taskID: $0)) }
             )
         case .groupMembers(let conversationID):
             GroupMembersView(
@@ -47,7 +48,8 @@ struct RouteDestinationView: View {
                 rootMessageID: rootMessageID,
                 conversationID: conversationID,
                 targetMessageID: targetMessageID,
-                onOpenPerson: { model.push(.person(userID: $0)) }
+                onOpenPerson: { model.push(.person(userID: $0)) },
+                onOpenTask: { model.push(.task(taskID: $0)) }
             )
         case .calendarEvent(let eventID):
             CalendarEventView(

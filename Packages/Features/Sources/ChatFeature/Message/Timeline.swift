@@ -15,6 +15,8 @@ struct MessageRow: Hashable, Sendable {
     var reactions: [ReactionSummary]
     /// True for a message that arrived while the list was on screen (drives the arrival motion).
     var isLiveArrival: Bool = false
+    /// Waivera links in the message with their previews, shown inside the bubble.
+    var links: [MessageLink] = []
 }
 
 /// A send the server has not confirmed: Sending…, Waiting for connection…, or Failed with

@@ -19,6 +19,8 @@
         var editFailed: (@MainActor (OutgoingMessage) -> Void)?
         var discard: @MainActor (_ clientMessageId: String) -> Void = { _ in }
         var openTicket: @MainActor (URL) -> Void = { _ in }
+        /// Opens a Waivera link from its preview, by the link as written.
+        var openLink: @MainActor (_ href: String) -> Void = { _ in }
         var loadImage: @MainActor (_ messageId: Int) async throws -> Data = { _ in
             throw CancellationError()
         }

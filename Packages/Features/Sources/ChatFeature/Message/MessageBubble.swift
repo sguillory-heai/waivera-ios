@@ -18,6 +18,23 @@
         /// My own messages wear the soft violet (plum in dark) with the theme's ink (v5 decision
         /// 3B); a deleted one stays quiet whoever wrote it.
         private var tinted: Bool { hasBody && row.isMine && !row.isBot && !message.isDeleted }
+        private var showsLinks: Bool { !row.links.isEmpty && !message.isDeleted && row.ticket == nil }
+        /// Previews run down to the bubble's bottom edge unless an attachment follows them.
+        private var linksReachBottom: Bool { message.attachment == nil }
+        private var sideInset: CGFloat { Spacing.mediumSmall - Spacing.hairline }
+        /// The previews take the bubble's bottom corners when they reach its bottom edge.
+        private var linkClip: UnevenRoundedRectangle {
+            let radii = shape.cornerRadii
+            return UnevenRoundedRectangle(
+                cornerRadii: RectangleCornerRadii(
+                    topLeading: 0,
+                    bottomLeading: linksReachBottom ? radii.bottomLeading : 0,
+                    bottomTrailing: linksReachBottom ? radii.bottomTrailing : 0,
+                    topTrailing: 0
+                ),
+                style: .continuous
+            )
+        }
         private var canOpenActions: Bool { actions.longPress != nil && !message.isDeleted }
         private var shape: UnevenRoundedRectangle {
             BubbleShape.make(isMine: row.isMine, previous: row.groupedWithPrevious, next: row.groupedWithNext)
@@ -46,6 +63,12 @@
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(accessibilityLabel)
                     .accessibilityHint(ConversationStrings.text("show.time"))
+                if showsLinks {
+                    LinkSections(links: row.links, inset: sideInset, onOpen: actions.openLink)
+                        .clipShape(linkClip)
+                        .padding(.horizontal, -sideInset)
+                        .padding(.bottom, linksReachBottom ? -Spacing.small : 0)
+                }
                 if let attachment = message.attachment, !message.isDeleted {
                     AttachmentView(
                         message: message,
@@ -55,7 +78,8 @@
                     )
                 }
             }
-            .padding(.horizontal, hasBody ? Spacing.mediumSmall - Spacing.hairline : 0)
+            .frame(minWidth: showsLinks ? ChatMetrics.fileCardWidth : nil, alignment: .leading)
+            .padding(.horizontal, hasBody ? sideInset : 0)
             .padding(.vertical, hasBody ? Spacing.small : 0)
             .frame(minWidth: hasBody ? ChatMetrics.bubbleMinWidth : nil, alignment: row.isMine ? .trailing : .leading)
             .background(fill, in: shape)

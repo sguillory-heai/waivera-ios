@@ -26,6 +26,11 @@ final class ConversationModel {
     @ObservationIgnored let clock: ChatClock
     @ObservationIgnored let platform: ChatPlatform
     @ObservationIgnored let onOpenThread: @MainActor (_ rootMessageID: Int, _ targetMessageID: Int?) -> Void
+    @ObservationIgnored let onOpenTask: @MainActor (_ taskID: Int) -> Void
+    @ObservationIgnored let linkResolver: ChatLinkResolver
+    /// The rows as built from the last emission, before link previews; a preview landing
+    /// decorates these again instead of rebuilding, so the trackers see each emission once.
+    @ObservationIgnored var builtItems: [TimelineItem] = []
     @ObservationIgnored let context: ChatContext
     @ObservationIgnored var timeline = Resource<MessageTimeline>()
     @ObservationIgnored var typingIds: [String] = []
@@ -45,7 +50,8 @@ final class ConversationModel {
         data: DataEnvironment?,
         clock: ChatClock = ChatClock(),
         platform: ChatPlatform = ChatPlatform(),
-        onOpenThread: @escaping @MainActor (_ rootMessageID: Int, _ targetMessageID: Int?) -> Void = { _, _ in }
+        onOpenThread: @escaping @MainActor (_ rootMessageID: Int, _ targetMessageID: Int?) -> Void = { _, _ in },
+        onOpenTask: @escaping @MainActor (_ taskID: Int) -> Void = { _ in }
     ) {
         self.conversationID = conversationID
         self.targetMessageID = targetMessageID
@@ -53,6 +59,9 @@ final class ConversationModel {
         self.clock = clock
         self.platform = platform
         self.onOpenThread = onOpenThread
+        self.onOpenTask = onOpenTask
+        let calendar = data?.calendar
+        linkResolver = ChatLinkResolver(lookups: data?.links, webBase: data?.webBaseURL) { calendar?.today() }
         state = ConversationState(content: conversationID > 0 ? .loading : .invalid)
         let context = ChatContext(conversationId: conversationID)
         self.context = context
@@ -65,6 +74,7 @@ final class ConversationModel {
             isConnected: { context.isConnected },
             wait: { try? await clock.sleep(seconds: $0) }
         )
+        linkResolver.onChange = { [weak self] in self?.refreshLinks() }
     }
 
     /// A model that only displays `state`, for previews and snapshot tests.
@@ -93,6 +103,7 @@ final class ConversationModel {
             group.addTask { await self.highlightTargetIfNeeded() }
         }
         isVisible = false
+        linkResolver.stop()
         await data.messages.composerChanged(conversationId: id, text: "")
         await data.messages.close(conversationId: id)
     }
@@ -169,8 +180,10 @@ final class ConversationModel {
             ),
             richDocument: richCache.document(for:)
         )
+        builtItems = built
+        let decorated = linkResolver.decorate(built)
         var next = state
-        next.items = built
+        next.items = decorated.items
         next.content = Self.content(built: built, timeline: timeline)
         next.isStale = !built.isEmpty && timeline.error != nil
         next.hasOlder = value?.hasOlder ?? false
@@ -182,6 +195,23 @@ final class ConversationModel {
         refreshTyping()
         rebuildCount += 1
         markReadIfNeeded()
+        linkResolver.request(decorated.wanted)
+    }
+
+    /// A link preview landed: the same rows, decorated again.
+    private func refreshLinks() {
+        let items = linkResolver.decorate(builtItems).items
+        if items != state.items { state.items = items }
+    }
+
+    /// Opens a link tapped in a message: a resolved task in the app, other Waivera links and
+    /// safe web links in the in-app browser.
+    func openLink(_ url: URL) {
+        switch linkResolver.destination(for: url.absoluteString) {
+        case .task(let id): onOpenTask(id)
+        case .web(let web): interactions.openLink(web)
+        case nil: interactions.openLink(url)
+        }
     }
 
     /// A group's members, counted once each; only a group has the header's members button.

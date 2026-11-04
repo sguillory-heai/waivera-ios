@@ -24,6 +24,12 @@ final class ThreadModel {
     @ObservationIgnored let clock: ChatClock
     @ObservationIgnored let platform: ChatPlatform
     @ObservationIgnored let context: ChatContext
+    @ObservationIgnored let onOpenTask: @MainActor (_ taskID: Int) -> Void
+    @ObservationIgnored let linkResolver: ChatLinkResolver
+    /// The root and replies before link previews; a preview landing decorates these again
+    /// instead of rebuilding, so the trackers see each emission once.
+    @ObservationIgnored var builtRoot: MessageRow?
+    @ObservationIgnored var builtReplies: [TimelineItem] = []
     @ObservationIgnored var thread = Resource<ThreadTimeline>()
     @ObservationIgnored var allMessages: [ChatMessage] = []
     @ObservationIgnored var isVisible = false
@@ -41,7 +47,8 @@ final class ThreadModel {
         targetMessageID: Int?,
         data: DataEnvironment?,
         clock: ChatClock = ChatClock(),
-        platform: ChatPlatform = ChatPlatform()
+        platform: ChatPlatform = ChatPlatform(),
+        onOpenTask: @escaping @MainActor (_ taskID: Int) -> Void = { _ in }
     ) {
         self.rootMessageID = rootMessageID
         self.conversationID = conversationID
@@ -49,6 +56,9 @@ final class ThreadModel {
         self.data = data
         self.clock = clock
         self.platform = platform
+        self.onOpenTask = onOpenTask
+        let calendar = data?.calendar
+        linkResolver = ChatLinkResolver(lookups: data?.links, webBase: data?.webBaseURL) { calendar?.today() }
         let valid = rootMessageID > 0 && (conversationID ?? 0) > 0
         state = ThreadState(content: valid ? .loading : .invalid)
         let context = ChatContext(conversationId: conversationID ?? 0)
@@ -62,6 +72,7 @@ final class ThreadModel {
             isConnected: { context.isConnected },
             wait: { try? await clock.sleep(seconds: $0) }
         )
+        linkResolver.onChange = { [weak self] in self?.refreshLinks() }
     }
 
     /// A model that only displays `state`, for previews and snapshot tests.
@@ -87,6 +98,7 @@ final class ThreadModel {
             group.addTask { await self.highlightTargetIfNeeded() }
         }
         isVisible = false
+        linkResolver.stop()
         await data.threads.close(rootMessageId: rootId, conversationId: conversationId)
     }
 
@@ -124,9 +136,8 @@ final class ThreadModel {
             trackArrivals(replies: replies, pending: pending)
             trackSends(pending)
         }
-        var next = state
-        next.root = buildRoot(root)
-        next.replies = TimelineBuilder.build(
+        builtRoot = buildRoot(root)
+        builtReplies = TimelineBuilder.build(
             TimelineInput(
                 messages: replies,
                 pending: pending,
@@ -137,6 +148,10 @@ final class ThreadModel {
             ),
             richDocument: richCache.document(for:)
         )
+        let decorated = decorateLinks()
+        var next = state
+        next.root = decorated.root
+        next.replies = decorated.replies
         next.replyCount = replies.count
         let hasData = root != nil || !replies.isEmpty || !pending.isEmpty
         next.content = Self.content(hasData: hasData, thread: thread)
@@ -145,6 +160,33 @@ final class ThreadModel {
         next.names = context.names(messages: allMessages)
         if next != state { state = next }
         markReadIfNeeded()
+        linkResolver.request(decorated.wanted)
+    }
+
+    private func decorateLinks() -> (root: MessageRow?, replies: [TimelineItem], wanted: [LinkTarget]) {
+        var wanted: [LinkTarget] = []
+        let root = builtRoot.map { linkResolver.decorate($0, wanted: &wanted) }
+        let replies = linkResolver.decorate(builtReplies)
+        return (root, replies.items, wanted + replies.wanted)
+    }
+
+    /// A link preview landed: the same root and replies, decorated again.
+    private func refreshLinks() {
+        let decorated = decorateLinks()
+        var next = state
+        next.root = decorated.root
+        next.replies = decorated.replies
+        if next != state { state = next }
+    }
+
+    /// Opens a link tapped in a message: a resolved task in the app, other Waivera links and
+    /// safe web links in the in-app browser.
+    func openLink(_ url: URL) {
+        switch linkResolver.destination(for: url.absoluteString) {
+        case .task(let id): onOpenTask(id)
+        case .web(let web): interactions.openLink(web)
+        case nil: interactions.openLink(url)
+        }
     }
 
     private func buildRoot(_ root: ChatMessage?) -> MessageRow? {

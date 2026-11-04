@@ -34,7 +34,7 @@
                 .environment(
                     \.openURL,
                     OpenURLAction { url in
-                        MainActor.assumeIsolated { model.interactions.openLink(url) }
+                        MainActor.assumeIsolated { model.openLink(url) }
                         return .handled
                     }
                 )
@@ -172,6 +172,7 @@
             actions.editFailed = { outgoing in Task { await model.editFailed(outgoing) } }
             actions.discard = { id in Task { await model.discard(clientMessageId: id) } }
             actions.openTicket = { interactions.openLink($0) }
+            actions.openLink = { href in URL(string: href).map(model.openLink) }
             actions.loadImage = { try await interactions.download(messageId: $0) }
             actions.loadAvatar = { id in await avatars?.avatar(userId: id) }
             return actions

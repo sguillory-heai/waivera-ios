@@ -8,7 +8,8 @@ enum RichMark: String, Hashable, Sendable, CaseIterable {
 }
 
 enum RichInline: Hashable, Sendable {
-    /// `href` is set only for a link whose target passed `SafeLinks.url(_:)`.
+    /// `href` is set only for a link whose target passed `SafeLinks.url(_:)`, or a site-relative
+    /// link on the web app ("/task/HEA-1042"), which `ChatLinks` resolves before it opens.
     case text(String, marks: Set<RichMark> = [], href: URL? = nil)
     /// `@label`, falling back to the id, then "mention".
     case mention(String)
@@ -195,7 +196,9 @@ enum TipTapParser {
             case "strike": result.insert(.strike)
             case "underline": result.insert(.underline)
             case "code": result.insert(.code)
-            case "link": href = SafeLinks.url(mark["attrs"]?["href"]?.stringValue)
+            case "link":
+                let raw = mark["attrs"]?["href"]?.stringValue
+                href = SafeLinks.url(raw) ?? ChatLinks.siteRelative(raw)
             default: break
             }
         }

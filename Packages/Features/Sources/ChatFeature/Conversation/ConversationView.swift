@@ -16,6 +16,7 @@
         let onOpenThread: (_ rootMessageID: Int, _ targetMessageID: Int?) -> Void
         let onOpenPerson: (_ userID: String) -> Void
         let onOpenMembers: ((_ conversationID: Int) -> Void)?
+        let onOpenTask: (_ taskID: Int) -> Void
 
         @Environment(\.dataEnvironment) private var data
         @State private var model: ConversationModel?
@@ -25,13 +26,15 @@
             targetMessageID: Int?,
             onOpenThread: @escaping (_ rootMessageID: Int, _ targetMessageID: Int?) -> Void,
             onOpenPerson: @escaping (_ userID: String) -> Void,
-            onOpenMembers: ((_ conversationID: Int) -> Void)? = nil
+            onOpenMembers: ((_ conversationID: Int) -> Void)? = nil,
+            onOpenTask: @escaping (_ taskID: Int) -> Void = { _ in }
         ) {
             self.conversationID = conversationID
             self.targetMessageID = targetMessageID
             self.onOpenThread = onOpenThread
             self.onOpenPerson = onOpenPerson
             self.onOpenMembers = onOpenMembers
+            self.onOpenTask = onOpenTask
         }
 
         public var body: some View {
@@ -61,7 +64,8 @@
                         data: data,
                         clock: data.map(ChatClock.employee) ?? ChatClock(),
                         platform: .live,
-                        onOpenThread: { onOpenThread($0, $1) }
+                        onOpenThread: { onOpenThread($0, $1) },
+                        onOpenTask: { onOpenTask($0) }
                     )
                 model = active
                 await active.run()

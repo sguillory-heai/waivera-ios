@@ -218,6 +218,7 @@ private struct LiveWiring {
             notices: notices,
             tasks: tasks,
             requests: requests,
+            links: LiveLinkLookupRepository(api: services.api),
             clock: services.clock,
             webBaseURL: services.webBaseURL,
             callURL: { try await handoff.url(for: $0) },
