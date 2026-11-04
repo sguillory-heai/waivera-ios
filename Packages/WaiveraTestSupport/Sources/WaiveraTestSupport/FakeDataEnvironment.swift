@@ -42,6 +42,8 @@ public struct FakeDataEnvironment: Sendable {
     public let realtimeStatus: FakeRealtimeStatusRepository
     public let alerts: FakeChatAlertsRepository
     public let notices: FakeNoticesRepository
+    public let tasks: FakeTasksRepository
+    public let requests: FakeRequestsRepository
     public let environment: DataEnvironment
 
     /// The scenario the launch arguments ask for, or `nil` when the fake was not requested.
@@ -94,6 +96,8 @@ public struct FakeDataEnvironment: Sendable {
             realtimeStatus: FakeRealtimeStatusRepository(realtime: realtime),
             alerts: FakeChatAlertsRepository(presence: presence, realtime: realtime),
             notices: FakeNoticesRepository(items: scenario == .empty ? [] : nil, clock: clock),
+            tasks: FakeTasksRepository(empty: scenario == .empty),
+            requests: FakeRequestsRepository(empty: scenario == .empty),
             webBaseURL: webBaseURL
         )
         switch scenario {
@@ -114,6 +118,8 @@ public struct FakeDataEnvironment: Sendable {
         profile.resource.setControls(controls)
         calendar.controls.update { $0 = controls }
         calendar.milestoneResource.setControls(controls)
+        tasks.failure.update { $0 = controls.failure }
+        requests.failure.update { $0 = controls.failure }
     }
 
     private init(
@@ -133,6 +139,8 @@ public struct FakeDataEnvironment: Sendable {
         realtimeStatus: FakeRealtimeStatusRepository,
         alerts: FakeChatAlertsRepository,
         notices: FakeNoticesRepository,
+        tasks: FakeTasksRepository,
+        requests: FakeRequestsRepository,
         webBaseURL: URL?
     ) {
         self.data = data
@@ -151,6 +159,8 @@ public struct FakeDataEnvironment: Sendable {
         self.realtimeStatus = realtimeStatus
         self.alerts = alerts
         self.notices = notices
+        self.tasks = tasks
+        self.requests = requests
         environment = DataEnvironment(
             session: session,
             conversations: chat,
@@ -168,6 +178,8 @@ public struct FakeDataEnvironment: Sendable {
             realtimeStatus: realtimeStatus,
             alerts: alerts,
             notices: notices,
+            tasks: tasks,
+            requests: requests,
             clock: clock,
             webBaseURL: webBaseURL,
             callURL: { conversation in

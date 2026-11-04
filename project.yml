@@ -90,6 +90,8 @@ targets:
       - package: Features
         product: ScheduleFeature
       - package: Features
+        product: TasksFeature
+      - package: Features
         product: ProfileFeature
       - package: Features
         product: SettingsFeature
@@ -225,6 +227,8 @@ targets:
       - package: Features
         product: ScheduleFeature
       - package: Features
+        product: TasksFeature
+      - package: Features
         product: ProfileFeature
       - package: Features
         product: SettingsFeature
@@ -268,5 +272,6 @@ schemes:
         - package: Features/ChatListTests
         - package: Features/ChatConversationTests
         - package: Features/ScheduleFeatureTests
+        - package: Features/TasksFeatureTests
         - package: Features/ProfileFeatureTests
         - package: Features/SettingsFeatureTests

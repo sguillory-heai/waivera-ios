@@ -8,7 +8,10 @@ import PackageDescription
 // Every feature reads its repositories from `@Environment(\.dataEnvironment)` (WaiveraData).
 // WaiveraTestSupport is linked for previews and feature tests only: import it inside
 // `#if DEBUG`, never from release code paths (docs/architecture/data-layer.md).
-let features = ["AuthFeature", "TodayFeature", "ChatFeature", "ScheduleFeature", "ProfileFeature", "SettingsFeature"]
+let features = [
+    "AuthFeature", "TodayFeature", "ChatFeature", "ScheduleFeature", "TasksFeature", "ProfileFeature",
+    "SettingsFeature",
+]
 
 // SwiftUI on iOS 26 can build `ForEach` rows and other view-builder closures on its
 // asynchronous renderer thread. Swift 6 inserts a main-actor check into those closures, so
@@ -87,6 +90,15 @@ let package = Package(
             name: "ScheduleFeatureTests",
             dependencies: [
                 "ScheduleFeature",
+                .product(name: "WaiveraTestSupport", package: "WaiveraTestSupport"),
+            ]
+        ),
+        .testTarget(
+            name: "TasksFeatureTests",
+            dependencies: [
+                "TasksFeature",
+                .product(name: "WaiveraAPI", package: "WaiveraAPI"),
+                .product(name: "WaiveraData", package: "WaiveraData"),
                 .product(name: "WaiveraTestSupport", package: "WaiveraTestSupport"),
             ]
         ),

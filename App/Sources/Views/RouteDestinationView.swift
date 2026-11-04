@@ -4,6 +4,7 @@ import ProfileFeature
 import ScheduleFeature
 import SettingsFeature
 import SwiftUI
+import TasksFeature
 import TodayFeature
 import WaiveraDesign
 import WaiveraRouting
@@ -91,7 +92,11 @@ struct RouteDestinationView: View {
             AppearanceSettingsView()
         case .changePassword:
             PasswordChangeView(onDone: { model.pop() })
-        case .task, .taskFile, .requests:
+        case .task(let taskID):
+            TaskDetailView(taskID: taskID)
+        case .requests:
+            RequestsView(onOpenTask: { model.push(.task(taskID: $0)) })
+        case .taskFile:
             FeaturePlaceholder(title: AppStrings.tabTasks, systemImage: "checklist")
         }
     }

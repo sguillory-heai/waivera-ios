@@ -23,6 +23,10 @@ public struct DataEnvironment: Sendable {
     public let alerts: any ChatAlertsRepository
     /// The web bell's notifications (the Today inbox).
     public let notices: any NoticesRepository
+    /// Casework and the person's own tasks, straight from the server.
+    public let tasks: any TasksRepository
+    /// Change requests on tasks and their review.
+    public let requests: any RequestsRepository
     /// The clock the repositories stamp `updatedAt` with. Relative times on screen ("5m",
     /// "Updated 2 min ago") measure against it, so the fake environment's demo day stays consistent.
     public let clock: any WaiveraClock
@@ -51,6 +55,8 @@ public struct DataEnvironment: Sendable {
         realtimeStatus: any RealtimeStatusRepository,
         alerts: any ChatAlertsRepository,
         notices: any NoticesRepository = EmptyNoticesRepository(),
+        tasks: any TasksRepository = EmptyTasksRepository(),
+        requests: any RequestsRepository = EmptyRequestsRepository(),
         clock: any WaiveraClock = SystemClock(),
         webBaseURL: URL? = nil,
         callURL: @escaping @Sendable (Conversation) async throws -> URL,
@@ -74,6 +80,8 @@ public struct DataEnvironment: Sendable {
         self.realtimeStatus = realtimeStatus
         self.alerts = alerts
         self.notices = notices
+        self.tasks = tasks
+        self.requests = requests
         self.clock = clock
         self.webBaseURL = webBaseURL
         self.callURL = callURL

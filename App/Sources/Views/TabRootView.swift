@@ -1,6 +1,7 @@
 import ChatFeature
 import ScheduleFeature
 import SwiftUI
+import TasksFeature
 import TodayFeature
 import WaiveraDesign
 import WaiveraRouting
@@ -46,7 +47,7 @@ struct TabRootView: View {
                 onFocusHandled: { model.scheduleFocusHandled() }
             )
         case .tasks:
-            FeaturePlaceholder(title: AppStrings.tabTasks, systemImage: "checklist")
+            TasksView(onOpenTask: { model.push(.task(taskID: $0)) })
         }
     }
 }

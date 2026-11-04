@@ -141,6 +141,8 @@ private struct LiveWiring {
     let attachments: LiveAttachmentsRepository
     let avatars: LiveAvatarRepository
     let notices: LiveNoticesRepository
+    let requests: LiveRequestsRepository
+    let tasks: LiveTasksRepository
 
     init(_ services: LiveServices) {
         self.services = services
@@ -177,6 +179,9 @@ private struct LiveWiring {
         attachments = LiveAttachmentsRepository(api: api)
         avatars = LiveAvatarRepository(api: api, clock: clock)
         notices = LiveNoticesRepository(api: api, clock: clock)
+        let requests = LiveRequestsRepository(api: api, context: context)
+        self.requests = requests
+        tasks = LiveTasksRepository(api: api, context: context, requests: requests)
     }
 
     func environment() -> DataEnvironment {
@@ -184,6 +189,8 @@ private struct LiveWiring {
         let realtime = services.realtime
         let chat = self.chat
         let handoff = self.handoff
+        let requests = self.requests
+        let context = self.context
         let session = LiveSessionRepository(
             auth: auth,
             api: services.api,
@@ -209,6 +216,8 @@ private struct LiveWiring {
             realtimeStatus: LiveRealtimeStatusRepository(realtime: realtime, connectivity: services.connectivity),
             alerts: LiveChatAlertsRepository(chat: chat, presence: presence, realtime: realtime),
             notices: notices,
+            tasks: tasks,
+            requests: requests,
             clock: services.clock,
             webBaseURL: services.webBaseURL,
             callURL: { try await handoff.url(for: $0) },
@@ -216,6 +225,8 @@ private struct LiveWiring {
                 if isForeground { await auth.reloadStoredSession() }
                 await chat.foregroundChanged(isForeground)
                 await realtime.setForeground(isForeground)
+                // A role change on the web reaches the phone without signing out.
+                if isForeground, context.currentUser != nil { await requests.refreshAll() }
             },
             start: {
                 await session.setParticipants([coordinator])
@@ -248,6 +259,7 @@ private struct LiveWiring {
             attachments: attachments,
             avatars: avatars,
             notices: notices,
+            requests: requests,
             localStore: services.localStore,
             keyValueStore: services.keyValueStore,
             connectivity: services.connectivity,
@@ -273,6 +285,7 @@ actor SessionCoordinator: SessionLifecycleParticipant {
     let attachments: LiveAttachmentsRepository
     let avatars: LiveAvatarRepository
     let notices: LiveNoticesRepository
+    let requests: LiveRequestsRepository
     let localStore: any LocalStore
     let keyValueStore: any KeyValueStore
     let connectivity: any ConnectivityMonitor
@@ -294,6 +307,7 @@ actor SessionCoordinator: SessionLifecycleParticipant {
         attachments: LiveAttachmentsRepository,
         avatars: LiveAvatarRepository,
         notices: LiveNoticesRepository,
+        requests: LiveRequestsRepository,
         localStore: any LocalStore,
         keyValueStore: any KeyValueStore,
         connectivity: any ConnectivityMonitor,
@@ -313,6 +327,7 @@ actor SessionCoordinator: SessionLifecycleParticipant {
         self.attachments = attachments
         self.avatars = avatars
         self.notices = notices
+        self.requests = requests
         self.localStore = localStore
         self.keyValueStore = keyValueStore
         self.connectivity = connectivity
@@ -358,10 +373,11 @@ actor SessionCoordinator: SessionLifecycleParticipant {
         await calendar.begin()
         await ingestor.start()
         await realtime.start()
-        Task { [chat, activity, calendar, notices] in
+        Task { [chat, activity, calendar, notices, requests] in
             await chat.refresh()
             await activity.refresh()
             await notices.refresh()
+            await requests.refreshAll()
             await calendar.refreshMilestones()
         }
     }
@@ -383,6 +399,7 @@ actor SessionCoordinator: SessionLifecycleParticipant {
         await attachments.clear()
         await avatars.clear()
         await notices.reset()
+        await requests.reset()
         await localStore.removeAll()
         for key in StorageKey.personal { keyValueStore.set(nil, forKey: key) }
         context.setAccountSince(nil)
