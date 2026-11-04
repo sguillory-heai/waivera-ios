@@ -82,7 +82,8 @@
         }
 
         private var headline: String {
-            waiting ? item.request.requesterName : (item.change.text ?? item.kindLabel)
+            let name = item.request.requesterName
+            return waiting && !name.isEmpty ? name : (item.change.text ?? item.kindLabel)
         }
 
         private var icon: String {
