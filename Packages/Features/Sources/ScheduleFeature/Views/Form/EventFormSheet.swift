@@ -65,6 +65,7 @@
     }
 
     /// The small pieces every form section shares.
+    @MainActor
     enum EventFormParts {
         static func label(_ text: String) -> some View {
             Text(text)
