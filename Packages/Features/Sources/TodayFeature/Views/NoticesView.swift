@@ -30,12 +30,35 @@
             }
             .background(Palette.background)
             .navigationTitle(TodayStrings.text("notices.title"))
-            .waiveraTopBar(TodayStrings.text("notices.title"))
+            .waiveraTopBar(
+                TodayStrings.text("notices.title"),
+                subtitle: unreadSubtitle,
+                actions: barActions
+            )
             .task {
                 let current = model ?? data.map { NoticesModel(environment: $0, clock: $0.clock) }
                 if model == nil { model = current }
                 await current?.run()
             }
+        }
+
+        /// "3 unread" under the title while anything is unread (Android's inbox top bar).
+        private var unreadSubtitle: String? {
+            guard let count = model?.state.unreadCount, count > 0 else { return nil }
+            return TodayStrings.plural("today.notices.unread", count)
+        }
+
+        /// Mark all read, in the bar while anything is unread and no mark is running.
+        private var barActions: [TopBarAction] {
+            guard let model, model.state.unreadCount > 0, !model.state.isMarkingAllRead else { return [] }
+            return [
+                TopBarAction(
+                    id: "markAllRead",
+                    systemImage: "envelope.open",
+                    accessibilityLabel: TodayStrings.text("today.notices.markAllRead"),
+                    action: { model.markAllRead() }
+                )
+            ]
         }
     }
 

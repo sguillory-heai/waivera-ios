@@ -97,9 +97,13 @@
             @ViewBuilder content: () -> Content
         ) -> some View {
             if let destination = stat.opens {
-                Button { onOpen(destination) } label: { content() }
-                    .buttonStyle(.press(depth))
-                    .frame(minHeight: ControlSize.minHitTarget)
+                Button {
+                    onOpen(destination)
+                } label: {
+                    content()
+                }
+                .buttonStyle(.press(depth))
+                .frame(minHeight: ControlSize.minHitTarget)
             } else {
                 content()
             }

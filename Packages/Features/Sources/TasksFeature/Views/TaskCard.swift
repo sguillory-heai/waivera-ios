@@ -70,9 +70,12 @@
                 text += late + AttributedString(separator)
             }
             if row.delayed {
-                let words = row.delayedThrough
-                    .map { TasksStrings.format("tasks.row.delayedThrough", Self.unbroken($0)) }
-                    ?? TasksStrings.text("tasks.row.delayed")
+                let words: String
+                if let through = row.delayedThrough {
+                    words = TasksStrings.format("tasks.row.delayedThrough", Self.unbroken(through))
+                } else {
+                    words = TasksStrings.text("tasks.row.delayed")
+                }
                 var delay = AttributedString(words)
                 delay.foregroundColor = Palette.link
                 text += delay + AttributedString(separator)

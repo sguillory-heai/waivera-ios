@@ -3,8 +3,9 @@
     import WaiveraData
     import WaiveraDesign
 
-    /// One inbox row: the kind tile, the title (bold while unread), the message, the kind and age,
-    /// and the open-outside mark for rows that open in the browser.
+    /// A notification card, in the inbox and under Needs you (Android `NoticeRow`): the kind's
+    /// tile, "Kind · time" in the kind's colour, the title, then the message. Unread cards are
+    /// bold; a card that opens on the web shows the open-outside mark instead of the chevron.
     struct NoticeRowView: View {
         let row: NoticeRow
         let formatter: TodayFormatter
@@ -13,50 +14,31 @@
         var body: some View {
             let tile = NoticeTile.of(row.kind)
             let kind = TodayStrings.noticeKind(row.kind)
-            Button(action: onOpen) {
-                HStack(alignment: .top, spacing: ControlSize.fieldTileGap) {
-                    IconTile(
-                        systemImage: tile.systemImage,
-                        tone: tile.tone,
-                        size: ControlSize.fieldTile,
-                        glyphSize: ControlSize.fieldTileGlyph
-                    )
-                    VStack(alignment: .leading, spacing: Spacing.xxSmall) {
-                        Text(row.title)
-                            .waiveraTextStyle(.titleSmall, weight: row.isUnread ? .bold : .medium)
-                            .foregroundStyle(Palette.text)
-                            .lineLimit(2)
-                        if !row.message.isEmpty {
-                            Text(row.message)
-                                .waiveraTextStyle(.bodySmall)
-                                .foregroundStyle(Palette.textSecondary)
-                                .lineLimit(3)
-                        }
-                        Text(TodayStrings.joined(kind, row.at.map(formatter.past)))
-                            .waiveraTextStyle(.labelSmall)
-                            .foregroundStyle(Palette.textTertiary)
-                            .lineLimit(1)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+            let headline = row.title.isEmpty ? kind : row.title
+            let supporting = row.message.isEmpty || row.message == headline ? nil : row.message
+            let spoken = TodayStrings.spoken(kind, headline, supporting, row.at.map(formatter.pastSpoken))
+            TodayRow(
+                eyebrow: TodayStrings.joined(kind, row.at.map(formatter.past)),
+                eyebrowTint: tile.tone.contentColor,
+                headline: headline,
+                supporting: supporting,
+                emphasized: row.isUnread,
+                showsChevron: !row.opensOutside,
+                accessibilityText: row.isUnread ? TodayStrings.format("today.activity.unreadPrefix", spoken) : spoken,
+                accessibilityHintText: TodayStrings.text(
+                    row.opensOutside ? "today.notices.hint.openWeb" : "today.notices.hint.open"
+                ),
+                action: onOpen,
+                leading: { TodayTile(systemImage: tile.systemImage, tone: tile.tone) },
+                trailing: {
                     if row.opensOutside {
                         Image(systemName: "arrow.up.right.square")
-                            .foregroundStyle(Palette.link)
+                            .font(WaiveraFont.captionEmphasis)
+                            .foregroundStyle(Palette.textSecondary)
+                            .padding(Spacing.extraSmall)
                             .accessibilityHidden(true)
                     }
-                    if row.isUnread {
-                        UnreadDot(accessibilityLabel: TodayStrings.text("today.notices.unreadLabel"))
-                            .padding(.top, Spacing.extraSmall)
-                    }
                 }
-                .padding(.horizontal, Spacing.gutter)
-                .padding(.vertical, Spacing.mediumSmall)
-                .frame(minHeight: ControlSize.listRowMinHeight)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.press(.row))
-            .accessibilityElement(children: .combine)
-            .accessibilityHint(
-                Text(TodayStrings.text(row.opensOutside ? "today.notices.hint.openWeb" : "today.notices.hint.open"))
             )
         }
     }

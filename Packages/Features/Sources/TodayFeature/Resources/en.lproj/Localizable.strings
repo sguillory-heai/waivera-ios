@@ -272,7 +272,6 @@
 "today.notices.loading" = "Loading your inbox";
 "today.notices.hint.open" = "Opens it";
 "today.notices.hint.openWeb" = "Opens it in your browser";
-"today.notices.unreadLabel" = "Unread";
 "today.notice.taskAssigned" = "Task assigned";
 "today.notice.taskActivity" = "Task activity";
 "today.notice.approval" = "Approval requested";

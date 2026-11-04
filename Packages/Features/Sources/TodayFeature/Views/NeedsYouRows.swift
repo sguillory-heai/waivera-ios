@@ -23,28 +23,9 @@
             }
         }
 
-        /// An inbox notification that asks for something: its kind and age, then what it says.
+        /// An inbox notification that asks for something: the same card as the inbox.
         private func notice(_ item: NoticeRow) -> some View {
-            let kind = TodayStrings.noticeKind(item.kind)
-            let tile = NoticeTile.of(item.kind)
-            return TodayRow(
-                eyebrow: TodayStrings.joined(kind, item.at.map(formatter.past)),
-                eyebrowTint: tile.tone.contentColor,
-                headline: item.title,
-                supporting: item.message.isEmpty ? nil : item.message,
-                emphasized: true,
-                accessibilityText: TodayStrings.spoken(
-                    kind,
-                    item.title,
-                    item.message,
-                    item.at.map(formatter.pastSpoken)
-                ),
-                accessibilityHintText: TodayStrings.text(
-                    item.opensOutside ? "today.notices.hint.openWeb" : "today.notices.hint.open"
-                ),
-                action: { onOpenNotice(item.id) },
-                leading: { TodayTile(systemImage: tile.systemImage, tone: tile.tone) }
-            )
+            NoticeRowView(row: item, formatter: formatter, onOpen: { onOpenNotice(item.id) })
         }
 
         /// A message of mine that never went out leads: only I can fix it.

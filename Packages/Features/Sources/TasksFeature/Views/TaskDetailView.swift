@@ -51,7 +51,7 @@
                     accessibilityLabel: TasksStrings.text("tasks.openOnWeb")
                 ) {
                     if let url = model.webURL() { openURL(url) }
-                },
+                }
             ]
         }
 

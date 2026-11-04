@@ -86,15 +86,11 @@
                     .todayListRow()
                 }
             } else {
-                header.todayListRow()
-                ForEach(state.groups) { group in
-                    Text(dayTitle(group.day))
-                        .waiveraTextStyle(.titleSmall)
-                        .foregroundStyle(Palette.textSecondary)
+                ForEach(Array(state.groups.enumerated()), id: \.element.id) { index, group in
+                    CountedSectionHeader(dayTitle(group.day))
                         .padding(.horizontal, Spacing.gutter)
-                        .padding(.top, Spacing.medium)
-                        .padding(.bottom, Spacing.extraSmall)
-                        .accessibilityAddTraits(.isHeader)
+                        .padding(.top, index == 0 ? Spacing.extraSmall : Spacing.mediumPlus)
+                        .padding(.bottom, Spacing.small)
                         .todayListRow()
                     ForEach(group.rows) { row in
                         NoticeRowView(row: row, formatter: formatter, onOpen: { actions.open(row.id) })
@@ -102,25 +98,6 @@
                     }
                 }
             }
-        }
-
-        /// "3 unread" and Mark all read.
-        private var header: some View {
-            HStack(spacing: Spacing.small) {
-                Text(TodayStrings.plural("today.notices.unread", state.unreadCount))
-                    .waiveraTextStyle(.labelLarge)
-                    .foregroundStyle(Palette.textSecondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                if state.unreadCount > 0 {
-                    WaiveraButton(
-                        TodayStrings.text("today.notices.markAllRead"),
-                        variant: .text,
-                        isLoading: state.isMarkingAllRead,
-                        action: actions.markAllRead
-                    )
-                }
-            }
-            .padding(.horizontal, Spacing.gutter)
         }
 
         private func dayTitle(_ day: NoticeDay) -> String {

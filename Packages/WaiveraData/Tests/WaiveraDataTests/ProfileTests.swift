@@ -81,11 +81,12 @@ struct ProfileTests {
 
     @Test func directoryDropsDuplicatesDeactivatedAndNamelessRows() async {
         let transport = RoutingTransport()
-        await transport.set("GET api/users", .json(#"""
-        [{"id":"usr_a","firstName":"Ann","lastName":"Bell"},{"id":"usr_a","displayName":"Ann Again"},
-         {"id":"usr_gone","displayName":"Gone","deactivated":true},{"id":"usr_mail","email":"m@example.com"},
-         {"id":" ","displayName":"Blank"},{"id":"usr_none"}]
-        """#))
+        let users = #"""
+            [{"id":"usr_a","firstName":"Ann","lastName":"Bell"},{"id":"usr_a","displayName":"Ann Again"},
+             {"id":"usr_gone","displayName":"Gone","deactivated":true},{"id":"usr_mail","email":"m@example.com"},
+             {"id":" ","displayName":"Blank"},{"id":"usr_none"}]
+            """#
+        await transport.set("GET api/users", .json(users))
         let people = LivePeopleRepository(api: makeAPI(transport), store: InMemoryLocalStore(), clock: TestClock())
         await people.refresh()
         let directory = await latest(people.directory())?.value

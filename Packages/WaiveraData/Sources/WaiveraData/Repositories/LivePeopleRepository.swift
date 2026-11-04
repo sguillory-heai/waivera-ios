@@ -52,7 +52,8 @@ public actor LivePeopleRepository: PeopleRepository {
             var seen = Set<String>()
             let directory = rows.compactMap { row -> DirectoryPerson? in
                 guard let id = row.id?.trimmed, !id.isEmpty, Self.isStaff(row),
-                      let name = Self.name(of: row), seen.insert(id).inserted else {
+                    let name = Self.name(of: row), seen.insert(id).inserted
+                else {
                     return nil
                 }
                 return DirectoryPerson(id: id, name: name)
@@ -89,7 +90,10 @@ public actor LivePeopleRepository: PeopleRepository {
     /// Display name, else first and last name, else email, as on Android.
     private static func name(of row: UserInfoResponse) -> String? {
         if let display = row.displayName?.trimmed, !display.isEmpty { return display }
-        let full = [row.firstName, row.lastName].compactMap { $0?.trimmed }.filter { !$0.isEmpty }.joined(separator: " ")
+        let full = [row.firstName, row.lastName]
+            .compactMap { $0?.trimmed }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
         if !full.isEmpty { return full }
         return row.email?.trimmed.nilIfEmpty
     }
