@@ -45,21 +45,22 @@
         }
 
         private var bubble: some View {
-            // With previews the bubble is as wide as its cards, so a short body starts at the
-            // bubble's leading edge (as on Android) instead of hugging the trailing side.
-            VStack(
-                alignment: row.isMine && !showsLinks ? .trailing : .leading,
-                spacing: Spacing.extraSmall + Spacing.xxSmall
-            ) {
-                BubbleBody(row: row, actions: actions)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(accessibilityLabel)
-                    .accessibilityHint(ConversationStrings.text("show.time"))
-                if showsLinks {
-                    LinkSections(links: row.links, inset: sideInset, onOpen: actions.openLink)
-                        .padding(.horizontal, -sideInset)
-                        .padding(.bottom, linksReachBottom ? -Spacing.small : 0)
-                        .anchorPreference(key: LinksFrameKey.self, value: .bounds) { $0 }
+            let spacing = Spacing.extraSmall + Spacing.xxSmall
+            return VStack(alignment: row.isMine ? .trailing : .leading, spacing: spacing) {
+                // With previews the body and cards share one column as wide as the cards, so a
+                // short body starts at its leading edge (as on Android); an attachment below keeps
+                // the bubble's own side.
+                VStack(alignment: showsLinks ? .leading : (row.isMine ? .trailing : .leading), spacing: spacing) {
+                    BubbleBody(row: row, actions: actions)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(accessibilityLabel)
+                        .accessibilityHint(ConversationStrings.text("show.time"))
+                    if showsLinks {
+                        LinkSections(links: row.links, inset: sideInset, onOpen: actions.openLink)
+                            .padding(.horizontal, -sideInset)
+                            .padding(.bottom, linksReachBottom ? -Spacing.small : 0)
+                            .anchorPreference(key: LinksFrameKey.self, value: .bounds) { $0 }
+                    }
                 }
                 if let attachment = message.attachment, !message.isDeleted {
                     AttachmentView(
