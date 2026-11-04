@@ -79,7 +79,7 @@ struct ChatLinkTests {
 
     // MARK: Presenting
 
-    @Test func resolvedAddressesTakeTheShortNameAndATrailingLinkLeaves() {
+    @Test func resolvedAddressesTakeTheShortNameWhereverTheySit() {
         let target = LinkTarget.task(number: 1042, prefix: "HEA")
         let preview = LinkPreview.task(
             id: 12,
@@ -98,7 +98,17 @@ struct ChatLinkTests {
             ]
         )
         let trailing = RichDocument(blocks: [.paragraph([.text("See "), link("/task/HEA-1042", "/task/HEA-1042")])])
-        #expect(links.present(trailing, previews: [target: preview]).blocks == [.paragraph([.text("See ")])])
+        #expect(
+            links.present(trailing, previews: [target: preview]).blocks == [
+                .paragraph([.text("See "), link("HEA-1042", "/task/HEA-1042")])
+            ]
+        )
+        let onlyLink = RichDocument(blocks: [.paragraph([link("/task/HEA-1042", "/task/HEA-1042")])])
+        #expect(
+            links.present(onlyLink, previews: [target: preview]).blocks == [
+                .paragraph([link("HEA-1042", "/task/HEA-1042")])
+            ]
+        )
         #expect(links.present(trailing, previews: [target: .loading(.task)]) == trailing)
     }
 

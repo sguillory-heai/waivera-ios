@@ -186,8 +186,7 @@
                     .environment(\.waiveraAccountMenu, nil)
                 PopVisibility(isVisible: showsJumpToToday) {
                     Button(action: onToday) {
-                        WaiveraIcon(systemName: "calendar.badge.clock")
-                            .font(WaiveraFont.bodyEmphasis)
+                        HeroBarIcon(systemName: "calendar.badge.clock")
                             .foregroundStyle(HeroPalette.onHeader)
                             .frame(width: ControlSize.iconButton, height: ControlSize.iconButton)
                             .contentShape(Rectangle())
@@ -198,8 +197,7 @@
                 }
                 if let onNewEvent {
                     Button(action: onNewEvent) {
-                        WaiveraIcon(systemName: "plus")
-                            .font(WaiveraFont.bodyEmphasis)
+                        HeroBarIcon(systemName: "plus")
                             .foregroundStyle(HeroPalette.onHeader)
                             .frame(width: ControlSize.iconButton, height: ControlSize.iconButton)
                             .contentShape(Rectangle())

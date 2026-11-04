@@ -144,10 +144,11 @@ struct ChatLinks: Sendable {
         return found
     }
 
-    /// `document` as it reads once its links have previews: an address shown as text becomes the
-    /// short name of what it points at (a task's number, a resource's or article's title); a
-    /// link that ends the message leaves the text, since its preview sits right under it. Links
-    /// still loading, or that the reader can't open, stay as written.
+    /// `document` as it reads once its links have previews: every address shown as text becomes
+    /// the short name of what it points at (a task's number, a resource's or article's title),
+    /// wherever it sits, so each preview has a name in the text to match, and a message that was
+    /// only a link still reads as something. Links still loading, or that the reader can't open,
+    /// stay as written.
     func present(_ document: RichDocument, previews: [LinkTarget: LinkPreview]) -> RichDocument {
         func resolved(_ href: URL?) -> LinkPreview? {
             guard let href, let target = target(href.absoluteString), let preview = previews[target],
@@ -163,7 +164,7 @@ struct ChatLinks: Sendable {
                 return .text(name, marks: marks, href: href)
             }
         }
-        return RichDocument(blocks: dropTrailingLink(renamed) { resolved($0) != nil })
+        return RichDocument(blocks: renamed)
     }
 
     private static func looksLikeAddress(_ text: String, href: String) -> Bool {
@@ -171,28 +172,6 @@ struct ChatLinks: Sendable {
         let lowered = trimmed.lowercased()
         return trimmed == href || lowered.hasPrefix("http://") || lowered.hasPrefix("https://")
             || trimmed.hasPrefix("/")
-    }
-
-    /// Without the last paragraph's closing link and the spaces or line breaks before it.
-    private func dropTrailingLink(_ blocks: [RichBlock], hasPreview: (URL?) -> Bool) -> [RichBlock] {
-        guard case .paragraph(var inlines) = blocks.last else { return blocks }
-        func isBlank(_ inline: RichInline?) -> Bool {
-            switch inline {
-            case .hardBreak: true
-            case .text(let text, _, nil): text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            default: false
-            }
-        }
-        func href(_ inline: RichInline?) -> URL? {
-            if case .text(_, _, let href) = inline { return href }
-            return nil
-        }
-        while let last = inlines.last, isBlank(last) { inlines.removeLast() }
-        guard let link = href(inlines.last), hasPreview(link) else { return blocks }
-        while href(inlines.last) == link { inlines.removeLast() }
-        while let last = inlines.last, isBlank(last) { inlines.removeLast() }
-        let rest = Array(blocks.dropLast())
-        return inlines.isEmpty ? rest : rest + [.paragraph(inlines)]
     }
 }
 
