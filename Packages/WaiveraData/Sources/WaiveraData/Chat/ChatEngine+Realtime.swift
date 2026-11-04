@@ -22,7 +22,7 @@ extension ChatEngine {
             applyMessageChange(event)
         case .conversationCreated, .callStateChanged, .adHocRemoved, .readReceipt, .readState:
             applyConversationChange(event, viewerId: viewer.id)
-        case .activity, .activityRemoved, .notification, .taskComment:
+        case .activity, .activityRemoved, .notification, .notificationRead, .taskComment:
             // These belong to other repositories.
             break
         }

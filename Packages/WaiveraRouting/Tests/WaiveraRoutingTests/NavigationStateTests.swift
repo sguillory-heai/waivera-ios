@@ -7,7 +7,7 @@ struct NavigationStateTests {
         let state = NavigationState()
         #expect(state.selectedTab == .today)
         #expect(AppTab.allCases.allSatisfy { state.path(for: $0).isEmpty })
-        #expect(AppTab.allCases == [.today, .chat, .schedule])
+        #expect(AppTab.allCases == [.today, .chat, .schedule, .tasks])
     }
 
     @Test func pushOpenedChatBacksOutToTheInbox() {

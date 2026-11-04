@@ -4,6 +4,7 @@
 "app.tab.today" = "Today";
 "app.tab.chat" = "Chat";
 "app.tab.schedule" = "Schedule";
+"app.tab.tasks" = "Tasks";
 /* VoiceOver value on the Chat tab while messages are unread. */
 "app.tab.unread %lld" = "%lld unread";
 /* The account menu's first row when the signed-in name is not known yet. */

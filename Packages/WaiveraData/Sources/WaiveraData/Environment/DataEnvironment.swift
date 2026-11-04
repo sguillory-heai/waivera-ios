@@ -21,9 +21,13 @@ public struct DataEnvironment: Sendable {
     public let push: any PushRegistrationRepository
     public let realtimeStatus: any RealtimeStatusRepository
     public let alerts: any ChatAlertsRepository
+    /// The web bell's notifications (the Today inbox).
+    public let notices: any NoticesRepository
     /// The clock the repositories stamp `updatedAt` with. Relative times on screen ("5m",
     /// "Updated 2 min ago") measure against it, so the fake environment's demo day stays consistent.
     public let clock: any WaiveraClock
+    /// The web app's address, for pages the phone has no screen for; only its own host is opened.
+    public let webBaseURL: URL?
     /// Opens a conversation's call in the web lobby (03 §19).
     public let callURL: @Sendable (Conversation) async throws -> URL
     private let foreground: @Sendable (Bool) async -> Void
@@ -46,7 +50,9 @@ public struct DataEnvironment: Sendable {
         push: any PushRegistrationRepository,
         realtimeStatus: any RealtimeStatusRepository,
         alerts: any ChatAlertsRepository,
+        notices: any NoticesRepository = EmptyNoticesRepository(),
         clock: any WaiveraClock = SystemClock(),
+        webBaseURL: URL? = nil,
         callURL: @escaping @Sendable (Conversation) async throws -> URL,
         foreground: @escaping @Sendable (Bool) async -> Void,
         start: @escaping @Sendable () async -> Void,
@@ -67,7 +73,9 @@ public struct DataEnvironment: Sendable {
         self.push = push
         self.realtimeStatus = realtimeStatus
         self.alerts = alerts
+        self.notices = notices
         self.clock = clock
+        self.webBaseURL = webBaseURL
         self.callURL = callURL
         self.foreground = foreground
         self.start = start

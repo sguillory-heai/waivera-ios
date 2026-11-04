@@ -2,6 +2,7 @@ import ChatFeature
 import Observation
 import ScheduleFeature
 import SwiftUI
+import TodayFeature
 import UIKit
 import WaiveraAPI
 import WaiveraData
@@ -380,6 +381,18 @@ extension AppModel {
     func openConversationFromSheet(_ conversationID: Int) {
         navigation.sheet = nil
         navigation.open(.conversation(conversationID), origin: .inApp)
+    }
+
+    /// An inbox row or a Needs you notification: its event, task or Requests in the app, or its
+    /// page on the configured web app in the browser.
+    func openNotice(_ destination: NoticeDestination) {
+        switch destination {
+        case .event(let id): push(.calendarEvent(eventID: id))
+        case .task(let id): navigation.open(.task(id), origin: .inApp)
+        case .requests: navigation.open(.requests, origin: .inApp)
+        case .web(let url): UIApplication.shared.open(url)
+        case .none: break
+        }
     }
 
     func handle(url: URL) {

@@ -20,6 +20,10 @@
         var markAllRead: () -> Void = {}
         var loadMore: () -> Void = {}
         var retryMore: () -> Void = {}
+        /// The hero bar's bell: the notifications inbox.
+        var openNotices: () -> Void = {}
+        /// A Needs you notification, by id.
+        var openNotice: (String) -> Void = { _ in }
     }
 
     /// Formatters are costly to build, so every Today view shares one.
@@ -124,8 +128,14 @@
                     SectionErrorView(message: TodayStrings.text("today.needsYou.failed"), onRetry: actions.reload)
                 } else {
                     ForEach(section.items) { item in
-                        NeedsYouRow(item: item, formatter: formatter, onOpen: actions.open, onRespond: actions.respond)
-                            .transition(.opacity)
+                        NeedsYouRow(
+                            item: item,
+                            formatter: formatter,
+                            onOpen: actions.open,
+                            onRespond: actions.respond,
+                            onOpenNotice: actions.openNotice
+                        )
+                        .transition(.opacity)
                     }
                 }
             }

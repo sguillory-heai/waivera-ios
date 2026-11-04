@@ -15,6 +15,17 @@
             HeroSection(trail: state.isAllCaughtUp ? .reward : .tab, compact: compact) {
                 HeroTopBar(
                     title: TodayStrings.text("today.title"),
+                    actions: [
+                        HeroBarAction(
+                            id: "inbox",
+                            systemImage: "bell",
+                            accessibilityLabel: state.inboxUnread > 0
+                                ? TodayStrings.plural("today.notices.openUnread", state.inboxUnread)
+                                : TodayStrings.text("today.notices.open"),
+                            badgeCount: state.inboxUnread,
+                            action: actions.openNotices
+                        )
+                    ],
                     accountName: state.accountName.isEmpty ? nil : state.accountName,
                     accountLabel: TodayStrings.text("today.account"),
                     onAccount: actions.openAccount

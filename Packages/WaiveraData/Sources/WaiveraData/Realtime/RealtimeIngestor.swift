@@ -10,6 +10,7 @@ public actor RealtimeIngestor {
     private let activity: LiveActivityRepository
     private let bookmarks: LiveBookmarksRepository
     private let calendar: LiveCalendarRepository?
+    private let notices: LiveNoticesRepository?
     private var tasks: [Task<Void, Never>] = []
     private var lastEpoch = 0
 
@@ -18,13 +19,15 @@ public actor RealtimeIngestor {
         chat: ChatEngine,
         activity: LiveActivityRepository,
         bookmarks: LiveBookmarksRepository,
-        calendar: LiveCalendarRepository? = nil
+        calendar: LiveCalendarRepository? = nil,
+        notices: LiveNoticesRepository? = nil
     ) {
         self.realtime = realtime
         self.chat = chat
         self.activity = activity
         self.bookmarks = bookmarks
         self.calendar = calendar
+        self.notices = notices
     }
 
     public func start() {
@@ -58,6 +61,11 @@ public actor RealtimeIngestor {
         case .readState:
             await activity.handle(event)
             await chat.handle(event)
+        case .notificationRead(let read):
+            await notices?.readElsewhere(notificationId: read.all ? nil : read.notificationId)
+        case .notification:
+            // A new bell row: the list is short, so fetch it rather than map a partial payload.
+            await notices?.refresh()
         case .bookmark(let update):
             await chat.handle(event)
             await bookmarks.handle(update)
@@ -72,5 +80,6 @@ public actor RealtimeIngestor {
         await chat.resync()
         await activity.refresh()
         await calendar?.refreshObserved()
+        await notices?.refresh()
     }
 }

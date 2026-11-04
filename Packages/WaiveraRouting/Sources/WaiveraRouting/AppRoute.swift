@@ -1,8 +1,9 @@
-/// The three bottom tabs, in order (PLAN.md: Today-first navigation; Tasks joins in phase 4).
+/// The bottom tabs, in order, as on Android: Today, Chat, Schedule, Tasks.
 public enum AppTab: String, CaseIterable, Codable, Hashable, Sendable {
     case today
     case chat
     case schedule
+    case tasks
 }
 
 /// Every pushed screen. Routes carry ids only; screens load their own data.
@@ -11,6 +12,8 @@ public enum AppTab: String, CaseIterable, Codable, Hashable, Sendable {
 public enum AppRoute: Codable, Hashable, Sendable {
     // Today
     case activity
+    /// The notifications inbox (the web bell), from Today's bell and inbox pushes.
+    case notices
     // Chat
     case conversation(conversationID: Int, targetMessageID: Int?)
     case thread(rootMessageID: Int, conversationID: Int?, targetMessageID: Int?)
@@ -19,6 +22,13 @@ public enum AppRoute: Codable, Hashable, Sendable {
     case groupMembers(conversationID: Int)
     // Schedule
     case calendarEvent(eventID: String)
+    // Tasks
+    /// `taskID` is the server's numeric task id, not the "ORG-123" key.
+    case task(taskID: Int)
+    /// One of a task's files in the read-only viewer.
+    case taskFile(taskID: Int, attachmentID: Int)
+    /// Change requests waiting on the person and their own.
+    case requests
     // Avatar menu
     case profile
     case organization
@@ -66,6 +76,13 @@ public struct Destination: Equatable, Sendable {
     public static let today = Destination(tab: .today)
     public static let inbox = Destination(tab: .chat)
     public static let schedule = Destination(tab: .schedule)
+    public static let tasks = Destination(tab: .tasks)
+    public static let notices = Destination(tab: .today, path: [.notices])
+    public static let requests = Destination(tab: .tasks, path: [.requests])
+
+    public static func task(_ taskID: Int) -> Destination {
+        Destination(tab: .tasks, path: [.task(taskID: taskID)])
+    }
 
     /// A conversation opened from outside the app: the back button returns to the inbox.
     public static func conversation(_ conversationID: Int, targetMessageID: Int? = nil) -> Destination {

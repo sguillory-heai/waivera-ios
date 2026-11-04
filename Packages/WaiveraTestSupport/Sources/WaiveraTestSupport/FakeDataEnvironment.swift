@@ -41,6 +41,7 @@ public struct FakeDataEnvironment: Sendable {
     public let push: FakePushRegistrationRepository
     public let realtimeStatus: FakeRealtimeStatusRepository
     public let alerts: FakeChatAlertsRepository
+    public let notices: FakeNoticesRepository
     public let environment: DataEnvironment
 
     /// The scenario the launch arguments ask for, or `nil` when the fake was not requested.
@@ -92,6 +93,7 @@ public struct FakeDataEnvironment: Sendable {
             push: push,
             realtimeStatus: FakeRealtimeStatusRepository(realtime: realtime),
             alerts: FakeChatAlertsRepository(presence: presence, realtime: realtime),
+            notices: FakeNoticesRepository(items: scenario == .empty ? [] : nil, clock: clock),
             webBaseURL: webBaseURL
         )
         switch scenario {
@@ -130,6 +132,7 @@ public struct FakeDataEnvironment: Sendable {
         push: FakePushRegistrationRepository,
         realtimeStatus: FakeRealtimeStatusRepository,
         alerts: FakeChatAlertsRepository,
+        notices: FakeNoticesRepository,
         webBaseURL: URL?
     ) {
         self.data = data
@@ -147,6 +150,7 @@ public struct FakeDataEnvironment: Sendable {
         self.push = push
         self.realtimeStatus = realtimeStatus
         self.alerts = alerts
+        self.notices = notices
         environment = DataEnvironment(
             session: session,
             conversations: chat,
@@ -163,7 +167,9 @@ public struct FakeDataEnvironment: Sendable {
             push: push,
             realtimeStatus: realtimeStatus,
             alerts: alerts,
+            notices: notices,
             clock: clock,
+            webBaseURL: webBaseURL,
             callURL: { conversation in
                 guard let webBaseURL else { throw WaiveraError.configurationMissing }
                 return webBaseURL.appending(path: "lobby").appending(path: "demo-\(conversation.id)")

@@ -5,7 +5,7 @@ import WaiveraData
 import WaiveraDesign
 import WaiveraRouting
 
-/// Bottom tabs Today / Chat / Schedule, one `NavigationStack` per tab bound to the router.
+/// Bottom tabs Today / Chat / Schedule / Tasks, one `NavigationStack` per tab bound to the router.
 ///
 /// The tabs keep the system `TabView` for its per-tab state, but its bar is hidden and the
 /// shell draws `WaiveraTabBar` (the sliding pill and the icon pop, Android
@@ -37,7 +37,11 @@ struct MainTabView: View {
                     unreadTotal: model.unreadTotal,
                     onSelect: { model.select($0) }
                 )
-                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { tabBarHeight = $0 }
+                .onGeometryChange(for: CGFloat.self) {
+                    $0.size.height
+                } action: {
+                    tabBarHeight = $0
+                }
                 .transition(Motion.transition(edge: .bottom, reduceMotion: reduceMotion))
             }
         }
@@ -143,6 +147,7 @@ extension AppTab {
         case .today: AppStrings.tabToday
         case .chat: AppStrings.tabChat
         case .schedule: AppStrings.tabSchedule
+        case .tasks: AppStrings.tabTasks
         }
     }
 
@@ -152,6 +157,7 @@ extension AppTab {
         case .today: "house"
         case .chat: "bubble.left"
         case .schedule: "calendar"
+        case .tasks: "checklist"
         }
     }
 }

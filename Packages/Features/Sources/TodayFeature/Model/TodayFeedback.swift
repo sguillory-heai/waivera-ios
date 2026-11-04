@@ -17,6 +17,8 @@ enum TodayNotice: Hashable, Sendable {
     case invitationFailed(eventId: String, accept: Bool)
     /// "Send wishes" could not open the chat; Retry tries again.
     case wishesFailed(userId: String)
+    /// An inbox row the app cannot open and no web address is configured for.
+    case nothingToOpen
 
     var message: String {
         switch self {
@@ -27,12 +29,13 @@ enum TodayNotice: Hashable, Sendable {
             TodayStrings.text(accept ? "today.toast.accepted" : "today.toast.declined")
         case .invitationFailed: TodayStrings.text("today.toast.invitationFailed")
         case .wishesFailed: TodayStrings.text("today.toast.wishesFailed")
+        case .nothingToOpen: TodayStrings.text("today.notices.nothingToOpen")
         }
     }
 
     var offersRetry: Bool {
         switch self {
-        case .invitationAnswered: false
+        case .invitationAnswered, .nothingToOpen: false
         default: true
         }
     }

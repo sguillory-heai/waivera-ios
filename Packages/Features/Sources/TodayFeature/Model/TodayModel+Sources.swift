@@ -27,6 +27,13 @@ extension TodayModel {
         }
     }
 
+    func observeNotices() async {
+        for await value in environment.notices.feed() {
+            sources.notices = value
+            rebuild()
+        }
+    }
+
     func observeMilestones() async {
         for await value in environment.calendar.milestones() {
             sources.milestones = value
@@ -82,6 +89,10 @@ extension TodayModel {
             }
             if isStale(activity.updatedAt, freshFor: Self.activityFreshFor) {
                 group.addTask { await self.activity.refresh() }
+            }
+            let notices = environment.notices
+            if isStale(sources.notices.updatedAt, freshFor: Self.chatsFreshFor) {
+                group.addTask { await notices.refresh() }
             }
             if isStale(milestones?.updatedAt, freshFor: Self.milestonesFreshFor) {
                 group.addTask { await calendar.refreshMilestones() }

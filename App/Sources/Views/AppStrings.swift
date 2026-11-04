@@ -6,6 +6,7 @@ enum AppStrings {
     static var tabToday: String { String(localized: "app.tab.today") }
     static var tabChat: String { String(localized: "app.tab.chat") }
     static var tabSchedule: String { String(localized: "app.tab.schedule") }
+    static var tabTasks: String { String(localized: "app.tab.tasks") }
     static var accountFallback: String { String(localized: "app.menu.accountFallback") }
     static var viewProfile: String { String(localized: "app.menu.viewProfile") }
     static var menuPeople: String { String(localized: "app.menu.people") }

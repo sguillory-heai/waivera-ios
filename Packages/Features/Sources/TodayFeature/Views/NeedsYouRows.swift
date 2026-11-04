@@ -9,6 +9,7 @@
         let formatter: TodayFormatter
         let onOpen: (TodayDestination, Int64?) -> Void
         let onRespond: (String, Bool) -> Void
+        var onOpenNotice: (String) -> Void = { _ in }
 
         var body: some View {
             switch item {
@@ -18,7 +19,32 @@
             case .invitation(let invitation):
                 InvitationRow(item: invitation, formatter: formatter, onOpen: onOpen, onRespond: onRespond)
             case .ticket(let ticket): self.ticket(ticket)
+            case .notice(let notice): self.notice(notice)
             }
+        }
+
+        /// An inbox notification that asks for something: its kind and age, then what it says.
+        private func notice(_ item: NoticeRow) -> some View {
+            let kind = TodayStrings.noticeKind(item.kind)
+            let tile = NoticeTile.of(item.kind)
+            return TodayRow(
+                eyebrow: TodayStrings.joined(kind, item.at.map(formatter.past)),
+                eyebrowTint: tile.tone.contentColor,
+                headline: item.title,
+                supporting: item.message.isEmpty ? nil : item.message,
+                emphasized: true,
+                accessibilityText: TodayStrings.spoken(
+                    kind,
+                    item.title,
+                    item.message,
+                    item.at.map(formatter.pastSpoken)
+                ),
+                accessibilityHintText: TodayStrings.text(
+                    item.opensOutside ? "today.notices.hint.openWeb" : "today.notices.hint.open"
+                ),
+                action: { onOpenNotice(item.id) },
+                leading: { TodayTile(systemImage: tile.systemImage, tone: tile.tone) }
+            )
         }
 
         /// A message of mine that never went out leads: only I can fix it.

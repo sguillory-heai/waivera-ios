@@ -5,6 +5,7 @@ import ScheduleFeature
 import SettingsFeature
 import SwiftUI
 import TodayFeature
+import WaiveraDesign
 import WaiveraRouting
 
 /// Resolves every `AppRoute` to its feature entry view. The only place features meet.
@@ -20,6 +21,8 @@ struct RouteDestinationView: View {
                 onOpenConversation: { model.push(.conversation(conversationID: $0, targetMessageID: $1)) },
                 onOpenThread: { model.push(.thread(rootMessageID: $0, conversationID: $1, targetMessageID: $2)) }
             )
+        case .notices:
+            NoticesView(onOpen: { model.openNotice($0) })
         case .conversation(let conversationID, let targetMessageID):
             ConversationView(
                 conversationID: conversationID,
@@ -88,6 +91,8 @@ struct RouteDestinationView: View {
             AppearanceSettingsView()
         case .changePassword:
             PasswordChangeView(onDone: { model.pop() })
+        case .task, .taskFile, .requests:
+            FeaturePlaceholder(title: AppStrings.tabTasks, systemImage: "checklist")
         }
     }
 }

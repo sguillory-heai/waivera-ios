@@ -55,6 +55,8 @@ public enum RingSubline {
         case mention
         case invitation
         case ticket
+        /// Inbox notifications that ask for something (a task, an approval, a signature).
+        case update
     }
 
     /// Each count is joined to its noun by a no-break space, and the separator keeps its dot with
@@ -91,6 +93,7 @@ public enum RingSubline {
             case .mention: one ? "mention" : "mentions"
             case .invitation: one ? "invite" : "invites"
             case .ticket: one ? "ticket" : "tickets"
+            case .update: one ? "update" : "updates"
             }
         return "\(count)\(nounGap)\(noun)"
     }

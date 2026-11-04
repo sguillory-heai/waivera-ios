@@ -105,6 +105,8 @@ struct TodayState: Equatable, Sendable {
     var quietStatus: QuietStatus?
     var isRefreshing = false
     var needsYou = NeedsYouSection()
+    /// The inbox's unread count for the bell (the server's own count).
+    var inboxUnread = 0
     var nextUp = NextUpSection()
     var celebrations: [CelebrationItem] = []
     var celebrationsFailed = false
@@ -154,6 +156,8 @@ enum NeedsYouItem: Hashable, Sendable, Identifiable {
     case invitation(InvitationItem)
     /// Unread updates in the automated Waivera conversation (ticket cards).
     case ticket(TicketItem)
+    /// An unread inbox notification that asks for something (a task, an approval, a signature).
+    case notice(NoticeRow)
 
     var id: String {
         switch self {
@@ -162,6 +166,7 @@ enum NeedsYouItem: Hashable, Sendable, Identifiable {
         case .mention(let item): "mention-\(item.activityId)"
         case .invitation(let item): "invite-\(item.eventId)"
         case .ticket(let item): "ticket-\(item.conversationId)"
+        case .notice(let item): "notice-\(item.id)"
         }
     }
 
@@ -173,6 +178,7 @@ enum NeedsYouItem: Hashable, Sendable, Identifiable {
         case .mention: .mention
         case .invitation: .invitation
         case .ticket: .ticket
+        case .notice: .update
         }
     }
 

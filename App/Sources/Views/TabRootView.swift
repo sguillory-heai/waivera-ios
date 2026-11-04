@@ -23,7 +23,9 @@ struct TabRootView: View {
                 onOpenActivity: { model.push(.activity) },
                 onOpenAccount: { model.presentAccountMenu() },
                 onOpenScheduleToday: { model.openSchedule(.today) },
-                onOpenScheduleWeek: { model.openSchedule(.thisWeek) }
+                onOpenScheduleWeek: { model.openSchedule(.thisWeek) },
+                onOpenNotices: { model.push(.notices) },
+                onOpenNotice: { model.openNotice($0) }
             )
         case .chat:
             ConversationListView(
@@ -43,6 +45,8 @@ struct TabRootView: View {
                 focus: model.scheduleFocus,
                 onFocusHandled: { model.scheduleFocusHandled() }
             )
+        case .tasks:
+            FeaturePlaceholder(title: AppStrings.tabTasks, systemImage: "checklist")
         }
     }
 }

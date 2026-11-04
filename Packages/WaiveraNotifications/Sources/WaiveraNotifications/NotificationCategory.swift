@@ -22,7 +22,7 @@ public enum NotificationMeaning: String, CaseIterable, Sendable {
         switch payload {
         case .chat, .invalidChat, .call: return .messages
         case .meeting: return .scheduleChanges
-        case .survey, .unknown: return .digest
+        case .survey, .unknown, .inbox, .chatRead, .notificationRead: return .digest
         }
     }
 }

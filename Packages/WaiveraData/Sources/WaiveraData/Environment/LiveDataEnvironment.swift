@@ -140,6 +140,7 @@ private struct LiveWiring {
     let push: LivePushRegistrationRepository
     let attachments: LiveAttachmentsRepository
     let avatars: LiveAvatarRepository
+    let notices: LiveNoticesRepository
 
     init(_ services: LiveServices) {
         self.services = services
@@ -175,6 +176,7 @@ private struct LiveWiring {
         )
         attachments = LiveAttachmentsRepository(api: api)
         avatars = LiveAvatarRepository(api: api, clock: clock)
+        notices = LiveNoticesRepository(api: api, clock: clock)
     }
 
     func environment() -> DataEnvironment {
@@ -206,7 +208,9 @@ private struct LiveWiring {
             push: push,
             realtimeStatus: LiveRealtimeStatusRepository(realtime: realtime, connectivity: services.connectivity),
             alerts: LiveChatAlertsRepository(chat: chat, presence: presence, realtime: realtime),
+            notices: notices,
             clock: services.clock,
+            webBaseURL: services.webBaseURL,
             callURL: { try await handoff.url(for: $0) },
             foreground: { isForeground in
                 if isForeground { await auth.reloadStoredSession() }
@@ -228,7 +232,8 @@ private struct LiveWiring {
             chat: chat,
             activity: activity,
             bookmarks: bookmarks,
-            calendar: calendar
+            calendar: calendar,
+            notices: notices
         )
         return SessionCoordinator(
             chat: chat,
@@ -242,6 +247,7 @@ private struct LiveWiring {
             push: push,
             attachments: attachments,
             avatars: avatars,
+            notices: notices,
             localStore: services.localStore,
             keyValueStore: services.keyValueStore,
             connectivity: services.connectivity,
@@ -266,6 +272,7 @@ actor SessionCoordinator: SessionLifecycleParticipant {
     let push: LivePushRegistrationRepository
     let attachments: LiveAttachmentsRepository
     let avatars: LiveAvatarRepository
+    let notices: LiveNoticesRepository
     let localStore: any LocalStore
     let keyValueStore: any KeyValueStore
     let connectivity: any ConnectivityMonitor
@@ -286,6 +293,7 @@ actor SessionCoordinator: SessionLifecycleParticipant {
         push: LivePushRegistrationRepository,
         attachments: LiveAttachmentsRepository,
         avatars: LiveAvatarRepository,
+        notices: LiveNoticesRepository,
         localStore: any LocalStore,
         keyValueStore: any KeyValueStore,
         connectivity: any ConnectivityMonitor,
@@ -304,6 +312,7 @@ actor SessionCoordinator: SessionLifecycleParticipant {
         self.push = push
         self.attachments = attachments
         self.avatars = avatars
+        self.notices = notices
         self.localStore = localStore
         self.keyValueStore = keyValueStore
         self.connectivity = connectivity
@@ -349,9 +358,10 @@ actor SessionCoordinator: SessionLifecycleParticipant {
         await calendar.begin()
         await ingestor.start()
         await realtime.start()
-        Task { [chat, activity, calendar] in
+        Task { [chat, activity, calendar, notices] in
             await chat.refresh()
             await activity.refresh()
+            await notices.refresh()
             await calendar.refreshMilestones()
         }
     }
@@ -372,6 +382,7 @@ actor SessionCoordinator: SessionLifecycleParticipant {
         await calendar.reset()
         await attachments.clear()
         await avatars.clear()
+        await notices.reset()
         await localStore.removeAll()
         for key in StorageKey.personal { keyValueStore.set(nil, forKey: key) }
         context.setAccountSince(nil)

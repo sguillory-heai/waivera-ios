@@ -12,6 +12,9 @@ struct TodaySources: Sendable {
     /// Conversations with a message of mine the outbox gave up on
     /// (`ConversationsRepository.failedSends()`), which lead Needs you as Not sent rows.
     var failedSends: Set<Int> = []
+    /// The web bell's notifications; unread ones that ask for something join Needs you.
+    var notices = Resource<NoticeFeed>()
+    var webBase: URL?
 }
 
 /// What the activity list has done locally on top of the cached feed: chips, search, paging
@@ -109,6 +112,7 @@ enum TodayAssembler {
         var state = header([chats, feed, schedule], context: context, today: today)
         let open = openItems(sources, events: events, pinned: pinned, context: context)
         state.needsYou = needsYou(open, status: chats, context: context)
+        state.inboxUnread = sources.notices.value?.unreadCount ?? 0
         state.nextUp = NextUpSection(
             items: schedule.isReady ? ScheduleRules.nextUp(events, now: context.now, zone: context.zone) : [],
             isReady: schedule.isReady,
@@ -214,8 +218,14 @@ enum TodayAssembler {
             zone: context.zone,
             answered: context.local.answeredInvitations
         ).map(NeedsYouItem.invitation)
+        let notices = NoticeRules.needsYou(
+            sources.notices.value?.items ?? [],
+            links: NoticeLinks(webBase: sources.webBase),
+            now: context.now,
+            zone: context.zone
+        ).map(NeedsYouItem.notice)
         return notSent(sources) + messages(sources, pinned: pinned, context: context) + invitations
-            + tickets(sources, context: context)
+            + tickets(sources, context: context) + notices
     }
 
     private static func needsYou(

@@ -6,7 +6,8 @@ import Foundation
 ///
 /// Grammar (also in docs/architecture/app-shell.md):
 /// ```
-/// waivera://today | activity
+/// waivera://today | activity | inbox | notifications
+/// waivera://tasks | task/{taskId} | requests
 /// waivera://chats | chats/new | chats/{conversationId}[?messageId=]
 /// waivera://chats/thread/{rootId}[?conversationId=&messageId=]
 /// waivera://chats/{conversationId}/thread/{rootId}[?messageId=]
@@ -59,6 +60,15 @@ public enum DeepLink {
             return segments.count <= 1 ? .today : nil
         case "activity":
             return segments.count == 1 ? Destination(tab: .today, path: [.activity]) : nil
+        case "inbox", "notifications":
+            return segments.count == 1 ? .notices : nil
+        case "tasks":
+            return segments.count == 1 ? .tasks : nil
+        case "task":
+            guard segments.count == 2, let taskID = Identifier.positiveInt(segments[1]) else { return nil }
+            return .task(taskID)
+        case "requests":
+            return segments.count == 1 ? .requests : nil
         case "chats", "chat":
             return chatDestination(Array(segments.dropFirst()), query: query, messageID: messageID)
         case "schedule":

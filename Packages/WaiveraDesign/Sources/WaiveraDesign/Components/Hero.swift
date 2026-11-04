@@ -175,12 +175,21 @@
         public let id: String
         public let systemImage: String
         public let accessibilityLabel: String
+        /// An unread count on the glyph's corner (Today's bell); hidden at zero.
+        public let badgeCount: Int
         public let action: () -> Void
 
-        public init(id: String, systemImage: String, accessibilityLabel: String, action: @escaping () -> Void) {
+        public init(
+            id: String,
+            systemImage: String,
+            accessibilityLabel: String,
+            badgeCount: Int = 0,
+            action: @escaping () -> Void
+        ) {
             self.id = id
             self.systemImage = systemImage
             self.accessibilityLabel = accessibilityLabel
+            self.badgeCount = badgeCount
             self.action = action
         }
     }
@@ -230,6 +239,11 @@
                             .font(.system(size: ControlSize.icon, weight: .semibold))
                             .foregroundStyle(HeroPalette.onHeader)
                             .frame(width: ControlSize.iconButton, height: ControlSize.iconButton)
+                            .overlay(alignment: .topTrailing) {
+                                CountBadge(count: item.badgeCount)
+                                    .accessibilityHidden(true)
+                                    .offset(x: -Spacing.extraSmall, y: Spacing.extraSmall)
+                            }
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.press(.compact))

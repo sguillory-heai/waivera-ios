@@ -95,6 +95,37 @@
             center.removeDeliveredNotifications(withIdentifiers: identifiers)
         }
 
+        /// A read elsewhere (`chat.read`): clears the conversation's alerts, or one thread's, that
+        /// arrived at or before `readAt`, so a late read never clears newer messages.
+        public static func removeRead(conversationID: Int, threadRootMessageID: Int?, readAt: Date?) async {
+            let center = UNUserNotificationCenter.current()
+            let thread = NotificationCategories.threadIdentifier(conversationID: conversationID)
+            let identifiers = await center.deliveredNotifications()
+                .filter { delivered in
+                    guard delivered.request.content.threadIdentifier == thread else { return false }
+                    if let readAt, delivered.date > readAt { return false }
+                    guard let threadRootMessageID else { return true }
+                    let root = delivered.request.content.userInfo["threadRootMessageId"].map { "\($0)" }
+                    return root == String(threadRootMessageID)
+                }
+                .map(\.request.identifier)
+            center.removeDeliveredNotifications(withIdentifiers: identifiers)
+        }
+
+        /// An inbox notification (or with `nil` every one) was read: its alert leaves Notification Center.
+        public static func removeInbox(notificationID: String?) async {
+            let center = UNUserNotificationCenter.current()
+            let identifiers = await center.deliveredNotifications()
+                .filter { delivered in
+                    let info = delivered.request.content.userInfo
+                    guard (info["type"] as? String) == "notification" else { return false }
+                    guard let notificationID else { return true }
+                    return (info["notificationId"] as? String) == notificationID
+                }
+                .map(\.request.identifier)
+            center.removeDeliveredNotifications(withIdentifiers: identifiers)
+        }
+
         /// A notification reply that could not be sent in the time iOS gave the app (IF-03). It is
         /// still queued and goes out on the next launch; this says so, and a tap opens the chat.
         /// The text is the caller's localized copy, never the reply itself.

@@ -37,6 +37,12 @@ public enum PushPayload: Equatable, Sendable {
     case call(conversationID: Int?, roomID: String?)
     /// Legacy `NotificationType: "Survey"`. No survey screen exists in the staff app.
     case survey(instanceID: String?)
+    /// An inbox row (`type: "notification"`): the web bell's notification, by id. Opens the inbox.
+    case inbox(notificationID: String?, url: String?)
+    /// Silent: a conversation (or one thread in it) was read elsewhere (`chat.read`).
+    case chatRead(conversationID: Int, threadRootMessageID: Int?)
+    /// Silent: an inbox notification, or with `nil` all of them, was read elsewhere (`notification.read`).
+    case notificationRead(notificationID: String?)
     /// Anything else, including a future `type` this build does not know. Opens the inbox.
     case unknown(type: String?)
 
@@ -71,8 +77,20 @@ public enum PushPayload: Equatable, Sendable {
             return conversationID.map { .conversation($0) } ?? .inbox
         case .survey:
             return .today
+        case .inbox:
+            return .notices
+        case .chatRead, .notificationRead:
+            return nil
         case .unknown:
             return .inbox
+        }
+    }
+
+    /// A data-only read sync: shows nothing, only clears delivered alerts and badges.
+    public var isSilentReadSync: Bool {
+        switch self {
+        case .chatRead, .notificationRead: true
+        default: false
         }
     }
 
@@ -142,6 +160,23 @@ public enum PushPayloadParser {
                     url: nonEmpty(data["url"])
                 )
             )
+        case "notification":
+            return .inbox(
+                notificationID: nonEmpty(data["notificationId"]).flatMap(Identifier.opaque),
+                url: nonEmpty(data["url"])
+            )
+        case "chat.read":
+            guard let conversationID = nonEmpty(data["conversationId"]).flatMap(Identifier.positiveInt) else {
+                return .unknown(type: type)
+            }
+            return .chatRead(
+                conversationID: conversationID,
+                threadRootMessageID: nonEmpty(data["threadRootMessageId"]).flatMap(Identifier.positiveInt)
+            )
+        case "notification.read":
+            let all = nonEmpty(data["all"])?.lowercased() == "true"
+            let id = nonEmpty(data["notificationId"]).flatMap(Identifier.opaque)
+            return .notificationRead(notificationID: all ? nil : id)
         default:
             return .unknown(type: type)
         }

@@ -62,6 +62,8 @@ public enum HubEventDecoder {
             return adHocRemoved(args)
         case Event.receiveNotification.lowercased(), Event.receiveNotificationWeb.lowercased():
             return object(args, EventNotificationResponse.self).map(ChatHubEvent.notification)
+        case Event.receiveNotificationRead.lowercased():
+            return object(args, NotificationReadDto.self).map(ChatHubEvent.notificationRead)
         case Event.receiveComment.lowercased():
             return args.first.map(ChatHubEvent.taskComment)
         default:

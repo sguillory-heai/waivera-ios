@@ -20,6 +20,8 @@
         let onOpenScheduleWeek: () -> Void
         let onOpenActivity: () -> Void
         let onOpenAccount: (() -> Void)?
+        let onOpenNotices: () -> Void
+        let onOpenNotice: (NoticeDestination) -> Void
 
         @Environment(\.dataEnvironment) private var data
         @State private var model: TodayModel?
@@ -32,8 +34,12 @@
             onOpenActivity: @escaping () -> Void,
             onOpenAccount: (() -> Void)? = nil,
             onOpenScheduleToday: (() -> Void)? = nil,
-            onOpenScheduleWeek: (() -> Void)? = nil
+            onOpenScheduleWeek: (() -> Void)? = nil,
+            onOpenNotices: @escaping () -> Void = {},
+            onOpenNotice: @escaping (NoticeDestination) -> Void = { _ in }
         ) {
+            self.onOpenNotices = onOpenNotices
+            self.onOpenNotice = onOpenNotice
             self.onOpenConversation = onOpenConversation
             self.onOpenThread = onOpenThread
             self.onOpenEvent = onOpenEvent
@@ -72,6 +78,8 @@
             case .scheduleToday: onOpenScheduleToday()
             case .scheduleWeek: onOpenScheduleWeek()
             case .activity: onOpenActivity()
+            case .notices: onOpenNotices()
+            case .notice(let target): onOpenNotice(target)
             }
         }
     }
@@ -113,7 +121,11 @@
                 markRead: { model.markRead($0) },
                 markAllRead: { model.markAllRead() },
                 loadMore: { model.loadMoreActivity() },
-                retryMore: { model.retryMoreActivity() }
+                retryMore: { model.retryMoreActivity() },
+                openNotices: { open(.notices) },
+                openNotice: { id in
+                    if let destination = model.openNotice(id) { open(destination) }
+                }
             )
         }
     }

@@ -13,6 +13,10 @@ enum TodayDestination: Hashable, Sendable {
     /// The "events this week" stat: the schedule's Week view on this week.
     case scheduleWeek
     case activity
+    /// The bell: the notifications inbox.
+    case notices
+    /// A Needs you notification, already marked read.
+    case notice(NoticeDestination)
 }
 
 /// Today: one prioritised list rendered from the repositories' cached values first, then
@@ -81,6 +85,7 @@ final class TodayModel {
             group.addTask { await self.observeFailedSends() }
             group.addTask { await self.activity.observe() }
             group.addTask { await self.observeMilestones() }
+            group.addTask { await self.observeNotices() }
             group.addTask { await self.observeConnection() }
             group.addTask { await self.observeSession() }
             group.addTask { await self.tick() }
@@ -101,7 +106,8 @@ final class TodayModel {
         async let feed = activity.refresh()
         async let weeks: Void = refreshSchedule()
         async let milestones: Void = calendar.refreshMilestones()
-        _ = await (chats, feed, weeks, milestones)
+        async let inbox: Void = environment.notices.refresh()
+        _ = await (chats, feed, weeks, milestones, inbox)
         sources.conversations = await latest(conversations.conversations()) ?? sources.conversations
         local.isRefreshing = false
         rebuild()
@@ -192,7 +198,7 @@ final class TodayModel {
             rebuild()
             send(eventId: eventId, accept: accept)
         case .wishesFailed(let userId): sendWishes(to: userId)
-        case .invitationAnswered: break
+        case .invitationAnswered, .nothingToOpen: break
         }
     }
 
@@ -264,6 +270,19 @@ final class TodayModel {
         return destination
     }
 
+    /// A Needs you notification: where it goes, marked read once it can be opened. A failed
+    /// mark-read puts the row back in the repository; it is not worth a message.
+    func openNotice(_ id: String) -> TodayDestination? {
+        guard navigation.allows(at: uptime()) else { return nil }
+        guard let notice = sources.notices.value?.items.first(where: { $0.id == id }) else { return nil }
+        let destination = NoticeLinks(webBase: environment.webBaseURL).destination(notice)
+        if !notice.isRead, destination != .none {
+            let notices = environment.notices
+            tasks.run { try? await notices.markRead(id: id) }
+        }
+        return .notice(destination)
+    }
+
     // MARK: State
 
     private var zone: (zone: TimeZone, isFallback: Bool) { environment.calendar.scheduleTimeZone() }
@@ -272,6 +291,7 @@ final class TodayModel {
     func rebuild() {
         var current = sources
         current.activity = activity.resource
+        current.webBase = environment.webBaseURL
         let zone = zone
         let context = TodayContext(
             accountName: user.map(Self.accountName) ?? "",

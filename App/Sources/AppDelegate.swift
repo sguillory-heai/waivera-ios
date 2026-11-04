@@ -1,5 +1,6 @@
 import UIKit
 import UserNotifications
+import WaiveraAPI
 import WaiveraNotifications
 import WaiveraNotificationsLive
 
@@ -74,6 +75,36 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         #if canImport(FirebaseMessaging)
             FirebaseBootstrap.setAPNSToken(deviceToken)
         #endif
+    }
+
+    /// Silent read syncs (`chat.read`, `notification.read`): a read on the web or another phone
+    /// clears this phone's alerts and inbox dots. The completion handler is called on the main
+    /// thread (see the 2026-11-03 notification crash).
+    func application(
+        _ application: UIApplication,
+        didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+        fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+    ) {
+        let payload = PushPayloadParser.parse(userInfo: userInfo)
+        let readAt = (userInfo["readAt"] as? String).flatMap(WaiveraInstant.parse)
+        let notices = model.dataEnvironment?.notices
+        Task { @MainActor in
+            switch payload {
+            case .chatRead(let conversationID, let rootID):
+                await DeliveredNotifications.removeRead(
+                    conversationID: conversationID,
+                    threadRootMessageID: rootID,
+                    readAt: readAt
+                )
+                completionHandler(.newData)
+            case .notificationRead(let notificationID):
+                await notices?.readElsewhere(notificationId: notificationID)
+                await DeliveredNotifications.removeInbox(notificationID: notificationID)
+                completionHandler(.newData)
+            default:
+                completionHandler(.noData)
+            }
+        }
     }
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: any Error) {

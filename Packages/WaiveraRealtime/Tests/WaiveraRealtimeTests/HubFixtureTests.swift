@@ -94,6 +94,21 @@ struct HubFixtureTests {
         #expect(HubEventDecoder.decode(wrapped) == .activityRemoved(id: 12))
     }
 
+    @Test func notificationReadOneOrAll() {
+        let one = HubInvocation(
+            target: "ReceiveNotificationRead",
+            arguments: [.object(["notificationId": "n-1", "all": false])]
+        )
+        #expect(
+            HubEventDecoder.decode(one) == .notificationRead(NotificationReadDto(notificationId: "n-1", all: false))
+        )
+        let all = HubInvocation(
+            target: "ReceiveNotificationRead",
+            arguments: [.object(["notificationId": .null, "all": true])]
+        )
+        #expect(HubEventDecoder.decode(all) == .notificationRead(NotificationReadDto(notificationId: nil, all: true)))
+    }
+
     @Test func pascalCaseKeysDecode() {
         let invocation = HubInvocation(
             target: "ConversationCallStateChanged",

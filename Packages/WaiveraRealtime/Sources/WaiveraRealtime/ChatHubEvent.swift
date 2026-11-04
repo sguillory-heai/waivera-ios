@@ -24,6 +24,8 @@ public enum ChatHubEvent: Sendable, Equatable {
     case adHocRemoved(RemoveAdHocEvent)
     /// `ReceiveNotification` and `receivenotification_web` (in-app notification feed).
     case notification(EventNotificationResponse)
+    /// `ReceiveNotificationRead`: a stored notification (or all) was read on another device.
+    case notificationRead(NotificationReadDto)
     /// Task comments (phase 2), kept raw.
     case taskComment(JSONValue)
 }
@@ -171,20 +173,6 @@ public struct RemoveAdHocEvent: Codable, Sendable, Equatable {
         self.conversationId = conversationId
         self.roomId = roomId
     }
-}
-
-/// `EventNotificationResponse` (`ReceiveNotification`, `receivenotification_web`).
-public struct EventNotificationResponse: Codable, Sendable, Equatable {
-    public var id: Int64?
-    public var type: String?
-    public var status: String?
-    public var title: String?
-    public var message: String?
-    public var allowApproval: Bool?
-    public var actionLabel: String?
-    public var actionUrl: String?
-    public var createdAt: Date?
-    public var read: Bool?
 }
 
 /// Video hub events the chat surface may react to (hub.md §4).

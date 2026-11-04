@@ -17,6 +17,14 @@ struct DeepLinkTests {
         #expect(parse("waivera://activity") == Destination(tab: .today, path: [.activity]))
     }
 
+    @Test func inboxTasksAndRequests() {
+        #expect(parse("waivera://inbox") == .notices)
+        #expect(parse("waivera://tasks") == .tasks)
+        #expect(parse("waivera://task/42") == .task(42))
+        #expect(parse("waivera://task/-1") == nil)
+        #expect(parse("waivera://requests") == .requests)
+    }
+
     @Test func conversationWithAndWithoutTargetMessage() {
         #expect(parse("waivera://chats/7") == .conversation(7))
         #expect(parse("waivera://chats/7?messageId=9312") == .conversation(7, targetMessageID: 9312))

@@ -188,6 +188,21 @@ enum TodayStrings {
         case .mention: "today.kind.mentions"
         case .invitation: "today.kind.invites"
         case .ticket: "today.kind.tickets"
+        case .update: "today.kind.updates"
+        }
+    }
+
+    /// The short kind label an inbox row and a Needs you notification lead with.
+    static func noticeKind(_ kind: NoticeKind) -> String {
+        switch kind {
+        case .taskAssigned: text("today.notice.taskAssigned")
+        case .taskActivity: text("today.notice.taskActivity")
+        case .approval: text("today.notice.approval")
+        case .meeting: text("today.notice.meeting")
+        case .signature: text("today.notice.signature")
+        case .survey: text("today.notice.survey")
+        case .timeOff: text("today.notice.timeOff")
+        case .other: text("today.kind.update")
         }
     }
 

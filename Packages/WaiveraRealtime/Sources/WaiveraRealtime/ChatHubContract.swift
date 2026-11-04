@@ -39,6 +39,7 @@ public enum ChatHubContract {
         public static let receiveNotification = "ReceiveNotification"
         /// Lower-cased on the server; registered verbatim.
         public static let receiveNotificationWeb = "receivenotification_web"
+        public static let receiveNotificationRead = "ReceiveNotificationRead"
         public static let receiveComment = "ReceiveComment"
 
         /// Each event with the kind of every positional argument, so a transport can bind
@@ -61,6 +62,7 @@ public enum ChatHubContract {
             removeAdHocFromConversation: [.object],
             receiveNotification: [.object],
             receiveNotificationWeb: [.object],
+            receiveNotificationRead: [.object],
             receiveComment: [.object],
         ]
     }
