@@ -87,7 +87,7 @@
                     if let onBack { onBack() } else { dismiss() }
                 } label: {
                     WaiveraIcon(systemName: "arrow.left")
-                        .font(.system(size: ControlSize.icon - Spacing.xxSmall, weight: .semibold))
+                        .frame(width: ControlSize.icon, height: ControlSize.icon)
                         .foregroundStyle(HeroPalette.onHeader)
                         .frame(width: ControlSize.iconButton, height: ControlSize.iconButton)
                         .contentShape(Rectangle())
@@ -111,7 +111,7 @@
                                 ProgressView().tint(HeroPalette.onHeader)
                             } else {
                                 WaiveraIcon(systemName: item.systemImage)
-                                    .font(.system(size: ControlSize.icon - Spacing.xxSmall, weight: .semibold))
+                                    .frame(width: ControlSize.icon, height: ControlSize.icon)
                                     .foregroundStyle(HeroPalette.onHeader)
                             }
                         }

@@ -111,13 +111,34 @@
                     isDestructive: isDestructive,
                     onConfirm: onConfirm
                 )
-                .waiveraSheetPresentation()
+                .waiveraFittedSheetPresentation()
             }
+        }
+
+        /// A sheet of fixed content (a confirmation, a short list of choices) that is exactly as
+        /// tall as that content, like Android's bottom sheets, with no empty space under it.
+        func waiveraFittedSheetPresentation() -> some View {
+            modifier(FittedSheet())
         }
 
         /// The modal sheet's chrome: 28pt corners, a grabber, the surface behind it.
         func waiveraSheetPresentation() -> some View {
             presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(Radius.modalSheet)
+                .presentationBackground(Palette.surface)
+        }
+    }
+
+    private struct FittedSheet: ViewModifier {
+        @State private var height: CGFloat = 0
+
+        func body(content: Content) -> some View {
+            content
+                .fixedSize(horizontal: false, vertical: true)
+                .onGeometryChange(for: CGFloat.self, of: \.size.height) { height = $0 }
+                .frame(maxHeight: .infinity, alignment: .top)
+                .presentationDetents(height > 0 ? [.height(height)] : [.medium])
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(Radius.modalSheet)
                 .presentationBackground(Palette.surface)

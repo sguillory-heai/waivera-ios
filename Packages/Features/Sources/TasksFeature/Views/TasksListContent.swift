@@ -36,7 +36,7 @@
                     choosingDelays = false
                     actions.setDelays(filter)
                 }
-                .waiveraSheetPresentation()
+                .waiveraFittedSheetPresentation()
             }
         }
 

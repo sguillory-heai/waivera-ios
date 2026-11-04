@@ -42,8 +42,9 @@
                     .buttonStyle(.press(.row))
                     .accessibilityAddTraits(filter == selected ? [.isSelected] : [])
                 }
-                Spacer(minLength: Spacing.medium)
             }
+            .padding(.top, Spacing.small)
+            .padding(.bottom, Spacing.medium)
             .background(Palette.surface)
         }
 
