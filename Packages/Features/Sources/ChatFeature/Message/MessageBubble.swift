@@ -45,7 +45,12 @@
         }
 
         private var bubble: some View {
-            VStack(alignment: row.isMine ? .trailing : .leading, spacing: Spacing.extraSmall + Spacing.xxSmall) {
+            // With previews the bubble is as wide as its cards, so a short body starts at the
+            // bubble's leading edge (as on Android) instead of hugging the trailing side.
+            VStack(
+                alignment: row.isMine && !showsLinks ? .trailing : .leading,
+                spacing: Spacing.extraSmall + Spacing.xxSmall
+            ) {
                 BubbleBody(row: row, actions: actions)
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(accessibilityLabel)
