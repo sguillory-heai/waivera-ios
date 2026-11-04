@@ -405,7 +405,7 @@ extension AppModel {
     /// agency; the task opens once the number resolves, and on the web when it does not.
     private func openTask(number: Int, web: URL?) {
         guard let links = dataEnvironment?.links else { return }
-        Task { [weak self] in
+        Task { @MainActor [weak self] in
             if let task = try? await links.task(number: number) {
                 self?.navigation.open(.task(task.id), origin: .inApp)
             } else if let web {
