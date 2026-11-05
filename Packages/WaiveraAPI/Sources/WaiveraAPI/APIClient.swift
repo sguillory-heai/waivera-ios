@@ -207,6 +207,7 @@ public struct APIClient: Sendable {
         do {
             return try WaiveraJSON.decoder().decode(type, from: input)
         } catch {
+            APIDiagnostics.recordDecodeFailure(error)
             throw WaiveraError.invalidResponse
         }
     }
@@ -245,5 +246,30 @@ extension URLRequest {
         var copy = self
         copy.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         return copy
+    }
+}
+
+/// Where the last response failed to decode, as key names and indexes only (never values), so a
+/// screen can show a short code a tester can send back.
+public enum APIDiagnostics {
+    private static let lastDecodeFailure = LockedValue<String?>(nil)
+
+    public static var lastDecodePath: String? { lastDecodeFailure.get() }
+
+    static func recordDecodeFailure(_ error: any Error) {
+        guard let decoding = error as? DecodingError else {
+            lastDecodeFailure.update { $0 = "?" }
+            return
+        }
+        let (kind, context): (String, DecodingError.Context?) =
+            switch decoding {
+            case .typeMismatch(_, let context): ("type", context)
+            case .valueNotFound(_, let context): ("null", context)
+            case .keyNotFound(let key, let context): ("missing \(key.stringValue)", context)
+            case .dataCorrupted(let context): ("json", context)
+            @unknown default: ("?", nil)
+            }
+        let path = (context?.codingPath ?? []).map { $0.intValue.map(String.init) ?? $0.stringValue }
+        lastDecodeFailure.update { $0 = ([kind] + path).joined(separator: " ") }
     }
 }

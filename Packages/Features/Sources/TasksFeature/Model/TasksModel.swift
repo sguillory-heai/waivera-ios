@@ -417,7 +417,10 @@ final class TasksModel {
         }
         local.refreshFailed = failure != nil && local.phase == .content
         local.error = failure.map(WaiveraError.from)
-        if local.refreshFailed { feedback.show(TasksStrings.text("tasks.refreshFailed"), retry: .refresh) }
+        if local.refreshFailed, let code = local.error?.diagnosticCode {
+            // The code is for testers to send back while delayed lists fail on the phone.
+            feedback.show(TasksStrings.text("tasks.refreshFailed") + " (\(code))", retry: .refresh)
+        }
     }
 
     private func rebuild() {

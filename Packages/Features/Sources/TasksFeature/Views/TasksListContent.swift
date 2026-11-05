@@ -102,7 +102,7 @@
             case .error:
                 EmptyStateView.error(
                     title: TasksStrings.text("tasks.error.title"),
-                    message: state.error?.userMessage ?? "",
+                    message: state.error.map { "\($0.userMessage) (\($0.diagnosticCode))" } ?? "",
                     onRetry: actions.retry
                 )
                 .tasksListRow()

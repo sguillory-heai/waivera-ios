@@ -88,6 +88,22 @@ public enum WaiveraError: Error, Equatable, Hashable, Sendable, Codable {
         }
     }
 
+    /// A short code for testers to send back: the status for a server refusal, where decoding
+    /// stopped for a response the app could not read. Never server text.
+    public var diagnosticCode: String {
+        switch self {
+        case .server(let status): "S\(status)"
+        case .invalidResponse: "D " + (APIDiagnostics.lastDecodePath ?? "-")
+        case .offline: "N"
+        case .unauthorized: "S401"
+        case .forbidden: "S403"
+        case .notFound: "S404"
+        case .conflict: "S409"
+        case .invalidRequest: "S400"
+        default: String(describing: self).prefix(24).description
+        }
+    }
+
     /// Maps any thrown error to a `WaiveraError`; unknown errors become `.invalidResponse`
     /// rather than leaking their description.
     public static func from(_ error: any Error) -> WaiveraError {
