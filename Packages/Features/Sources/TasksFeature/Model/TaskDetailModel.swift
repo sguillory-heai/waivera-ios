@@ -160,7 +160,11 @@ final class TaskDetailModel {
     /// Starts Submit or Approve on the task as it shows now.
     func startReview(_ action: ReviewAction) {
         guard let task = local.task else { return }
-        review.start(action, task: task)
+        if task.review.canApproveAll {
+            review.askScope(action, task: task)
+        } else {
+            review.start(action, task: task)
+        }
     }
 
     func run() async {

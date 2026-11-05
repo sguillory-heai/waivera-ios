@@ -516,6 +516,10 @@
 "tasks.review.submitAllTitle.other" = "Submit and approve all %@ stages?";
 "tasks.review.allMessage" = "You're recorded as the approver for each one, and the task is completed. Anything a stage needs is still asked for.";
 "tasks.review.allConfirm" = "Approve all & complete";
+"tasks.review.scopeTitle" = "What do you want to approve?";
+"tasks.review.scopeSubmitTitle" = "What do you want to submit?";
+"tasks.review.scopeThis" = "Approve this step";
+"tasks.review.scopeAllNote" = "Approving all records you as the approver for every remaining stage and completes the task. Anything a stage needs is still asked for.";
 
 /* Unfinished forms */
 "tasks.review.draftsTitle.one" = "Complete with an unfinished form?";

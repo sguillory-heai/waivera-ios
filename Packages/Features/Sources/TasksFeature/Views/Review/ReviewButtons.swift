@@ -9,9 +9,9 @@
     }
 
     /// The task's review buttons (Android `ReviewButtons`), from the server's capabilities only
-    /// (web TaskPage): the assignee's Submit (and "Submit all & complete"), or a reviewer's Approve
-    /// and Reject (and "Approve all remaining & complete"). Submit and Approve wait for every
-    /// required form, file and signature; Reject never does.
+    /// (web TaskPage): the assignee's Submit, or a reviewer's Approve and Reject. "All remaining &
+    /// complete" is asked in a sheet after Approve or Submit, for those allowed it, so the bar stays
+    /// two buttons. Submit and Approve wait for every required form, file and signature.
     struct ReviewButtons: View {
         let access: TaskReviewAccess
         let state: ReviewState
@@ -33,28 +33,8 @@
                         fillsWidth: true
                     ) { actions.start(.submit) }
                     .disabled(!access.ready || blocked(.submit))
-                    if access.canApproveAll, access.ready {
-                        WaiveraButton(
-                            TasksStrings.text("tasks.review.submitAll"),
-                            variant: .text,
-                            isLoading: loading(.submitAll),
-                            loadingTitle: progress,
-                            fillsWidth: true
-                        ) { actions.start(.submitAll) }
-                        .disabled(blocked(.submitAll))
-                    }
                 } else {
                     approveReject
-                    if access.canApprove, access.canApproveAll, access.ready {
-                        WaiveraButton(
-                            TasksStrings.plural("tasks.review.approveAll", access.remainingStages),
-                            variant: .text,
-                            isLoading: loading(.approveAll),
-                            loadingTitle: progress,
-                            fillsWidth: true
-                        ) { actions.start(.approveAll) }
-                        .disabled(blocked(.approveAll))
-                    }
                 }
                 if !access.ready, access.canSubmit || access.canApprove {
                     Text(TasksStrings.text("tasks.review.notReady"))
@@ -74,7 +54,10 @@
 
         private var buttonSize: WaiveraButtonSize { compact ? .regular : .large }
 
-        private func loading(_ action: ReviewAction) -> Bool { state.running == action && progress != nil }
+        /// "All" runs under the button that asked for it.
+        private func loading(_ action: ReviewAction) -> Bool {
+            (state.running == action || state.running == action.all) && progress != nil
+        }
 
         /// Another action is working, or this one waits behind a sheet; a loading button stays live
         /// so it keeps its colour while its spinner shows.

@@ -63,6 +63,26 @@ struct TaskReviewModelTests {
         #expect(harness.model.state == ReviewState())
     }
 
+    @Test func approveAsksThisStepOrAllAndThisStepSendsOneStage() async {
+        let harness = Harness()
+        harness.model.askScope(.approve, task: harness.task())
+        #expect(harness.model.state.step == .chooseScope(stages: 2, submit: false))
+        #expect(harness.fakes.review.sent.get().isEmpty)
+        harness.model.chooseScope(all: false)
+        #expect(await eventually { harness.effects.first == .done(.approve, completed: false) })
+        #expect(harness.fakes.review.sent.get().first?.plan.mode == .currentStage)
+    }
+
+    /// Picking "all" in the scope sheet is the confirmation: no second "are you sure".
+    @Test func choosingAllSkipsTheSecondConfirmation() async {
+        let harness = Harness()
+        harness.model.askScope(.submit, task: harness.task())
+        #expect(harness.model.state.step == .chooseScope(stages: 2, submit: true))
+        harness.model.chooseScope(all: true)
+        #expect(await eventually { harness.effects.first == .done(.submitAll, completed: true) })
+        #expect(harness.fakes.review.sent.get().first?.plan.mode == .allRemaining)
+    }
+
     @Test func approveAllConfirmsThenChecksDraftsBeforeSending() async {
         let harness = Harness()
         harness.fakes.review.drafts.update { $0 = [FormDraft(id: 1, name: "Intake form")] }

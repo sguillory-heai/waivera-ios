@@ -67,6 +67,29 @@ final class TaskReviewModel {
     }
 
     /// Closing any sheet stops the chain where it is; nothing was sent yet unless it says so.
+    /// Approve or Submit for someone who may also approve every remaining stage: the bar keeps
+    /// one button and this sheet asks how far to go. Picking "all" counts as its confirmation.
+    func askScope(_ action: ReviewAction, task: TaskDetail) {
+        guard !state.busy else { return }
+        chain = ReviewChain(action: action, task: task)
+        state = ReviewState(
+            step: .chooseScope(stages: task.review.remainingStages, submit: action.submits),
+            running: action
+        )
+    }
+
+    func chooseScope(all: Bool) {
+        guard var current = chain else { return }
+        if all {
+            current.action = current.action.all
+            current.confirmedAll = true
+        }
+        chain = current
+        state.running = current.action
+        state.step = nil
+        advance()
+    }
+
     func dismiss() {
         guard !state.stepSaving else { return }
         if case .lateReason(let form) = state.step, let file = form.evidence { discardLater(file) }

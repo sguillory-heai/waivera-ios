@@ -11,6 +11,7 @@
             case .lateReason: "lateReason"
             case .lateReview: "lateReview"
             case .confirmAll: "confirmAll"
+            case .chooseScope: "chooseScope"
             case .drafts: "drafts"
             case .driveSection: "drive"
             case .closure: "closure"
@@ -100,6 +101,9 @@
                     onConfirm: { model.confirmAll() }
                 )
                 .waiveraFittedSheetPresentation()
+            case .chooseScope(let stages, let submit):
+                ScopeSheet(stages: stages, submit: submit) { model.chooseScope(all: $0) }
+                    .waiveraFittedSheetPresentation()
             case .drafts(let names):
                 ConfirmationSheet(
                     title: TasksStrings.plural("tasks.review.draftsTitle", max(names.count, 1)),

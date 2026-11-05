@@ -8,6 +8,8 @@ enum ReviewAction: Sendable, Hashable {
 
     var mode: ApprovalMode { self == .submitAll || self == .approveAll ? .allRemaining : .currentStage }
     var submits: Bool { self == .submit || self == .submitAll }
+    /// The "all remaining & complete" form of Submit or Approve.
+    var all: ReviewAction { submits ? .submitAll : .approveAll }
 }
 
 /// The late reason: sent by the assignee before a late task moves on (web
@@ -152,6 +154,8 @@ enum ReviewStep: Sendable, Equatable {
     case lateReason(LateForm)
     case lateReview(LateCheck)
     case confirmAll(stages: Int, submit: Bool)
+    /// Approve (or Submit) tapped by someone who may also approve every remaining stage.
+    case chooseScope(stages: Int, submit: Bool)
     case drafts([String])
     case driveSection(previous: CalendarDate, useOriginal: Bool)
     case closure(ClosureForm)
@@ -169,7 +173,7 @@ enum ReviewStep: Sendable, Equatable {
         case .requirements(let form): form.isSaving
         case .related(_, _, let saving): saving
         case .sendBack(let form): form.isSaving
-        case .confirmAll, .drafts, .driveSection: false
+        case .confirmAll, .chooseScope, .drafts, .driveSection: false
         }
     }
 
@@ -191,7 +195,7 @@ enum ReviewStep: Sendable, Equatable {
         case .sendBack(var form):
             form.isSaving = saving
             return .sendBack(form)
-        case .confirmAll, .drafts, .driveSection: return self
+        case .confirmAll, .chooseScope, .drafts, .driveSection: return self
         }
     }
 }
