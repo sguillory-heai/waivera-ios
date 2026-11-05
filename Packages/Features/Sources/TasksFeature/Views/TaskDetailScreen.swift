@@ -100,7 +100,7 @@
             )
         }
 
-        private func show(_ opening: FileOpening?) {
+        private func show(_ opening: TaskDetailModel.FileOpening?) {
             switch opening {
             case .viewer(let attachmentId): onOpenFile(model.taskId, attachmentId)
             case .web(let url): openURL(url)
