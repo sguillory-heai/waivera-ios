@@ -160,4 +160,42 @@ struct ApprovalTests {
         let balance = try await repository.leaveBalance(employeeId: "u-jo", leaveTypeId: 3)
         #expect(balance == LeaveBalance(leaveTypeId: 3, tracksBalance: true, availableMinutes: 600))
     }
+
+    @Test func leavePreviewsBlockDaysWithNoHoursEvenWithoutACode() {
+        let blocked = LeaveMapping.preview(LeavePreviewResponse(requestedMinutes: 0, isRequestable: true))
+        #expect(blocked.block == .other)
+        let weekend = LeaveMapping.preview(
+            LeavePreviewResponse(requestedMinutes: 0, isRequestable: false, blockingCode: "LEAVE_ON_WEEKEND")
+        )
+        #expect(weekend.block == .weekend)
+        #expect(LeaveMapping.preview(LeavePreviewResponse(requestedMinutes: 480, isRequestable: true)).block == nil)
+    }
+
+    @Test func timeOffRefusalsGetTheAppsWords() async throws {
+        #expect(LeaveMapping.sendProblem(.invalidRequest, code: "INSUFFICIENT_LEAVE_BALANCE") == .notEnoughBalance)
+        #expect(LeaveMapping.sendProblem(.invalidRequest, code: nil) == .overlap)
+        #expect(LeaveMapping.sendProblem(.conflict, code: nil) == .holiday)
+        #expect(LeaveMapping.sendProblem(.forbidden, code: "LEAVE_REQUEST_NOT_PERMITTED") == nil)
+
+        let (repository, transport) = await make("")
+        await transport.set(
+            "POST api/TimeOff/add-update-timeOff",
+            .json(#"{"success":false,"errorCode":"LEAVE_NOT_ALLOWED_DURING_PROBATION"}"#, status: 400)
+        )
+        let draft = LeaveDraft(
+            leaveTypeId: 2,
+            partialDay: false,
+            start: Date(timeIntervalSince1970: 1_795_478_400),
+            end: Date(timeIntervalSince1970: 1_795_564_799.999),
+            note: "  "
+        )
+        await #expect(throws: LeaveSendError(problem: .probation)) { try await repository.requestTimeOff(draft) }
+        await transport.set("POST api/TimeOff/add-update-timeOff", .json(#"{"success":true}"#))
+        try await repository.requestTimeOff(draft)
+        let body = try #require(await transport.bodies("POST api/TimeOff/add-update-timeOff").last)
+        let text = try #require(String(data: body, encoding: .utf8))
+        #expect(text.contains(#""requestType":"FULL_DAY""#))
+        // A note of only spaces is left out, like the web's trimmed comment.
+        #expect(!text.contains("comment"))
+    }
 }
