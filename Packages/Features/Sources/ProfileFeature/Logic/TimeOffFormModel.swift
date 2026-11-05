@@ -160,7 +160,7 @@ enum TimeOffDrafts {
 @Observable
 public final class TimeOffFormModel {
     public static let noteMaxLength = 1_000
-    static let pendingId = -1
+    nonisolated static let pendingId = -1
     private static let checkDelay: Duration = .milliseconds(250)
 
     public private(set) var state: TimeOffFormState
