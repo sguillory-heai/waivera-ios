@@ -100,7 +100,11 @@ public struct LiveTasksRepository: TasksRepository {
     }
 
     public func activityTypes() async throws -> [ActivityType] {
-        TaskMapping.activityTypes(try await api.activityTypes())
+        let types = try await api.activityTypes()
+        // Without templates a file still goes up under its own name, as on the web.
+        let templates =
+            types.contains { ($0.requiresFile ?? 0) > 0 } ? ((try? await api.templateFiles()) ?? []) : []
+        return TaskMapping.activityTypes(types, templates: templates)
     }
 
     public func logActivity(_ activity: NewActivity) async throws {

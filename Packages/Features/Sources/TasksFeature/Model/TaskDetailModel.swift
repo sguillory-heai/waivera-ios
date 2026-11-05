@@ -82,6 +82,12 @@ struct TaskDetailScreenState: Equatable, Sendable {
     /// Past due with no delay covering it; the due date and status turn red only then.
     var late: Bool { due.overdue && delay == nil }
     var canLog: Bool { task.map { !$0.isFinished } ?? false }
+    /// sprout_web `isReadOnly`: completed, closed and deleted tasks take no files.
+    var canUpload: Bool {
+        guard canLog, let task else { return false }
+        if case .other(let name) = task.state, name.caseInsensitiveCompare("Deleted") == .orderedSame { return false }
+        return true
+    }
     var canAsk: Bool { canLog && pending == nil && !askChoices.isEmpty }
 }
 
@@ -92,6 +98,8 @@ struct TaskDetailScreenState: Equatable, Sendable {
 final class TaskDetailModel {
     private(set) var state = TaskDetailScreenState()
     let feedback = TasksFeedback()
+    /// Required files and uploads, followed while the screen shows.
+    let uploads: TaskUploadsModel
 
     @ObservationIgnored let taskId: Int
     @ObservationIgnored private let environment: DataEnvironment
@@ -123,7 +131,9 @@ final class TaskDetailModel {
     init(taskId: Int, environment: DataEnvironment) {
         self.taskId = taskId
         self.environment = environment
+        uploads = TaskUploadsModel(taskId: taskId, environment: environment)
         rebuild()
+        uploads.onFilesChanged = { [weak self] in self?.loadFiles() }
     }
 
     func run() async {
@@ -131,6 +141,14 @@ final class TaskDetailModel {
             started = true
             load()
         }
+        let uploads = uploads
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask { await uploads.run() }
+            group.addTask { await self.followAccess() }
+        }
+    }
+
+    private func followAccess() async {
         for await value in environment.requests.access() {
             access = value
             rebuild()
@@ -264,21 +282,73 @@ final class TaskDetailModel {
     }
 
     func dismissLog() {
-        guard local.log?.isSaving != true else { return }
+        guard let form = local.log, !form.isSaving else { return }
         local.log = nil
         rebuild()
+        discard(form.file)
     }
 
     func chooseType(_ id: Int) {
+        guard let form = local.log, let type = form.types.value?.first(where: { $0.id == id }) else { return }
+        // A file picked for one type goes when the new type takes none; once sent it stays sent.
+        let dropFile = !type.needsFile && form.sentAs == nil
         updateLog { form in
-            guard let type = form.types.value?.first(where: { $0.id == id }) else { return }
             let wasMinutesLocked = form.minutesLocked
             let wasDescriptionLocked = form.descriptionLocked
             form.typeId = id
             form.minutes = type.recommendedMinutes ?? (wasMinutesLocked ? LogForm.defaultMinutes : form.minutes)
             form.description = type.fixedDescription ?? (wasDescriptionLocked ? "" : form.description)
             form.failed = false
+            if dropFile {
+                form.file = nil
+                form.fileProblem = nil
+            }
         }
+        if dropFile { discard(form.file) }
+    }
+
+    /// The picker's result for the activity's file.
+    func pickLogFile(_ picked: PickedFile) {
+        guard let form = local.log, !form.isSaving, form.sentAs == nil else { return }
+        let previous = form.file
+        updateLog {
+            $0.fileChecking = true
+            $0.fileProblem = nil
+            $0.file = nil
+            $0.failed = false
+        }
+        discard(previous)
+        let repository = environment.uploads
+        bag.replace("logFile") { [weak self] in
+            let result = await attempt { try await repository.prepare(picked) }
+            guard let self, !Task.isCancelled else { return }
+            guard self.local.log != nil else {
+                if case .success(let file) = result { await repository.discard(file) }
+                return
+            }
+            self.updateLog { form in
+                form.fileChecking = false
+                switch result {
+                case .success(let file): form.file = file
+                case .failure(let error): form.fileProblem = (error as? UploadRefused)?.problem ?? .unreadable
+                }
+            }
+        }
+    }
+
+    func removeLogFile() {
+        guard let form = local.log, !form.isSaving, form.sentAs == nil else { return }
+        updateLog {
+            $0.file = nil
+            $0.fileProblem = nil
+        }
+        discard(form.file)
+    }
+
+    private func discard(_ file: PreparedFile?) {
+        guard let file else { return }
+        let repository = environment.uploads
+        bag.run { await repository.discard(file) }
     }
 
     func stepMinutes(up: Bool) {
@@ -311,33 +381,76 @@ final class TaskDetailModel {
             updateLog { $0.showErrors = true }
             return
         }
+        let file = form.needsFile && form.sentAs == nil ? form.file : nil
         updateLog {
             $0.isSaving = true
+            $0.isUploading = file != nil
             $0.failed = false
+            $0.fileProblem = nil
         }
         let tasks = environment.tasks
         let activity = NewActivity(
             taskId: taskId,
             typeId: typeId,
-            minutes: form.minutes,
+            minutes: form.needsFile ? (form.type?.recommendedMinutes ?? 0) : form.minutes,
             completedAt: form.completedAt,
             description: form.description
         )
         bag.run { [weak self] in
+            // As on the web, the file goes up first and the activity is logged only once it is there.
+            var sentAs = form.sentAs
+            if let file {
+                guard let saved = await self?.uploadLogFile(form, file: file) else { return }
+                sentAs = saved
+                self?.updateLog {
+                    $0.isUploading = false
+                    $0.sentAs = saved
+                }
+            }
             do {
                 try await tasks.logActivity(activity)
                 guard let self else { return }
                 let before = Set(self.local.activity.value?.map(\.id) ?? [])
                 self.local.log = nil
-                self.feedback.show(TasksStrings.text("tasks.log.done"))
+                let numbered = sentAs.flatMap { $0.isEmpty || $0 == form.fileSavedName ? nil : $0 }
+                self.feedback.show(
+                    numbered.map { TasksStrings.format("tasks.log.doneSavedAs", $0) }
+                        ?? TasksStrings.text("tasks.log.done")
+                )
                 self.rebuild()
                 self.reloadActivity(newSince: before)
+                if sentAs != nil { self.loadFiles() }
             } catch {
                 self?.updateLog {
                     $0.isSaving = false
                     $0.failed = true
                 }
             }
+        }
+    }
+
+    /// The saved name, or nil when the upload failed and the form now says why.
+    private func uploadLogFile(_ form: LogForm, file: PreparedFile) async -> String? {
+        do {
+            let saved = try await environment.uploads.sendNow(
+                taskId: taskId,
+                file: file,
+                template: form.type?.fileTemplate
+            )
+            return saved ?? form.fileSavedName ?? ""
+        } catch {
+            let problem = (error as? UploadRefused)?.problem ?? .failed
+            // A file the server won't take is dropped so another can be picked; a failed send
+            // keeps it for Log activity to try again.
+            let keep = problem.canRetry
+            updateLog {
+                $0.isSaving = false
+                $0.isUploading = false
+                $0.fileProblem = problem
+                if !keep { $0.file = nil }
+            }
+            if !keep { discard(file) }
+            return nil
         }
     }
 

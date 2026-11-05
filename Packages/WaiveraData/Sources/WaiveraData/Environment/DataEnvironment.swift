@@ -27,6 +27,8 @@ public struct DataEnvironment: Sendable {
     public let tasks: any TasksRepository
     /// Change requests on tasks and their review.
     public let requests: any RequestsRepository
+    /// Files going onto tasks, queued so they survive leaving the screen.
+    public let uploads: any TaskUploadsRepository
     /// Tasks, resources and FAQs that chat links point at.
     public let links: any LinkLookupRepository
     /// The clock the repositories stamp `updatedAt` with. Relative times on screen ("5m",
@@ -59,6 +61,7 @@ public struct DataEnvironment: Sendable {
         notices: any NoticesRepository = EmptyNoticesRepository(),
         tasks: any TasksRepository = EmptyTasksRepository(),
         requests: any RequestsRepository = EmptyRequestsRepository(),
+        uploads: any TaskUploadsRepository = EmptyTaskUploadsRepository(),
         links: any LinkLookupRepository = EmptyLinkLookupRepository(),
         clock: any WaiveraClock = SystemClock(),
         webBaseURL: URL? = nil,
@@ -85,6 +88,7 @@ public struct DataEnvironment: Sendable {
         self.notices = notices
         self.tasks = tasks
         self.requests = requests
+        self.uploads = uploads
         self.links = links
         self.clock = clock
         self.webBaseURL = webBaseURL

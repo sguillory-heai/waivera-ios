@@ -202,23 +202,42 @@ struct TasksTests {
         #expect(FileKind(name: "scan", mimeType: nil) == .other)
     }
 
-    @Test func activityTypesKeepLoggableTypesWithoutFiles() {
-        let types = TaskMapping.activityTypes([
-            ActionSubTypeResponse(id: 1, actionSubTypeName: "VISIT", recommendedTimeInMinutes: 0, isUserLoggable: true),
-            ActionSubTypeResponse(id: 2, actionSubTypeName: "Upload", requiresFile: 1, isUserLoggable: true),
-            ActionSubTypeResponse(
-                id: 3,
-                actionSubTypeName: "Call",
-                recommendedTimeInMinutes: 15,
-                description: "Phone",
-                isUserLoggable: true
-            ),
-            ActionSubTypeResponse(id: 4, actionSubTypeName: "System", isUserLoggable: false),
-        ])
-        #expect(types.map(\.id) == [3, 1])
-        #expect(types[0].recommendedMinutes == 15)
+    @Test func activityTypesKeepLoggableTypesAndNameTheirFileTemplate() {
+        let types = TaskMapping.activityTypes(
+            [
+                ActionSubTypeResponse(
+                    id: 1,
+                    actionSubTypeName: "VISIT",
+                    recommendedTimeInMinutes: 0,
+                    isUserLoggable: true
+                ),
+                ActionSubTypeResponse(id: 2, actionSubTypeName: "Upload", requiresFile: 7, isUserLoggable: true),
+                ActionSubTypeResponse(
+                    id: 3,
+                    actionSubTypeName: "Call",
+                    recommendedTimeInMinutes: 15,
+                    description: "Phone",
+                    isUserLoggable: true
+                ),
+                ActionSubTypeResponse(id: 4, actionSubTypeName: "System", isUserLoggable: false),
+                ActionSubTypeResponse(id: 5, actionSubTypeName: "Fax", requiresFile: 99, isUserLoggable: true),
+            ],
+            templates: [
+                TemplateFileResponse(
+                    id: 7,
+                    fileName: " Signed plan ",
+                    type: FileTypeResponse(id: 4),
+                    employeeDocumentCategoryId: 2
+                )
+            ]
+        )
+        #expect(types.map(\.id) == [3, 5, 2, 1])
+        #expect(types[0].recommendedMinutes == 15 && !types[0].needsFile)
         #expect(types[0].fixedDescription == "Phone")
-        #expect(types[1].recommendedMinutes == nil)
+        // A template the organization no longer has: the file keeps its own name.
+        #expect(types[1].needsFile && types[1].fileTemplate == nil)
+        #expect(types[2].fileTemplate == FileTemplate(id: 7, name: "Signed plan", typeId: 4, categoryId: 2))
+        #expect(types[3].recommendedMinutes == nil)
     }
 
     @Test func logActivitySendsUTCCompletionTime() async throws {

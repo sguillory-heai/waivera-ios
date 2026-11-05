@@ -119,19 +119,26 @@ enum TaskMapping {
             }
     }
 
-    /// Types that need a file go to the web, which has the file picker the server checks.
-    static func activityTypes(_ items: [ActionSubTypeResponse]) -> [ActivityType] {
+    /// The types a person can log. One that needs a file names a template by id (sprout_web
+    /// `LogActivityModal`); a template the organization no longer has leaves the file under its own name.
+    static func activityTypes(
+        _ items: [ActionSubTypeResponse],
+        templates: [TemplateFileResponse] = []
+    ) -> [ActivityType] {
         items
             .compactMap { dto -> ActivityType? in
-                guard dto.isUserLoggable == true, (dto.requiresFile ?? 0) <= 0, let id = dto.id,
-                    let name = trimmed(dto.actionSubTypeName)
+                guard dto.isUserLoggable == true, let id = dto.id, let name = trimmed(dto.actionSubTypeName)
                 else { return nil }
                 let minutes = dto.recommendedTimeInMinutes.flatMap { $0 > 0 ? $0 : nil }
+                let templateId = dto.requiresFile.flatMap { $0 > 0 ? $0 : nil }
+                let template = templateId.flatMap { id in templates.first { $0.id == id } }
                 return ActivityType(
                     id: id,
                     name: readable(name),
                     recommendedMinutes: minutes,
-                    fixedDescription: trimmed(dto.description)
+                    fixedDescription: trimmed(dto.description),
+                    needsFile: templateId != nil,
+                    fileTemplate: template.flatMap(UploadMapping.template)
                 )
             }
             .sorted { $0.name.lowercased() < $1.name.lowercased() }

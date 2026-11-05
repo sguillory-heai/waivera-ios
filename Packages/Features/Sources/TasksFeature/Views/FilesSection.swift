@@ -8,11 +8,19 @@
     /// Hidden when the task has no files.
     struct FilesSection: View {
         let files: Loadable<[FileRow]>
+        var uploads: [UploadRow] = []
+        var canUpload = false
+        var uploadActions = UploadActions()
         let onOpen: (FileRow) -> Void
         let onRetry: () -> Void
 
+        private var hidden: Bool {
+            if case .ready(let rows) = files, rows.isEmpty, uploads.isEmpty, !canUpload { return true }
+            return false
+        }
+
         var body: some View {
-            if case .ready(let rows) = files, rows.isEmpty {
+            if hidden {
                 EmptyView()
             } else {
                 VStack(alignment: .leading, spacing: 0) {
@@ -33,23 +41,30 @@
                                 onRetry: onRetry
                             )
                         case .ready(let rows):
-                            SheetCardGroup {
-                                ForEach(rows) { row in
-                                    Button {
-                                        onOpen(row)
-                                    } label: {
-                                        FileRowView(row: row)
-                                    }
-                                    .buttonStyle(.press(.row))
-                                    .accessibilityLabel(Text(row.accessibilityLabel))
-                                    .accessibilityHint(
-                                        Text(TasksStrings.text(row.viewable ? "tasks.file.open" : "tasks.file.openWeb"))
-                                    )
-                                }
-                            }
+                            if !rows.isEmpty || !uploads.isEmpty { list(rows) }
                         }
                     }
                     .padding(.horizontal, Spacing.gutter)
+                    if canUpload { AddFileFooter(onAdd: uploadActions.addFile) }
+                }
+            }
+        }
+
+        private func list(_ rows: [FileRow]) -> some View {
+            SheetCardGroup {
+                UploadRowsView(uploads: uploads, actions: uploadActions)
+                if !uploads.isEmpty, !rows.isEmpty { InsetDivider() }
+                ForEach(rows) { row in
+                    Button {
+                        onOpen(row)
+                    } label: {
+                        FileRowView(row: row)
+                    }
+                    .buttonStyle(.press(.row))
+                    .accessibilityLabel(Text(row.accessibilityLabel))
+                    .accessibilityHint(
+                        Text(TasksStrings.text(row.viewable ? "tasks.file.open" : "tasks.file.openWeb"))
+                    )
                 }
             }
         }

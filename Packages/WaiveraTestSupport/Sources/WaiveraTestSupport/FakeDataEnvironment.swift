@@ -44,6 +44,7 @@ public struct FakeDataEnvironment: Sendable {
     public let notices: FakeNoticesRepository
     public let tasks: FakeTasksRepository
     public let requests: FakeRequestsRepository
+    public let uploads: FakeTaskUploadsRepository
     public let links: FakeLinkLookupRepository
     public let environment: DataEnvironment
 
@@ -99,6 +100,7 @@ public struct FakeDataEnvironment: Sendable {
             notices: FakeNoticesRepository(items: scenario == .empty ? [] : nil, clock: clock),
             tasks: FakeTasksRepository(empty: scenario == .empty),
             requests: FakeRequestsRepository(empty: scenario == .empty),
+            uploads: FakeTaskUploadsRepository(empty: scenario == .empty, clock: clock),
             webBaseURL: webBaseURL
         )
         switch scenario {
@@ -121,6 +123,7 @@ public struct FakeDataEnvironment: Sendable {
         calendar.milestoneResource.setControls(controls)
         tasks.failure.update { $0 = controls.failure }
         requests.failure.update { $0 = controls.failure }
+        uploads.failure.update { $0 = controls.failure }
         links.failure.update { $0 = controls.failure }
     }
 
@@ -143,6 +146,7 @@ public struct FakeDataEnvironment: Sendable {
         notices: FakeNoticesRepository,
         tasks: FakeTasksRepository,
         requests: FakeRequestsRepository,
+        uploads: FakeTaskUploadsRepository,
         webBaseURL: URL?
     ) {
         self.data = data
@@ -163,6 +167,7 @@ public struct FakeDataEnvironment: Sendable {
         self.notices = notices
         self.tasks = tasks
         self.requests = requests
+        self.uploads = uploads
         let links = FakeLinkLookupRepository(tasks: tasks)
         self.links = links
         environment = DataEnvironment(
@@ -184,6 +189,7 @@ public struct FakeDataEnvironment: Sendable {
             notices: notices,
             tasks: tasks,
             requests: requests,
+            uploads: uploads,
             links: links,
             clock: clock,
             webBaseURL: webBaseURL,

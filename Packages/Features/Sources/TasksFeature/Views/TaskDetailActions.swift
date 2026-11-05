@@ -11,5 +11,6 @@
         var retryActivity: () -> Void = {}
         var openFile: (FileRow) -> Void = { _ in }
         var retryFiles: () -> Void = {}
+        var uploads = UploadActions()
     }
 #endif

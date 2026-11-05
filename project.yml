@@ -142,6 +142,8 @@ targets:
         # Only the system's HTTPS and Keychain encryption, which export rules exempt, so App Store
         # Connect does not ask the export compliance question on each upload.
         ITSAppUsesNonExemptEncryption: false
+        # Take a photo on a task's Add a file sheet; photos and files use the system pickers.
+        NSCameraUsageDescription: Waivera uses the camera when you take a photo to add to a task.
         # No NSAppTransportSecurity exceptions: every environment is HTTPS.
         # Every screen opens on the plum header, as on Android, so the status bar is always light.
         # SwiftUI cannot set it per screen while the system navigation bar is hidden.

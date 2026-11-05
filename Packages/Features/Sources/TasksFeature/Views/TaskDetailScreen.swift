@@ -12,6 +12,7 @@
         var body: some View {
             TaskDetailContent(
                 state: model.state,
+                uploads: model.uploads.state,
                 actions: TaskDetailActions(
                     log: { model.startLog() },
                     ask: { model.startAsk() },
@@ -27,7 +28,8 @@
                         case nil: break
                         }
                     },
-                    retryFiles: { model.loadFiles() }
+                    retryFiles: { model.loadFiles() },
+                    uploads: uploadActions
                 ),
                 onRefresh: { [model] in await model.refresh() }
             )
@@ -47,7 +49,31 @@
                     AskChangeSheet(form: form, today: model.state.today, zone: model.state.zone, model: model)
                 }
             }
+            .sheet(
+                isPresented: Binding(
+                    get: { model.uploads.state.sheet != nil },
+                    set: { if !$0 { model.uploads.closeSheet() } }
+                )
+            ) {
+                if let sheet = model.uploads.state.sheet {
+                    UploadSourceSheet(sheet: sheet, model: model.uploads)
+                }
+            }
             .tasksFeedback(model.feedback)
+        }
+
+        private var uploadActions: UploadActions {
+            let uploads = model.uploads
+            return UploadActions(
+                uploadRequired: { uploads.startRequired($0) },
+                openForm: {
+                    if let url = model.webURL() { openURL(url) }
+                },
+                retryRequired: { uploads.loadRequired() },
+                addFile: { uploads.startExtra(employeeTask: model.state.task?.isClientTask == false) },
+                retryUpload: { uploads.retry($0) },
+                dismissUpload: { uploads.dismiss($0) }
+            )
         }
     }
 #endif

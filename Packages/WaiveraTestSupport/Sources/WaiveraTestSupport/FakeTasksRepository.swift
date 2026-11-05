@@ -101,6 +101,14 @@ public final class FakeTasksRepository: TasksRepository, @unchecked Sendable {
             ActivityType(id: 1, name: "Home visit", recommendedMinutes: nil, fixedDescription: nil),
             ActivityType(id: 2, name: "Phone call", recommendedMinutes: 15, fixedDescription: nil),
             ActivityType(id: 3, name: "Plan review", recommendedMinutes: 30, fixedDescription: "Reviewed the plan"),
+            ActivityType(
+                id: 4,
+                name: "Signed plan received",
+                recommendedMinutes: 10,
+                fixedDescription: nil,
+                needsFile: true,
+                fileTemplate: FileTemplate(id: 7, name: "Signed plan", typeId: 4, categoryId: nil)
+            ),
         ]
     }
 

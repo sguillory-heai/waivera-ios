@@ -17,7 +17,8 @@
                 ScrollView {
                     VStack(alignment: .leading, spacing: Spacing.medium) {
                         typePicker
-                        minutes
+                        if form.needsFile { LogActivityFileField(form: form, model: model) }
+                        if form.showsTime { minutes }
                         when
                         description
                         if form.failed {
@@ -28,14 +29,13 @@
                         WaiveraButton(
                             TasksStrings.text("tasks.log.submit"),
                             isLoading: form.isSaving,
-                            loadingTitle: TasksStrings.text("tasks.log.saving"),
+                            loadingTitle: TasksStrings.text(
+                                form.isUploading ? "tasks.log.uploading" : "tasks.log.saving"
+                            ),
                             fillsWidth: true
                         ) {
                             model.submitLog()
                         }
-                        Text(TasksStrings.text("tasks.log.fileTypesOnWeb"))
-                            .waiveraTextStyle(.bodySmall)
-                            .foregroundStyle(Palette.textSecondary)
                     }
                     .padding(Spacing.gutter)
                 }
@@ -59,7 +59,12 @@
             case .ready(let types):
                 Menu {
                     ForEach(types) { type in
-                        Button(type.name) { model.chooseType(type.id) }
+                        Button {
+                            model.chooseType(type.id)
+                        } label: {
+                            Text(type.name)
+                            if let detail = typeDetail(type) { Text(detail) }
+                        }
                     }
                 } label: {
                     HStack {
@@ -75,6 +80,15 @@
                 }
                 if form.showErrors, form.typeMissing { error(TasksStrings.text("tasks.log.typeRequired")) }
             }
+        }
+
+        private func typeDetail(_ type: ActivityType) -> String? {
+            let parts = [
+                type.needsFile ? TasksStrings.text("tasks.log.typeNeedsFile") : nil,
+                type.recommendedMinutes.map(TaskFormat.duration),
+            ]
+            .compactMap(\.self)
+            return parts.isEmpty ? nil : parts.joined(separator: " · ")
         }
 
         @ViewBuilder private var minutes: some View {

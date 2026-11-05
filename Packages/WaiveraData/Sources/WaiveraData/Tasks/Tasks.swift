@@ -265,18 +265,31 @@ public struct TaskActivity: Sendable, Hashable, Identifiable {
 }
 
 /// An activity type the person may log. `fixedDescription` and `recommendedMinutes` lock those
-/// fields, as on the web; types that need a file are left to the web.
+/// fields, as on the web.
 public struct ActivityType: Sendable, Hashable, Identifiable {
     public var id: Int
     public var name: String
     public var recommendedMinutes: Int?
     public var fixedDescription: String?
+    /// Logging it takes one uploaded file; the server then sets its time to `recommendedMinutes`.
+    public var needsFile: Bool
+    /// The template that file is saved as, when the organization still has it.
+    public var fileTemplate: FileTemplate?
 
-    public init(id: Int, name: String, recommendedMinutes: Int?, fixedDescription: String?) {
+    public init(
+        id: Int,
+        name: String,
+        recommendedMinutes: Int?,
+        fixedDescription: String?,
+        needsFile: Bool = false,
+        fileTemplate: FileTemplate? = nil
+    ) {
         self.id = id
         self.name = name
         self.recommendedMinutes = recommendedMinutes
         self.fixedDescription = fixedDescription
+        self.needsFile = needsFile
+        self.fileTemplate = fileTemplate
     }
 }
 

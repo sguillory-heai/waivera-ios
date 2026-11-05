@@ -22,13 +22,36 @@ struct LogForm: Equatable, Sendable {
     var inFuture = false
     /// "Today, 2:30 PM" in the saved zone; filled in by the model.
     var whenText = ""
+    /// The file a type that needs one will send, checked and copied.
+    var file: PreparedFile?
+    var fileChecking = false
+    /// Why the picked file can't be used, or why it didn't upload.
+    var fileProblem: UploadProblem?
+    /// The file is up (named as the server saved it); a retry only logs the activity.
+    var sentAs: String?
+    var isUploading = false
 
     var type: ActivityType? { types.value?.first { $0.id == typeId } }
-    var minutesLocked: Bool { type?.recommendedMinutes != nil }
+    var needsFile: Bool { type?.needsFile == true }
+    /// A type that needs a file has its time set by the server, as on the web.
+    var minutesLocked: Bool { type?.recommendedMinutes != nil || needsFile }
+    var showsTime: Bool { !needsFile || type?.recommendedMinutes != nil }
     var descriptionLocked: Bool { type?.fixedDescription != nil }
     var typeMissing: Bool { typeId == nil }
     var descriptionMissing: Bool { description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-    var isValid: Bool { !typeMissing && !descriptionMissing && !inFuture && minutes > 0 }
+    var fileMissing: Bool { needsFile && file == nil && sentAs == nil }
+
+    /// The name the file is saved as: the template's, with the file's extension.
+    var fileSavedName: String? {
+        guard let file else { return nil }
+        guard let template = type?.fileTemplate else { return file.name }
+        return UploadChecks.templateName(template.name, mimeType: file.mimeType)
+    }
+
+    var isValid: Bool {
+        !typeMissing && !descriptionMissing && !inFuture && !fileMissing && !fileChecking
+            && (needsFile || minutes > 0)
+    }
 }
 
 /// The three changes a person can ask for on a task, in the order the chooser offers them.

@@ -28,7 +28,9 @@ struct FileRow: Identifiable, Hashable, Sendable {
     var addedBy: String?
     var viewable: Bool
 
-    var short: String {
+    var short: String { Self.short(kind) }
+
+    static func short(_ kind: FileKind) -> String {
         switch kind {
         case .pdf: TasksStrings.text("tasks.file.short.pdf")
         case .image: TasksStrings.text("tasks.file.short.image")

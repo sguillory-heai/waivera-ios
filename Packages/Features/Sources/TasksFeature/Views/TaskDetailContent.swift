@@ -6,6 +6,7 @@
     /// The stateless task screen, for the entry view, previews and snapshots.
     struct TaskDetailContent: View {
         let state: TaskDetailScreenState
+        var uploads = TaskUploadsState()
         let actions: TaskDetailActions
         let onRefresh: @Sendable () async -> Void
 
@@ -71,7 +72,19 @@
                         }
                         .padding(.horizontal, Spacing.gutter)
                     }
-                    FilesSection(files: state.files, onOpen: actions.openFile, onRetry: actions.retryFiles)
+                    RequiredFilesSection(
+                        required: uploads.required,
+                        canUpload: state.canUpload,
+                        actions: actions.uploads
+                    )
+                    FilesSection(
+                        files: state.files,
+                        uploads: uploads.uploads,
+                        canUpload: state.canUpload,
+                        uploadActions: actions.uploads,
+                        onOpen: actions.openFile,
+                        onRetry: actions.retryFiles
+                    )
                     ActivitySection(activity: state.activity, onRetry: actions.retryActivity)
                 }
                 .padding(.bottom, Spacing.large)

@@ -143,6 +143,7 @@ private struct LiveWiring {
     let notices: LiveNoticesRepository
     let requests: LiveRequestsRepository
     let tasks: LiveTasksRepository
+    let uploads: LiveTaskUploadsRepository
 
     init(_ services: LiveServices) {
         self.services = services
@@ -182,6 +183,7 @@ private struct LiveWiring {
         let requests = LiveRequestsRepository(api: api, context: context)
         self.requests = requests
         tasks = LiveTasksRepository(api: api, context: context, requests: requests)
+        uploads = LiveTaskUploadsRepository(api: api, clock: clock)
     }
 
     func environment() -> DataEnvironment {
@@ -190,6 +192,7 @@ private struct LiveWiring {
         let chat = self.chat
         let handoff = self.handoff
         let requests = self.requests
+        let uploads = self.uploads
         let context = self.context
         let session = LiveSessionRepository(
             auth: auth,
@@ -218,6 +221,7 @@ private struct LiveWiring {
             notices: notices,
             tasks: tasks,
             requests: requests,
+            uploads: uploads,
             links: LiveLinkLookupRepository(api: services.api),
             clock: services.clock,
             webBaseURL: services.webBaseURL,
@@ -227,7 +231,10 @@ private struct LiveWiring {
                 await chat.foregroundChanged(isForeground)
                 await realtime.setForeground(isForeground)
                 // A role change on the web reaches the phone without signing out.
-                if isForeground, context.currentUser != nil { await requests.refreshAll() }
+                if isForeground, context.currentUser != nil {
+                    await requests.refreshAll()
+                    await uploads.resume()
+                }
             },
             start: {
                 await session.setParticipants([coordinator])
@@ -261,6 +268,7 @@ private struct LiveWiring {
             avatars: avatars,
             notices: notices,
             requests: requests,
+            uploads: uploads,
             localStore: services.localStore,
             keyValueStore: services.keyValueStore,
             connectivity: services.connectivity,
@@ -287,6 +295,7 @@ actor SessionCoordinator: SessionLifecycleParticipant {
     let avatars: LiveAvatarRepository
     let notices: LiveNoticesRepository
     let requests: LiveRequestsRepository
+    let uploads: LiveTaskUploadsRepository
     let localStore: any LocalStore
     let keyValueStore: any KeyValueStore
     let connectivity: any ConnectivityMonitor
@@ -309,6 +318,7 @@ actor SessionCoordinator: SessionLifecycleParticipant {
         avatars: LiveAvatarRepository,
         notices: LiveNoticesRepository,
         requests: LiveRequestsRepository,
+        uploads: LiveTaskUploadsRepository,
         localStore: any LocalStore,
         keyValueStore: any KeyValueStore,
         connectivity: any ConnectivityMonitor,
@@ -329,6 +339,7 @@ actor SessionCoordinator: SessionLifecycleParticipant {
         self.avatars = avatars
         self.notices = notices
         self.requests = requests
+        self.uploads = uploads
         self.localStore = localStore
         self.keyValueStore = keyValueStore
         self.connectivity = connectivity
@@ -344,10 +355,11 @@ actor SessionCoordinator: SessionLifecycleParticipant {
         let online = connectivity.isOnline()
         let settingsStream = settings.settings()
         deviceTasks = [
-            Task { [realtime, chat] in
+            Task { [realtime, chat, uploads, context] in
                 for await isOnline in online {
                     await realtime.setNetworkAvailable(isOnline)
                     if isOnline { await chat.resumeOutbox() }
+                    if isOnline, context.currentUser != nil { await uploads.resume() }
                 }
             },
             Task { [push] in
@@ -401,6 +413,7 @@ actor SessionCoordinator: SessionLifecycleParticipant {
         await avatars.clear()
         await notices.reset()
         await requests.reset()
+        await uploads.clear()
         await localStore.removeAll()
         for key in StorageKey.personal { keyValueStore.set(nil, forKey: key) }
         context.setAccountSince(nil)
