@@ -28,9 +28,17 @@ extension TodayModel {
     }
 
     func observeNotices() async {
+        var seenRequestNotices: Set<String>?
         for await value in environment.notices.feed() {
             sources.notices = value
             rebuild()
+            // Request notifications stay out of Needs you, so a new one reloads the pending list
+            // and its card appears at once.
+            let ids = Set((value.value?.items ?? []).filter { $0.opensRequests && !$0.isRead }.map(\.id))
+            if let seen = seenRequestNotices, !ids.isSubset(of: seen) {
+                tasks.run { [weak self] in await self?.refreshRequests() }
+            }
+            seenRequestNotices = ids
         }
     }
 
