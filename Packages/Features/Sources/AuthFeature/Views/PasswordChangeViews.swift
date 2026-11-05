@@ -204,12 +204,10 @@
                 )
                 .submitLabel(.next)
                 .onSubmit { focus = .confirmation }
-                if model.showsNewPasswordHint {
-                    Text(AuthStrings.newPasswordHint)
-                        .waiveraTextStyle(.bodySmall)
-                        .foregroundStyle(Palette.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                PasswordRulesChecklist(
+                    lines: model.passwordRuleLines,
+                    showsUnmet: model.showsUnmetPasswordRules
+                )
             }
             field(
                 .confirmation,

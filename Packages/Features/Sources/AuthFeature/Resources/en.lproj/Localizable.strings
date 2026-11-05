@@ -37,8 +37,7 @@
 "auth.issue.passwordRequired" = "Enter your password.";
 "auth.issue.currentRequired" = "Enter your current password.";
 "auth.issue.currentWrong" = "That’s not your current password. Try again.";
-/* %lld is the minimum number of characters. */
-"auth.issue.newTooShort" = "Use at least %lld characters.";
+"auth.issue.newRules" = "Your new password needs everything in the list below.";
 "auth.issue.newSame" = "Pick a password that’s different from your current one.";
 "auth.issue.newWeak" = "Pick a stronger password. A longer phrase works well.";
 "auth.issue.confirmMismatch" = "These don’t match yet. Type your new password again.";
@@ -51,9 +50,17 @@
 "auth.field.currentPassword" = "Current password";
 "auth.field.currentPassword.placeholder" = "Your current password";
 "auth.field.newPassword" = "New password";
-"auth.field.newPassword.placeholder" = "Try a short phrase";
+"auth.field.newPassword.placeholder" = "Your new password";
+"auth.passwordRules.title" = "Your new password needs";
 /* %lld is the minimum number of characters. */
-"auth.field.newPassword.hint" = "At least %lld characters. A short phrase is easy to remember.";
+"auth.passwordRules.length" = "At least %lld characters";
+"auth.passwordRules.uppercase" = "An uppercase letter";
+"auth.passwordRules.lowercase" = "A lowercase letter";
+"auth.passwordRules.number" = "A number";
+"auth.passwordRules.symbol" = "A symbol, such as ! ? @ # or _";
+/* VoiceOver for one checklist line. %@ is the rule, such as "A number". */
+"auth.passwordRules.met" = "%@: done";
+"auth.passwordRules.unmet" = "%@: not yet";
 "auth.field.confirmPassword" = "Confirm new password";
 "auth.field.confirmPassword.placeholder" = "Type it once more";
 "auth.passwordChange.save" = "Update password";

@@ -84,7 +84,26 @@ struct SessionTests {
         #expect(participant.calls == ["didEnd-early"])
     }
 
-    @Test func passwordChangeGateThenConfirm() async throws {
+    /// sprout_api's `change-password`: answers `status` and, on 200, takes the new password like
+    /// Firebase would.
+    private func serveChangePassword(_ made: Made, status: Int = 200) async {
+        let auth = made.auth
+        let route = changePasswordRoute
+        await made.transport.set(route, status == 200 ? .emptyOK : .status(status))
+        await made.transport.setBeforeReply { request in
+            guard status == 200,
+                RoutingTransport.route(of: request) == route,
+                let body = request.httpBody,
+                let json = try? JSONSerialization.jsonObject(with: body) as? [String: String],
+                let new = json["newPassword"]
+            else { return }
+            auth.password.update { $0 = new }
+        }
+    }
+
+    private let changePasswordRoute = "POST api/Authentication/change-password"
+
+    @Test func passwordChangeGateThenServerChange() async throws {
         let made = await make()
         let session = made.session
         let transport = made.transport
@@ -94,7 +113,7 @@ struct SessionTests {
             loginRoute,
             .json(#"{"data":{"requiresPasswordChange":true,"userId":"usr_alex_rivera","requiresOnboarding":false}}"#)
         )
-        await transport.set("POST api/Authentication/confirm-password-change", .emptyOK)
+        await serveChangePassword(made)
         await session.start()
         #expect(
             await eventually {
@@ -103,10 +122,61 @@ struct SessionTests {
             }
         )
         #expect(participant.calls.isEmpty)
-        try await session.changePassword(current: "old", new: "new-password")
+        try await session.changePassword(current: "correct", new: "Morning_walk42")
         #expect(await eventually { signedInUser(session.currentState) != nil })
-        #expect(auth.calls.contains("changePassword"))
-        #expect(await transport.count("POST api/Authentication/confirm-password-change") == 1)
+        #expect(auth.calls.filter { ["reauthenticate", "signIn"].contains($0) } == ["reauthenticate", "signIn"])
+        let sent = try #require(await transport.bodies(changePasswordRoute).first)
+        let json = try #require(try JSONSerialization.jsonObject(with: sent) as? [String: String])
+        #expect(json == ["idToken": "fresh-token", "newPassword": "Morning_walk42"])
+        #expect(auth.password.get() == "Morning_walk42")
+        #expect(await transport.count("POST api/Authentication/confirm-password-change") == 0)
+    }
+
+    @Test("Password change: a wrong current password never reaches the server")
+    func wrongCurrentPasswordStaysLocal() async throws {
+        let made = await make()
+        let session = made.session
+        await serveChangePassword(made)
+        await session.start()
+        #expect(await eventually { signedInUser(session.currentState) != nil })
+        await #expect(throws: WaiveraError.auth(.invalidCredentials)) {
+            try await session.changePassword(current: "wrong", new: "Morning_walk42")
+        }
+        #expect(await made.transport.count(changePasswordRoute) == 0)
+    }
+
+    @Test("Password change: a refused request and a stale sign-in get their own errors, and keep the session")
+    func serverRefusalsMapToAuthFailures() async throws {
+        let made = await make()
+        let session = made.session
+        await session.start()
+        #expect(await eventually { signedInUser(session.currentState) != nil })
+        await serveChangePassword(made, status: 400)
+        await #expect(throws: WaiveraError.invalidRequest) {
+            try await session.changePassword(current: "correct", new: "Morning_walk42")
+        }
+        await serveChangePassword(made, status: 401)
+        await #expect(throws: WaiveraError.auth(.requiresRecentLogin)) {
+            try await session.changePassword(current: "correct", new: "Morning_walk42")
+        }
+        await settle()
+        #expect(signedInUser(session.currentState) != nil, "a 401 here is not a revoked account")
+        #expect(made.auth.password.get() == "correct")
+    }
+
+    @Test("Password change: signing back in failing ends the session and says why")
+    func signBackInFailureSignsOut() async throws {
+        let made = await make()
+        let session = made.session
+        await serveChangePassword(made)
+        await session.start()
+        #expect(await eventually { signedInUser(session.currentState) != nil })
+        made.auth.signInFailure.update { $0 = WaiveraError.offline }
+        await #expect(throws: WaiveraError.auth(.passwordChangedSignInAgain)) {
+            try await session.changePassword(current: "correct", new: "Morning_walk42")
+        }
+        #expect(session.currentState == .signedOut(.auth(.passwordChangedSignInAgain)))
+        #expect(made.auth.password.get() == "Morning_walk42")
     }
 
     @Test func unauthorizedSignsOut() async {
@@ -184,7 +254,7 @@ struct SessionTests {
         let session = made.session
         let transport = made.transport
         let participant = made.participant
-        await transport.set("POST api/Authentication/confirm-password-change", .emptyOK)
+        await serveChangePassword(made)
         await session.start()
         #expect(await eventually { signedInUser(session.currentState) != nil })
         let states = LockedValue<[SessionState]>([])
@@ -192,45 +262,68 @@ struct SessionTests {
             for await state in session.states() { states.update { $0.append(state) } }
         }
         await settle()
-        try await session.changePassword(current: "old", new: "new-password")
+        try await session.changePassword(current: "correct", new: "Morning_walk42")
         await settle()
         watcher.cancel()
         #expect(!states.get().contains(.bootstrapping))
         #expect(signedInUser(session.currentState) != nil)
         #expect(await transport.count(loginRoute) == 1)
-        #expect(await transport.count("POST api/Authentication/confirm-password-change") == 1)
+        #expect(await transport.count(changePasswordRoute) == 1)
         #expect(participant.calls == ["start:usr_alex_rivera"])
     }
 
-    @Test("Auth request 3: after Firebase took the password, a retry only repeats the confirmation")
-    func changeIsResumable() async throws {
+    @Test("Password change: a 5xx after Firebase took the password is finished in the same tap")
+    func halfDoneChangeIsFinishedAtOnce() async throws {
         let made = await make()
         let session = made.session
         let transport = made.transport
         let auth = made.auth
-        await transport.enqueue("POST api/Authentication/confirm-password-change", .status(503), .emptyOK)
         await session.start()
         #expect(await eventually { signedInUser(session.currentState) != nil })
-        await #expect(throws: WaiveraError.server(statusCode: 503)) {
-            try await session.changePassword(current: "old", new: "new-password")
-        }
-        try await session.changePassword(current: "old", new: "new-password")
-        #expect(auth.calls.filter { $0 == "changePassword" }.count == 1)
-        #expect(await transport.count("POST api/Authentication/confirm-password-change") == 2)
+        // The server set the Firebase password, then failed before stamping the date.
+        await transport.enqueue(changePasswordRoute, .status(500), .emptyOK)
+        await transport.setBeforeReply { _ in auth.password.update { $0 = "Morning_walk42" } }
+        try await session.changePassword(current: "correct", new: "Morning_walk42")
+        #expect(await transport.count(changePasswordRoute) == 2, "sent again to stamp the change")
+        #expect(signedInUser(session.currentState) != nil)
     }
 
-    @Test("A different new password after a failed confirmation goes through Firebase again")
-    func differentPasswordRedoesFirebase() async throws {
+    @Test("Password change: a retry after a lost answer finishes with the new password")
+    func retryAfterALostAnswer() async throws {
         let made = await make()
         let session = made.session
         let transport = made.transport
         let auth = made.auth
-        await transport.enqueue("POST api/Authentication/confirm-password-change", .status(503), .emptyOK)
+        await transport.set(changePasswordRoute, .emptyOK)
         await session.start()
         #expect(await eventually { signedInUser(session.currentState) != nil })
-        _ = try? await session.changePassword(current: "old", new: "first-choice")
-        try await session.changePassword(current: "first-choice", new: "second-choice")
-        #expect(auth.calls.filter { $0 == "changePassword" }.count == 2)
+        // The request reached the server, which changed the password, but no answer came back.
+        await transport.setBeforeReply { _ in auth.password.update { $0 = "Morning_walk42" } }
+        await transport.setOffline(true)
+        await #expect(throws: WaiveraError.offline) {
+            try await session.changePassword(current: "correct", new: "Morning_walk42")
+        }
+        await transport.setOffline(false)
+        // The current password is refused now; the same new password proves the change and is sent again.
+        try await session.changePassword(current: "correct", new: "Morning_walk42")
+        #expect(await transport.count(changePasswordRoute) == 3)
+        #expect(signedInUser(session.currentState) != nil)
+        // A different new password is a new change, and the wrong current password says so.
+        await #expect(throws: WaiveraError.auth(.invalidCredentials)) {
+            try await session.changePassword(current: "correct", new: "Another_one99")
+        }
+    }
+
+    @Test("Password change: a refused current password with an unrelated new one never tries the new one")
+    func noExtraSignInWithoutAnEarlierAttempt() async throws {
+        let made = await make()
+        let session = made.session
+        await session.start()
+        #expect(await eventually { signedInUser(session.currentState) != nil })
+        await #expect(throws: WaiveraError.auth(.invalidCredentials)) {
+            try await session.changePassword(current: "wrong", new: "Morning_walk42")
+        }
+        #expect(made.auth.calls.filter { $0 == "reauthenticate" }.count == 1)
     }
 
     @Test func missingConfiguration() async {

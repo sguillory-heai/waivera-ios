@@ -9,7 +9,7 @@ import WaiveraData
 struct AuthCopyTests {
     private static let issues: [AuthFieldIssue] = [
         .emailRequired, .emailInvalid, .passwordRequired, .currentPasswordRequired, .currentPasswordWrong,
-        .newPasswordTooShort(minimum: 8), .newPasswordSameAsCurrent, .newPasswordWeak, .confirmationMismatch,
+        .newPasswordMissingRules, .newPasswordSameAsCurrent, .newPasswordWeak, .confirmationMismatch,
     ]
 
     @Test func everyIssueHasCopy() {
@@ -18,8 +18,12 @@ struct AuthCopyTests {
             #expect(!text.isEmpty)
             #expect(!text.hasPrefix("auth."), "missing string for \(issue)")
         }
-        #expect(AuthStrings.issue(.newPasswordTooShort(minimum: 8)) == "Use at least 8 characters.")
-        #expect(AuthStrings.newPasswordHint.contains("8"))
+        #expect(AuthStrings.passwordRule(.length) == "At least 12 characters")
+        for rule in PasswordRule.allCases {
+            #expect(!AuthStrings.passwordRule(rule).hasPrefix("auth."), "missing string for \(rule)")
+            #expect(AuthStrings.passwordRuleSpoken(rule, met: true).hasSuffix(": done"))
+            #expect(AuthStrings.passwordRuleSpoken(rule, met: false).hasSuffix(": not yet"))
+        }
     }
 
     @Test func resetMessageNamesTheAddressOnItsOwnLine() {

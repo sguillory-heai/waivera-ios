@@ -46,7 +46,7 @@ enum AuthStrings {
         case .passwordRequired: text("auth.issue.passwordRequired")
         case .currentPasswordRequired: text("auth.issue.currentRequired")
         case .currentPasswordWrong: text("auth.issue.currentWrong")
-        case .newPasswordTooShort(let minimum): format("auth.issue.newTooShort", minimum)
+        case .newPasswordMissingRules: text("auth.issue.newRules")
         case .newPasswordSameAsCurrent: text("auth.issue.newSame")
         case .newPasswordWeak: text("auth.issue.newWeak")
         case .confirmationMismatch: text("auth.issue.confirmMismatch")
@@ -67,8 +67,19 @@ enum AuthStrings {
     static var currentPasswordPlaceholder: String { text("auth.field.currentPassword.placeholder") }
     static var newPasswordLabel: String { text("auth.field.newPassword") }
     static var newPasswordPlaceholder: String { text("auth.field.newPassword.placeholder") }
-    static var newPasswordHint: String {
-        format("auth.field.newPassword.hint", AuthValidation.minimumNewPasswordLength)
+    static var passwordRulesTitle: String { text("auth.passwordRules.title") }
+    static func passwordRule(_ rule: PasswordRule) -> String {
+        switch rule {
+        case .length: format("auth.passwordRules.length", AuthValidation.minimumNewPasswordLength)
+        case .uppercase: text("auth.passwordRules.uppercase")
+        case .lowercase: text("auth.passwordRules.lowercase")
+        case .number: text("auth.passwordRules.number")
+        case .symbol: text("auth.passwordRules.symbol")
+        }
+    }
+    /// What VoiceOver reads for one checklist line.
+    static func passwordRuleSpoken(_ rule: PasswordRule, met: Bool) -> String {
+        format(met ? "auth.passwordRules.met" : "auth.passwordRules.unmet", passwordRule(rule))
     }
     static var confirmPasswordLabel: String { text("auth.field.confirmPassword") }
     static var confirmPasswordPlaceholder: String { text("auth.field.confirmPassword.placeholder") }

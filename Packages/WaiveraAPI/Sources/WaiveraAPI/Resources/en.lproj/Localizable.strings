@@ -36,8 +36,10 @@
 "error.auth.tooManyAttempts" = "Too many attempts. Wait a few minutes and try again.";
 /* Password change: the new password is too weak. */
 "error.auth.weakPassword" = "Choose a stronger password.";
-/* Password change: the user must sign in again first. */
-"error.auth.requiresRecentLogin" = "For your security, sign in again before changing your password.";
+/* Password change: the new password is saved, but signing back in with it failed. */
+"error.auth.passwordChangedSignInAgain" = "Your password was changed. Sign in with your new password.";
+/* Password change: the check of the current password is too old; enter it again. */
+"error.auth.requiresRecentLogin" = "Enter your current password again to continue.";
 /* The saved session has expired. */
 "error.auth.sessionExpired" = "Your session has ended. Sign in again to continue.";
 /* Unknown sign-in failure. */

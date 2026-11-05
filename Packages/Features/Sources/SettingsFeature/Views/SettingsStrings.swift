@@ -86,28 +86,5 @@
         static var signOutDetail: String { text("settings.account.signOut.detail") }
         static var signOutConfirmTitle: String { text("settings.account.signOut.confirmTitle") }
         static var signOutConfirmMessage: String { text("settings.account.signOut.confirmMessage") }
-
-        // Change password
-        static var passwordTitle: String { text("settings.password.title") }
-        static var passwordMessage: String { text("settings.password.message") }
-        static var passwordCurrent: String { text("settings.password.current") }
-        static var passwordNew: String { text("settings.password.new") }
-        static var passwordConfirm: String { text("settings.password.confirm") }
-        static func passwordHint(_ minimum: Int) -> String { text("settings.password.hint \(minimum)") }
-        static var passwordSave: String { text("settings.password.save") }
-        static var passwordCancel: String { text("settings.password.cancel") }
-        static var passwordDone: String { text("settings.password.done") }
-        static var passwordSuccess: String { text("settings.password.success") }
-
-        static func passwordError(_ error: PasswordFieldError?) -> String? {
-            switch error {
-            case nil: nil
-            case .currentRequired: text("settings.password.error.currentRequired")
-            case .currentWrong: text("settings.password.error.currentWrong")
-            case .tooShort(let minimum): text("settings.password.error.tooShort \(minimum)")
-            case .sameAsCurrent: text("settings.password.error.same")
-            case .mismatch: text("settings.password.error.mismatch")
-            }
-        }
     }
 #endif

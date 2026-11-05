@@ -3,9 +3,9 @@ import Observation
 import WaiveraAPI
 import WaiveraData
 
-/// Changes the password: Firebase re-authenticates with the current password and sets the new
-/// one, then the backend's `confirm-password-change` clears the gate and the session refreshes
-/// (all inside `SessionRepository.changePassword`).
+/// Changes the password: Firebase checks the current password, sprout_api's `change-password`
+/// sets the new one and clears the gate, and the session signs back in and refreshes (all inside
+/// `SessionRepository.changePassword`).
 ///
 /// Two flows share it:
 /// - **required**: the gate after sign-in. The only ways out are a new password or Sign out; on
@@ -36,6 +36,10 @@ public final class PasswordChangeModel {
     public private(set) var new = ""
     public private(set) var confirmation = ""
     public private(set) var issues = AuthValidation.PasswordChangeIssues()
+    /// The server's password rules the new password does not meet yet, for the checklist.
+    public private(set) var unmetPasswordRules = AuthValidation.unmetPasswordRules("")
+    /// The checklist's lines for `unmetPasswordRules`, copy included.
+    public private(set) var passwordRuleLines = PasswordRuleLine.lines(unmet: Set(PasswordRule.allCases))
     /// A failure that belongs to no single field (offline, server). Client-owned copy only.
     public private(set) var error: WaiveraError?
     public private(set) var phase: Phase = .editing
@@ -54,8 +58,8 @@ public final class PasswordChangeModel {
     public var fieldsEnabled: Bool { phase == .editing && session != nil }
     public var canSubmit: Bool { fieldsEnabled && !current.isEmpty && !new.isEmpty && !confirmation.isEmpty }
     public var isSaving: Bool { phase == .saving }
-    /// Shown under "New password" until it has its own error.
-    public var showsNewPasswordHint: Bool { issues.new == nil }
+    /// The checklist marks open rules as errors once a submit was refused for them.
+    public var showsUnmetPasswordRules: Bool { issues.new == .newPasswordMissingRules }
 
     // MARK: Session
 
@@ -83,6 +87,7 @@ public final class PasswordChangeModel {
         case .new:
             guard value != new else { return }
             new = value
+            checkRules(value)
             issues.new = nil
         case .confirmation:
             guard value != confirmation else { return }
@@ -136,6 +141,14 @@ public final class PasswordChangeModel {
         case .auth(.weakPassword):
             issues.new = .newPasswordWeak
             fail(focus: .new)
+        case .auth(.passwordChangedSignInAgain):
+            // Saved, but the session ended; sign-in says so. Nothing typed here is kept.
+            reset()
+        case .auth(.requiresRecentLogin):
+            // The check of the current password went stale before the server used it.
+            current = ""
+            error = failure
+            fail(focus: .current)
         default:
             error = failure
             fail(focus: nil)
@@ -154,10 +167,19 @@ public final class PasswordChangeModel {
         return nil
     }
 
+    /// Re-checks the rules, and rebuilds the checklist's copy only when a rule flipped.
+    private func checkRules(_ password: String) {
+        let unmet = AuthValidation.unmetPasswordRules(password)
+        guard unmet != unmetPasswordRules else { return }
+        unmetPasswordRules = unmet
+        passwordRuleLines = PasswordRuleLine.lines(unmet: unmet)
+    }
+
     private func clearFields() {
         current = ""
         new = ""
         confirmation = ""
+        checkRules("")
         issues = AuthValidation.PasswordChangeIssues()
     }
 

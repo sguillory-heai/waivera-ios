@@ -69,20 +69,3 @@
 "settings.account.signOut.detail" = "Signing out stops notifications for this account on this device.";
 "settings.account.signOut.confirmTitle" = "Sign out of Waivera?";
 "settings.account.signOut.confirmMessage" = "You’ll stop getting notifications on this device until you sign in again.";
-
-/* Change password */
-"settings.password.title" = "Change password";
-"settings.password.message" = "Enter your current password, then choose a new one. You'll stay signed in on this device.";
-"settings.password.current" = "Current password";
-"settings.password.new" = "New password";
-"settings.password.confirm" = "Confirm new password";
-"settings.password.hint %lld" = "At least %lld characters. A short phrase is easier to remember.";
-"settings.password.save" = "Save new password";
-"settings.password.cancel" = "Cancel";
-"settings.password.done" = "Done";
-"settings.password.success" = "Your password was changed.";
-"settings.password.error.currentRequired" = "Enter your current password.";
-"settings.password.error.currentWrong" = "That isn't your current password. Try again.";
-"settings.password.error.tooShort %lld" = "Use at least %lld characters.";
-"settings.password.error.same" = "Choose a password that's different from your current one.";
-"settings.password.error.mismatch" = "These passwords don't match.";

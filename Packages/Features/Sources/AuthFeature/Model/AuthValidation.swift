@@ -9,20 +9,46 @@ public enum AuthFieldIssue: Equatable, Hashable, Sendable {
     case currentPasswordRequired
     /// Firebase rejected the current password during re-authentication.
     case currentPasswordWrong
-    case newPasswordTooShort(minimum: Int)
+    /// The new password misses at least one `PasswordRule`; the checklist shows which.
+    case newPasswordMissingRules
     case newPasswordSameAsCurrent
-    /// Firebase's password policy rejected the new password.
+    /// The server's password policy rejected the new password.
     case newPasswordWeak
     case confirmationMismatch
 }
 
-/// Client-side checks that run before anything is sent. They only catch obvious mistakes;
-/// Firebase and the server stay the authority (a weak password is still rejected by
-/// Firebase's policy).
+/// One rule of sprout_api's `PasswordPolicy`, shown as a line of the new-password checklist.
+public enum PasswordRule: CaseIterable, Hashable, Sendable {
+    case length
+    case uppercase
+    case lowercase
+    case number
+    case symbol
+}
+
+/// Client-side checks that run before anything is sent. The new-password rules mirror
+/// sprout_api's `Utilities/PasswordPolicy.cs` (and the web's `passwordPolicy.ts`) exactly, so a
+/// password the form accepts is never refused by `change-password`; the server stays the authority.
 public enum AuthValidation {
-    /// New passwords need at least this many characters. Firebase's own floor is 6; 8 matches
-    /// common organisation policy (open question in PLAN.md) and matches Android.
-    public static let minimumNewPasswordLength = 8
+    /// `PasswordPolicy.MinimumLength`, counted in UTF-16 units like the server and the web.
+    public static let minimumNewPasswordLength = 12
+
+    /// `PasswordPolicy.SpecialCharacters`; nothing else counts as a symbol (not `-`, `+` or a space).
+    public static let passwordSymbols = "^$*.[]{}()?\"!@#%&/\\,><':;|_~"
+
+    private static let symbolScalars = Set(passwordSymbols.unicodeScalars)
+
+    /// The rules `password` does not meet yet. Letters and digits are ASCII only, like the server's.
+    public static func unmetPasswordRules(_ password: String) -> Set<PasswordRule> {
+        let scalars = password.unicodeScalars
+        var unmet = Set<PasswordRule>()
+        if password.utf16.count < minimumNewPasswordLength { unmet.insert(.length) }
+        if !scalars.contains(where: { (65...90).contains($0.value) }) { unmet.insert(.uppercase) }
+        if !scalars.contains(where: { (97...122).contains($0.value) }) { unmet.insert(.lowercase) }
+        if !scalars.contains(where: { (48...57).contains($0.value) }) { unmet.insert(.number) }
+        if !scalars.contains(where: { symbolScalars.contains($0) }) { unmet.insert(.symbol) }
+        return unmet
+    }
 
     /// The email exactly as it is sent: trimmed, case kept (Firebase compares case-insensitively).
     public static func normalizedEmail(_ raw: String) -> String {
@@ -63,8 +89,8 @@ public enum AuthValidation {
     ) -> PasswordChangeIssues {
         var issues = PasswordChangeIssues()
         if current.isEmpty { issues.current = .currentPasswordRequired }
-        if new.count < minimumNewPasswordLength {
-            issues.new = .newPasswordTooShort(minimum: minimumNewPasswordLength)
+        if !unmetPasswordRules(new).isEmpty {
+            issues.new = .newPasswordMissingRules
         } else if !current.isEmpty && new == current {
             issues.new = .newPasswordSameAsCurrent
         }

@@ -50,10 +50,14 @@ extension APIClient {
         try await send(.json(.put, "api/Authentication/\(escape(userId))/UpdateContactAndTimezone", body: body))
     }
 
-    /// Tells the backend the password was changed in Firebase, clearing the expiry gate.
-    /// The request DTO is undocumented (01 §5); an empty body is sent.
-    public func confirmPasswordChange() async throws {
-        try await send(.json(.post, "api/Authentication/confirm-password-change", body: EmptyBody()))
+    /// Changes the password server-side: Firebase and `LastChangedPassword` together, which also
+    /// clears the expiry gate. 400 is the password policy, 401 a sign-in that is not recent
+    /// enough. Firebase then ends every existing session, so the caller signs in again.
+    public func changePassword(_ body: ChangePasswordRequest) async throws {
+        var request = try APIRequest.json(.post, "api/Authentication/change-password", body: body)
+        // Its 401 means "verify your current password again", not a revoked account.
+        request.reportsRejection = false
+        try await send(request)
     }
 
     func escape(_ segment: String) -> String {

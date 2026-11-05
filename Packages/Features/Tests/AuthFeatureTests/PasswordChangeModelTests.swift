@@ -9,7 +9,7 @@ import WaiveraTestSupport
 @MainActor
 @Suite("Password change model")
 struct PasswordChangeModelTests {
-    private let newPassword = "a brand new phrase"
+    private let newPassword = "Brand_new_phrase7"
 
     private func filled(_ model: PasswordChangeModel, current: String = "old secret") -> PasswordChangeModel {
         model.set(.current, to: current)
@@ -35,12 +35,13 @@ struct PasswordChangeModelTests {
         model.set(.new, to: "short")
         model.set(.confirmation, to: "other")
         await model.submit()
-        #expect(model.issues.new == .newPasswordTooShort(minimum: AuthValidation.minimumNewPasswordLength))
+        #expect(model.issues.new == .newPasswordMissingRules)
+        #expect(model.unmetPasswordRules.contains(.length))
         #expect(model.issues.confirmation == .confirmationMismatch)
         #expect(model.focusRequest == .new)
         #expect(model.failureCount == 1)
         #expect(session.calls.isEmpty)
-        #expect(!model.showsNewPasswordHint)
+        #expect(model.showsUnmetPasswordRules)
         model.focusHandled()
         #expect(model.focusRequest == nil)
     }
@@ -77,6 +78,39 @@ struct PasswordChangeModelTests {
         #expect(model.issues.current == .currentPasswordWrong)
         #expect(model.focusRequest == .current)
         #expect(model.error == nil)
+    }
+
+    @Test func typingTicksOffTheRules() {
+        let model = PasswordChangeModel(mode: .required, session: ScriptedSession())
+        #expect(model.unmetPasswordRules == Set(PasswordRule.allCases))
+        model.set(.new, to: "Morning_walk")
+        #expect(model.unmetPasswordRules == [.number])
+        #expect(model.passwordRuleLines.map(\.rule) == PasswordRule.allCases)
+        #expect(model.passwordRuleLines.filter { !$0.isMet }.map(\.rule) == [.number])
+        #expect(!model.showsUnmetPasswordRules, "no error colour before a submit")
+    }
+
+    @Test func aStaleSignInAsksForTheCurrentPasswordAgain() async {
+        let session = ScriptedSession()
+        session.changeOutcome.set(.fail(.auth(.requiresRecentLogin)))
+        let model = filled(PasswordChangeModel(mode: .required, session: session))
+        await model.submit()
+        #expect(model.error == .auth(.requiresRecentLogin))
+        #expect(model.current.isEmpty)
+        #expect(model.issues.current == nil)
+        #expect(model.focusRequest == .current)
+    }
+
+    @Test func savedButSignedOutLeavesNothingTyped() async {
+        let session = ScriptedSession()
+        session.changeOutcome.set(.fail(.auth(.passwordChangedSignInAgain)))
+        let model = filled(PasswordChangeModel(mode: .voluntary, session: session))
+        await model.submit()
+        #expect(model.current.isEmpty)
+        #expect(model.new.isEmpty)
+        #expect(model.confirmation.isEmpty)
+        #expect(model.error == nil)
+        #expect(model.phase == .editing)
     }
 
     @Test func weakPasswordPointsAtTheNewField() async {

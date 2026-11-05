@@ -177,51 +177,6 @@ struct AccountModelTests {
 }
 
 @MainActor
-struct ChangePasswordModelTests {
-    @Test func validationShowsEveryProblemAtOnce() async {
-        let fake = await launchedFake()
-        let model = ChangePasswordModel(session: fake.session)
-        model.new = "short"
-        model.confirmation = "different"
-        #expect(!model.validate())
-        #expect(model.currentError == .currentRequired)
-        #expect(model.newError == .tooShort(minimum: 8))
-        #expect(model.confirmationError == .mismatch)
-        model.current = "same-password"
-        model.new = "same-password"
-        model.confirmation = "same-password"
-        #expect(!model.validate())
-        #expect(model.newError == .sameAsCurrent)
-        #expect(fake.session.calls.count("changePassword") == 0)
-    }
-
-    @Test func aWrongCurrentPasswordIsAFieldError() async {
-        let fake = await launchedFake()
-        let model = ChangePasswordModel(session: fake.session)
-        model.current = "not-the-password"
-        model.new = "a-new-password"
-        model.confirmation = "a-new-password"
-        #expect(await model.submit() == false)
-        #expect(model.currentError == .currentWrong)
-        #expect(model.failure == nil)
-        #expect(!model.didSucceed)
-    }
-
-    @Test func successClearsTheFieldsAndIgnoresAnotherSubmit() async {
-        let fake = await launchedFake()
-        let model = ChangePasswordModel(session: fake.session)
-        model.current = FakeSessionRepository.password
-        model.new = "a-new-password"
-        model.confirmation = "a-new-password"
-        #expect(await model.submit())
-        #expect(model.didSucceed)
-        #expect(model.current.isEmpty && model.new.isEmpty && model.confirmation.isEmpty)
-        #expect(await model.submit() == false)
-        #expect(fake.session.calls.count("changePassword") == 1)
-    }
-}
-
-@MainActor
 struct SwitchBindingTests {
     @Test func bindingChangesApplyInOrder() async {
         let settings = FakeSettingsRepository()

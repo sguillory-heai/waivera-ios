@@ -141,8 +141,22 @@ public struct GetUserNameResponseDBVM: Codable, Sendable, Equatable {
     public var type: String?
 }
 
-/// Mirrors `ChangePasswordRequest`-style bodies are undefined server-side (01 §5); the app
-/// changes the password through Firebase and then calls `confirm-password-change`.
-public struct EmptyBody: Codable, Sendable, Equatable {
-    public init() {}
+/// Mirrors `dto/Request/ChangePasswordRequest.cs`. `idToken` must come from a sign-in made
+/// moments ago: the server checks its `auth_time`, then changes the password in Firebase and
+/// stamps `LastChangedPassword` itself.
+public struct ChangePasswordRequest: Encodable, Sendable {
+    public var idToken: String
+    public var newPassword: String
+
+    public init(idToken: String, newPassword: String) {
+        self.idToken = idToken
+        self.newPassword = newPassword
+    }
+}
+
+extension ChangePasswordRequest: CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
+    /// Never prints the token or the password, even in a debug log or `dump`.
+    public var description: String { "ChangePasswordRequest(redacted)" }
+    public var debugDescription: String { description }
+    public var customMirror: Mirror { Mirror(self, children: [], displayStyle: .struct) }
 }

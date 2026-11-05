@@ -123,6 +123,24 @@ struct FirebaseTokenProviderTests {
         #expect(await iterator.next() == .some(nil))
     }
 
+    @Test("Password change: reauthenticating hands back the new sign-in's token and is no identity change")
+    func reauthenticateReturnsAFreshToken() async throws {
+        let clock = ManualClock()
+        let fake = FakeFirebaseAuth(clock: clock)
+        let provider = FirebaseTokenProvider(auth: fake, store: InMemoryTokenStore(), clock: clock)
+        await #expect(throws: WaiveraError.signedOut) { _ = try await provider.reauthenticate(password: "pw") }
+        var iterator = provider.identities().makeAsyncIterator()
+        #expect(await iterator.next() == .some(nil))
+        _ = try await provider.signIn(email: "alex@example.com", password: "pw")
+        #expect(await iterator.next()??.uid == "uid-alex")
+        _ = try await provider.idToken(forceRefresh: true)
+        #expect(try await provider.reauthenticate(password: "pw") == "token-0")
+        #expect(try await provider.idToken(forceRefresh: false) == "token-0")
+        await provider.signOut()
+        // The next value is the sign-out, proving reauthenticating emitted nothing.
+        #expect(await iterator.next() == .some(nil))
+    }
+
     @Test func aDeadRefreshTokenEndsTheSession() async throws {
         let clock = ManualClock()
         let fake = FakeFirebaseAuth(clock: clock)
@@ -197,8 +215,6 @@ final class FakeFirebaseAuth: FirebaseAuthenticating, @unchecked Sendable {
         next.expiresAt = clock.now.addingTimeInterval(3_600)
         return next
     }
-
-    func updatePassword(_ newPassword: String, session: FirebaseSession) async throws -> FirebaseSession { session }
 
     func sendPasswordReset(email: String) async throws {}
 }

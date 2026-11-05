@@ -265,6 +265,5 @@ actor Gate {
 struct StaticFirebaseAuth: FirebaseAuthenticating {
     func signIn(email: String, password: String) async throws -> FirebaseSession { throw WaiveraError.offline }
     func refresh(_ session: FirebaseSession) async throws -> FirebaseSession { session }
-    func updatePassword(_ newPassword: String, session: FirebaseSession) async throws -> FirebaseSession { session }
     func sendPasswordReset(email: String) async throws {}
 }

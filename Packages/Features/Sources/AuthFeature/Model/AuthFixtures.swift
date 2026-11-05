@@ -84,29 +84,29 @@
                 await model.submit()
             case .wrongCurrent:
                 model.set(.current, to: "not the password")
-                model.set(.new, to: "a brand new phrase")
-                model.set(.confirmation, to: "a brand new phrase")
+                model.set(.new, to: "Brand_new_phrase7")
+                model.set(.confirmation, to: "Brand_new_phrase7")
                 await model.submit()
             case .offline:
                 let failing = PasswordChangeModel(mode: mode, session: FailingSession(error: .offline))
                 failing.set(.current, to: FakeSessionRepository.password)
-                failing.set(.new, to: "a brand new phrase")
-                failing.set(.confirmation, to: "a brand new phrase")
+                failing.set(.new, to: "Brand_new_phrase7")
+                failing.set(.confirmation, to: "Brand_new_phrase7")
                 await failing.submit()
                 return failing
             case .saving:
                 let held = PasswordChangeModel(mode: mode, session: HeldSession())
                 held.set(.current, to: FakeSessionRepository.password)
-                held.set(.new, to: "a brand new phrase")
-                held.set(.confirmation, to: "a brand new phrase")
+                held.set(.new, to: "Brand_new_phrase7")
+                held.set(.confirmation, to: "Brand_new_phrase7")
                 // Starts the change and leaves it in flight.
                 Task { await held.submit() }
                 await Task.yield()
                 return held
             case .done:
                 model.set(.current, to: FakeSessionRepository.password)
-                model.set(.new, to: "a brand new phrase")
-                model.set(.confirmation, to: "a brand new phrase")
+                model.set(.new, to: "Brand_new_phrase7")
+                model.set(.confirmation, to: "Brand_new_phrase7")
                 await model.submit()
             }
             return model

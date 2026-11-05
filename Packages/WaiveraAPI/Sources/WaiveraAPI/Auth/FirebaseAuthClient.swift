@@ -35,7 +35,6 @@ public struct FirebaseSession: Codable, Sendable, Equatable {
 public protocol FirebaseAuthenticating: Sendable {
     func signIn(email: String, password: String) async throws -> FirebaseSession
     func refresh(_ session: FirebaseSession) async throws -> FirebaseSession
-    func updatePassword(_ newPassword: String, session: FirebaseSession) async throws -> FirebaseSession
     /// Sends Firebase's password reset email. `EMAIL_NOT_FOUND` maps to `.auth(.invalidCredentials)`,
     /// so a caller can show the same "sent" copy and never reveal whether an account exists.
     func sendPasswordReset(email: String) async throws
@@ -110,18 +109,6 @@ public struct FirebaseAuthREST: FirebaseAuthenticating {
         refreshed.refreshToken = response.refreshToken
         refreshed.expiresAt = clock.now.addingTimeInterval(TimeInterval(response.expiresIn) ?? 3_600)
         return refreshed
-    }
-
-    public func updatePassword(_ newPassword: String, session: FirebaseSession) async throws -> FirebaseSession {
-        let body = UpdatePasswordBody(idToken: session.idToken, password: newPassword)
-        let response: IdentityToolkitResponse = try await post(
-            url: APIClient.join(endpoints.identityToolkit, "accounts:update"),
-            json: body
-        )
-        var updated = response.session(issuedAt: clock.now)
-        updated.email = updated.email ?? session.email
-        updated.displayName = updated.displayName ?? session.displayName
-        return updated
     }
 
     public func sendPasswordReset(email: String) async throws {
@@ -201,12 +188,6 @@ private struct FirebaseErrorEnvelope: Decodable {
 
 private struct PasswordSignInBody: Encodable {
     var email: String
-    var password: String
-    var returnSecureToken = true
-}
-
-private struct UpdatePasswordBody: Encodable {
-    var idToken: String
     var password: String
     var returnSecureToken = true
 }

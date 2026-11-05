@@ -71,10 +71,10 @@ final class AuthFlowUITests: XCTestCase {
         current.typeText(demoPassword)
         let new = app.secureTextFields["passwordChange.new"]
         new.tap()
-        new.typeText("a brand new phrase")
+        new.typeText("Brand_new_phrase7")
         let confirmation = app.secureTextFields["passwordChange.confirmation"]
         confirmation.tap()
-        confirmation.typeText("a brand new phrase")
+        confirmation.typeText("Brand_new_phrase7")
         app.buttons["passwordChange.submit"].tap()
         // The link was held, not dropped: past the gate it opens the conversation, which hides
         // the tab bar (tab roots only). Backing out lands on the tabs.

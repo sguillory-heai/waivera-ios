@@ -39,7 +39,8 @@ public protocol AuthSession: AuthTokenProvider {
     /// Emits the current identity, then only real identity changes (never token refreshes).
     func identities() -> AsyncStream<FirebaseIdentity?>
     func signIn(email: String, password: String) async throws -> FirebaseIdentity
-    func changePassword(current: String, new: String) async throws
+    /// Checks `password` with Firebase and returns a fresh ID token for `change-password`.
+    func reauthenticate(password: String) async throws -> String
     func sendPasswordReset(email: String) async throws
     func signOut() async
     /// Reads the stored session again when it was unreadable at launch (a locked device, IS-03).

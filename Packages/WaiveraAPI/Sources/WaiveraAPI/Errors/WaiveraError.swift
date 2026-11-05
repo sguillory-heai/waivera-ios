@@ -42,6 +42,8 @@ public enum WaiveraError: Error, Equatable, Hashable, Sendable, Codable {
         case tooManyAttempts
         case weakPassword
         case requiresRecentLogin
+        /// The new password is saved, but signing back in with it failed, so the session ended.
+        case passwordChangedSignInAgain
         case sessionExpired
         case unknown
 

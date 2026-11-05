@@ -107,16 +107,18 @@ public actor FirebaseTokenProvider: AuthTokenProvider {
         return Self.identity(newSession)
     }
 
-    /// Re-authenticates with the current password, then sets the new one (Firebase rejects a
-    /// password change on a stale login).
-    public func changePassword(current: String, new newPassword: String) async throws {
+    /// Proves `password` for the signed-in user and returns the new session's ID token, whose
+    /// `auth_time` is now: sprout_api's `change-password` only accepts a recent sign-in.
+    public func reauthenticate(password: String) async throws -> String {
         guard let email = session?.email else { throw WaiveraError.signedOut }
+        let fresh: FirebaseSession
         do {
-            let fresh = try await auth.signIn(email: email, password: current)
-            install(try await auth.updatePassword(newPassword, session: fresh))
+            fresh = try await auth.signIn(email: email, password: password)
         } catch {
             throw WaiveraError.from(error)
         }
+        install(fresh)
+        return fresh.idToken
     }
 
     /// Firebase's reset email; works signed out (01 §3, "Forgot password?").

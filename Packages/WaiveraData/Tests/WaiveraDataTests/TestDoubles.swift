@@ -90,20 +90,25 @@ final class FakeAuth: AuthSession, @unchecked Sendable {
         cell.current == nil ? nil : "token"
     }
 
+    /// The account's Firebase password. A test's `change-password` route sets it, like the server.
+    let password = LockedValue("correct")
+    /// What signing in throws next, whatever the password; `nil` checks the password.
+    let signInFailure = LockedValue<WaiveraError?>(nil)
+
     func signIn(email: String, password: String) async throws -> FirebaseIdentity {
         log.update { $0.append("signIn") }
-        guard password == "correct" else { throw WaiveraError.auth(.invalidCredentials) }
+        if let failure = signInFailure.get() { throw failure }
+        guard password == self.password.get() else { throw WaiveraError.auth(.invalidCredentials) }
         let identity = FirebaseIdentity(uid: "fb-alex", email: email, displayName: nil)
         cell.set(identity)
         return identity
     }
 
-    /// What the Firebase password step throws next; `nil` succeeds.
-    let changePasswordFailure = LockedValue<WaiveraError?>(nil)
-
-    func changePassword(current: String, new: String) async throws {
-        log.update { $0.append("changePassword") }
-        if let failure = changePasswordFailure.get() { throw failure }
+    func reauthenticate(password: String) async throws -> String {
+        log.update { $0.append("reauthenticate") }
+        guard cell.current != nil else { throw WaiveraError.signedOut }
+        guard password == self.password.get() else { throw WaiveraError.auth(.invalidCredentials) }
+        return "fresh-token"
     }
 
     func sendPasswordReset(email: String) async throws {

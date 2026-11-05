@@ -21,6 +21,9 @@ public struct APIRequest: Sendable {
     public var contentType: String?
     public var accept: String
     public var requiresAuth: Bool
+    /// Whether a 401 that survives the token refresh means the account was revoked. Off for an
+    /// endpoint whose own 401 means something else (`change-password`: the sign-in is not recent).
+    public var reportsRejection: Bool
 
     public init(
         _ method: HTTPMethod,
@@ -29,7 +32,8 @@ public struct APIRequest: Sendable {
         body: Data? = nil,
         contentType: String? = nil,
         accept: String = "application/json",
-        requiresAuth: Bool = true
+        requiresAuth: Bool = true,
+        reportsRejection: Bool = true
     ) {
         self.method = method
         self.path = path
@@ -38,6 +42,7 @@ public struct APIRequest: Sendable {
         self.contentType = contentType
         self.accept = accept
         self.requiresAuth = requiresAuth
+        self.reportsRejection = reportsRejection
     }
 
     public static func json(_ method: HTTPMethod, _ path: String, body: some Encodable) throws -> APIRequest {
@@ -153,7 +158,7 @@ public struct APIClient: Sendable {
                 throw WaiveraError.unauthorized
             }
             (data, response) = try await perform(urlRequest.withBearer(refreshed))
-            if response.statusCode == 401 { rejections.send() }
+            if response.statusCode == 401, request.reportsRejection { rejections.send() }
         }
         return (data, response)
     }
