@@ -16,8 +16,12 @@ public struct AdminRequestResponse: Decodable, Sendable, Hashable {
     public var requestTime: String?
     public var completionTime: String?
     public var taskId: Int?
+    public var taskFriendlyId: Int?
+    public var requiredAttachmentId: Int?
     public var taskTitle: String?
     public var transactionReasonText: String?
+    public var participantRequest: ParticipantChangeResponse?
+    public var timeOffDetails: TimeOffDetailsResponse?
     public var extensionReason: String?
     public var extensionOriginalDueDate: String?
     public var extensionRequestedDueDate: String?
@@ -37,8 +41,12 @@ public struct AdminRequestResponse: Decodable, Sendable, Hashable {
         requestTime: String? = nil,
         completionTime: String? = nil,
         taskId: Int? = nil,
+        taskFriendlyId: Int? = nil,
+        requiredAttachmentId: Int? = nil,
         taskTitle: String? = nil,
         transactionReasonText: String? = nil,
+        participantRequest: ParticipantChangeResponse? = nil,
+        timeOffDetails: TimeOffDetailsResponse? = nil,
         extensionReason: String? = nil,
         extensionOriginalDueDate: String? = nil,
         extensionRequestedDueDate: String? = nil,
@@ -57,8 +65,12 @@ public struct AdminRequestResponse: Decodable, Sendable, Hashable {
         self.requestTime = requestTime
         self.completionTime = completionTime
         self.taskId = taskId
+        self.taskFriendlyId = taskFriendlyId
+        self.requiredAttachmentId = requiredAttachmentId
         self.taskTitle = taskTitle
         self.transactionReasonText = transactionReasonText
+        self.participantRequest = participantRequest
+        self.timeOffDetails = timeOffDetails
         self.extensionReason = extensionReason
         self.extensionOriginalDueDate = extensionOriginalDueDate
         self.extensionRequestedDueDate = extensionRequestedDueDate

@@ -68,6 +68,9 @@ enum TaskFormat {
         format(date, template: date.year == today.year ? "MMMd" : "MMMdyyyy")
     }
 
+    /// "Nov 6, 2026", always with the year: birthdays and plan dates.
+    static func fullDate(_ date: CalendarDate) -> String { format(date, template: "MMMdyyyy") }
+
     /// The date tile's month, "Nov".
     static func tileMonth(_ date: CalendarDate) -> String { format(date, template: "MMM") }
 

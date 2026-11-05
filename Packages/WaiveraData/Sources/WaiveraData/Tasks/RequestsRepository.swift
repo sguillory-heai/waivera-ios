@@ -17,7 +17,15 @@ public protocol RequestsRepository: Sendable {
     /// The person's own requests, newest first.
     func mine() async throws -> [ChangeRequest]
     /// Removes the request from `waiting` at once and puts it back if the server says no.
-    func decide(_ request: ChangeRequest, approve: Bool) async throws
+    /// Training credit needs the credit's revision (and reason); other kinds ignore it.
+    func decide(_ request: ChangeRequest, approve: Bool, training: TrainingDecision?) async throws
+    /// The requester's balance for one leave type; nil when this reviewer may not see balances.
+    func leaveBalance(employeeId: String, leaveTypeId: Int) async throws -> LeaveBalance?
+    /// The agency's leave zone, the one partial days are told in; nil when unknown.
+    func leaveZone() async -> TimeZone?
+    func trainingCredit(requestId: Int) async throws -> TrainingCredit
+    /// The certificate's bytes and file name, for the file sheet.
+    func trainingCertificate(requestId: Int) async throws -> DownloadedFile
     func options(taskId: Int) async throws -> ChangeOptions
     func moreTimeReasons() async throws -> [ChangeReason]
     func delayReasons() async throws -> [ChangeReason]
@@ -38,6 +46,25 @@ public protocol RequestsRepository: Sendable {
         evidenceId: Int?
     ) async throws -> RequestOutcome
     func askClosure(taskId: Int, reasonId: Int64, comment: String) async throws
+}
+
+extension RequestsRepository {
+    public func decide(_ request: ChangeRequest, approve: Bool) async throws {
+        try await decide(request, approve: approve, training: nil)
+    }
+}
+
+/// A file fetched to open, save or share.
+public struct DownloadedFile: Sendable, Hashable {
+    public var data: Data
+    public var name: String
+    public var mimeType: String?
+
+    public init(data: Data, name: String, mimeType: String?) {
+        self.data = data
+        self.name = name
+        self.mimeType = mimeType
+    }
 }
 
 /// Change requests straight from sprout_api; nothing is stored on the device. What to offer is
@@ -118,13 +145,13 @@ public actor LiveRequestsRepository: RequestsRepository {
         try await api.myRequests().items.map(RequestMapping.request)
     }
 
-    public func decide(_ request: ChangeRequest, approve: Bool) async throws {
+    public func decide(_ request: ChangeRequest, approve: Bool, training: TrainingDecision?) async throws {
         let order = (waitingCell.current ?? []).map(\.id)
         deciding.insert(request.id)
         waitingCell.update { $0 = $0?.filter { $0.id != request.id } }
         defer { deciding.remove(request.id) }
         do {
-            try await api.decideRequest(id: request.id, approve: approve)
+            try await send(request, approve: approve, training: training)
             finishedDeciding(request.id)
         } catch {
             let failure = WaiveraError.from(error)
@@ -142,6 +169,66 @@ public actor LiveRequestsRepository: RequestsRepository {
             }
             throw failure
         }
+    }
+
+    /// sprout_web `AdminRequestsPanel.handleApproveReject` and `ExternalTrainingReview.decide`.
+    private func send(_ request: ChangeRequest, approve: Bool, training: TrainingDecision?) async throws {
+        // The web's fixed wording; it asks the reviewer for no reason on these.
+        let action = RequestActionBody(
+            action: approve ? "approve" : "reject",
+            reason: approve ? "Approved via Admin Panel" : "Rejected via Admin Panel"
+        )
+        switch request.kind {
+        case .timeOff, .timeOffCancellation:
+            try await api.decideTimeOff(id: request.id, action)
+        case .profileChange:
+            try await api.decideProfileChange(id: request.id, action)
+        case .trainingCredit:
+            // A training decision needs the credit's revision.
+            guard let training else { throw WaiveraError.invalidResponse }
+            let body = TrainingDecisionBody(
+                revision: training.revision,
+                approve: approve,
+                reason: training.reason.trimmingCharacters(in: .whitespacesAndNewlines)
+            )
+            try await api.decideTrainingCredit(requestId: request.id, body)
+        case .other:
+            // The web's other requests stay on the web.
+            throw WaiveraError.invalidResponse
+        default:
+            try await api.decideRequest(id: request.id, approve: approve)
+        }
+    }
+
+    public func leaveBalance(employeeId: String, leaveTypeId: Int) async throws -> LeaveBalance? {
+        // Balances are for leave administrators; other reviewers decide without them, as on the web.
+        let summary: LeaveBalancesResponse
+        do {
+            summary = try await api.leaveBalances(employeeId: employeeId)
+        } catch {
+            if WaiveraError.from(error) == .forbidden { return nil }
+            throw WaiveraError.from(error)
+        }
+        return (summary.balances ?? []).first { $0.id == leaveTypeId }.map(ApprovalMapping.balance)
+    }
+
+    public func leaveZone() async -> TimeZone? {
+        guard let name = try? await api.leaveSettings().timeZone else { return nil }
+        return TimeZone(identifier: name)
+    }
+
+    public func trainingCredit(requestId: Int) async throws -> TrainingCredit {
+        ApprovalMapping.training(requestId: requestId, try await api.trainingCredit(requestId: requestId))
+    }
+
+    public func trainingCertificate(requestId: Int) async throws -> DownloadedFile {
+        let (data, response) = try await api.trainingCertificate(requestId: requestId)
+        return DownloadedFile(
+            data: data,
+            // The server only takes PDF certificates.
+            name: "Certificate.pdf",
+            mimeType: response.mimeType ?? "application/pdf"
+        )
     }
 
     public func options(taskId: Int) async throws -> ChangeOptions {
@@ -245,7 +332,13 @@ public struct EmptyRequestsRepository: RequestsRepository {
     public func ensureAccess() async {}
     public func refreshWaiting() async throws {}
     public func mine() async throws -> [ChangeRequest] { [] }
-    public func decide(_ request: ChangeRequest, approve: Bool) async throws { throw WaiveraError.notFound }
+    public func decide(_ request: ChangeRequest, approve: Bool, training: TrainingDecision?) async throws {
+        throw WaiveraError.notFound
+    }
+    public func leaveBalance(employeeId: String, leaveTypeId: Int) async throws -> LeaveBalance? { nil }
+    public func leaveZone() async -> TimeZone? { nil }
+    public func trainingCredit(requestId: Int) async throws -> TrainingCredit { throw WaiveraError.notFound }
+    public func trainingCertificate(requestId: Int) async throws -> DownloadedFile { throw WaiveraError.notFound }
     public func options(taskId: Int) async throws -> ChangeOptions {
         ChangeOptions(taskId: taskId, currentDue: nil, canAskMoreTime: false, delay: nil, hasPendingRequest: false)
     }

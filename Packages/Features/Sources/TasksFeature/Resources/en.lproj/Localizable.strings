@@ -289,3 +289,125 @@
 "tasks.file.loading" = "Opening the file";
 "tasks.file.textCut" = "This file is long, so only the start is shown. Open the task on the web to see all of it.";
 "tasks.file.page" = "Page %@ of %@";
+
+/* Every admin request type */
+"tasks.cancel" = "Cancel";
+"tasks.span" = "%1$@ – %2$@";
+"tasks.daysLater.one" = "%@ day later";
+"tasks.daysLater.other" = "%@ days later";
+"tasks.kind.timeOff" = "Time off";
+"tasks.kind.timeOffCancel" = "Time off cancellation";
+"tasks.kind.profile" = "Profile change";
+"tasks.kind.reopen" = "Reopen task";
+"tasks.kind.removeFile" = "Required file";
+"tasks.kind.training" = "Training credit";
+"tasks.change.timeOff" = "%1$@ · %2$@";
+"tasks.change.reopen" = "Reopen the task";
+"tasks.change.removeFile" = "Stop requiring a file";
+"tasks.file.share" = "Share or save";
+
+/* Time off review */
+"tasks.review.dates" = "Dates";
+"tasks.review.fullDays" = "Full days · %@";
+"tasks.review.partialDay" = "%1$@ · %2$@";
+"tasks.review.leaveType" = "Leave type";
+"tasks.review.balance" = "Balance";
+"tasks.review.balanceArrow" = "→";
+"tasks.review.balanceSpoken" = "%1$@ now, %2$@ after";
+"tasks.review.balanceFailed" = "Couldn't load the balance";
+"tasks.review.balanceRetry" = "Tap to try again";
+"tasks.review.balanceAfter" = "After this request";
+"tasks.review.balanceAfterCancel" = "After the hours go back";
+"tasks.review.hours.one" = "%@ hr";
+"tasks.review.hours.other" = "%@ hrs";
+"tasks.review.extendedSick" = "This sick leave is longer than three working days, so your agency may ask for documentation.";
+"tasks.review.impactTasks.one" = "%1$@ task is due before or while %2$@ is out";
+"tasks.review.impactTasks.other" = "%1$@ tasks are due before or while %2$@ is out";
+"tasks.review.impactCounts" = "Due before the leave: %1$@. Due during it: %2$@.";
+"tasks.review.impactNone" = "No open tasks assigned to them are due before or during this leave.";
+"tasks.review.impactChanged" = "This has changed since they asked.";
+"tasks.review.impactAcknowledged" = "They have seen this review.";
+"tasks.review.impactNotAcknowledged" = "They haven't confirmed this review yet. You can still approve.";
+"tasks.review.impactUnavailable" = "The task review isn't available right now. Pull to refresh before you decide.";
+"tasks.review.shortNoticeTitle" = "Less than two weeks' notice";
+"tasks.review.shortNotice" = "This vacation starts in fewer than 14 days. You can still approve it.";
+
+/* Profile change review */
+"tasks.review.changed.one" = "%@ change";
+"tasks.review.changed.other" = "%@ changes";
+"tasks.review.unchanged.one" = "%@ unchanged";
+"tasks.review.unchanged.other" = "%@ unchanged";
+"tasks.review.previous" = "Previous";
+"tasks.review.requestedValue" = "Requested";
+"tasks.review.none" = "None";
+"tasks.review.unchangedFields" = "Unchanged fields";
+"tasks.review.fieldValue" = "%1$@: %2$@";
+"tasks.review.profileEmpty" = "No profile details to compare";
+"tasks.review.expanded" = "Expanded";
+"tasks.review.collapsed" = "Collapsed";
+"tasks.field.birth" = "Date of birth";
+"tasks.field.firstName" = "First name";
+"tasks.field.lastName" = "Last name";
+"tasks.field.email" = "Email";
+"tasks.field.mobile" = "Mobile number";
+"tasks.field.waiver" = "Waiver";
+"tasks.field.waiverId" = "Waiver ID";
+"tasks.field.ssn" = "SSN (last 4)";
+"tasks.field.certification" = "Certification date";
+"tasks.field.cpocStart" = "CPOC start date";
+"tasks.field.cpocEnd" = "CPOC end date";
+
+/* Reopen and required file reviews */
+"tasks.review.reopenNote" = "The task opens again so work can continue.";
+"tasks.review.removeFileNote" = "The task can be submitted without this file.";
+
+/* Training credit review */
+"tasks.review.course" = "Course";
+"tasks.review.completed" = "%1$@ · completed %2$@";
+"tasks.review.trainer" = "Trainer";
+"tasks.review.provider" = "Training provider";
+"tasks.review.notRecorded" = "Not recorded";
+"tasks.review.uploadedBy" = "Uploaded by";
+"tasks.review.certificate" = "Certificate";
+"tasks.review.viewCertificate" = "View certificate PDF";
+"tasks.review.certificateOpening" = "Opening…";
+"tasks.review.certificateFile" = "Training certificate.pdf";
+"tasks.review.certificateFailed" = "Couldn't open the certificate. Try again.";
+"tasks.review.trainingFailed" = "Couldn't load this training credit.";
+"tasks.review.approveCredit" = "Approve credit";
+"tasks.review.rejectSubmission" = "Reject submission";
+"tasks.review.onWeb" = "Review on the web";
+"tasks.review.uploadedYourself" = "You uploaded this certificate for %@, so your reason is kept in the review history.";
+"tasks.review.blockedOwn" = "Someone else needs to review your own training credit.";
+"tasks.review.blockedNoReviewer" = "No one is set up to review this yet. An organization owner can add a reviewer.";
+"tasks.review.blockedNotReviewer" = "An approved reviewer needs to check this certificate.";
+"tasks.review.reasonRequired" = "Reason";
+"tasks.review.reasonOptional" = "Review notes (optional)";
+"tasks.review.reasonPlaceholder" = "Explain your decision";
+
+/* Confirmations */
+"tasks.confirm.approve.title.timeOff" = "Approve time off?";
+"tasks.confirm.reject.title.timeOff" = "Reject time off?";
+"tasks.confirm.approve.timeOff" = "%1$@'s time off on %2$@ will be approved.";
+"tasks.confirm.reject.timeOff" = "%1$@ will be told their time off on %2$@ wasn't approved.";
+"tasks.confirm.approve.title.cancel" = "Approve the cancellation?";
+"tasks.confirm.reject.title.cancel" = "Reject the cancellation?";
+"tasks.confirm.approve.cancel" = "%1$@'s time off on %2$@ will be cancelled and the hours go back to their balance.";
+"tasks.confirm.reject.cancel" = "%1$@'s time off on %2$@ stays approved.";
+"tasks.confirm.approve.title.profile" = "Approve profile change?";
+"tasks.confirm.reject.title.profile" = "Reject profile change?";
+"tasks.confirm.approve.profile.one" = "The participant's profile will be updated with %@ change.";
+"tasks.confirm.approve.profile.other" = "The participant's profile will be updated with %@ changes.";
+"tasks.confirm.reject.profile" = "The participant's profile stays as it is, and %@ will be told.";
+"tasks.confirm.approve.title.reopen" = "Reopen this task?";
+"tasks.confirm.reject.title.reopen" = "Keep this task closed?";
+"tasks.confirm.approve.reopen" = "%1$@ will open again for %2$@.";
+"tasks.confirm.reject.reopen" = "%1$@ stays closed, and %2$@ will be told.";
+"tasks.confirm.approve.title.removeFile" = "Stop requiring this file?";
+"tasks.confirm.reject.title.removeFile" = "Keep the file required?";
+"tasks.confirm.approve.removeFile" = "%1$@ can be submitted without this file. %2$@ will be told.";
+"tasks.confirm.reject.removeFile" = "%1$@ still needs this file, and %2$@ will be told.";
+"tasks.confirm.approve.title.training" = "Approve external training credit?";
+"tasks.confirm.reject.title.training" = "Reject external training evidence?";
+"tasks.confirm.approve.training" = "This approves the hours for %@ and completes the linked training task.";
+"tasks.confirm.reject.training" = "Explain what needs to be corrected so they can send a new certificate.";

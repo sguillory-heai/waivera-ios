@@ -34,7 +34,7 @@ struct PendingBanner: Hashable, Sendable {
         case .moreTime: TasksStrings.text("tasks.pending.moreTime.title")
         case .delay: TasksStrings.text("tasks.pending.delay.title")
         case .closure: TasksStrings.text("tasks.pending.closure.title")
-        case .other: TasksStrings.text("tasks.pending.other.title")
+        default: TasksStrings.text("tasks.pending.other.title")
         }
     }
 
@@ -50,7 +50,7 @@ struct PendingBanner: Hashable, Sendable {
                 TasksStrings.text("tasks.pending.delay.short")
             }
         case .closure: TasksStrings.text("tasks.pending.closure")
-        case .other: TasksStrings.text("tasks.pending.other")
+        default: TasksStrings.text("tasks.pending.other")
         }
     }
 }

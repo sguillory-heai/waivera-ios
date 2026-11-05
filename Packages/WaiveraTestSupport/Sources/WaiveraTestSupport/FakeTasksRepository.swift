@@ -377,7 +377,39 @@ public final class FakeRequestsRepository: RequestsRepository, @unchecked Sendab
         ]
     }
 
-    public func decide(_ request: ChangeRequest, approve: Bool) async throws {
+    public func leaveBalance(employeeId: String, leaveTypeId: Int) async throws -> LeaveBalance? {
+        try check()
+        return LeaveBalance(leaveTypeId: leaveTypeId, tracksBalance: true, availableMinutes: 2_400)
+    }
+
+    public func leaveZone() async -> TimeZone? { TimeZone(identifier: "America/Chicago") }
+
+    public func trainingCredit(requestId: Int) async throws -> TrainingCredit {
+        try check()
+        return TrainingCredit(
+            requestId: requestId,
+            course: "CPR and First Aid",
+            employeeName: "Jordan Lee",
+            trainer: "Pat Morgan",
+            provider: "Red Cross",
+            completed: DemoData.today.adding(days: -6),
+            hours: 4,
+            pending: true,
+            revision: 3,
+            canApprove: true,
+            needsApproveReason: false,
+            uploadedBy: nil,
+            blocked: nil,
+            reviewOnWeb: false
+        )
+    }
+
+    public func trainingCertificate(requestId: Int) async throws -> DownloadedFile {
+        try check()
+        return DownloadedFile(data: Data("%PDF-1.4\n".utf8), name: "Certificate.pdf", mimeType: "application/pdf")
+    }
+
+    public func decide(_ request: ChangeRequest, approve: Bool, training: TrainingDecision?) async throws {
         let before = waitingCell.current
         waitingCell.update { $0 = $0?.filter { $0.id != request.id } }
         if let error = failure.get() {
@@ -495,6 +527,59 @@ public final class FakeRequestsRepository: RequestsRepository, @unchecked Sendab
                 explanation: "Admitted on Monday.",
                 delayStart: today.adding(days: -5),
                 delayEnd: today.adding(days: 6)
+            ),
+        ]
+    }
+
+    /// Time off, a profile change and a training credit, for the review sheet's previews and tests.
+    public static func demoApprovals() -> [ChangeRequest] {
+        let today = DemoData.today
+        return [
+            ChangeRequest(
+                id: 83,
+                kind: .timeOff,
+                typeName: "Time-Off Request",
+                status: .pending,
+                requesterId: "u-jordan",
+                requesterName: "Jordan Lee",
+                requestedAt: DemoData.now.addingTimeInterval(-20_000),
+                timeOff: TimeOffReview(
+                    leaveType: "Vacation",
+                    leaveTypeId: 2,
+                    partialDay: false,
+                    startDate: today.adding(days: 8),
+                    endDate: today.adding(days: 10),
+                    start: nil,
+                    end: nil,
+                    minutes: 1_440,
+                    note: "Family trip.",
+                    impact: LeaveImpact(dueBefore: 1, dueDuring: 2, shortNotice: true),
+                    impactChanged: false,
+                    acknowledged: true
+                )
+            ),
+            ChangeRequest(
+                id: 84,
+                kind: .profileChange,
+                typeName: "Profile Change Request",
+                status: .pending,
+                requesterId: "u-dana",
+                requesterName: "Dana Cole",
+                requestedAt: DemoData.now.addingTimeInterval(-40_000),
+                profile: [
+                    ProfileField(field: .mobile, previous: "(555) 010-2299", requested: "(555) 010-7781", changed: true),
+                    ProfileField(field: .firstName, previous: "Maya", requested: "Maya", changed: false),
+                    ProfileField(field: .lastName, previous: "Ortiz", requested: "Ortiz", changed: false),
+                ]
+            ),
+            ChangeRequest(
+                id: 85,
+                kind: .trainingCredit,
+                typeName: "External Training Credit",
+                status: .pending,
+                requesterId: "u-jordan",
+                requesterName: "Jordan Lee",
+                requestedAt: DemoData.now.addingTimeInterval(-60_000)
             ),
         ]
     }

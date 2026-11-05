@@ -91,7 +91,11 @@
             case .moreTime: "clock"
             case .delay: "exclamationmark.triangle"
             case .closure: "archivebox"
-            case .other: "calendar"
+            case .timeOff, .timeOffCancellation, .other: "calendar"
+            case .profileChange: "person"
+            case .reactivation: "arrow.clockwise"
+            case .attachmentRemoval: "paperclip"
+            case .trainingCredit: "rosette"
             }
         }
 

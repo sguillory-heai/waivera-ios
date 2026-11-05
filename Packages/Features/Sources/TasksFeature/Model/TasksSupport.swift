@@ -94,6 +94,12 @@ final class TaskBag: Sendable {
 
     private let keyed = LockedValue<[String: UUID]>([:])
 
+    /// Cancels the task last started under `key`, if it is still running.
+    func cancel(_ key: String) {
+        guard let id = keyed.update({ $0.removeValue(forKey: key) }) else { return }
+        tasks.update { $0.removeValue(forKey: id)?.cancel() }
+    }
+
     func cancelAll() {
         let running = tasks.update { current -> [Task<Void, Never>] in
             defer { current.removeAll() }

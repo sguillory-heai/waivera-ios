@@ -7,6 +7,9 @@ import WaiveraAPI
 enum RequestMapping {
     static let createExtension = "admin_request:create:task_extension"
     static let createDeletion = "admin_request:create:task_deletion"
+    static let createTimeOff = "admin_request:create:time_off"
+    static let caseFileDownload = "case_file:download"
+    static let employeeFileDownload = "employee_file:download"
     private static let externalTrainingView = "admin_request:view:external_training"
     private static let externalTrainingApprove = "admin_request:approve:external_training"
     private static let officeManager = "Office Manager"
@@ -41,7 +44,9 @@ enum RequestMapping {
             requestedDue: TaskMapping.date(dto.extensionApprovedDueDate ?? dto.extensionRequestedDueDate),
             delayStart: TaskMapping.date(dto.delayStartDate),
             delayEnd: TaskMapping.date(dto.delayEndDate),
-            isTrainingTask: dto.isTrainingTask ?? false
+            isTrainingTask: dto.isTrainingTask ?? false,
+            timeOff: kind.isTimeOff ? dto.timeOffDetails.map(ApprovalMapping.timeOff) : nil,
+            profile: kind == .profileChange ? (dto.participantRequest.map(ApprovalMapping.profile) ?? []) : []
         )
     }
 
@@ -114,6 +119,9 @@ enum RequestMapping {
             canAskClosure: hasPolicy(dto, createDeletion),
             showsRequests: isOwnerOrAdmin || !isOfficeManager || externalTraining,
             includePendingApprovals: !employeeRoles.contains("SC") && highest != nil && highest != "PROGRAM MANAGER",
+            canDownloadCaseFiles: hasPolicy(dto, caseFileDownload),
+            canDownloadEmployeeFiles: hasPolicy(dto, employeeFileDownload),
+            canRequestTimeOff: hasPolicy(dto, createTimeOff),
             loaded: true
         )
     }

@@ -3,113 +3,6 @@ import Observation
 import WaiveraAPI
 import WaiveraData
 
-/// What a request changes, already worded for the person's day.
-enum RequestChange: Hashable, Sendable {
-    /// More time: the due date moves from `from` to `to`, `daysLater` days later.
-    case dueMove(from: String?, to: String, daysLater: Int?)
-    /// A delay recorded for a server-owned period; the due date stays.
-    case delayWindow(start: String, end: String)
-    /// Closure: the task closes without being completed.
-    case closure
-    /// Time off, profile changes and the rest, which the web reviews.
-    case other
-
-    var text: String? {
-        switch self {
-        case .dueMove(let from, let to, _):
-            from.map { TasksStrings.format("tasks.change.dueMove", $0, to) }
-                ?? TasksStrings.format("tasks.change.dueTo", to)
-        case .delayWindow(let start, let end): TasksStrings.format("tasks.change.delay", start, end)
-        case .closure: TasksStrings.text("tasks.change.closure")
-        case .other: nil
-        }
-    }
-}
-
-struct RequestItem: Identifiable, Hashable, Sendable {
-    var request: ChangeRequest
-    /// When it was asked, in the employee's saved zone.
-    var asked: TaskMoment?
-    var change: RequestChange
-    /// Today's due text for the task in question, when the request carries its current due date.
-    var due: DueText
-    var id: Int { request.id }
-
-    var kindLabel: String {
-        switch request.kind {
-        case .moreTime: TasksStrings.text("tasks.kind.moreTime")
-        case .delay: TasksStrings.text("tasks.kind.delay")
-        case .closure: TasksStrings.text("tasks.kind.closure")
-        case .other: request.typeName
-        }
-    }
-
-    var statusLabel: String {
-        switch request.status {
-        case .approved: TasksStrings.text("tasks.status.approved")
-        case .rejected: TasksStrings.text("tasks.status.rejected")
-        case .pending, .other: TasksStrings.text("tasks.status.pending")
-        }
-    }
-
-    var reviewTitle: String {
-        switch request.kind {
-        case .moreTime: TasksStrings.text("tasks.review.title.moreTime")
-        case .delay: TasksStrings.text("tasks.review.title.delay")
-        case .closure, .other: TasksStrings.text("tasks.review.title.closure")
-        }
-    }
-
-    /// The confirm sheet's title and what will happen, worded as the web's review dialogs are.
-    func confirmation(approve: Bool) -> (title: String, message: String) {
-        let task = request.taskTitle ?? TasksStrings.text("tasks.thisTask")
-        let who = request.requesterName.isEmpty ? TasksStrings.text("tasks.theRequester") : request.requesterName
-        let verb = approve ? "approve" : "reject"
-        switch (request.kind, change) {
-        case (.moreTime, .dueMove(let from, let to, _)):
-            let title = TasksStrings.text("tasks.confirm.\(verb).title.moreTime")
-            if approve {
-                let message =
-                    from.map { TasksStrings.format("tasks.confirm.approve.moreTime", task, to, $0, who) }
-                    ?? TasksStrings.format("tasks.confirm.approve.moreTime.short", task, to, who)
-                return (title, message)
-            }
-            let message =
-                from.map { TasksStrings.format("tasks.confirm.reject.moreTime", task, $0, who) }
-                ?? TasksStrings.format("tasks.confirm.reject.moreTime.short", task, who)
-            return (title, message)
-        case (.moreTime, _):
-            return (
-                TasksStrings.text("tasks.confirm.\(verb).title.moreTime"),
-                approve
-                    ? TasksStrings.format("tasks.confirm.approve.generic", task, who)
-                    : TasksStrings.format("tasks.confirm.reject.moreTime.short", task, who)
-            )
-        case (.delay, .delayWindow(let start, let end)):
-            return (
-                TasksStrings.text("tasks.confirm.\(verb).title.delay"),
-                approve
-                    ? TasksStrings.format("tasks.confirm.approve.delay", start, end, task, who)
-                    : TasksStrings.format("tasks.confirm.reject.delay", task, who)
-            )
-        case (.delay, _):
-            return (
-                TasksStrings.text("tasks.confirm.\(verb).title.delay"),
-                approve
-                    ? TasksStrings.format("tasks.confirm.approve.generic", task, who)
-                    : TasksStrings.format("tasks.confirm.reject.delay", task, who)
-            )
-        default:
-            return (
-                TasksStrings.text("tasks.confirm.\(verb).title.closure"),
-                approve
-                    ? TasksStrings.format("tasks.confirm.approve.closure", task, who)
-                    : TasksStrings.format("tasks.confirm.reject.closure", task, who)
-            )
-        }
-    }
-}
-
 /// A pending approve or reject, confirmed on its own sheet before it is sent.
 struct Decision: Hashable, Sendable {
     var item: RequestItem
@@ -122,6 +15,25 @@ struct RequestsScreenState: Equatable, Sendable {
     var reviewing: RequestItem?
     var confirming: Decision?
     var isRefreshing = false
+    /// Time off under review: the balance, or nil when this reviewer may not see balances.
+    var balance: Loadable<BalanceChange?> = .loading
+    /// Training credit under review.
+    var training: Loadable<TrainingCredit> = .loading
+    /// What the reviewer writes on a training decision.
+    var reason = ""
+    /// The training certificate is downloading; another tap waits for it.
+    var openingCertificate = false
+    /// The downloaded certificate, shown in its own viewer.
+    var certificate: DownloadedFile?
+
+    /// Whether the confirm button can send: a training decision may need a written reason first.
+    var canConfirm: Bool {
+        guard let decision = confirming else { return false }
+        guard decision.item.request.kind == .trainingCredit else { return true }
+        guard let credit = training.value else { return false }
+        let reasonNeeded = !decision.approve || credit.needsApproveReason
+        return credit.decidable && (!reasonNeeded || !reason.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+    }
 }
 
 /// The Requests segment (Android `RequestsViewModel`): requests waiting on this person, then
@@ -131,6 +43,7 @@ struct RequestsScreenState: Equatable, Sendable {
 @Observable
 final class RequestsModel {
     static let webPath = "/admin-requests"
+    static let reasonMaxLength = 2_000
 
     private(set) var state = RequestsScreenState()
     let feedback = TasksFeedback()
@@ -143,6 +56,13 @@ final class RequestsModel {
     @ObservationIgnored private var reviewingId: Int?
     @ObservationIgnored private var confirming: (id: Int, approve: Bool)?
     @ObservationIgnored private var isRefreshing = false
+    @ObservationIgnored private var balance: Loadable<BalanceChange?> = .loading
+    @ObservationIgnored private var training: Loadable<TrainingCredit> = .loading
+    @ObservationIgnored private var reason = ""
+    @ObservationIgnored private var openingCertificate = false
+    @ObservationIgnored private var certificate: DownloadedFile?
+    @ObservationIgnored private var leaveZone: TimeZone?
+    @ObservationIgnored private var leaveZoneAsked = false
     @ObservationIgnored private var started = false
 
     init(environment: DataEnvironment) {
@@ -175,19 +95,66 @@ final class RequestsModel {
     func review(_ item: RequestItem) -> URL? {
         guard item.request.kind.reviewableHere else { return webURL() }
         reviewingId = item.id
+        reason = ""
+        balance = .loading
+        training = .loading
         rebuild()
+        loadDetails(item.request)
         return nil
     }
 
+    func retryDetails() {
+        guard let request = state.reviewing?.request else { return }
+        balance = .loading
+        training = .loading
+        rebuild()
+        loadDetails(request)
+    }
+
     func closeReview() {
+        bag.cancel(Self.detailsKey)
+        bag.cancel(Self.certificateKey)
         reviewingId = nil
         confirming = nil
+        reason = ""
+        openingCertificate = false
+        certificate = nil
         rebuild()
     }
 
     func ask(approve: Bool) {
         guard let id = reviewingId else { return }
+        reason = ""
         confirming = (id, approve)
+        rebuild()
+    }
+
+    func setReason(_ text: String) {
+        reason = String(text.prefix(Self.reasonMaxLength))
+        rebuild()
+    }
+
+    /// Downloads the certificate once and shows it; repeat taps wait for it.
+    func openCertificate() {
+        guard let request = state.reviewing?.request, !openingCertificate else { return }
+        openingCertificate = true
+        rebuild()
+        let requests = environment.requests
+        bag.replace(Self.certificateKey) { [weak self] in
+            let file = try? await requests.trainingCertificate(requestId: request.id)
+            guard let self, !Task.isCancelled else { return }
+            self.openingCertificate = false
+            if let file {
+                self.certificate = file
+            } else {
+                self.feedback.show(TasksStrings.text("tasks.review.certificateFailed"))
+            }
+            self.rebuild()
+        }
+    }
+
+    func closeCertificate() {
+        certificate = nil
         rebuild()
     }
 
@@ -198,14 +165,21 @@ final class RequestsModel {
 
     /// Sends the confirmed decision. Both sheets close at once; the list already shows the result.
     func confirm() {
-        guard let decision = state.confirming else { return }
+        guard let decision = state.confirming, state.canConfirm else { return }
+        let training: TrainingDecision? =
+            if decision.item.request.kind == .trainingCredit, let revision = state.training.value?.revision {
+                TrainingDecision(revision: revision, reason: reason.trimmingCharacters(in: .whitespacesAndNewlines))
+            } else {
+                nil
+            }
         reviewingId = nil
         confirming = nil
+        reason = ""
         rebuild()
         let requests = environment.requests
         bag.run { [weak self] in
             do {
-                try await requests.decide(decision.item.request, approve: decision.approve)
+                try await requests.decide(decision.item.request, approve: decision.approve, training: training)
                 let who = decision.item.request.requesterName
                 self?.feedback.show(
                     TasksStrings.format(decision.approve ? "tasks.decided.approved" : "tasks.decided.rejected", who)
@@ -234,6 +208,54 @@ final class RequestsModel {
 
     // MARK: Private
 
+    private static let detailsKey = "details"
+    private static let certificateKey = "certificate"
+
+    private func loadDetails(_ request: ChangeRequest) {
+        let requests = environment.requests
+        bag.replace(Self.detailsKey) { [weak self] in
+            if request.kind == .trainingCredit {
+                let credit = try? await requests.trainingCredit(requestId: request.id)
+                guard let self, !Task.isCancelled else { return }
+                self.training = credit.map { Loadable<TrainingCredit>.ready($0) } ?? .failed
+                self.rebuild()
+            } else if request.kind.isTimeOff {
+                await self?.loadLeaveZone()
+                guard let timeOff = request.timeOff, let employee = request.requesterId else {
+                    guard let self, !Task.isCancelled else { return }
+                    self.balance = .ready(nil)
+                    self.rebuild()
+                    return
+                }
+                let result: Loadable<BalanceChange?>
+                do {
+                    let balance = try await requests.leaveBalance(
+                        employeeId: employee,
+                        leaveTypeId: timeOff.leaveTypeId
+                    )
+                    let cancelling = request.kind == .timeOffCancellation
+                    result = .ready(RequestItems.balance(balance, timeOff: timeOff, cancellation: cancelling))
+                } catch {
+                    result = .failed
+                }
+                guard let self, !Task.isCancelled else { return }
+                // A reviewer who may not see balances gets nil; a failed load offers a retry.
+                self.balance = result
+                self.rebuild()
+            }
+        }
+    }
+
+    /// Asked once: reviewers who aren't leave administrators can't read it, and the answer won't change.
+    private func loadLeaveZone() async {
+        guard !leaveZoneAsked else { return }
+        leaveZoneAsked = true
+        if let zone = await environment.requests.leaveZone() {
+            leaveZone = zone
+            rebuild()
+        }
+    }
+
     private func load(refreshing: Bool) async {
         isRefreshing = refreshing
         waitingFailed = false
@@ -244,6 +266,9 @@ final class RequestsModel {
             waitingFailed = true
         }
         await loadMine()
+        // Cards word partial days in the leave zone too, so it loads with the lists.
+        let all = (waiting ?? []) + (mine.value ?? [])
+        if all.contains(where: { $0.timeOff?.partialDay == true }) { await loadLeaveZone() }
         isRefreshing = false
         rebuild()
     }
@@ -261,46 +286,25 @@ final class RequestsModel {
     private func rebuild() {
         let zone = environment.calendar.scheduleTimeZone().zone
         let today = CalendarDate(environment.clock.now, in: zone)
-        let items = waiting?.map { Self.item($0, zone: zone, today: today) }
+        // Partial days are told in the agency's leave zone, as on the web; the person's own zone
+        // stands in when the leave settings can't be read.
+        let leave = leaveZone ?? zone
+        let items = waiting?.map { RequestItems.item($0, zone: zone, leaveZone: leave, today: today) }
         var next = RequestsScreenState()
         next.waiting =
             if let items { .ready(items) } else if waitingFailed { .failed } else { .loading }
-        next.mine = mine.map { $0.map { Self.item($0, zone: zone, today: today) } }
+        next.mine = mine.map { $0.map { RequestItems.item($0, zone: zone, leaveZone: leave, today: today) } }
         // A request decided elsewhere closes its sheet instead of offering a stale review.
         next.reviewing = reviewingId.flatMap { id in items?.first { $0.id == id } }
         next.confirming = confirming.flatMap { pick in
             items?.first { $0.id == pick.id }.map { Decision(item: $0, approve: pick.approve) }
         }
         next.isRefreshing = isRefreshing
+        next.balance = balance
+        next.training = training
+        next.reason = reason
+        next.openingCertificate = openingCertificate
+        next.certificate = certificate
         if next != state { state = next }
-    }
-
-    static func item(_ request: ChangeRequest, zone: TimeZone, today: CalendarDate) -> RequestItem {
-        RequestItem(
-            request: request,
-            asked: request.requestedAt.map { TaskFormat.moment($0, zone: zone, today: today) },
-            change: change(request, today: today),
-            due: TaskFormat.due(request.currentDue, today: today)
-        )
-    }
-
-    static func change(_ request: ChangeRequest, today: CalendarDate) -> RequestChange {
-        switch request.kind {
-        case .moreTime:
-            guard let to = request.requestedDue else { return .other }
-            let later = request.currentDue.map { $0.days(until: to) }.flatMap { $0 > 0 ? $0 : nil }
-            return .dueMove(
-                from: request.currentDue.map { TaskFormat.date($0, today: today) },
-                to: TaskFormat.date(to, today: today),
-                daysLater: later
-            )
-        case .delay:
-            guard let start = request.delayStart, let end = request.delayEnd else { return .other }
-            return .delayWindow(start: TaskFormat.date(start, today: today), end: TaskFormat.date(end, today: today))
-        case .closure:
-            return .closure
-        case .other:
-            return .other
-        }
     }
 }
