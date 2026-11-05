@@ -18,6 +18,7 @@
 
         @Environment(\.dataEnvironment) private var data
         @State private var model: TaskFileModel?
+        @State private var sharing: SharedFile?
 
         public init(taskID: Int, attachmentID: Int) {
             self.taskID = taskID
@@ -34,7 +35,10 @@
             }
             .background(Palette.background)
             .navigationTitle(title)
-            .waiveraTopBar(title)
+            .waiveraTopBar(title, actions: actions)
+            .sheet(item: $sharing) { file in
+                FileShareSheet(url: file.url)
+            }
             .task {
                 guard model == nil, let data else { return }
                 let created = TaskFileModel(taskId: taskID, attachmentId: attachmentID, environment: data)
@@ -43,10 +47,45 @@
             }
         }
 
+        private var actions: [TopBarAction] {
+            guard let model, model.bytes != nil else { return [] }
+            return [
+                TopBarAction(
+                    id: "share",
+                    systemImage: "square.and.arrow.up",
+                    accessibilityLabel: TasksStrings.text("tasks.file.share")
+                ) {
+                    sharing = model.exportCopy().map(SharedFile.init)
+                }
+            ]
+        }
+
         private var title: String {
             guard let name = model?.name, !name.isEmpty else { return TasksStrings.text("tasks.file.viewer") }
             return name
         }
+    }
+
+    struct SharedFile: Identifiable {
+        let url: URL
+        var id: URL { url }
+    }
+
+    /// The system share sheet (Save to Files, AirDrop, Mail, another app). The copy it was given
+    /// is removed when it closes, whether or not it was sent.
+    struct FileShareSheet: UIViewControllerRepresentable {
+        let url: URL
+
+        func makeUIViewController(context: Context) -> UIActivityViewController {
+            let controller = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+            let folder = url.deletingLastPathComponent()
+            controller.completionWithItemsHandler = { _, _, _, _ in
+                try? FileManager.default.removeItem(at: folder)
+            }
+            return controller
+        }
+
+        func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
     }
 
     #if DEBUG

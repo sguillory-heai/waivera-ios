@@ -127,3 +127,12 @@ struct ApprovalReviewModelTests {
         #expect(model.state.confirming?.item.confirmation(approve: true).title == "Approve time off?")
     }
 }
+
+struct FileShareNameTests {
+    @Test func sharedNamesKeepNoPathCharactersAndNeverOnlyDots() {
+        #expect(TaskFileModel.safeName("care/plan:2026?.pdf") == "care-plan-2026-.pdf")
+        #expect(TaskFileModel.safeName("..") == "file")
+        #expect(TaskFileModel.safeName("  ") == "file")
+        #expect(TaskFileModel.safeName(String(repeating: "a", count: 200)).count == 120)
+    }
+}

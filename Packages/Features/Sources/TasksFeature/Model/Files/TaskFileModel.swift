@@ -85,6 +85,8 @@ final class TaskFileModel {
     private(set) var name = ""
     private(set) var kind: FileKind?
     private(set) var phase = FilePhase.loading
+    /// The file's bytes once shown, for Share or save.
+    private(set) var bytes: Data?
 
     @ObservationIgnored let taskId: Int
     @ObservationIgnored let attachmentId: Int
@@ -122,13 +124,45 @@ final class TaskFileModel {
             phase = .failed
             return
         }
+        self.bytes = bytes
         phase = .ready(content)
+    }
+
+    /// A copy under the file's own name for the share sheet, in a folder of its own that the
+    /// sheet removes when it closes (Android `TaskFileExport`).
+    func exportCopy() -> URL? {
+        guard let bytes else { return nil }
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let file = folder.appendingPathComponent(Self.safeName(name))
+        do {
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            #if os(iOS)
+                try bytes.write(to: file, options: [.atomic, .completeFileProtection])
+            #else
+                try bytes.write(to: file, options: .atomic)
+            #endif
+            return file
+        } catch {
+            try? FileManager.default.removeItem(at: folder)
+            return nil
+        }
     }
 
     /// The task on the web, where every file opens; nil when no web app is configured.
     var webURL: URL? {
         webPath.flatMap { TasksWeb.url($0, base: environment.webBaseURL) }
     }
+
+    /// A file name any app accepts: no path characters, never empty or dots alone.
+    nonisolated static func safeName(_ name: String) -> String {
+        let blocked = CharacterSet(charactersIn: "\\/:*?\"<>|").union(.controlCharacters)
+        let cleaned = String(name.unicodeScalars.map { blocked.contains($0) ? "-" : Character($0) })
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .prefix(maxNameLength)
+        return cleaned.isEmpty || cleaned.allSatisfy { $0 == "." } ? "file" : String(cleaned)
+    }
+
+    nonisolated static let maxNameLength = 120
 
     /// Off the main actor: inflating and parsing a Word file can take a moment.
     @concurrent
