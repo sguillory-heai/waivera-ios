@@ -7,6 +7,7 @@
         let model: TaskDetailModel
         let onOpenFile: (Int, Int) -> Void
         var onOpenTask: (Int) -> Void = { _ in }
+        var onOpenParticipant: (Int) -> Void = { _ in }
 
         @Environment(\.openURL) private var openURL
 
@@ -35,7 +36,8 @@
                     review: ReviewBarActions(
                         start: { model.startReview($0) },
                         reject: { model.review.startReject() }
-                    )
+                    ),
+                    openParticipant: onOpenParticipant
                 ),
                 onRefresh: { [model] in await model.refresh() }
             )

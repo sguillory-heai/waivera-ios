@@ -223,6 +223,7 @@ private struct LiveWiring {
             requests: requests,
             uploads: uploads,
             review: LiveTaskReviewRepository(api: services.api),
+            participants: LiveParticipantsRepository(api: services.api, context: context),
             links: LiveLinkLookupRepository(api: services.api),
             clock: services.clock,
             webBaseURL: services.webBaseURL,

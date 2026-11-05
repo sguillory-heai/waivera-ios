@@ -48,6 +48,7 @@ enum TaskMapping {
             due: date(dto.effectiveEndDate ?? dto.endDate),
             assignedBy: name(dto.reporter),
             about: about(dto.participant, dto.subjectEmployee),
+            participantId: participantId(dto.participant),
             webPath: "/task/\(key)",
             assigneeName: name(assignee(dto.assignee, dto.assignees)),
             isClientTask: dto.taskContext?.trimmingCharacters(in: .whitespaces).lowercased() != employeeContext,
@@ -161,10 +162,20 @@ enum TaskMapping {
     }
 
     private static func about(_ participant: TaskParticipantResponse?, _ employee: TaskUserResponse?) -> String? {
+        participantName(participant) ?? name(employee)
+    }
+
+    /// Only when About names the participant; a nameless one falls back to the employee's name.
+    private static func participantId(_ participant: TaskParticipantResponse?) -> Int? {
+        guard let id = participant?.id, id > 0, participantName(participant) != nil else { return nil }
+        return id
+    }
+
+    private static func participantName(_ participant: TaskParticipantResponse?) -> String? {
         let joined = [trimmed(participant?.firstName), trimmed(participant?.lastName)]
             .compactMap(\.self)
             .joined(separator: " ")
-        return joined.isEmpty ? name(employee) : joined
+        return joined.isEmpty ? nil : joined
     }
 
     /// Some system types are stored in capitals (`PHONE CALL`); people read them in sentence case.

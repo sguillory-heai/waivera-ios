@@ -62,7 +62,7 @@
                         TasksStrings.text("tasks.detail.section"),
                         first: state.pending == nil && state.delay == nil
                     )
-                    TaskFacts(state: state, task: task)
+                    TaskFacts(state: state, task: task, onOpenParticipant: actions.openParticipant)
                         .padding(.horizontal, Spacing.gutter)
                     if let description = task.description, !description.isEmpty {
                         TaskSectionTitle(TasksStrings.text("tasks.detail.description"))

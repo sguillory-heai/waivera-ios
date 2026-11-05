@@ -186,6 +186,8 @@ public struct TaskDetail: Sendable, Hashable, Identifiable {
     public var due: CalendarDate?
     public var assignedBy: String?
     public var about: String?
+    /// The participant the task is about, whose profile opens from About.
+    public var participantId: Int?
     /// The web app's page for the task, relative to the configured web base.
     public var webPath: String
     public var assigneeName: String?
@@ -212,6 +214,7 @@ public struct TaskDetail: Sendable, Hashable, Identifiable {
         due: CalendarDate? = nil,
         assignedBy: String? = nil,
         about: String? = nil,
+        participantId: Int? = nil,
         webPath: String,
         assigneeName: String? = nil,
         isClientTask: Bool = true,
@@ -231,6 +234,7 @@ public struct TaskDetail: Sendable, Hashable, Identifiable {
         self.due = due
         self.assignedBy = assignedBy
         self.about = about
+        self.participantId = participantId
         self.webPath = webPath
         self.assigneeName = assigneeName
         self.isClientTask = isClientTask

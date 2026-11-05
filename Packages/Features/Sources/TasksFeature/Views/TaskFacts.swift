@@ -8,6 +8,7 @@
     struct TaskFacts: View {
         let state: TaskDetailScreenState
         let task: TaskDetail
+        var onOpenParticipant: (Int) -> Void = { _ in }
 
         var body: some View {
             SheetCardGroup {
@@ -31,9 +32,7 @@
                     }
                     if let about = task.about {
                         InsetDivider()
-                        FactRow(systemImage: "person", label: TasksStrings.text("tasks.field.about")) {
-                            FactValue(text: about)
-                        }
+                        aboutRow(about)
                     }
                     if let type = task.type {
                         InsetDivider()
@@ -55,6 +54,26 @@
                     }
                 }
                 .padding(.vertical, Spacing.mediumSmall)
+            }
+        }
+
+        /// About opens the participant's profile on a client task, in the participant teal.
+        @ViewBuilder private func aboutRow(_ about: String) -> some View {
+            if let participant = task.participantId {
+                Button {
+                    onOpenParticipant(participant)
+                } label: {
+                    FactRow(systemImage: "person", label: TasksStrings.text("tasks.field.about"), tone: .teal) {
+                        FactValue(text: about)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.press(.card))
+                .accessibilityHint(Text(TasksStrings.format("tasks.participant.open", about)))
+            } else {
+                FactRow(systemImage: "person", label: TasksStrings.text("tasks.field.about")) {
+                    FactValue(text: about)
+                }
             }
         }
 

@@ -60,6 +60,9 @@ public final class FakeTasksRepository: TasksRepository, @unchecked Sendable {
         )
     }
 
+    /// The demo casework about one participant, for their profile.
+    func casework(about name: String) -> [TaskSummary] { casework.filter { $0.about == name } }
+
     public func task(id: Int) async throws -> TaskDetail {
         calls.record("task:\(id)")
         try check()
@@ -75,6 +78,7 @@ public final class FakeTasksRepository: TasksRepository, @unchecked Sendable {
             due: row.due,
             assignedBy: "Dana Cole",
             about: row.about,
+            participantId: casework.contains(row) ? row.about.flatMap { FakeParticipantsRepository.demoIds[$0] } : nil,
             webPath: "/task/\(row.key)",
             assigneeName: row.assigneeName,
             isClientTask: casework.contains(row),

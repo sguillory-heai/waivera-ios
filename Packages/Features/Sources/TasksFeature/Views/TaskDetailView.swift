@@ -13,27 +13,36 @@
         let taskID: Int
         let onOpenFile: (_ taskID: Int, _ attachmentID: Int) -> Void
         let onOpenTask: (_ taskID: Int) -> Void
+        let onOpenParticipant: (_ participantID: Int) -> Void
 
         @Environment(\.dataEnvironment) private var data
         @Environment(\.openURL) private var openURL
         @State private var model: TaskDetailModel?
 
         /// `onOpenFile` pushes the read-only file viewer for a file the phone can show;
-        /// `onOpenTask` pushes a related task that holds this one up.
+        /// `onOpenTask` pushes a related task that holds this one up; `onOpenParticipant` pushes
+        /// the participant a client task is about.
         public init(
             taskID: Int,
             onOpenFile: @escaping (_ taskID: Int, _ attachmentID: Int) -> Void = { _, _ in },
-            onOpenTask: @escaping (_ taskID: Int) -> Void = { _ in }
+            onOpenTask: @escaping (_ taskID: Int) -> Void = { _ in },
+            onOpenParticipant: @escaping (_ participantID: Int) -> Void = { _ in }
         ) {
             self.taskID = taskID
             self.onOpenFile = onOpenFile
             self.onOpenTask = onOpenTask
+            self.onOpenParticipant = onOpenParticipant
         }
 
         public var body: some View {
             Group {
                 if let model {
-                    TaskDetailScreen(model: model, onOpenFile: onOpenFile, onOpenTask: onOpenTask)
+                    TaskDetailScreen(
+                        model: model,
+                        onOpenFile: onOpenFile,
+                        onOpenTask: onOpenTask,
+                        onOpenParticipant: onOpenParticipant
+                    )
                 } else {
                     Palette.background
                 }

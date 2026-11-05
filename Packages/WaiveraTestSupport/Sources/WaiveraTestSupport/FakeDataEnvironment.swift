@@ -46,6 +46,7 @@ public struct FakeDataEnvironment: Sendable {
     public let requests: FakeRequestsRepository
     public let uploads: FakeTaskUploadsRepository
     public let review: FakeTaskReviewRepository
+    public let participants: FakeParticipantsRepository
     public let links: FakeLinkLookupRepository
     public let environment: DataEnvironment
 
@@ -127,6 +128,7 @@ public struct FakeDataEnvironment: Sendable {
         requests.failure.update { $0 = controls.failure }
         uploads.failure.update { $0 = controls.failure }
         links.failure.update { $0 = controls.failure }
+        participants.failure.update { $0 = controls.failure }
     }
 
     private init(
@@ -172,6 +174,8 @@ public struct FakeDataEnvironment: Sendable {
         self.requests = requests
         self.uploads = uploads
         self.review = review
+        let participants = FakeParticipantsRepository(tasks: tasks)
+        self.participants = participants
         let links = FakeLinkLookupRepository(tasks: tasks)
         self.links = links
         environment = DataEnvironment(
@@ -195,6 +199,7 @@ public struct FakeDataEnvironment: Sendable {
             requests: requests,
             uploads: uploads,
             review: review,
+            participants: participants,
             links: links,
             clock: clock,
             webBaseURL: webBaseURL,

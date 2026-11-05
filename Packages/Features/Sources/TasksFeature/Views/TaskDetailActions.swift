@@ -13,5 +13,6 @@
         var retryFiles: () -> Void = {}
         var uploads = UploadActions()
         var review = ReviewBarActions()
+        var openParticipant: (Int) -> Void = { _ in }
     }
 #endif

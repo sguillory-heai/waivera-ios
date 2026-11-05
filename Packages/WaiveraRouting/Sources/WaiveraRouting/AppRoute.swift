@@ -29,6 +29,8 @@ public enum AppRoute: Codable, Hashable, Sendable {
     case taskFile(taskID: Int, attachmentID: Int)
     /// Change requests waiting on the person and their own.
     case requests
+    /// A participant's read-only profile; `participantID` is the server's participant id.
+    case participant(participantID: Int)
     // Avatar menu
     case profile
     case organization
