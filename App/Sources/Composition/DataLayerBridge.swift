@@ -21,7 +21,10 @@ enum DataLayerBridge {
             // The cache only speeds up the first frame; the app works without it.
             localStore = InMemoryLocalStore()
         }
-        let tokenStore = KeychainTokenStore()
+        // Shared with the notification extension, which reads it to fetch sender photos.
+        let tokenStore = KeychainTokenStore(
+            accessGroup: KeychainTokenStore.sharedAccessGroup(info: configuration.infoDictionary)
+        )
         let keyValueStore = UserDefaultsKeyValueStore()
         // Before anything reads the session: a reinstall never signs the previous person in (IS-01).
         FirstLaunchGuard.run(defaults: keyValueStore, tokenStore: tokenStore)

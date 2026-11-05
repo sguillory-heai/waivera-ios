@@ -4,6 +4,7 @@ included:
   - WaiveraUITests
   - WaiveraSnapshotTests
   - WaiveraTests
+  - NotificationService
 excluded:
   - Packages/*/.build
   - Packages/*/Package.swift

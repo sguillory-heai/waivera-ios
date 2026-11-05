@@ -99,6 +99,10 @@ targets:
         product: FirebaseCore
       - package: Firebase
         product: FirebaseMessaging
+      # Sender photos on chat pushes (WAIV-2939, approved by Sheldon 2026-11-05).
+      - target: WaiveraNotificationService
+        embed: true
+        codeSign: true
     postBuildScripts:
       # Runs before code signing. Release never reads the fixture bundle (sample names and
       # messages for previews and the fake server), so it is not shipped (IS-09).
@@ -139,6 +143,11 @@ targets:
         WaiveraFirebaseAppID: $(WAIVERA_FIREBASE_APP_ID)
         WaiveraFirebaseSenderID: $(WAIVERA_FIREBASE_SENDER_ID)
         WaiveraFirebaseProjectID: $(WAIVERA_FIREBASE_PROJECT_ID)
+        # The keychain group the session shares with the notification extension. Without a team
+        # (simulator, unsigned builds) the value is not a group and the session stays private.
+        WaiveraKeychainGroup: $(DEVELOPMENT_TEAM).com.waivera.waivera.shared
+        # The notification extension marks chat pushes as messages so iOS shows the sender's image.
+        NSUserActivityTypes: [INSendMessageIntent]
         # Only the system's HTTPS and Keychain encryption, which export rules exempt, so App Store
         # Connect does not ask the export compliance question on each upload.
         ITSAppUsesNonExemptEncryption: false
@@ -177,6 +186,42 @@ targets:
         # Release runs that phase; Debug keeps the sandbox.
         Release:
           ENABLE_USER_SCRIPT_SANDBOXING: NO
+
+  # Adds the sender's photo, or their tile, to chat pushes as a communication notification
+  # (WAIV-2939). Reads the session from the shared keychain group; never writes it.
+  WaiveraNotificationService:
+    type: app-extension
+    platform: iOS
+    sources:
+      - NotificationService/Sources
+    configFiles:
+      Debug: Config/Debug.xcconfig
+      Release: Config/Release.xcconfig
+    dependencies:
+      - package: WaiveraAPI
+      - package: WaiveraNotifications
+        product: WaiveraNotifications
+      - package: WaiveraDesign
+        product: WaiveraDesignTokens
+    info:
+      path: NotificationService/Info.plist
+      properties:
+        CFBundleDisplayName: Waivera
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.usernotifications.service
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).NotificationService
+        WaiveraAPIBaseURL: $(WAIVERA_API_BASE_URL)
+        WaiveraFirebaseAPIKey: $(WAIVERA_FIREBASE_API_KEY)
+        WaiveraKeychainGroup: $(DEVELOPMENT_TEAM).com.waivera.waivera.shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.waivera.waivera.NotificationService
+        PRODUCT_NAME: WaiveraNotificationService
+        GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS: NotificationService/NotificationService.entitlements
+        SKIP_INSTALL: YES
 
   WaiveraUITests:
     type: bundle.ui-testing

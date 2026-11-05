@@ -126,7 +126,7 @@ jobs:
         continue-on-error: true
         run: |
           set -o pipefail
-          xcrun swift-format lint --strict -r App Packages WaiveraTests WaiveraUITests WaiveraSnapshotTests 2>&1 \
+          xcrun swift-format lint --strict -r App Packages WaiveraTests WaiveraUITests WaiveraSnapshotTests NotificationService 2>&1 \
             | tee swift-format.log
       - name: Generate project
         id: xcodegen
@@ -554,16 +554,29 @@ jobs:
             CURRENT_PROJECT_VERSION="$BUILD_NUMBER" "${version_setting[@]}" 2>&1 \
             | tee device-build.log | grep -E "error:|\*\* ARCHIVE" || true
           test -d "$ARCHIVE"
-      - name: Carry the push entitlement into the archive
+      - name: Carry the entitlements into the archive
         if: inputs.mode == 'testflight'
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           app="$ARCHIVE/Products/Applications/Waivera.app"
+          appex="$app/PlugIns/WaiveraNotificationService.appex"
+          # The entitlement files name the keychain group by $(DEVELOPMENT_TEAM), which only
+          # Xcode's own signing expands; this ad-hoc pass needs the real team.
+          resolve() { sed "s/\$(DEVELOPMENT_TEAM)/$APPLE_TEAM_ID/g" "$1" > "$2"; }
+          resolve App/Waivera.entitlements "$RUNNER_TEMP/app.entitlements"
+          resolve NotificationService/NotificationService.entitlements "$RUNNER_TEMP/nse.entitlements"
           if [ -d "$app/Frameworks" ]; then
             find "$app/Frameworks" -maxdepth 1 \( -name '*.framework' -o -name '*.dylib' \) \
               -exec codesign --force --sign - {} \;
           fi
-          codesign --force --sign - --entitlements App/Waivera.entitlements "$app"
+          # Nested code first: signing the app seals what is inside it.
+          test -d "$appex"
+          codesign --force --sign - --entitlements "$RUNNER_TEMP/nse.entitlements" "$appex"
+          codesign --force --sign - --entitlements "$RUNNER_TEMP/app.entitlements" "$app"
           codesign -d --entitlements - --xml "$app" | grep -q aps-environment
+          codesign -d --entitlements - --xml "$appex" | grep -q "$APPLE_TEAM_ID.com.waivera.waivera.shared"
+          /usr/libexec/PlistBuddy -c "Print :WaiveraKeychainGroup" "$appex/Info.plist" | grep -q "^$APPLE_TEAM_ID\."
       - name: Upload to TestFlight
         if: inputs.mode == 'testflight'
         timeout-minutes: 20

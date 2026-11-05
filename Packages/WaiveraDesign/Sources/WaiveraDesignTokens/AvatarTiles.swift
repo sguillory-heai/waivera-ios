@@ -1,7 +1,7 @@
 /// The fallback avatar for someone without a photo (Android `AvatarTiles`, tile B): white
 /// initials on one of six on-brand gradients picked from the name, so a person keeps the same
 /// colours on every screen and on both platforms, with a soft sheen across the top and a faint
-/// inner edge. Notifications keep the app icon on iOS (WAIV-2939), so only the app draws these.
+/// inner edge. The notification extension draws the same tile for chat pushes (WAIV-2939).
 public enum AvatarTiles {
     /// Gradient start (top leading) and end (bottom trailing) of each tile colour.
     public static let pairs: [(start: RGBColor, end: RGBColor)] = [

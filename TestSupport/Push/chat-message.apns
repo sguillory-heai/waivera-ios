@@ -13,5 +13,6 @@
   "type": "chat",
   "conversationId": "42",
   "messageId": "1001",
+  "senderId": "demo-jordan-lee",
   "url": "/chats/42"
 }

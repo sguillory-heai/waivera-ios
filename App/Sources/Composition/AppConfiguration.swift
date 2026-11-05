@@ -15,6 +15,8 @@ struct AppConfiguration: Sendable {
         case firebaseProjectID = "WaiveraFirebaseProjectID"
         /// Sent to Firebase Auth so its API key can be restricted to this app (IS-10).
         case bundleIdentifier = "CFBundleIdentifier"
+        /// The keychain group the session shares with the notification extension (WAIV-2939).
+        case keychainGroup = "WaiveraKeychainGroup"
     }
 
     /// Firebase Messaging options; `nil` when any value is missing, and then Firebase is not configured.
