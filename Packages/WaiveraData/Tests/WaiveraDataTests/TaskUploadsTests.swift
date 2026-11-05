@@ -169,7 +169,7 @@ struct TaskUploadsTests {
         where test: @escaping @Sendable ([TaskUpload]) -> Bool
     ) async -> [TaskUpload]? {
         let stream = repository.uploads(taskId: 12)
-        await withTaskGroup(of: [TaskUpload]?.self) { group in
+        return await withTaskGroup(of: [TaskUpload]?.self) { group in
             group.addTask {
                 for await value in stream where test(value) { return value }
                 return nil

@@ -116,9 +116,8 @@
                 )
                 .tasksListRow()
             case .content:
-                ForEach(state.sections) { section in
+                ForEach(state.sections, id: \.group) { section in
                     TaskGroupHeader(section: section)
-                        .id(SectionAnchor(group: section.group))
                         .padding(.horizontal, Spacing.gutter)
                         .padding(.top, Spacing.medium)
                         .padding(.bottom, Spacing.extraSmall)
@@ -134,9 +133,13 @@
                             actions.showMore(section.group)
                         } onShowFewer: {
                             actions.showFewer(section.group)
-                            // Folding a long section would leave the person far below it; bring its header back.
-                            withAnimation(Motion.animation(.layout, reduceMotion: reduceMotion)) {
-                                proxy.scrollTo(SectionAnchor(group: section.group), anchor: .top)
+                            // Folding a long section would leave the person far below it; bring its
+                            // first rows back. Rows scroll by their own ids: an explicit id on the
+                            // header row inside this ForEach mixed up which section a List row showed.
+                            if let first = section.rows.first?.id {
+                                withAnimation(Motion.animation(.layout, reduceMotion: reduceMotion)) {
+                                    proxy.scrollTo(first, anchor: .center)
+                                }
                             }
                         }
                         .padding(.horizontal, Spacing.gutter)
@@ -145,10 +148,6 @@
                     }
                 }
             }
-        }
-
-        private struct SectionAnchor: Hashable {
-            let group: DueGroup
         }
 
         private func windowTitle(_ window: TaskWindow) -> String {

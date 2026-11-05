@@ -214,6 +214,38 @@ struct TasksModelTests {
         #expect(model.state.meta == "2 matches")
     }
 
+    @Test func overdueAndDelayedEachHoldTheirOwnTasks() async {
+        let fakes = FakeDataEnvironment.make(.empty)
+        let today = DemoData.today
+        fakes.tasks.extraCasework.update {
+            $0 = (1...12).map { index in
+                TaskSummary(
+                    id: 9000 + index,
+                    key: "HEA-\(9000 + index)",
+                    title: index <= 4 ? "Late \(index)" : "Held \(index)",
+                    due: today.adding(days: -60 + index),
+                    state: .notStarted,
+                    about: nil,
+                    delayed: index > 4,
+                    delayedThrough: index > 4 ? today.adding(days: 3) : nil
+                )
+            }
+        }
+        // The delayed list answers first, as a shorter query often does on the phone.
+        fakes.tasks.latency.update { $0 = { slice in slice?.delayed == true ? .zero : .milliseconds(150) } }
+        let model = TasksModel(environment: fakes.environment, firstWeekday: 1)
+        let run = Task { await model.run() }
+        defer { run.cancel() }
+        model.setWindow(.overdue)
+        #expect(await eventually { model.state.phase == .content && model.state.sections.count == 2 })
+        let sections = model.state.sections
+        #expect(sections.map(\.group) == [.overdue, .delayed])
+        #expect(sections.first?.total == 4)
+        #expect(sections.first?.rows.allSatisfy { !$0.delayed } == true)
+        #expect(sections.last?.total == 8)
+        #expect(sections.last?.rows.allSatisfy(\.delayed) == true)
+    }
+
     @Test func aSectionCountsTheServerTotalAndOpensTenMoreInPlace() async {
         let fakes = FakeDataEnvironment.make()
         let today = DemoData.today

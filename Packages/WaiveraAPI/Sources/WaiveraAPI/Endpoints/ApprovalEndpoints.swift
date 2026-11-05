@@ -1,5 +1,9 @@
 import Foundation
 
+#if canImport(FoundationNetworking)
+    import FoundationNetworking
+#endif
+
 /// Deciding every admin request type and asking for time off: `TimeOffController.cs`,
 /// `AdmininistrativeTransactionController.cs` (profile changes), `LeaveManagementController.cs`
 /// and `TrainingExternalController.cs`. The server re-checks who may decide each one.

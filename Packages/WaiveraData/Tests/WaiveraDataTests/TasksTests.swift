@@ -1,4 +1,8 @@
 import Foundation
+
+#if canImport(FoundationNetworking)
+    import FoundationNetworking
+#endif
 import Testing
 import WaiveraAPI
 
@@ -77,6 +81,48 @@ struct TasksTests {
         #expect(!url.contains("taskDelayFilter"))
         #expect(!url.contains("includePendingApprovals"))
         #expect(url.contains("page=2"))
+    }
+
+    @Test func eachSectionAsksForItsOwnDelaysAndDays() async throws {
+        let (repository, _, transport) = await make()
+        let yesterday = CalendarDate(year: 2026, month: 11, day: 4)
+        let query = TaskQuery(scope: .casework, window: .overdue)
+        var overdue = query
+        overdue.slice = TaskSlice(dueTo: yesterday)
+        var delayed = query
+        delayed.slice = TaskSlice(delayed: true)
+        _ = try await repository.tasks(overdue, page: 1, pageSize: 5)
+        let first = await transport.requests.last?.url?.absoluteString ?? ""
+        _ = try await repository.tasks(delayed, page: 1, pageSize: 5)
+        let second = await transport.requests.last?.url?.absoluteString ?? ""
+        #expect(first.contains("taskDelayFilter=without-delays"))
+        #expect(first.contains("dateRangeEnd=2026-11-04"))
+        #expect(first.contains("pageSize=5"))
+        #expect(second.contains("taskDelayFilter=delayed"))
+        #expect(!second.contains("dateRange"))
+    }
+
+    @Test func sectionsAskedTogetherEachGetTheirOwnAnswer() async throws {
+        let transport = SlowTaskTransport()
+        let context = SessionContext(user: me)
+        let api = APIClient(baseURL: testBaseURL, transport: transport, tokens: FakeAuth())
+        let requests = LiveRequestsRepository(api: api, context: context)
+        let repository = LiveTasksRepository(api: api, context: context, requests: requests)
+        let query = TaskQuery(scope: .casework, window: .overdue)
+        var overdueQuery = query
+        overdueQuery.slice = TaskSlice(dueTo: CalendarDate(year: 2026, month: 11, day: 4))
+        var delayedQuery = query
+        delayedQuery.slice = TaskSlice(delayed: true)
+        let overdue = overdueQuery
+        let delayed = delayedQuery
+        let pages = await withTaskGroup(of: (Int, Int?).self) { group in
+            group.addTask { (0, try? await repository.tasks(overdue, page: 1, pageSize: 5).totalCount) }
+            group.addTask { (1, try? await repository.tasks(delayed, page: 1, pageSize: 5).totalCount) }
+            var all: [(Int, Int?)] = []
+            for await page in group { all.append(page) }
+            return all.sorted { $0.0 < $1.0 }.map(\.1)
+        }
+        #expect(pages == [48, 81])
     }
 
     @Test func countsLeaveDelaysOutOfOverdue() async throws {
@@ -415,5 +461,20 @@ struct RequestsTests {
         await repository.reset()
         #expect((await latest(repository.waiting()) ?? nil) == nil)
         #expect(await repository.currentAccess().loaded == false)
+    }
+}
+
+/// Answers a task list by its delay filter, the delayed list first, like a short query on a phone.
+actor SlowTaskTransport: HTTPTransport {
+    func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+        let url = request.url?.absoluteString ?? ""
+        var body = #"{"data":{"roles":{"employeeRoles":[]},"rolePolicies":[]},"success":true}"#
+        if url.contains("tasks/user") {
+            let delayed = url.contains("taskDelayFilter=delayed")
+            if !delayed { try? await Task.sleep(for: .milliseconds(100)) }
+            body = #"{"tasks":[],"totalCount":\#(delayed ? 81 : 48)}"#
+        }
+        let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+        return (Data(body.utf8), response)
     }
 }

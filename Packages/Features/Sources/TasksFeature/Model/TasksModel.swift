@@ -352,39 +352,40 @@ final class TasksModel {
             self.rebuild()
         }
         let first = TasksRules.sectionFirst
-        let results = await withTaskGroup(of: (Int, Result<TaskPage, any Error>).self) { taskGroup in
-            for (index, (group, slice)) in plan.enumerated() {
+        // Each answer comes back with its own group, so nothing depends on the order they arrive in.
+        let answers = await withTaskGroup(of: (DueGroup, Result<TaskPage, any Error>).self) { taskGroup in
+            for (group, slice) in plan {
                 let sliced = request.sliced(slice)
-                // Whole pages of `sectionFirst`, so a later Show more continues on the page after.
+                // Whole pages of `sectionFirst`, as open as the section was before.
                 let size = ((previous[group] ?? first) + first - 1) / first * first
                 taskGroup.addTask {
                     do {
-                        return (index, .success(try await tasks.tasks(sliced, page: 1, pageSize: size)))
+                        return (group, .success(try await tasks.tasks(sliced, page: 1, pageSize: size)))
                     } catch {
-                        return (index, .failure(error))
+                        return (group, .failure(error))
                     }
                 }
             }
-            var collected: [(Int, Result<TaskPage, any Error>)] = []
-            for await result in taskGroup { collected.append(result) }
-            return collected.sorted { $0.0 < $1.0 }.map { $0.1 }
+            var collected: [DueGroup: Result<TaskPage, any Error>] = [:]
+            for await (group, result) in taskGroup { collected[group] = result }
+            return collected
         }
         guard !Task.isCancelled, local.request == request else { return }
-        apply(results, plan: plan, previous: previous)
+        apply(answers, plan: plan, previous: previous)
         rebuild()
     }
 
     /// The list after a reload: a section that failed keeps what it showed before; the others update.
     private func apply(
-        _ results: [Result<TaskPage, any Error>],
+        _ answers: [DueGroup: Result<TaskPage, any Error>],
         plan: [(DueGroup, TaskSlice)],
         previous: [DueGroup: Int]
     ) {
         let first = TasksRules.sectionFirst
         var failure: (any Error)?
         var sections: [SectionLoad] = []
-        for ((group, slice), result) in zip(plan, results) {
-            switch result {
+        for (group, slice) in plan {
+            switch answers[group] ?? .failure(WaiveraError.invalidResponse) {
             case .success(let page):
                 var seen = Set<Int>()
                 let items = page.items.filter { seen.insert($0.id).inserted }

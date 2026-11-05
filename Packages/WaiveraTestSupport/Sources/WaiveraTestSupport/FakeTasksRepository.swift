@@ -11,6 +11,8 @@ public final class FakeTasksRepository: TasksRepository, @unchecked Sendable {
     public let calls = CallLog()
     /// More casework on top of the demo rows, for long sections.
     public let extraCasework = LockedValue<[TaskSummary]>([])
+    /// How long a list call takes, by its slice, so sections can answer out of order.
+    public let latency = LockedValue<(@Sendable (TaskSlice?) -> Duration)?>(nil)
     private let casework: [TaskSummary]
     private let mine: [TaskSummary]
     private let activityLog = LockedValue<[Int: [TaskActivity]]>([:])
@@ -23,6 +25,7 @@ public final class FakeTasksRepository: TasksRepository, @unchecked Sendable {
     }
 
     public func tasks(_ query: TaskQuery, page: Int, pageSize: Int) async throws -> TaskPage {
+        if let wait = latency.get()?(query.slice) { try? await Task.sleep(for: wait) }
         try check()
         calls.record("tasks:\(query.slice.map(Self.describe) ?? "all"):\(page)x\(pageSize)")
         var rows = query.scope == .casework ? casework + extraCasework.get() : mine
