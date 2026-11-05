@@ -35,18 +35,22 @@ public struct TaskReviewAccess: Sendable, Hashable {
 
 public enum StepStatus: Sendable, Hashable { case completed, active, future, unknown }
 
-/// One approval stage, in order. `approverName` is who approved a completed stage.
+/// One approval stage, in order. `approverName` is who approved a completed stage; `waitingOn`
+/// is the person a stage still to come goes to, when the server knows them. `role` is already
+/// worded for people ("Case worker", never `[CASE_WORKER]`).
 public struct WorkflowStep: Sendable, Hashable {
     public var order: Int
     public var role: String?
     public var status: StepStatus
     public var approverName: String?
+    public var waitingOn: String?
 
-    public init(order: Int, role: String?, status: StepStatus, approverName: String?) {
+    public init(order: Int, role: String?, status: StepStatus, approverName: String?, waitingOn: String? = nil) {
         self.order = order
         self.role = role
         self.status = status
         self.approverName = approverName
+        self.waitingOn = waitingOn
     }
 }
 

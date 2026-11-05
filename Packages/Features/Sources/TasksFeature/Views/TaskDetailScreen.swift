@@ -24,13 +24,7 @@
                     },
                     retry: { model.load() },
                     retryActivity: { model.loadActivity() },
-                    openFile: { row in
-                        switch model.open(file: row) {
-                        case .viewer(let attachmentId): onOpenFile(model.taskId, attachmentId)
-                        case .web(let url): openURL(url)
-                        case nil: break
-                        }
-                    },
+                    openFile: { row in open(model.choose(file: row)) },
                     retryFiles: { model.loadFiles() },
                     uploads: uploadActions,
                     review: ReviewBarActions(
@@ -67,6 +61,20 @@
                     UploadSourceSheet(sheet: sheet, model: model.uploads)
                 }
             }
+            .sheet(
+                isPresented: Binding(
+                    get: { model.fileActions.sheet != nil },
+                    set: { if !$0 { model.fileActions.dismiss() } }
+                )
+            ) {
+                if let sheet = model.fileActions.sheet {
+                    TaskFileActionsSheet(sheet: sheet, model: model.fileActions) {
+                        let row = sheet.row
+                        model.fileActions.dismiss()
+                        open(model.open(file: row))
+                    }
+                }
+            }
             .taskReviewSheets(model.review, today: model.state.today) {
                 if let url = model.webURL() { openURL(url) }
             }
@@ -90,6 +98,14 @@
                 retryUpload: { uploads.retry($0) },
                 dismissUpload: { uploads.dismiss($0) }
             )
+        }
+
+        private func open(_ opening: FileOpening?) {
+            switch opening {
+            case .viewer(let attachmentId): onOpenFile(model.taskId, attachmentId)
+            case .web(let url): openURL(url)
+            case nil: break
+            }
         }
     }
 #endif

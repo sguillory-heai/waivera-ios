@@ -25,7 +25,12 @@ enum ReviewMapping {
         )
     }
 
-    static func steps(_ items: [WorkflowStepResponse]?) -> [WorkflowStep] {
+    /// The server's role for a stage with no role on a client task: the task's own case worker.
+    static let caseWorkerRole = "[CASE_WORKER]"
+
+    /// `assignee` is the task's main assignee: a stage with no role goes to them (sprout_api
+    /// `TaskService` waterfall), so the note can name them even before the server assigns it.
+    static func steps(_ items: [WorkflowStepResponse]?, assignee: String? = nil) -> [WorkflowStep] {
         (items ?? [])
             .sorted { ($0.stepOrder ?? 0) < ($1.stepOrder ?? 0) }
             .map { item in
@@ -36,13 +41,27 @@ enum ReviewMapping {
                     case "FUTURE": .future
                     default: .unknown
                     }
+                let role = TaskMapping.trimmed(item.stepRole)
+                // A pool's person is only the server's first pick among many, so the role reads truer.
+                let projected =
+                    item.projectedApprover?.isPool == true ? nil : TaskMapping.name(item.projectedApprover?.exactUser)
                 return WorkflowStep(
                     order: item.stepOrder ?? 0,
-                    role: TaskMapping.trimmed(item.stepRole),
+                    role: humanRole(role),
                     status: status,
-                    approverName: TaskMapping.name(item.actualApprover)
+                    approverName: TaskMapping.name(item.actualApprover),
+                    waitingOn: status == .completed ? nil : projected ?? (role == caseWorkerRole ? assignee : nil)
                 )
             }
+    }
+
+    /// `[CASE_WORKER]` reads "Case worker"; agency role names ("Supervisor") stay as they are.
+    static func humanRole(_ role: String?) -> String? {
+        guard let role else { return nil }
+        guard role.hasPrefix("["), role.hasSuffix("]") else { return role }
+        let words = role.dropFirst().dropLast().replacingOccurrences(of: "_", with: " ").lowercased()
+        guard let first = words.first else { return nil }
+        return first.uppercased() + words.dropFirst()
     }
 
     static func planDates(_ participant: TaskParticipantResponse?) -> PlanDates? {
@@ -153,7 +172,7 @@ enum ReviewMapping {
             return SendBackOption(
                 approvalId: id,
                 name: TaskMapping.trimmed(item.displayName) ?? "",
-                role: TaskMapping.trimmed(item.roleName)
+                role: humanRole(TaskMapping.trimmed(item.roleName))
             )
         }
     }
@@ -205,7 +224,7 @@ enum ReviewMapping {
             reviews: (dto.reviews ?? []).map { item in
                 LateReview(
                     name: TaskMapping.trimmed(item.reviewerName),
-                    role: TaskMapping.trimmed(item.reviewerRole),
+                    role: humanRole(TaskMapping.trimmed(item.reviewerRole)),
                     agreed: item.decision?.caseInsensitiveCompare(agree) == .orderedSame,
                     note: TaskMapping.trimmed(item.note)
                 )

@@ -105,6 +105,8 @@ final class TaskDetailModel {
     let uploads: TaskUploadsModel
     /// Submit, Approve and Reject with every step the web runs.
     let review: TaskReviewModel
+    /// View, save or share a tapped file.
+    let fileActions: TaskFileActionsModel
     /// Opens a related task a review step points at.
     @ObservationIgnored var onOpen: ((ReviewEffect) -> Void)?
 
@@ -140,6 +142,7 @@ final class TaskDetailModel {
         self.environment = environment
         uploads = TaskUploadsModel(taskId: taskId, environment: environment)
         review = TaskReviewModel(taskId: taskId, environment: environment)
+        fileActions = TaskFileActionsModel(taskId: taskId, environment: environment, feedback: feedback)
         rebuild()
         uploads.onFilesChanged = { [weak self] in self?.loadFiles() }
         review.onEffect = { [weak self] effect in self?.reviewEffect(effect) }
@@ -264,6 +267,14 @@ final class TaskDetailModel {
     enum FileOpening: Equatable {
         case viewer(attachmentId: Int)
         case web(URL)
+    }
+
+    /// A tap on a file: the sheet to view, save or share it when the person may download it;
+    /// otherwise straight to the viewer or the web.
+    func choose(file row: FileRow) -> FileOpening? {
+        let attachment = local.files.value?.first { $0.attachmentId == row.id }
+        if fileActions.choose(row, attachment: attachment, access: access) { return nil }
+        return open(file: row)
     }
 
     func open(file row: FileRow) -> FileOpening? {

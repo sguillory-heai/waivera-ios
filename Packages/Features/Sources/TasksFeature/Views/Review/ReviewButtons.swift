@@ -16,15 +16,17 @@
         let access: TaskReviewAccess
         let state: ReviewState
         let actions: ReviewBarActions
+        /// A short screen (iPhone SE) takes the 48pt buttons so the bar stays out of the way.
+        var compact = false
 
         @Environment(\.dynamicTypeSize) private var typeSize
 
         var body: some View {
-            VStack(spacing: Spacing.small) {
+            VStack(spacing: compact ? Spacing.extraSmall : Spacing.small) {
                 if access.canSubmit {
                     WaiveraButton(
                         TasksStrings.text("tasks.review.submit"),
-                        size: .large,
+                        size: buttonSize,
                         systemImage: "checkmark",
                         isLoading: loading(.submit),
                         loadingTitle: progress,
@@ -70,6 +72,8 @@
             return nil
         }
 
+        private var buttonSize: WaiveraButtonSize { compact ? .regular : .large }
+
         private func loading(_ action: ReviewAction) -> Bool { state.running == action && progress != nil }
 
         /// Another action is working, or this one waits behind a sheet; a loading button stays live
@@ -84,9 +88,9 @@
                         reject
                     }
                 } else {
-                    HStack(spacing: Spacing.small) {
+                    WeightedRow(weights: [1, 1.4], spacing: Spacing.small) {
                         reject
-                        approve.layoutPriority(1)
+                        approve
                     }
                 }
             } else if access.canApprove {
@@ -99,7 +103,7 @@
         private var approve: some View {
             WaiveraButton(
                 TasksStrings.text("tasks.review.approve"),
-                size: .large,
+                size: buttonSize,
                 systemImage: "checkmark",
                 isLoading: loading(.approve),
                 loadingTitle: progress,
@@ -112,7 +116,7 @@
             WaiveraButton(
                 TasksStrings.text("tasks.review.reject"),
                 variant: .destructiveOutline,
-                size: .large,
+                size: buttonSize,
                 isLoading: state.rejecting && state.step == nil,
                 loadingTitle: TasksStrings.text("tasks.review.checking"),
                 fillsWidth: true,

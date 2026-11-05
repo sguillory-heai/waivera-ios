@@ -367,6 +367,8 @@ public enum FileKind: Sendable, Hashable, CaseIterable {
 public struct TaskAttachment: Sendable, Hashable, Identifiable {
     /// The web previews Word files up to 20 MB; the phone uses the same limit for every type.
     public static let maxViewBytes: Int64 = 20 * 1024 * 1024
+    /// Saving or sharing a copy takes bigger files than the viewer (Android `MAX_EXPORT_BYTES`).
+    public static let maxExportBytes: Int64 = 200 * 1024 * 1024
 
     public var attachmentId: Int
     public var fileId: String

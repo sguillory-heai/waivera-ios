@@ -327,6 +327,11 @@
 "tasks.file.tooLarge" = "Too large to view here. Opens on the web";
 "tasks.file.open" = "View file";
 "tasks.file.openWeb" = "Open on the web";
+"tasks.file.save" = "Save to phone";
+"tasks.file.shareAction" = "Share";
+"tasks.file.preparing" = "Getting the file ready";
+"tasks.file.saved" = "Saved";
+"tasks.file.downloadFailed" = "Couldn't get the file. Check your connection and try again.";
 "tasks.file.short.pdf" = "PDF";
 "tasks.file.short.image" = "IMG";
 "tasks.file.short.word" = "DOC";
@@ -485,6 +490,7 @@
 "tasks.review.cantAll" = "The remaining stages can't all be approved now. The task was refreshed.";
 "tasks.review.step" = "Step %1$@ of %2$@ · %3$@";
 "tasks.review.stepPlain" = "Step %1$@ of %2$@";
+"tasks.review.stepWaiting" = "Step %1$@ of %2$@ · Waiting on %3$@";
 "tasks.review.sentBy" = "Sent by";
 "tasks.review.goBack" = "Go back";
 "tasks.review.close" = "Close";

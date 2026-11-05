@@ -206,7 +206,7 @@
         let title: String
         let detail: String?
         let selected: Bool
-        var systemImage = "folder"
+        var systemImage = "wv-feature_tasks-folder"
         var enabled = true
         let onTap: () -> Void
 

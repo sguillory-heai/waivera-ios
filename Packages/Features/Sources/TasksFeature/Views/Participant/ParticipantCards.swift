@@ -110,13 +110,13 @@
                     }
                     InsetDivider()
                     ParticipantDateRow(
-                        systemImage: "checkmark.seal",
+                        systemImage: "person.text.rectangle",
                         label: TasksStrings.text("tasks.participant.certification"),
                         date: profile.certification
                     )
                     InsetDivider()
                     ParticipantDateRow(
-                        systemImage: "link",
+                        systemImage: "house",
                         label: TasksStrings.text("tasks.participant.linkage"),
                         date: profile.linkage
                     )

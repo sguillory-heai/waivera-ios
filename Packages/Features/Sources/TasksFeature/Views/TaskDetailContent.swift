@@ -12,6 +12,9 @@
         let onRefresh: @Sendable () async -> Void
 
         @Environment(\.dynamicTypeSize) private var typeSize
+        /// The whole screen's height (safe areas and the keyboard added back), so a short phone
+        /// (iPhone SE, 667pt) gets a slimmer review bar and the bar never flips as the keyboard moves.
+        @State private var screenHeight: CGFloat = 0
 
         var body: some View {
             LoadingContent(isLoading: state.phase == .loading) {
@@ -33,7 +36,17 @@
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(Palette.background)
+            .onGeometryChange(
+                for: CGFloat.self,
+                of: { $0.size.height + $0.safeAreaInsets.top + $0.safeAreaInsets.bottom },
+                action: { screenHeight = $0 }
+            )
         }
+
+        /// Under this (iPhone SE and its kind; a mini is 812pt) the full-size bar takes a third of the screen.
+        private static let shortScreenHeight: CGFloat = 700
+
+        private var shortScreen: Bool { screenHeight > 0 && screenHeight < Self.shortScreenHeight }
 
         private func detail(_ task: TaskDetail) -> some View {
             ScrollView {
@@ -102,9 +115,14 @@
         private var actionBar: some View {
             VStack(spacing: 0) {
                 Rectangle().fill(Palette.border).frame(height: Spacing.hairline)
-                VStack(spacing: Spacing.small) {
+                VStack(spacing: shortScreen ? Spacing.extraSmall : Spacing.small) {
                     if let task = state.task, state.canLog, task.review.any {
-                        ReviewButtons(access: task.review, state: review, actions: actions.review)
+                        ReviewButtons(
+                            access: task.review,
+                            state: review,
+                            actions: actions.review,
+                            compact: shortScreen
+                        )
                         secondaryActions
                     } else if state.canLog {
                         WaiveraButton(
@@ -132,7 +150,7 @@
                     }
                 }
                 .padding(.horizontal, Spacing.gutter)
-                .padding(.vertical, Spacing.mediumSmall)
+                .padding(.vertical, shortScreen ? Spacing.small : Spacing.mediumSmall)
             }
             .background(Palette.background)
         }

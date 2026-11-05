@@ -20,6 +20,16 @@ public struct WorkflowStepResponse: Decodable, Sendable, Hashable {
     public var stepRole: String?
     public var status: String?
     public var actualApprover: TaskUserResponse?
+    public var projectedApprover: StepTargetResponse?
+}
+
+/// `StepTargetDto`: who a stage that is not done yet goes to. `exactUser` is the person the server
+/// assigned or predicts; `routingRule` is how it got there ("Pending Discovery: Supervisor" when it
+/// found nobody); `isPool` means others with the role could take it too.
+public struct StepTargetResponse: Decodable, Sendable, Hashable {
+    public var exactUser: TaskUserResponse?
+    public var routingRule: String?
+    public var isPool: Bool?
 }
 
 /// `WorkflowApprovalRequirementsResponse` from `GET api/workflow/task/{id}/approval-requirements`.

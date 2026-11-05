@@ -35,6 +35,46 @@ struct ReviewMappingTests {
         #expect(requirement.fields.last?.label == "proof")
     }
 
+    @Test func stepsNameThePersonAndWordTheRoleForPeople() throws {
+        let items = try decode(
+            [WorkflowStepResponse].self,
+            #"""
+            [{"stepOrder":3,"stepRole":"Director","status":"FUTURE",
+              "projectedApprover":{"routingRule":"Pending Discovery: Director"}},
+             {"stepOrder":1,"stepRole":"[CASE_WORKER]","status":"COMPLETED",
+              "actualApprover":{"displayName":"Priya Raman"},"projectedApprover":{"routingRule":"Completed"}},
+             {"stepOrder":2,"stepRole":"Supervisor","status":"ACTIVE",
+              "projectedApprover":{"exactUser":{"displayName":"Jordan Ellis"},"isPool":false}}]
+            """#
+        )
+        let steps = ReviewMapping.steps(items, assignee: "Sam Lee")
+        #expect(steps.map(\.order) == [1, 2, 3])
+        #expect(steps[0].role == "Case worker")
+        #expect(steps[0].approverName == "Priya Raman" && steps[0].waitingOn == nil)
+        #expect(steps[1].waitingOn == "Jordan Ellis")
+        // Nobody found for the role: the note falls back to the role.
+        #expect(steps[2].waitingOn == nil && steps[2].role == "Director")
+    }
+
+    @Test func aCaseWorkerStageWithNobodyAssignedWaitsOnTheTasksAssignee() throws {
+        let items = try decode(
+            [WorkflowStepResponse].self,
+            #"[{"stepOrder":1,"stepRole":"[CASE_WORKER]","status":"ACTIVE","projectedApprover":{}}]"#
+        )
+        #expect(ReviewMapping.steps(items, assignee: "Sam Lee").first?.waitingOn == "Sam Lee")
+        #expect(ReviewMapping.steps(items).first?.waitingOn == nil)
+        #expect(ReviewMapping.humanRole("[SITE_LEAD]") == "Site lead")
+        // A pool's first pick is not who it waits on.
+        let pool = try decode(
+            [WorkflowStepResponse].self,
+            #"""
+            [{"stepOrder":1,"stepRole":"Supervisor","status":"ACTIVE",
+              "projectedApprover":{"exactUser":{"displayName":"Ana Ruiz"},"isPool":true}}]
+            """#
+        )
+        #expect(ReviewMapping.steps(pool).first?.waitingOn == nil)
+    }
+
     @Test func anUnknownModeFallsBackToTheOneAsked() throws {
         let dto = try decode(ApprovalRequirementsResponse.self, #"{"approvalMode":"Later"}"#)
         #expect(ReviewMapping.plan(dto, asked: .currentStage).mode == .currentStage)

@@ -33,6 +33,7 @@ enum TaskMapping {
 
     static func detail(_ dto: TaskResponse) -> TaskDetail {
         let key = key(dto.organization, dto.friendlyId ?? dto.id)
+        let assigneeName = name(assignee(dto.assignee, dto.assignees))
         let pending = (dto.administrativeTransactionRequests ?? [])
             .map(RequestMapping.request)
             .filter { $0.status == .pending }
@@ -50,12 +51,12 @@ enum TaskMapping {
             about: about(dto.participant, dto.subjectEmployee),
             participantId: participantId(dto.participant),
             webPath: "/task/\(key)",
-            assigneeName: name(assignee(dto.assignee, dto.assignees)),
+            assigneeName: assigneeName,
             isClientTask: dto.taskContext?.trimmingCharacters(in: .whitespaces).lowercased() != employeeContext,
             pendingRequest: pending,
             delay: dto.currentTaskDelay.map(delay),
             review: ReviewMapping.access(dto.capabilities, ready: dto.isTaskReady ?? false),
-            steps: ReviewMapping.steps(dto.workflowBlueprint),
+            steps: ReviewMapping.steps(dto.workflowBlueprint, assignee: assigneeName),
             planDates: ReviewMapping.planDates(dto.participant)
         )
     }

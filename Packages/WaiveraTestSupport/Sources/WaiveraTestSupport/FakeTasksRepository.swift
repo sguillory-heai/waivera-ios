@@ -113,7 +113,8 @@ public final class FakeTasksRepository: TasksRepository, @unchecked Sendable {
                 order: order,
                 role: role,
                 status: status,
-                approverName: order < active ? "Priya Raman" : nil
+                approverName: order < active ? "Priya Raman" : nil,
+                waitingOn: order == active ? "Jordan Ellis" : nil
             )
         }
     }
@@ -210,6 +211,11 @@ public final class FakeTasksRepository: TasksRepository, @unchecked Sendable {
                 kind: .other
             ),
         ]
+    }
+
+    public func fileExport(taskId: Int, attachment: TaskAttachment) async throws -> Data {
+        calls.record("fileExport:\(taskId):\(attachment.attachmentId)")
+        return try await fileData(taskId: taskId, attachment: attachment)
     }
 
     public func fileData(taskId: Int, attachment: TaskAttachment) async throws -> Data {

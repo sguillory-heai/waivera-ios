@@ -11,13 +11,13 @@
             SheetCardGroup {
                 VStack(spacing: 0) {
                     ParticipantDateRow(
-                        systemImage: "gift",
+                        systemImage: "birthday.cake",
                         label: TasksStrings.text("tasks.participant.birth"),
                         date: profile.birthDate
                     )
                     if let waiver = profile.waiver {
                         InsetDivider()
-                        textRow("checkmark.seal", "tasks.participant.waiver", waiver)
+                        textRow("person.text.rectangle", "tasks.participant.waiver", waiver)
                     }
                     if let region = profile.region {
                         InsetDivider()

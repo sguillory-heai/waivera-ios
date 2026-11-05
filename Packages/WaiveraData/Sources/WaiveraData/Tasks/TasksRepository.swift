@@ -15,6 +15,8 @@ public protocol TasksRepository: Sendable {
     func attachments(taskId: Int) async throws -> [TaskAttachment]
     /// A file's bytes, held in memory only while the viewer shows it; nothing is written to disk.
     func fileData(taskId: Int, attachment: TaskAttachment) async throws -> Data
+    /// The same bytes for a copy to save or share, up to `TaskAttachment.maxExportBytes`.
+    func fileExport(taskId: Int, attachment: TaskAttachment) async throws -> Data
 }
 
 public struct LiveTasksRepository: TasksRepository {
@@ -125,7 +127,16 @@ public struct LiveTasksRepository: TasksRepository {
 
     public func fileData(taskId: Int, attachment: TaskAttachment) async throws -> Data {
         guard attachment.sizeBytes <= TaskAttachment.maxViewBytes else { throw WaiveraError.invalidRequest }
-        return try await api.taskFileBytes(
+        return try await bytes(taskId: taskId, attachment: attachment)
+    }
+
+    public func fileExport(taskId: Int, attachment: TaskAttachment) async throws -> Data {
+        guard attachment.sizeBytes <= TaskAttachment.maxExportBytes else { throw WaiveraError.invalidRequest }
+        return try await bytes(taskId: taskId, attachment: attachment)
+    }
+
+    private func bytes(taskId: Int, attachment: TaskAttachment) async throws -> Data {
+        try await api.taskFileBytes(
             taskId: taskId,
             fileId: attachment.fileId,
             employeeFile: attachment.employeeFile

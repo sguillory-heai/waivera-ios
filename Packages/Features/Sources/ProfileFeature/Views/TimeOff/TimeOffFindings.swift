@@ -135,6 +135,8 @@
         let onPick: (Int) -> Void
 
         @State private var query = ""
+        /// The tallest the list has been, so the sheet fits its rows and doesn't jump while filtering.
+        @State private var contentHeight: CGFloat = 0
 
         private var shown: [LeaveType] {
             let needle = query.trimmingCharacters(in: .whitespaces)
@@ -170,9 +172,12 @@
                     }
                 }
                 .padding(Spacing.gutter)
+                .onGeometryChange(for: CGFloat.self, of: \.size.height) { contentHeight = max(contentHeight, $0) }
             }
+            .scrollBounceBehavior(.basedOnSize)
             .background(Palette.surface)
-            .presentationDetents([.medium, .large])
+            .presentationDetents(contentHeight > 0 ? [.height(contentHeight), .large] : [.medium, .large])
+            .presentationDragIndicator(.visible)
         }
 
         private func row(_ type: LeaveType) -> some View {

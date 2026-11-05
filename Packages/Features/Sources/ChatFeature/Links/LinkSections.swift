@@ -103,7 +103,7 @@
         private var glyph: String {
             if case .unavailable = preview { return "lock" }
             switch preview.kind {
-            case .task: return "checkmark.circle"
+            case .task: return "checkmark"
             case .resource: return "mappin.and.ellipse"
             case .faq: return "info.circle"
             }

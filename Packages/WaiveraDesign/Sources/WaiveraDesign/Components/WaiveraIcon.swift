@@ -8,6 +8,8 @@
     public enum WaiveraIcons {
         /// Filled and outline forms share Android's one (outline) drawing.
         public static func asset(for systemName: String) -> String? {
+            // An Android drawing with no SF Symbol counterpart is named directly.
+            if systemName.hasPrefix("wv-") { return systemName }
             let outline = systemName.hasSuffix(".fill") ? String(systemName.dropLast(".fill".count)) : systemName
             let name = table[systemName] ?? table[outline] ?? table[outline + ".fill"]
             return name.map { "wv-\($0)" }
@@ -142,6 +144,17 @@
             "seal": "award",
             "checkmark.seal": "award",
             "rectangle.and.pencil.and.ellipsis": "feature_chat-edit",
+            "camera": "camera",
+            "camera.fill": "camera",
+            "photo.on.rectangle": "image",
+            "folder": "folder",
+            "folder.fill": "folder",
+            "square.and.arrow.up": "share",
+            "square.and.arrow.down": "download",
+            "arrow.up.doc": "upload",
+            "arrow.down": "arrow_downward",
+            "chevron.up.chevron.down": "expand_more",
+            "checkmark.circle": "mark_read",
         ]
     }
 

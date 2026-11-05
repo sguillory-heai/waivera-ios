@@ -184,43 +184,49 @@
                 // to the shell's account is turned off here; one avatar, never two.
                 HeroTopBar(title: ScheduleStrings.title)
                     .environment(\.waiveraAccountMenu, nil)
-                PopVisibility(isVisible: showsJumpToToday) {
-                    Button(action: onToday) {
-                        HeroBarIcon(systemName: "calendar.badge.clock")
-                            .foregroundStyle(HeroPalette.onHeader)
-                            .frame(width: ControlSize.iconButton, height: ControlSize.iconButton)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.press(.compact))
-                    .accessibilityLabel(Text(ScheduleStrings.text("schedule.jumpToToday")))
-                    .accessibilityHint(Text(ScheduleStrings.text("schedule.today.hint")))
-                }
-                if let onNewEvent {
-                    Button(action: onNewEvent) {
-                        HeroBarIcon(systemName: "plus")
-                            .foregroundStyle(HeroPalette.onHeader)
-                            .frame(width: ControlSize.iconButton, height: ControlSize.iconButton)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.press(.compact))
-                    .accessibilityLabel(Text(ScheduleStrings.text("schedule.newEvent")))
-                    .accessibilityIdentifier("schedule.newEvent")
-                }
-                if let account = resolvedAccount {
-                    Button(action: account.open) {
-                        AvatarView(
-                            name: account.name,
-                            image: account.image ?? shellAccount?.image,
-                            size: CGFloat(HeroMetrics.barAvatar),
-                            fill: .hero
-                        )
+                // The same gaps as HeroTopBar's own actions, so the plus and the avatar sit exactly
+                // where Chat's do and nothing shifts when switching tabs.
+                HStack(spacing: Spacing.mediumSmall) { trailingButtons }
+            }
+        }
+
+        @ViewBuilder private var trailingButtons: some View {
+            PopVisibility(isVisible: showsJumpToToday) {
+                Button(action: onToday) {
+                    HeroBarIcon(systemName: "calendar.badge.clock")
+                        .foregroundStyle(HeroPalette.onHeader)
                         .frame(width: ControlSize.iconButton, height: ControlSize.iconButton)
                         .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.press(.compact))
-                    .accessibilityLabel(Text(ScheduleStrings.text("schedule.accountMenu")))
-                    .padding(.trailing, Spacing.small)
                 }
+                .buttonStyle(.press(.compact))
+                .accessibilityLabel(Text(ScheduleStrings.text("schedule.jumpToToday")))
+                .accessibilityHint(Text(ScheduleStrings.text("schedule.today.hint")))
+            }
+            if let onNewEvent {
+                Button(action: onNewEvent) {
+                    HeroBarIcon(systemName: "plus")
+                        .foregroundStyle(HeroPalette.onHeader)
+                        .frame(width: ControlSize.iconButton, height: ControlSize.iconButton)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.press(.compact))
+                .accessibilityLabel(Text(ScheduleStrings.text("schedule.newEvent")))
+                .accessibilityIdentifier("schedule.newEvent")
+            }
+            if let account = resolvedAccount {
+                Button(action: account.open) {
+                    AvatarView(
+                        name: account.name,
+                        image: account.image ?? shellAccount?.image,
+                        size: CGFloat(HeroMetrics.barAvatar),
+                        fill: .hero
+                    )
+                    .frame(width: ControlSize.iconButton, height: ControlSize.iconButton)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.press(.compact))
+                .accessibilityLabel(Text(ScheduleStrings.text("schedule.accountMenu")))
+                .padding(.trailing, Spacing.small)
             }
         }
 

@@ -134,20 +134,7 @@ final class TaskFileModel {
     /// sheet removes when it closes (Android `TaskFileExport`).
     func exportCopy() -> URL? {
         guard let bytes else { return nil }
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
-        let file = folder.appendingPathComponent(Self.safeName(name))
-        do {
-            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            #if os(iOS)
-                try bytes.write(to: file, options: [.atomic, .completeFileProtection])
-            #else
-                try bytes.write(to: file, options: .atomic)
-            #endif
-            return file
-        } catch {
-            try? FileManager.default.removeItem(at: folder)
-            return nil
-        }
+        return try? TaskFileActionsModel.writeCopy(bytes, name: name)
     }
 
     /// The task on the web, where every file opens; nil when no web app is configured.

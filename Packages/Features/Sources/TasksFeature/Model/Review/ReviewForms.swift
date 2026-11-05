@@ -243,14 +243,25 @@ struct StepNote: Sendable, Hashable {
     var total: Int
     var role: String?
     var sentBy: String?
+    /// The person the stage waits on; the role shows only when the server names nobody.
+    var waitingOn: String?
 
     static func of(_ steps: [WorkflowStep]) -> StepNote? {
         guard let active = steps.firstIndex(where: { $0.status == .active }) else { return nil }
         let before = steps[..<active].last { $0.status == .completed }
-        return StepNote(order: active + 1, total: steps.count, role: steps[active].role, sentBy: before?.approverName)
+        return StepNote(
+            order: active + 1,
+            total: steps.count,
+            role: steps[active].role,
+            sentBy: before?.approverName,
+            waitingOn: steps[active].waitingOn
+        )
     }
 
     var text: String {
+        if let waitingOn {
+            return TasksStrings.format("tasks.review.stepWaiting", String(order), String(total), waitingOn)
+        }
         if let role { return TasksStrings.format("tasks.review.step", String(order), String(total), role) }
         return TasksStrings.format("tasks.review.stepPlain", String(order), String(total))
     }
