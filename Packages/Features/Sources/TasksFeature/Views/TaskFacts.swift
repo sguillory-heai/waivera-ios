@@ -14,6 +14,13 @@
                 VStack(spacing: 0) {
                     FactRow(systemImage: "list.bullet.clipboard", label: TasksStrings.text("tasks.field.status")) {
                         StatusBadge(TaskFormat.stateLabel(task.state), tone: Self.tone(task.state, late: state.late))
+                        if let step = state.step { FactNote(text: step.text) }
+                    }
+                    if let sentBy = state.step?.sentBy {
+                        InsetDivider()
+                        FactRow(systemImage: "arrow.up", label: TasksStrings.text("tasks.review.sentBy")) {
+                            FactValue(text: sentBy)
+                        }
                     }
                     InsetDivider()
                     FactRow(systemImage: "calendar", label: TasksStrings.text("tasks.field.due")) {

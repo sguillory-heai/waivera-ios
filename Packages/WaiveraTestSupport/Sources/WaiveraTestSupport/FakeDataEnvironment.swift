@@ -45,6 +45,7 @@ public struct FakeDataEnvironment: Sendable {
     public let tasks: FakeTasksRepository
     public let requests: FakeRequestsRepository
     public let uploads: FakeTaskUploadsRepository
+    public let review: FakeTaskReviewRepository
     public let links: FakeLinkLookupRepository
     public let environment: DataEnvironment
 
@@ -101,6 +102,7 @@ public struct FakeDataEnvironment: Sendable {
             tasks: FakeTasksRepository(empty: scenario == .empty),
             requests: FakeRequestsRepository(empty: scenario == .empty),
             uploads: FakeTaskUploadsRepository(empty: scenario == .empty, clock: clock),
+            review: FakeTaskReviewRepository(),
             webBaseURL: webBaseURL
         )
         switch scenario {
@@ -147,6 +149,7 @@ public struct FakeDataEnvironment: Sendable {
         tasks: FakeTasksRepository,
         requests: FakeRequestsRepository,
         uploads: FakeTaskUploadsRepository,
+        review: FakeTaskReviewRepository,
         webBaseURL: URL?
     ) {
         self.data = data
@@ -168,6 +171,7 @@ public struct FakeDataEnvironment: Sendable {
         self.tasks = tasks
         self.requests = requests
         self.uploads = uploads
+        self.review = review
         let links = FakeLinkLookupRepository(tasks: tasks)
         self.links = links
         environment = DataEnvironment(
@@ -190,6 +194,7 @@ public struct FakeDataEnvironment: Sendable {
             tasks: tasks,
             requests: requests,
             uploads: uploads,
+            review: review,
             links: links,
             clock: clock,
             webBaseURL: webBaseURL,

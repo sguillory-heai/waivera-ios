@@ -195,6 +195,11 @@ public struct TaskDetail: Sendable, Hashable, Identifiable {
     public var pendingRequest: ChangeRequest?
     /// The approved delay covering today, if any.
     public var delay: TaskDelay?
+    /// Submit, Approve and Reject, as the server allows them now.
+    public var review: TaskReviewAccess
+    /// The approval stages in order; empty when the task has no workflow.
+    public var steps: [WorkflowStep]
+    public var planDates: PlanDates?
 
     public init(
         id: Int,
@@ -211,7 +216,10 @@ public struct TaskDetail: Sendable, Hashable, Identifiable {
         assigneeName: String? = nil,
         isClientTask: Bool = true,
         pendingRequest: ChangeRequest? = nil,
-        delay: TaskDelay? = nil
+        delay: TaskDelay? = nil,
+        review: TaskReviewAccess = .none,
+        steps: [WorkflowStep] = [],
+        planDates: PlanDates? = nil
     ) {
         self.id = id
         self.key = key
@@ -228,6 +236,9 @@ public struct TaskDetail: Sendable, Hashable, Identifiable {
         self.isClientTask = isClientTask
         self.pendingRequest = pendingRequest
         self.delay = delay
+        self.review = review
+        self.steps = steps
+        self.planDates = planDates
     }
 
     /// Completed or closed: the server refuses new activity.

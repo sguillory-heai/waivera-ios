@@ -6,6 +6,7 @@
     struct TaskDetailScreen: View {
         let model: TaskDetailModel
         let onOpenFile: (Int, Int) -> Void
+        var onOpenTask: (Int) -> Void = { _ in }
 
         @Environment(\.openURL) private var openURL
 
@@ -13,6 +14,7 @@
             TaskDetailContent(
                 state: model.state,
                 uploads: model.uploads.state,
+                review: model.review.state,
                 actions: TaskDetailActions(
                     log: { model.startLog() },
                     ask: { model.startAsk() },
@@ -29,7 +31,11 @@
                         }
                     },
                     retryFiles: { model.loadFiles() },
-                    uploads: uploadActions
+                    uploads: uploadActions,
+                    review: ReviewBarActions(
+                        start: { model.startReview($0) },
+                        reject: { model.review.startReject() }
+                    )
                 ),
                 onRefresh: { [model] in await model.refresh() }
             )
@@ -59,7 +65,15 @@
                     UploadSourceSheet(sheet: sheet, model: model.uploads)
                 }
             }
+            .taskReviewSheets(model.review, today: model.state.today) {
+                if let url = model.webURL() { openURL(url) }
+            }
             .tasksFeedback(model.feedback)
+            .onAppear {
+                model.onOpen = { [onOpenTask] effect in
+                    if case .openTask(let id) = effect { onOpenTask(id) }
+                }
+            }
         }
 
         private var uploadActions: UploadActions {

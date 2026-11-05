@@ -74,6 +74,9 @@ enum TaskFormat {
     /// The date tile's month, "Nov".
     static func tileMonth(_ date: CalendarDate) -> String { format(date, template: "MMM") }
 
+    /// "October 2026": a Drive section, which is filed by month.
+    static func monthYear(_ date: CalendarDate) -> String { format(date, template: "MMMMyyyy") }
+
     static func moment(_ at: Date, zone: TimeZone, today: CalendarDate) -> TaskMoment {
         let day = CalendarDate(at, in: zone)
         let relative: TaskMoment.RelativeDay =

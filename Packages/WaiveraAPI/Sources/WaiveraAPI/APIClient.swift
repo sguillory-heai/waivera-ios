@@ -130,6 +130,16 @@ public struct APIClient: Sendable {
         return data
     }
 
+    /// Like `send`, but the listed refusal statuses come back with their body instead of
+    /// throwing, for an endpoint whose refusals say what to do next (task approval's 409/422).
+    public func sendAccepting(_ request: APIRequest, statuses: Set<Int>) async throws -> (Data, Int) {
+        let (data, response) = try await deliver(request)
+        guard (200..<300).contains(response.statusCode) || statuses.contains(response.statusCode) else {
+            throw APIErrorMapper.map(statusCode: response.statusCode, body: data)
+        }
+        return (data, response.statusCode)
+    }
+
     private func deliver(_ request: APIRequest) async throws -> (Data, HTTPURLResponse) {
         let urlRequest = makeURLRequest(request)
         var token: String?

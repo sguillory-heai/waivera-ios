@@ -325,13 +325,23 @@ public struct ChangeReason: Sendable, Hashable, Identifiable {
     public var requiresEvidence: Bool
     /// Closure reasons named "Other" need a comment, as on the web.
     public var needsComment: Bool
+    /// Fills the explanation when picked, unless something was typed (web `useReasonExplanation`).
+    public var preset: String?
 
-    public init(id: Int64, name: String, description: String?, requiresEvidence: Bool, needsComment: Bool = false) {
+    public init(
+        id: Int64,
+        name: String,
+        description: String?,
+        requiresEvidence: Bool,
+        needsComment: Bool = false,
+        preset: String? = nil
+    ) {
         self.id = id
         self.name = name
         self.description = description
         self.requiresEvidence = requiresEvidence
         self.needsComment = needsComment
+        self.preset = preset
     }
 }
 

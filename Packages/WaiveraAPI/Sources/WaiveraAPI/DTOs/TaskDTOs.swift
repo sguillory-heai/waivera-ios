@@ -103,6 +103,11 @@ public struct TaskResponse: Decodable, Sendable, Hashable {
     /// Change requests on the task; a pending one shows on the task page.
     public var administrativeTransactionRequests: [AdminRequestResponse]?
     public var currentTaskDelay: TaskDelaySummaryResponse?
+    /// Every required form, file and signature is done, so it can be submitted or approved.
+    public var isTaskReady: Bool?
+    public var capabilities: TaskCapabilitiesResponse?
+    /// The approval stages in order, for the step the task is on.
+    public var workflowBlueprint: [WorkflowStepResponse]?
 
     public init(
         id: Int,
@@ -122,7 +127,10 @@ public struct TaskResponse: Decodable, Sendable, Hashable {
         subjectEmployee: TaskUserResponse? = nil,
         taskContext: String? = nil,
         administrativeTransactionRequests: [AdminRequestResponse]? = nil,
-        currentTaskDelay: TaskDelaySummaryResponse? = nil
+        currentTaskDelay: TaskDelaySummaryResponse? = nil,
+        isTaskReady: Bool? = nil,
+        capabilities: TaskCapabilitiesResponse? = nil,
+        workflowBlueprint: [WorkflowStepResponse]? = nil
     ) {
         self.id = id
         self.friendlyId = friendlyId
@@ -142,6 +150,9 @@ public struct TaskResponse: Decodable, Sendable, Hashable {
         self.taskContext = taskContext
         self.administrativeTransactionRequests = administrativeTransactionRequests
         self.currentTaskDelay = currentTaskDelay
+        self.isTaskReady = isTaskReady
+        self.capabilities = capabilities
+        self.workflowBlueprint = workflowBlueprint
     }
 }
 
@@ -179,14 +190,27 @@ public struct TaskDelaySummaryResponse: Decodable, Sendable, Hashable {
     }
 }
 
-/// `ParticipantResponse`: only the name.
+/// `ParticipantResponse`: the name, and the plan (CPOC) dates an approval step that updates them
+/// checks new dates against. Both dates are literal calendar dates.
 public struct TaskParticipantResponse: Decodable, Sendable, Hashable {
+    public var id: Int?
     public var firstName: String?
     public var lastName: String?
+    public var cpocDate: String?
+    public var cpocEndDate: String?
 
-    public init(firstName: String?, lastName: String?) {
+    public init(
+        id: Int? = nil,
+        firstName: String?,
+        lastName: String?,
+        cpocDate: String? = nil,
+        cpocEndDate: String? = nil
+    ) {
+        self.id = id
         self.firstName = firstName
         self.lastName = lastName
+        self.cpocDate = cpocDate
+        self.cpocEndDate = cpocEndDate
     }
 }
 

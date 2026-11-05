@@ -19,15 +19,27 @@ public protocol TaskUploadsRepository: Sendable {
     func retry(_ id: String) async
     /// Forgets an upload: a failed one the person dismissed, or a finished one the server now lists.
     func dismiss(_ id: String) async
-    /// Checks and copies a file picked for Log activity; throws `UploadRefused`. Only the latest
-    /// prepared file is kept.
-    func prepare(_ file: PickedFile) async throws -> PreparedFile
+    /// Checks and copies a file picked for Log activity or as late-reason evidence; throws
+    /// `UploadRefused`. Only the latest prepared file of each purpose is kept.
+    func prepare(_ file: PickedFile, purpose: PickPurpose) async throws -> PreparedFile
     /// Sends `file` now, under `template`'s name and type when there is one (sprout_web logs the
     /// activity only after its file is up). Returns the name the server saved it as; throws
     /// `UploadRefused`.
     func sendNow(taskId: Int, file: PreparedFile, template: FileTemplate?) async throws -> String?
+    /// Sends `file` as evidence for a late reason (sprout_web `uploadComplianceEvidence`) and
+    /// returns its attachment id; throws `UploadRefused`.
+    func sendEvidence(taskId: Int, file: PreparedFile) async throws -> Int
     /// Drops a prepared file the person removed or never sent.
     func discard(_ file: PreparedFile) async
+}
+
+/// Who a prepared pick is for: each keeps its own copy so one pick never removes the other's.
+public enum PickPurpose: String, Sendable, Hashable { case activity, evidence }
+
+extension TaskUploadsRepository {
+    public func prepare(_ file: PickedFile) async throws -> PreparedFile {
+        try await prepare(file, purpose: .activity)
+    }
 }
 
 /// One queued upload as stored on disk.
@@ -84,7 +96,6 @@ public actor LiveTaskUploadsRepository: TaskUploadsRepository {
     }
 
     private var stagingDirectory: URL { root.appendingPathComponent("queued", isDirectory: true) }
-    private var activityDirectory: URL { root.appendingPathComponent("activity", isDirectory: true) }
 
     // MARK: Reading
 
@@ -181,10 +192,11 @@ public actor LiveTaskUploadsRepository: TaskUploadsRepository {
 
     // MARK: Log activity's file
 
-    public func prepare(_ file: PickedFile) async throws -> PreparedFile {
-        // One Log activity sheet is open at a time; an earlier pick it never sent goes.
-        try? FileManager.default.removeItem(at: activityDirectory)
-        let staged = try stager.stage(file, into: activityDirectory)
+    public func prepare(_ file: PickedFile, purpose: PickPurpose) async throws -> PreparedFile {
+        // One sheet of each kind is open at a time; an earlier pick it never sent goes.
+        let directory = root.appendingPathComponent(purpose.rawValue, isDirectory: true)
+        try? FileManager.default.removeItem(at: directory)
+        let staged = try stager.stage(file, into: directory)
         return PreparedFile(
             path: staged.path,
             name: staged.fileName,
@@ -213,6 +225,21 @@ public actor LiveTaskUploadsRepository: TaskUploadsRepository {
         } catch {
             throw UploadRefused(UploadMapping.problem(error))
         }
+    }
+
+    public func sendEvidence(taskId: Int, file: PreparedFile) async throws -> Int {
+        guard let data = FileManager.default.contents(atPath: file.path) else { throw UploadRefused(.unreadable) }
+        let form = EvidenceUploadForm(data: data, fileName: file.name, taskId: taskId, mimeType: file.mimeType)
+        let saved: EvidenceUploadResponse
+        do {
+            saved = try await api.uploadEvidence(form)
+        } catch {
+            throw UploadRefused(UploadMapping.problem(error))
+        }
+        // Without an id the reason could not cite it; the copy stays for a retry.
+        guard let id = saved.attachmentId, id > 0 else { throw UploadRefused(.failed) }
+        try? FileManager.default.removeItem(atPath: file.path)
+        return id
     }
 
     public func discard(_ file: PreparedFile) async {
@@ -420,7 +447,10 @@ public struct EmptyTaskUploadsRepository: TaskUploadsRepository {
     public func add(taskId: Int, files: [PickedFile], target: UploadTarget) async {}
     public func retry(_ id: String) async {}
     public func dismiss(_ id: String) async {}
-    public func prepare(_ file: PickedFile) async throws -> PreparedFile { throw UploadRefused(.failed) }
+    public func prepare(_ file: PickedFile, purpose: PickPurpose) async throws -> PreparedFile {
+        throw UploadRefused(.failed)
+    }
+    public func sendEvidence(taskId: Int, file: PreparedFile) async throws -> Int { throw UploadRefused(.failed) }
     public func sendNow(taskId: Int, file: PreparedFile, template: FileTemplate?) async throws -> String? {
         throw UploadRefused(.failed)
     }

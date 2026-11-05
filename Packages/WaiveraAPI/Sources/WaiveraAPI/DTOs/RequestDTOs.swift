@@ -147,6 +147,11 @@ public struct ComplianceReasonResponse: Decodable, Sendable, Hashable {
     public var canBeUsedForDelay: Bool?
     public var requiresEvidence: Bool?
     public var isActive: Bool?
+    /// System codes are offered unless hidden; agency codes only while active (web late justification).
+    public var isSystemCode: Bool?
+    public var canBeUsedForLateJustification: Bool?
+    /// Text that fills the explanation when the reason is picked and nothing was typed yet.
+    public var presetExplanation: String?
 
     public init(
         id: Int64? = nil,

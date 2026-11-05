@@ -14,6 +14,8 @@ public final class FakeTaskUploadsRepository: TaskUploadsRepository, @unchecked 
     /// Every file sent now, with the name it went under.
     public let sentNow = LockedValue<[String]>([])
     public let discarded = LockedValue<[PreparedFile]>([])
+    /// Late-reason evidence sent, by file name; each gets the next attachment id from 900.
+    public let evidenceSent = LockedValue<[String]>([])
     private let cell = StateCell<[TaskUpload]>([])
     private let clock: any WaiveraClock
 
@@ -84,7 +86,7 @@ public final class FakeTaskUploadsRepository: TaskUploadsRepository, @unchecked 
         cell.update { $0.removeAll { $0.id == id } }
     }
 
-    public func prepare(_ file: PickedFile) async throws -> PreparedFile {
+    public func prepare(_ file: PickedFile, purpose: PickPurpose) async throws -> PreparedFile {
         if let problem = nextProblem.update({ value -> UploadProblem? in
             defer { value = nil }
             return value
@@ -101,6 +103,14 @@ public final class FakeTaskUploadsRepository: TaskUploadsRepository, @unchecked 
         let name = template.map { UploadChecks.templateName($0.name, mimeType: file.mimeType) } ?? file.name
         sentNow.update { $0.append(name) }
         return name
+    }
+
+    public func sendEvidence(taskId: Int, file: PreparedFile) async throws -> Int {
+        if let failure = failure.get() { throw UploadRefused(failure.isTransient ? .failed : .noAccess) }
+        return evidenceSent.update { sent -> Int in
+            sent.append(file.name)
+            return 899 + sent.count
+        }
     }
 
     public func discard(_ file: PreparedFile) async {

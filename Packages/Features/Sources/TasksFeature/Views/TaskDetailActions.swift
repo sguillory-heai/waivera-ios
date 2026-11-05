@@ -12,5 +12,6 @@
         var openFile: (FileRow) -> Void = { _ in }
         var retryFiles: () -> Void = {}
         var uploads = UploadActions()
+        var review = ReviewBarActions()
     }
 #endif

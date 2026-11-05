@@ -12,21 +12,28 @@
     public struct TaskDetailView: View {
         let taskID: Int
         let onOpenFile: (_ taskID: Int, _ attachmentID: Int) -> Void
+        let onOpenTask: (_ taskID: Int) -> Void
 
         @Environment(\.dataEnvironment) private var data
         @Environment(\.openURL) private var openURL
         @State private var model: TaskDetailModel?
 
-        /// `onOpenFile` pushes the read-only file viewer for a file the phone can show.
-        public init(taskID: Int, onOpenFile: @escaping (_ taskID: Int, _ attachmentID: Int) -> Void = { _, _ in }) {
+        /// `onOpenFile` pushes the read-only file viewer for a file the phone can show;
+        /// `onOpenTask` pushes a related task that holds this one up.
+        public init(
+            taskID: Int,
+            onOpenFile: @escaping (_ taskID: Int, _ attachmentID: Int) -> Void = { _, _ in },
+            onOpenTask: @escaping (_ taskID: Int) -> Void = { _ in }
+        ) {
             self.taskID = taskID
             self.onOpenFile = onOpenFile
+            self.onOpenTask = onOpenTask
         }
 
         public var body: some View {
             Group {
                 if let model {
-                    TaskDetailScreen(model: model, onOpenFile: onOpenFile)
+                    TaskDetailScreen(model: model, onOpenFile: onOpenFile, onOpenTask: onOpenTask)
                 } else {
                     Palette.background
                 }

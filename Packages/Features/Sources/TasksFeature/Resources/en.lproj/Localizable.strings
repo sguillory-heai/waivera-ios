@@ -464,3 +464,156 @@
 "tasks.confirm.reject.title.training" = "Reject external training evidence?";
 "tasks.confirm.approve.training" = "This approves the hours for %@ and completes the linked training task.";
 "tasks.confirm.reject.training" = "Explain what needs to be corrected so they can send a new certificate.";
+
+/* Submit, Approve and Reject on a task */
+"tasks.review.submit" = "Submit for approval";
+"tasks.review.submitAll" = "Submit all & complete";
+"tasks.review.approve" = "Approve";
+"tasks.review.approveAll.one" = "Approve the last stage & complete";
+"tasks.review.approveAll.other" = "Approve all %@ remaining & complete";
+"tasks.review.reject" = "Reject";
+"tasks.review.notReady" = "Finish every required form, file and signature first.";
+"tasks.review.checking" = "Checking…";
+"tasks.review.sending" = "Sending…";
+"tasks.review.submitted" = "Submitted for approval";
+"tasks.review.approved" = "Approved";
+"tasks.review.doneCompleted" = "Approved. The task is complete.";
+"tasks.review.sentBack" = "Sent back for changes";
+"tasks.review.taskChanged" = "This task changed, so it was refreshed. Check it and try again.";
+"tasks.review.failed" = "That didn't go through. Check your connection and try again.";
+"tasks.review.lateNeedsAssignee" = "This task is late. The assignee or their manager needs to say why before it can move on.";
+"tasks.review.cantAll" = "The remaining stages can't all be approved now. The task was refreshed.";
+"tasks.review.step" = "Step %1$@ of %2$@ · %3$@";
+"tasks.review.stepPlain" = "Step %1$@ of %2$@";
+"tasks.review.sentBy" = "Sent by";
+"tasks.review.goBack" = "Go back";
+"tasks.review.close" = "Close";
+"tasks.review.continue" = "Continue";
+
+/* Approve all remaining */
+"tasks.review.allTitle.one" = "Approve the last stage?";
+"tasks.review.allTitle.other" = "Approve all %@ remaining stages?";
+"tasks.review.submitAllTitle.one" = "Submit and approve the last stage?";
+"tasks.review.submitAllTitle.other" = "Submit and approve all %@ stages?";
+"tasks.review.allMessage" = "You're recorded as the approver for each one, and the task is completed. Anything a stage needs is still asked for.";
+"tasks.review.allConfirm" = "Approve all & complete";
+
+/* Unfinished forms */
+"tasks.review.draftsTitle.one" = "Complete with an unfinished form?";
+"tasks.review.draftsTitle.other" = "Complete with %@ unfinished forms?";
+"tasks.review.draftsNamed.one" = "%2$@ has saved progress that isn't finalized. Completing the task discards that progress. Finalized forms are kept.";
+"tasks.review.draftsNamed.other" = "%2$@ have saved progress that isn't finalized. Completing the task discards that progress. Finalized forms are kept.";
+"tasks.review.draftsMessage" = "Saved progress that isn't finalized is discarded when the task completes. Finalized forms are kept.";
+"tasks.review.draftsConfirm" = "Complete and discard progress";
+"tasks.review.quoted" = "“%@”";
+
+/* Drive section of a reopened task */
+"tasks.review.driveTitle" = "Save the finished file in";
+"tasks.review.driveOriginal" = "Original section";
+"tasks.review.driveOriginalDetail" = "%@ · where it was filed before";
+"tasks.review.driveLatest" = "This month";
+
+/* Employee closure */
+"tasks.review.closureTitle" = "Finish employee files";
+"tasks.review.closureInsurance" = "Finish insurance renewal";
+"tasks.review.closureClose" = "Just close";
+"tasks.review.closureMerge" = "Close & merge PDFs";
+"tasks.review.closureCloseDetail" = "Each file is finalized on its own.";
+"tasks.review.closureMergeDetail" = "One merged PDF, with its files stacked underneath.";
+"tasks.review.closureOrder" = "PDF order";
+"tasks.review.closureTooFew" = "Pick at least two PDFs to merge.";
+"tasks.review.closureUp" = "Move %@ up";
+"tasks.review.closureDown" = "Move %@ down";
+"tasks.review.closureExpiration" = "New policy expiration date";
+"tasks.review.closureExpirationNote" = "The next insurance renewal is due on this date. It's scheduled once the task is fully approved.";
+"tasks.review.closureExpirationRequired" = "Pick the new expiration date";
+"tasks.review.closureFailed" = "Couldn't save your choice. Try again.";
+
+/* Stage requirements */
+"tasks.review.requirementsTitle" = "Before you approve";
+"tasks.review.requirementsChanged" = "What this step needs changed. Check the values and try again.";
+"tasks.review.requirementsWeb" = "This step needs a file, which can only be added on the web.";
+"tasks.review.requirementsWarnings" = "Some dates look unusual. Check them, then tap the button again to go ahead.";
+"tasks.review.requirementsAnyway" = "Approve anyway";
+"tasks.review.requirementsFailed" = "Couldn't approve. Try again.";
+"tasks.review.pickDate" = "Pick a date";
+"tasks.review.issueRequired" = "%@ is required";
+"tasks.review.issueInvalid" = "Enter a valid date";
+"tasks.review.issueEndBeforeStart" = "Must be on or after the start date";
+"tasks.review.issueYearAgo" = "This date is over a year ago";
+"tasks.review.issueExpectedStart" = "Usually %@, the day after the last plan ended";
+"tasks.review.issueExpectedEnd" = "Usually %@, a year after the start";
+"tasks.review.openWeb" = "Open on the web";
+
+/* Related tasks */
+"tasks.review.blockedTitle" = "This task can't be completed yet";
+"tasks.review.blockedMessage" = "Finish the related task first.";
+"tasks.review.warningTitle" = "A related task isn't done";
+"tasks.review.warningMessage" = "You can still complete this task, but the related task hasn't been completed.";
+"tasks.review.blockedRow" = "Must finish first";
+"tasks.review.warningRow" = "Not done yet";
+"tasks.review.openRelated" = "Open related task";
+"tasks.review.completeAnyway" = "Complete anyway";
+
+/* Send back */
+"tasks.review.sendBackTitle" = "Send back for changes";
+"tasks.review.returnLateTitle" = "Send the late reason back";
+"tasks.review.sendTo" = "Send to";
+"tasks.review.sendToPlaceholder" = "Who fixes it";
+"tasks.review.sendToRequired" = "Pick who fixes it";
+"tasks.review.personRole" = "%1$@ (%2$@)";
+"tasks.review.noEarlierStep" = "There's no earlier step to send this task back to.";
+"tasks.review.sendToError" = "Couldn't load who it can go back to.";
+"tasks.review.feedback" = "What needs fixing";
+"tasks.review.feedbackPlaceholder" = "Explain what needs to be fixed";
+"tasks.review.correction" = "What to correct";
+"tasks.review.correctionPlaceholder" = "Explain what should be corrected";
+"tasks.review.feedbackRequired" = "Say what needs fixing";
+"tasks.review.textOver.one" = "%@ character over the limit";
+"tasks.review.textOver.other" = "%@ characters over the limit";
+"tasks.review.minutes" = "Your review time (minutes)";
+"tasks.review.minutesPlaceholder" = "e.g. 15";
+"tasks.review.minutesInvalid" = "Enter minutes from 0 to 1,440";
+"tasks.review.sendBack" = "Send back";
+"tasks.review.sendBackFailed" = "Couldn't send it back. Try again.";
+
+/* Late reason */
+"tasks.late.title" = "This task is late";
+"tasks.late.editTitle" = "Edit the late reason";
+"tasks.late.due" = "It was due %@. Say why before it moves on.";
+"tasks.late.returnedTitle" = "Your late reason was sent back";
+"tasks.late.returnedNote" = "Reviewer's note: %@";
+"tasks.late.returnedFix" = "Fix it and send it again.";
+"tasks.late.delayTitle" = "Using the delay you reported";
+"tasks.late.delayMessage" = "Its reason and explanation are filled in. Add to them if you like.";
+"tasks.late.delayDrop" = "Use a different reason";
+"tasks.late.reason" = "Reason";
+"tasks.late.chooseReason" = "Choose a reason";
+"tasks.late.reasonsError" = "Couldn't load the reasons.";
+"tasks.late.explanation" = "What happened";
+"tasks.late.explanationPlaceholder" = "Why is this task late?";
+"tasks.late.explanationRequired" = "Say what happened";
+"tasks.late.evidence" = "Evidence";
+"tasks.late.evidenceNeeded" = "This reason needs a file that shows it.";
+"tasks.late.evidenceRequired" = "Add a file that shows it";
+"tasks.late.evidenceKept" = "File already attached";
+"tasks.late.evidencePending" = "Uploads when you send it";
+"tasks.late.evidenceFailed" = "The file didn't upload: %@";
+"tasks.late.send" = "Send and continue";
+"tasks.late.save" = "Save and continue";
+"tasks.late.failed" = "Couldn't send the late reason. Try again.";
+
+/* Late reason review */
+"tasks.late.reviewTitle" = "Review the late reason";
+"tasks.late.wrote" = "%@ wrote";
+"tasks.late.explanationRow" = "Explanation";
+"tasks.late.openFile" = "Open the file";
+"tasks.late.linkedDelay" = "Linked to a reported delay";
+"tasks.late.earlier" = "Earlier reviews";
+"tasks.late.reviewAgreed" = "%1$@ · %2$@ · Agreed";
+"tasks.late.reviewReturned" = "%1$@ · %2$@ · Sent back";
+"tasks.late.note" = "Note (optional)";
+"tasks.late.notePlaceholder" = "Add context if it helps";
+"tasks.late.agree" = "Agree and continue";
+"tasks.late.edit" = "Edit reason";
+"tasks.late.reviewFailed" = "Couldn't save your review. Try again.";

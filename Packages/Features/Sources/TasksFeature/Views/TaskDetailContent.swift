@@ -7,8 +7,11 @@
     struct TaskDetailContent: View {
         let state: TaskDetailScreenState
         var uploads = TaskUploadsState()
+        var review = ReviewState()
         let actions: TaskDetailActions
         let onRefresh: @Sendable () async -> Void
+
+        @Environment(\.dynamicTypeSize) private var typeSize
 
         var body: some View {
             LoadingContent(isLoading: state.phase == .loading) {
@@ -100,7 +103,10 @@
             VStack(spacing: 0) {
                 Rectangle().fill(Palette.border).frame(height: Spacing.hairline)
                 VStack(spacing: Spacing.small) {
-                    if state.canLog {
+                    if let task = state.task, state.canLog, task.review.any {
+                        ReviewButtons(access: task.review, state: review, actions: actions.review)
+                        secondaryActions
+                    } else if state.canLog {
                         WaiveraButton(
                             TasksStrings.text("tasks.log.title"),
                             size: .large,
@@ -114,7 +120,7 @@
                             .foregroundStyle(Palette.textSecondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    if state.canAsk {
+                    if state.canAsk, state.task?.review.any != true {
                         WaiveraButton(
                             TasksStrings.text("tasks.ask.title"),
                             variant: .text,
@@ -129,6 +135,35 @@
                 .padding(.vertical, Spacing.mediumSmall)
             }
             .background(Palette.background)
+        }
+
+        /// With review buttons on top, Log activity and Ask for a change step down to quiet text
+        /// buttons side by side (stacked at large text), so the bar never grows past three rows.
+        @ViewBuilder private var secondaryActions: some View {
+            let log = WaiveraButton(
+                TasksStrings.text("tasks.log.title"),
+                variant: .text,
+                systemImage: "plus",
+                fillsWidth: true,
+                action: actions.log
+            )
+            let ask = WaiveraButton(
+                TasksStrings.text("tasks.ask.title"),
+                variant: .text,
+                fillsWidth: true,
+                action: actions.ask
+            )
+            if !state.canAsk {
+                log
+            } else if typeSize.isAccessibilitySize {
+                log
+                ask
+            } else {
+                HStack(spacing: Spacing.small) {
+                    log
+                    ask
+                }
+            }
         }
     }
 #endif

@@ -52,7 +52,10 @@ enum TaskMapping {
             assigneeName: name(assignee(dto.assignee, dto.assignees)),
             isClientTask: dto.taskContext?.trimmingCharacters(in: .whitespaces).lowercased() != employeeContext,
             pendingRequest: pending,
-            delay: dto.currentTaskDelay.map(delay)
+            delay: dto.currentTaskDelay.map(delay),
+            review: ReviewMapping.access(dto.capabilities, ready: dto.isTaskReady ?? false),
+            steps: ReviewMapping.steps(dto.workflowBlueprint),
+            planDates: ReviewMapping.planDates(dto.participant)
         )
     }
 

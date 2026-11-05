@@ -95,7 +95,11 @@ struct RouteDestinationView: View {
         case .changePassword:
             PasswordChangeView(onDone: { model.pop() })
         case .task(let taskID):
-            TaskDetailView(taskID: taskID, onOpenFile: { model.push(.taskFile(taskID: $0, attachmentID: $1)) })
+            TaskDetailView(
+                taskID: taskID,
+                onOpenFile: { model.push(.taskFile(taskID: $0, attachmentID: $1)) },
+                onOpenTask: { model.push(.task(taskID: $0)) }
+            )
         case .requests:
             RequestsView(onOpenTask: { model.push(.task(taskID: $0)) })
         case .taskFile(let taskID, let attachmentID):

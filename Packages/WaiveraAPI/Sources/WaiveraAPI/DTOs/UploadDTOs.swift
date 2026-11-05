@@ -149,9 +149,20 @@ public struct TaskUploadForm: Sendable, Equatable {
     }
 
     func multipartBody(boundary: String) -> Data {
+        Self.multipart(boundary: boundary, fileName: fileName, mimeType: mimeType, data: data, fields: fields)
+    }
+
+    /// The file under `file.File`, then each field, as sprout_web's `FormData` sends them.
+    static func multipart(
+        boundary: String,
+        fileName: String,
+        mimeType: String,
+        data: Data,
+        fields: [(String, String)]
+    ) -> Data {
         var body = Data()
         func line(_ text: String) { body.append(Data((text + "\r\n").utf8)) }
-        let safeName = Self.headerSafe(fileName)
+        let safeName = headerSafe(fileName)
         line("--\(boundary)")
         line("Content-Disposition: form-data; name=\"file.File\"; filename=\"\(safeName)\"")
         line("Content-Type: \(mimeType)")
@@ -162,7 +173,7 @@ public struct TaskUploadForm: Sendable, Equatable {
             line("--\(boundary)")
             line("Content-Disposition: form-data; name=\"\(name)\"")
             line("")
-            line(Self.headerSafe(value))
+            line(headerSafe(value))
         }
         line("--\(boundary)--")
         return body
@@ -173,5 +184,29 @@ public struct TaskUploadForm: Sendable, Equatable {
         text.replacingOccurrences(of: "\"", with: "'")
             .replacingOccurrences(of: "\r", with: " ")
             .replacingOccurrences(of: "\n", with: " ")
+    }
+}
+
+/// sprout_web `uploadComplianceEvidence` for `POST api/file/upload-compliance-evidence`: the
+/// server takes everything else from the task.
+public struct EvidenceUploadForm: Sendable, Equatable {
+    public var data: Data
+    public var fileName: String
+    public var taskId: Int
+    public var mimeType: String
+
+    public init(data: Data, fileName: String, taskId: Int, mimeType: String) {
+        self.data = data
+        self.fileName = fileName
+        self.taskId = taskId
+        self.mimeType = mimeType
+    }
+
+    var fields: [(String, String)] {
+        [("file.TaskId", String(taskId)), ("file.MimeType", mimeType), ("file.Size", String(data.count))]
+    }
+
+    func multipartBody(boundary: String) -> Data {
+        TaskUploadForm.multipart(boundary: boundary, fileName: fileName, mimeType: mimeType, data: data, fields: fields)
     }
 }

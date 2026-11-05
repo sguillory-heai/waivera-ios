@@ -79,6 +79,9 @@ struct TaskDetailScreenState: Equatable, Sendable {
     /// The approved delay covering today: the task is not really overdue while it lasts.
     var delay: DelayNote?
 
+    /// The approval stage the task waits on, for Details.
+    var step: StepNote? { task.flatMap { StepNote.of($0.steps) } }
+
     /// Past due with no delay covering it; the due date and status turn red only then.
     var late: Bool { due.overdue && delay == nil }
     var canLog: Bool { task.map { !$0.isFinished } ?? false }
@@ -100,6 +103,10 @@ final class TaskDetailModel {
     let feedback = TasksFeedback()
     /// Required files and uploads, followed while the screen shows.
     let uploads: TaskUploadsModel
+    /// Submit, Approve and Reject with every step the web runs.
+    let review: TaskReviewModel
+    /// Opens a related task a review step points at.
+    @ObservationIgnored var onOpen: ((ReviewEffect) -> Void)?
 
     @ObservationIgnored let taskId: Int
     @ObservationIgnored private let environment: DataEnvironment
@@ -132,8 +139,25 @@ final class TaskDetailModel {
         self.taskId = taskId
         self.environment = environment
         uploads = TaskUploadsModel(taskId: taskId, environment: environment)
+        review = TaskReviewModel(taskId: taskId, environment: environment)
         rebuild()
         uploads.onFilesChanged = { [weak self] in self?.loadFiles() }
+        review.onEffect = { [weak self] effect in self?.reviewEffect(effect) }
+    }
+
+    /// The chain's results: a reload, a file or task to open, or a message.
+    private func reviewEffect(_ effect: ReviewEffect) {
+        switch effect {
+        case .reload: load()
+        case .openTask: onOpen?(effect)
+        default: if let message = effect.message { feedback.show(message) }
+        }
+    }
+
+    /// Starts Submit or Approve on the task as it shows now.
+    func startReview(_ action: ReviewAction) {
+        guard let task = local.task else { return }
+        review.start(action, task: task)
     }
 
     func run() async {

@@ -85,8 +85,33 @@ public final class FakeTasksRepository: TasksRepository, @unchecked Sendable {
                     start: row.due,
                     through: row.delayedThrough
                 )
-                : nil
+                : nil,
+            review: Self.demoReview[row.id] ?? .none,
+            steps: Self.demoReview[row.id] == nil ? [] : Self.demoSteps(active: row.id == 15 ? 2 : 1),
+            planDates: casework.contains(row) ? PlanDates(start: row.due?.adding(days: -300), end: row.due) : nil
         )
+    }
+
+    /// Submit on the assignee's tasks (one still waiting on a form), Approve, Approve all and
+    /// Reject on the one in review.
+    static let demoReview: [Int: TaskReviewAccess] = [
+        12: TaskReviewAccess(canSubmit: true, ready: true),
+        16: TaskReviewAccess(canSubmit: true, ready: false),
+        15: TaskReviewAccess(canApprove: true, canApproveAll: true, remainingStages: 2, canReject: true, ready: true),
+    ]
+
+    /// Assignee, supervisor and director stages; `active` (from 1) is the one the task waits on.
+    static func demoSteps(active: Int) -> [WorkflowStep] {
+        ["Assignee", "Supervisor", "Director"].enumerated().map { index, role in
+            let order = index + 1
+            let status: StepStatus = order < active ? .completed : (order == active ? .active : .future)
+            return WorkflowStep(
+                order: order,
+                role: role,
+                status: status,
+                approverName: order < active ? "Priya Raman" : nil
+            )
+        }
     }
 
     public func activity(taskId: Int) async throws -> [TaskActivity] {
