@@ -26,7 +26,10 @@
                     .foregroundStyle(Palette.text)
                     // Cut by lines only until measured; after that the clip does the cutting.
                     .lineLimit(isMeasured ? nil : Self.lines)
-                    .transaction { $0.animation = nil }
+                    // Only the measuring switch skips animation. A blanket `transaction` here also
+                    // stripped the move every note below takes when one opens, so their text jumped
+                    // ahead of their clip and cards slid over cut-off text.
+                    .animation(nil, value: isMeasured)
                     // Laid out at its own height whatever the clip, so the clip reveals it.
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(height: shownHeight, alignment: .top)
