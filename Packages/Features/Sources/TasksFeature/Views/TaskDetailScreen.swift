@@ -24,7 +24,7 @@
                     },
                     retry: { model.load() },
                     retryActivity: { model.loadActivity() },
-                    openFile: { row in open(model.choose(file: row)) },
+                    openFile: { row in show(model.choose(file: row)) },
                     retryFiles: { model.loadFiles() },
                     uploads: uploadActions,
                     review: ReviewBarActions(
@@ -71,7 +71,7 @@
                     TaskFileActionsSheet(sheet: sheet, model: model.fileActions) {
                         let row = sheet.row
                         model.fileActions.dismiss()
-                        open(model.open(file: row))
+                        show(model.open(file: row))
                     }
                 }
             }
@@ -100,7 +100,7 @@
             )
         }
 
-        private func open(_ opening: FileOpening?) {
+        private func show(_ opening: FileOpening?) {
             switch opening {
             case .viewer(let attachmentId): onOpenFile(model.taskId, attachmentId)
             case .web(let url): openURL(url)

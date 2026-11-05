@@ -165,4 +165,8 @@ public struct EmptyTasksRepository: TasksRepository {
     public func fileData(taskId: Int, attachment: TaskAttachment) async throws -> Data {
         throw WaiveraError.notFound
     }
+
+    public func fileExport(taskId: Int, attachment: TaskAttachment) async throws -> Data {
+        throw WaiveraError.notFound
+    }
 }
