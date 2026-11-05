@@ -154,9 +154,21 @@ extension ChatEngine {
                 reason: mappedReason,
                 title: conversationsById[message.conversationId]?.title,
                 preview: preferences.previewContent ? message.bodyText : nil,
-                destination: ChatDestination(message: message)
+                destination: ChatDestination(message: message),
+                sender: alertSender(message)
             )
         )
+    }
+
+    /// A person with a name (in a one-to-one chat, the chat's own name if the message has none);
+    /// bots and unnamed authors show the conversation's tile instead.
+    private func alertSender(_ message: ChatMessage) -> ChatAlert.Sender? {
+        guard let id = message.authorId ?? message.author?.id, !id.hasPrefix("bot:") else { return nil }
+        var name = message.author?.fullName
+        if name == nil, case .person(let personName?) = conversationsById[message.conversationId]?.title {
+            name = personName
+        }
+        return name.map { ChatAlert.Sender(userId: id, name: $0) }
     }
 
     /// After every reconnect: typing cleared, inbox refetched, each open conversation's and

@@ -16,6 +16,8 @@ public final class LiveChatAlertsRepository: ChatAlertsRepository {
 
     public func conversationsRead() -> AsyncStream<Int> { chat.conversationsRead() }
 
+    public var inAppAlertsLive: Bool { realtime.currentStatus.isConnected }
+
     /// A chat push is hidden in the foreground only when the hub is live and the surface the
     /// message belongs to is on screen: the conversation's timeline for a root message, the
     /// thread for a reply. Otherwise the user would see nothing (09 §2 fix, IF-02).

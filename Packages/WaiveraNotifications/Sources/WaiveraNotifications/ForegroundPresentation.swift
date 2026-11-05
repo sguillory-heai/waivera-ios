@@ -15,19 +15,24 @@ public struct ForegroundContext: Equatable, Sendable {
     /// The session is signed in. A push that reaches a signed-out device (an unregister that
     /// never reached the server) is someone else's message, so it is never shown.
     public var isSignedIn: Bool
+    /// The hub is connected, so the app shows chat messages in its own banner: sprout_api's
+    /// attention service sends the hub alert to the same people as the push.
+    public var inAppAlertsLive: Bool
 
     public init(
         isConversationLive: Bool,
         inAppBannersEnabled: Bool,
         soundEnabled: Bool,
         isSignedIn: Bool,
-        isThreadLive: Bool = false
+        isThreadLive: Bool = false,
+        inAppAlertsLive: Bool = false
     ) {
         self.isConversationLive = isConversationLive
         self.isThreadLive = isThreadLive
         self.inAppBannersEnabled = inAppBannersEnabled
         self.soundEnabled = soundEnabled
         self.isSignedIn = isSignedIn
+        self.inAppAlertsLive = inAppAlertsLive
     }
 }
 
@@ -46,20 +51,19 @@ public struct PresentationDecision: Equatable, Sendable {
     public static let suppressed = PresentationDecision(showBanner: false, showInList: false, playSound: false)
 }
 
-/// Foreground presentation (PLAN.md parity fix, 09-push §2). Only chat pushes are ever hidden,
-/// and only when the data layer reports the surface they belong to live on screen: the
-/// conversation's timeline for a root message, the thread for a reply (AF-12, IF-02). A
-/// disconnected hub never hides a message. The icon badge is never set by a push.
+/// Foreground presentation, as chat apps do it: while the app is open the system banner and its
+/// sound stay out of the way. A chat message whose surface is on screen shows nothing (AF-12,
+/// IF-02); any other chat message shows in the app's own banner while the hub is connected,
+/// so the system one is hidden. A disconnected hub never hides a message: it falls back to a
+/// silent system banner. Pushes are silent in the foreground; the sound is for a phone in a
+/// pocket. The icon badge is never set by a push.
 public enum ForegroundPresentationPolicy {
     public static func decide(for payload: PushPayload, context: ForegroundContext) -> PresentationDecision {
         guard context.isSignedIn else { return .suppressed }
-        if case .chat(let chat) = payload, chat.isThreadReply ? context.isThreadLive : context.isConversationLive {
-            return .suppressed
+        if case .chat(let chat) = payload {
+            if chat.isThreadReply ? context.isThreadLive : context.isConversationLive { return .suppressed }
+            if context.inAppAlertsLive, context.inAppBannersEnabled { return .suppressed }
         }
-        return PresentationDecision(
-            showBanner: context.inAppBannersEnabled,
-            showInList: true,
-            playSound: context.inAppBannersEnabled && context.soundEnabled
-        )
+        return PresentationDecision(showBanner: context.inAppBannersEnabled, showInList: true, playSound: false)
     }
 }

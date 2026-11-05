@@ -31,6 +31,29 @@ enum AppStrings {
         return String(localized: "app.alert.message \(title) \(body)")
     }
 
+    static var chatAlertNow: String { String(localized: "app.alert.now") }
+    static var alertDismiss: String { String(localized: "app.alert.dismiss") }
+
+    /// The card's headline: the person in a one-to-one chat, the channel or group otherwise.
+    static func chatAlertTitle(_ alert: ChatAlert) -> String {
+        if case .person = alert.title, let sender = alert.sender { return sender.name }
+        return alert.title.map(conversationTitle) ?? alert.sender?.name ?? String(localized: "app.alert.title.someone")
+    }
+
+    /// The name the tile's initials and colour come from when there's no photo.
+    static func chatAlertAvatarName(_ alert: ChatAlert) -> String {
+        alert.sender?.name ?? chatAlertTitle(alert)
+    }
+
+    /// The message, led by the sender's name in a channel or group.
+    static func chatAlertBody(_ alert: ChatAlert) -> AttributedString {
+        let text = AttributedString(alert.preview ?? reason(alert.reason))
+        guard let sender = alert.sender, chatAlertTitle(alert) != sender.name else { return text }
+        var name = AttributedString(String(localized: "app.alert.sender \(sender.name)"))
+        name.inlinePresentationIntent = .stronglyEmphasized
+        return name + text
+    }
+
     private static func conversationTitle(_ title: ConversationTitle) -> String {
         switch title {
         case .channel(let name?):

@@ -33,7 +33,8 @@ extension AppModel {
             inAppBannersEnabled: settings.notifications.inAppBanners,
             soundEnabled: settings.notifications.sound,
             isSignedIn: dataEnvironment?.session.currentState.isSignedIn ?? false,
-            isThreadLive: threadLive
+            isThreadLive: threadLive,
+            inAppAlertsLive: dataEnvironment?.alerts.inAppAlertsLive ?? false
         )
         return ForegroundPresentationPolicy.decide(for: payload, context: context)
     }

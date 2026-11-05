@@ -289,6 +289,18 @@ public struct ChatAlert: Sendable, Hashable {
     /// `nil` when previews are switched off; the screen shows generic copy.
     public var preview: String?
     public var destination: ChatDestination
+    /// Who wrote it, for the banner's photo and, in a channel or group, the name before the text.
+    public var sender: Sender?
+
+    public struct Sender: Sendable, Hashable {
+        public var userId: String
+        public var name: String
+
+        public init(userId: String, name: String) {
+            self.userId = userId
+            self.name = name
+        }
+    }
 
     public init(
         conversationId: Int,
@@ -296,7 +308,8 @@ public struct ChatAlert: Sendable, Hashable {
         reason: Reason,
         title: ConversationTitle?,
         preview: String?,
-        destination: ChatDestination
+        destination: ChatDestination,
+        sender: Sender? = nil
     ) {
         self.conversationId = conversationId
         self.messageId = messageId
@@ -304,6 +317,7 @@ public struct ChatAlert: Sendable, Hashable {
         self.title = title
         self.preview = preview
         self.destination = destination
+        self.sender = sender
     }
 }
 
@@ -316,6 +330,9 @@ public protocol ChatAlertsRepository: Sendable {
     /// Conversations read anywhere: opened on screen, marked read, or read on another device.
     /// The app clears their delivered notifications (09 §6, IF-07).
     func conversationsRead() -> AsyncStream<Int>
+    /// The hub is connected, so chat messages reach the app's own banner and the system banner
+    /// can stay hidden while the app is open.
+    var inAppAlertsLive: Bool { get }
 }
 
 extension ChatAlertsRepository {
@@ -325,4 +342,6 @@ extension ChatAlertsRepository {
     }
 
     public func conversationsRead() -> AsyncStream<Int> { AsyncStream { $0.finish() } }
+
+    public var inAppAlertsLive: Bool { false }
 }

@@ -20,6 +20,9 @@
 "app.alert.message %@ %@" = "%1$@: %2$@";
 /* Button on the in-app message banner that opens the conversation. */
 "app.alert.open" = "Open";
+"app.alert.now" = "now";
+"app.alert.dismiss" = "Dismiss";
+"app.alert.sender %@" = "%@: ";
 "app.alert.title.channel %@" = "#%@";
 "app.alert.title.channelUnnamed" = "A channel";
 "app.alert.title.bot" = "Bot";

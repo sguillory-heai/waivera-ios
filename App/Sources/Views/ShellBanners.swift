@@ -8,6 +8,8 @@ import WaiveraDesign
 struct ShellBanners: ViewModifier {
     let model: AppModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// A finger is on the message card, so it stays up.
+    @State private var holdingAlert = false
 
     func body(content: Content) -> some View {
         content
@@ -16,15 +18,22 @@ struct ShellBanners: ViewModifier {
             }
             .overlay(alignment: .top) {
                 if let alert = model.chatAlert {
-                    ChatAlertBanner(
+                    ChatAlertCard(
                         alert: alert,
+                        loadAvatar: { [model] userId in await model.dataEnvironment?.avatars.avatar(userId: userId) },
                         onOpen: { model.openChatAlert() },
-                        onDismiss: { model.dismissChatAlert(alert) }
+                        onDismiss: { model.dismissChatAlert(alert) },
+                        onHoldChanged: { holdingAlert = $0 }
                     )
-                    .padding(.horizontal, Spacing.medium)
+                    .padding(.horizontal, Spacing.small)
+                    .padding(.top, Spacing.extraSmall)
+                    .accessibilityIdentifier("banner.chatAlert")
                     .transition(Motion.transition(edge: .top, reduceMotion: reduceMotion))
                     .task(id: alert) {
                         UIAccessibility.post(notification: .announcement, argument: AppStrings.chatAlert(alert))
+                    }
+                    .task(id: AlertTimer(alert: alert, holding: holdingAlert)) {
+                        guard !holdingAlert else { return }
                         let lifetime =
                             UIAccessibility.isVoiceOverRunning
                             ? FeedbackTiming.undoToastAccessible
@@ -57,19 +66,8 @@ struct ShellBanners: ViewModifier {
     }
 }
 
-private struct ChatAlertBanner: View {
+/// The message card's timer restarts when a new message replaces it and when a finger lifts.
+private struct AlertTimer: Hashable {
     let alert: ChatAlert
-    let onOpen: () -> Void
-    let onDismiss: () -> Void
-
-    var body: some View {
-        BannerView(
-            .info,
-            message: AppStrings.chatAlert(alert),
-            actionTitle: AppStrings.alertOpen,
-            action: onOpen,
-            onDismiss: onDismiss
-        )
-        .accessibilityIdentifier("banner.chatAlert")
-    }
+    let holding: Bool
 }

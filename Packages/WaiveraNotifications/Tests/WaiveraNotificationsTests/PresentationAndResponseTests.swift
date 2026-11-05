@@ -31,9 +31,30 @@ struct ForegroundPresentationTests {
         #expect(ForegroundPresentationPolicy.decide(for: chat42, context: context(live: true)) == .suppressed)
     }
 
-    @Test func chatPushIsShownWhenTheConversationIsNotLive() {
+    @Test func chatPushWithTheHubDownIsASilentSystemBanner() {
         let decision = ForegroundPresentationPolicy.decide(for: chat42, context: context(live: false))
-        #expect(decision == PresentationDecision(showBanner: true, showInList: true, playSound: true))
+        #expect(decision == PresentationDecision(showBanner: true, showInList: true, playSound: false))
+    }
+
+    @Test func chatPushWithTheHubUpIsLeftToTheAppBanner() {
+        var live = context(live: false)
+        live.inAppAlertsLive = true
+        #expect(ForegroundPresentationPolicy.decide(for: chat42, context: live) == .suppressed)
+        let reply = PushPayload.chat(ChatPush(conversationID: 42, messageID: 9331, threadRootMessageID: 9330))
+        #expect(ForegroundPresentationPolicy.decide(for: reply, context: live) == .suppressed)
+    }
+
+    @Test func inAppBannersOffKeepsAChatInTheListEvenWithTheHubUp() {
+        var live = context(live: false, banners: false)
+        live.inAppAlertsLive = true
+        let decision = ForegroundPresentationPolicy.decide(for: chat42, context: live)
+        #expect(decision == PresentationDecision(showBanner: false, showInList: true, playSound: false))
+    }
+
+    @Test func nothingPlaysASoundInTheForeground() {
+        let meeting = ForegroundPresentationPolicy.decide(for: .meeting(eventID: "evt_1"), context: context(live: false))
+        #expect(meeting.showBanner)
+        #expect(!meeting.playSound)
     }
 
     @Test func inAppBannersOffKeepsItInTheListOnly() {
@@ -44,11 +65,6 @@ struct ForegroundPresentationTests {
         #expect(decision == PresentationDecision(showBanner: false, showInList: true, playSound: false))
     }
 
-    @Test func soundOffIsSilent() {
-        let decision = ForegroundPresentationPolicy.decide(for: chat42, context: context(live: false, sound: false))
-        #expect(!decision.playSound)
-        #expect(decision.showBanner)
-    }
 
     @Test func nonChatPushesAreNeverHidden() {
         let call = ForegroundPresentationPolicy.decide(
