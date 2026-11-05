@@ -68,7 +68,6 @@ struct MainTabView: View {
             AccountMenuSheet(accountName: model.userDisplayName, accountImage: accountImage) {
                 model.openFromAccountMenu($0)
             }
-            .waiveraSheetPresentation()
         }
         .task(id: model.session.user?.id) { await loadAccountImage() }
     }

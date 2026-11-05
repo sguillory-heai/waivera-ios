@@ -46,7 +46,7 @@
             switch balance {
             case .loading:
                 InsetDivider()
-                FactRow(systemImage: "clock", label: label) {
+                FactRow(systemImage: "clock", label: label, showsChevron: true) {
                     SkeletonBlock(width: ControlSize.avatarLarge * 2, height: ControlSize.skeletonLine)
                 }
             case .ready(let change?):

@@ -9,6 +9,8 @@
         let systemImage: String
         let label: String
         var tone: TileTone = .brand
+        /// A row that opens something shows a chevron, as Android's `InfoRow` with an onClick does.
+        var showsChevron = false
         @ViewBuilder let value: () -> Value
 
         var body: some View {
@@ -26,6 +28,14 @@
                     value()
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                if showsChevron {
+                    Image(waivera: "chevron.right")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: ControlSize.icon, height: ControlSize.icon)
+                        .foregroundStyle(Palette.textSecondary)
+                        .accessibilityHidden(true)
+                }
             }
             .padding(.horizontal, Spacing.medium)
             .padding(.vertical, Spacing.small)

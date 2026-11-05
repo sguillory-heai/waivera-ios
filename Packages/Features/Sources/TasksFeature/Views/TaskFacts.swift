@@ -63,7 +63,12 @@
                 Button {
                     onOpenParticipant(participant)
                 } label: {
-                    FactRow(systemImage: "person", label: TasksStrings.text("tasks.field.about"), tone: .teal) {
+                    FactRow(
+                        systemImage: "person",
+                        label: TasksStrings.text("tasks.field.about"),
+                        tone: .teal,
+                        showsChevron: true
+                    ) {
                         FactValue(text: about)
                     }
                     .contentShape(Rectangle())

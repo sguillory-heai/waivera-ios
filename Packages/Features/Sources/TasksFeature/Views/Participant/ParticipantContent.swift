@@ -76,7 +76,9 @@
             TaskSectionTitle(
                 TasksStrings.text("tasks.participant.tasks"),
                 count: count > 0 ? count : nil,
-                countLabel: TasksStrings.plural("tasks.participant.tasksCount", count)
+                countLabel: TasksStrings.plural("tasks.participant.tasksCount", count),
+                // Red while any of them is late, as on Android.
+                tone: state.overdue > 0 ? .attention : .info
             )
             switch state.tasks {
             case .loading:

@@ -4,8 +4,8 @@
     import WaiveraDesign
 
     /// Invite people (Android `Invitees`): the search field, matches floating on one lifted card,
-    /// then who is invited in two colour-coded groups (coworkers violet, participants teal, on the
-    /// same gradient tiles as the avatars), and the Email participants switch once a participant
+    /// then who is invited in two colour-coded groups (coworkers violet, participants teal),
+    /// and the Email participants switch once a participant
     /// is on the list.
     struct EventFormInviteSection: View {
         let form: EventFormState
@@ -128,7 +128,7 @@
         private static let groupTint = 0.35
     }
 
-    /// One person (Android `InviteeRow`): the avatar on the kind's gradient tile, the name, the
+    /// One person (Android `InviteeRow`): the person's avatar, the name, the
     /// kind while choosing, the email, and Add or Remove.
     private struct InviteeRow: View {
         let person: AttendeeOption
@@ -141,10 +141,13 @@
 
         var body: some View {
             HStack(alignment: .top, spacing: Spacing.mediumSmall) {
-                AvatarView(
+                // The same avatar as everywhere else: a coworker's photo, otherwise their own
+                // initials tile. The group headers already tell coworkers and participants apart.
+                MilestoneAvatarView(
                     name: person.name,
-                    size: ControlSize.avatarSmall,
-                    tileIndex: person.isParticipant ? AvatarTiles.teal : AvatarTiles.violet
+                    userId: person.isParticipant ? nil : person.id,
+                    celebration: nil,
+                    size: ControlSize.avatarSmall
                 )
                 .padding(.top, Spacing.xxSmall)
                 .accessibilityHidden(true)

@@ -12,6 +12,7 @@
         let onRefresh: @Sendable () async -> Void
 
         @Environment(\.dynamicTypeSize) private var typeSize
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
         /// The whole screen's height (safe areas and the keyboard added back), so a short phone
         /// (iPhone SE, 667pt) gets a slimmer review bar and the bar never flips as the keyboard moves.
         @State private var screenHeight: CGFloat = 0
@@ -49,6 +50,16 @@
         private var shortScreen: Bool { screenHeight > 0 && screenHeight < Self.shortScreenHeight }
 
         private func detail(_ task: TaskDetail) -> some View {
+            ScrollViewReader { proxy in
+                scroller(task) {
+                    withAnimation(reduceMotion ? nil : .spring(duration: 0.45)) {
+                        proxy.scrollTo(ActivitySection.latestID, anchor: .bottom)
+                    }
+                }
+            }
+        }
+
+        private func scroller(_ task: TaskDetail, jump: @escaping () -> Void) -> some View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     if let pending = state.pending {
@@ -101,7 +112,7 @@
                         onOpen: actions.openFile,
                         onRetry: actions.retryFiles
                     )
-                    ActivitySection(activity: state.activity, onRetry: actions.retryActivity)
+                    ActivitySection(activity: state.activity, onRetry: actions.retryActivity, onJump: jump)
                 }
                 .padding(.bottom, Spacing.large)
             }

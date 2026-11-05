@@ -101,6 +101,7 @@
 "tasks.activity.count.one" = "%@ entry";
 "tasks.activity.count.other" = "%@ entries";
 "tasks.activity.empty" = "No activity logged yet.";
+"tasks.activity.jump" = "Jump to latest";
 "tasks.activity.error" = "Couldn't load the activity.";
 "tasks.activity.byYou" = "You";
 "tasks.moment.today" = "Today, %@";

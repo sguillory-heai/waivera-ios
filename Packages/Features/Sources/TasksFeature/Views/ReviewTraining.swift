@@ -66,7 +66,7 @@
                 }
                 InsetDivider()
                 Button(action: onOpenCertificate) {
-                    FactRow(systemImage: "paperclip", label: TasksStrings.text("tasks.review.certificate")) {
+                    FactRow(systemImage: "paperclip", label: TasksStrings.text("tasks.review.certificate"), showsChevron: true) {
                         FactValue(text: TasksStrings.text("tasks.review.viewCertificate"), color: Palette.link)
                         if opening { FactNote(text: TasksStrings.text("tasks.review.certificateOpening")) }
                     }

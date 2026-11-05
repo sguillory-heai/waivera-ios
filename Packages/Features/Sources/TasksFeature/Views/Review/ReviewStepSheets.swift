@@ -60,7 +60,8 @@
                                     ?? TasksStrings.text(
                                         blocked ? "tasks.review.blockedRow" : "tasks.review.warningRow"
                                     ),
-                                tone: blocked ? .danger : .amber
+                                tone: blocked ? .danger : .amber,
+                                showsChevron: true
                             ) {
                                 FactValue(text: task.title.isEmpty ? task.key : task.title)
                                 FactNote(text: Self.note(task))

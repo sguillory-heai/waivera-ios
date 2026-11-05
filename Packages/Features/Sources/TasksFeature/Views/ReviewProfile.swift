@@ -43,7 +43,8 @@
                         FactRow(
                             systemImage: "checkmark",
                             label: TasksStrings.text("tasks.review.unchangedFields"),
-                            tone: .teal
+                            tone: .teal,
+                            showsChevron: true
                         ) {
                             if showsUnchanged {
                                 ForEach(unchanged, id: \.field) { row in

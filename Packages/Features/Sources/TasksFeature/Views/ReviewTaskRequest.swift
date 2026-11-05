@@ -76,7 +76,11 @@
 
         @ViewBuilder
         private func taskLink(_ title: String) -> some View {
-            let row = FactRow(systemImage: "checklist", label: TasksStrings.text("tasks.review.task")) {
+            let row = FactRow(
+                systemImage: "checklist",
+                label: TasksStrings.text("tasks.review.task"),
+                showsChevron: onOpenTask != nil
+            ) {
                 FactValue(text: title)
                 if item.due != .none { FactNote(text: item.due.text) }
                 if item.request.isTrainingTask { FactNote(text: TasksStrings.text("tasks.review.training")) }
@@ -84,10 +88,7 @@
             SheetCardGroup {
                 if let onOpenTask {
                     Button(action: onOpenTask) {
-                        row.overlay(alignment: .trailing) {
-                            TaskChevron(systemImage: "chevron.right").padding(.trailing, Spacing.medium)
-                        }
-                        .contentShape(Rectangle())
+                        row.contentShape(Rectangle())
                     }
                     .buttonStyle(.press(.card))
                     .accessibilityHint(Text(TasksStrings.text("tasks.openTask")))

@@ -10,6 +10,11 @@ struct AccountMenuSheet: View {
     var accountImage: Image?
     let onSelect: (AppRoute) -> Void
 
+    /// The rows' height, so the sheet ends under Settings like Android's, with no empty space.
+    @State private var contentHeight: CGFloat = 0
+    /// The home indicator's space, which the sheet's height has to include as well.
+    @State private var bottomInset: CGFloat = 0
+
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
@@ -45,9 +50,21 @@ struct AccountMenuSheet: View {
             .padding(.vertical, Spacing.medium)
             .frame(maxWidth: ControlSize.sheetMaxWidth)
             .frame(maxWidth: .infinity)
+            .onGeometryChange(for: CGFloat.self, of: \.size.height) { contentHeight = $0 }
         }
         .scrollBounceBehavior(.basedOnSize)
-        .background(Palette.surface)
+        .background {
+            // Reaches under the home indicator, so its safe area says how much the sheet adds there.
+            Palette.surface
+                .ignoresSafeArea()
+                .onGeometryChange(for: CGFloat.self, of: \.safeAreaInsets.bottom) { bottomInset = $0 }
+        }
+        .presentationDetents(
+            contentHeight > 0 ? [.height(contentHeight + bottomInset), .large] : [.medium, .large]
+        )
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(Radius.modalSheet)
+        .presentationBackground(Palette.surface)
         .accessibilityIdentifier("sheet.accountMenu")
     }
 }

@@ -95,7 +95,7 @@
                     Button {
                         openFile = OpenEvidence(id: evidence)
                     } label: {
-                        FactRow(systemImage: "paperclip", label: TasksStrings.text("tasks.late.evidence")) {
+                        FactRow(systemImage: "paperclip", label: TasksStrings.text("tasks.late.evidence"), showsChevron: true) {
                             FactValue(text: TasksStrings.text("tasks.late.openFile"), color: Palette.accent)
                         }
                         .contentShape(Rectangle())

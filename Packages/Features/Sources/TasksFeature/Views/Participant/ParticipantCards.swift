@@ -83,7 +83,9 @@
         private func contactRow(systemImage: String, label: String, value: String, hint: String, url: URL?)
             -> some View
         {
-            let row = FactRow(systemImage: systemImage, label: label) { FactValue(text: value, color: Palette.accent) }
+            let row = FactRow(systemImage: systemImage, label: label, showsChevron: url != nil) {
+                FactValue(text: value, color: Palette.accent)
+            }
             if let url {
                 Button { onContact(url) } label: { row.contentShape(Rectangle()) }
                     .buttonStyle(.press(.card))

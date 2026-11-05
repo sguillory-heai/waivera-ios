@@ -11,16 +11,24 @@
         var count: Int?
         var countLabel: String?
         var first = false
+        var tone: CountTone = .info
 
-        init(_ title: String, count: Int? = nil, countLabel: String? = nil, first: Bool = false) {
+        init(
+            _ title: String,
+            count: Int? = nil,
+            countLabel: String? = nil,
+            tone: CountTone = .info,
+            first: Bool = false
+        ) {
             self.title = title
             self.count = count
             self.countLabel = countLabel
+            self.tone = tone
             self.first = first
         }
 
         var body: some View {
-            CountedSectionHeader(title, count: count, countLabel: countLabel, tone: .info)
+            CountedSectionHeader(title, count: count, countLabel: countLabel, tone: tone)
                 .padding(.leading, Spacing.gutter + Spacing.extraSmall)
                 .padding(.trailing, Spacing.gutter)
                 .padding(.top, first ? Spacing.none : Spacing.mediumPlus)
