@@ -18,6 +18,9 @@ struct TodaySources: Sendable {
     /// the web does not show Admin Requests to. Their notifications never update when another
     /// approver decides, so Needs you takes requests from here and not from the bell.
     var requests: [ChangeRequest] = []
+    /// False until the pending list has answered once (or was not needed), so a cold start
+    /// never shows the caught-up reward just before request cards arrive.
+    var requestsSettled = true
     var webBase: URL?
 }
 
@@ -115,7 +118,7 @@ enum TodayAssembler {
 
         var state = header([chats, feed, schedule], context: context, today: today)
         let open = openItems(sources, events: events, pinned: pinned, context: context)
-        state.needsYou = needsYou(open, status: chats, context: context)
+        state.needsYou = needsYou(open, status: chats, requestsSettled: sources.requestsSettled, context: context)
         state.inboxUnread = sources.notices.value?.unreadCount ?? 0
         state.nextUp = NextUpSection(
             items: schedule.isReady ? ScheduleRules.nextUp(events, now: context.now, zone: context.zone) : [],
@@ -237,6 +240,7 @@ enum TodayAssembler {
     private static func needsYou(
         _ all: [NeedsYouItem],
         status: SourceStatus,
+        requestsSettled: Bool,
         context: TodayContext
     ) -> NeedsYouSection {
         let expanded = context.local.needsYouExpanded
@@ -246,7 +250,7 @@ enum TodayAssembler {
             totalCount: all.count,
             hiddenCount: all.count - visible.count,
             isExpanded: expanded && all.count > NeedsYouSection.collapsedCount,
-            isReady: status.isReady,
+            isReady: status.isReady && (requestsSettled || !all.isEmpty),
             failed: status.failed,
             kinds: NeedsYouItem.kinds(all)
         )

@@ -41,12 +41,12 @@ extension TodayModel {
         await withDiscardingTaskGroup { group in
             group.addTask {
                 for await access in requests.access() {
-                    await self.setRequests(showing: access.showsRequests)
+                    await self.setRequests(showing: access.showsRequests, accessLoaded: access.loaded)
                 }
             }
             group.addTask {
                 for await waiting in requests.waiting() {
-                    await self.setRequests(waiting: waiting ?? [])
+                    await self.setRequests(waiting: waiting)
                 }
             }
             if stale { group.addTask { await self.refreshRequests() } }
@@ -58,16 +58,29 @@ extension TodayModel {
         requestsRefreshedAt = clock.now
         let requests = environment.requests
         await requests.ensureAccess()
-        guard await requests.currentAccess().showsRequests else { return }
-        try? await requests.refreshWaiting()
+        if await requests.currentAccess().showsRequests {
+            try? await requests.refreshWaiting()
+        }
+        requestsAttempted = true
+        setRequests()
     }
 
-    private func setRequests(showing: Bool? = nil, waiting: [ChangeRequest]? = nil) {
+    private func setRequests(
+        showing: Bool? = nil,
+        accessLoaded: Bool? = nil,
+        waiting: [ChangeRequest]?? = .none
+    ) {
         if let showing { showsRequests = showing }
-        if let waiting { waitingRequests = waiting }
+        if let accessLoaded { requestAccessLoaded = accessLoaded }
+        if case .some(let list) = waiting {
+            waitingLoaded = list != nil
+            waitingRequests = list ?? []
+        }
         let shown = showsRequests ? waitingRequests : []
-        guard shown != sources.requests else { return }
+        let settled = requestsAttempted || (requestAccessLoaded && (!showsRequests || waitingLoaded))
+        guard shown != sources.requests || settled != sources.requestsSettled else { return }
         sources.requests = shown
+        sources.requestsSettled = settled
         rebuild()
     }
 

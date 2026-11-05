@@ -37,7 +37,7 @@ final class TodayModel {
     @ObservationIgnored private let uptime: () -> TimeInterval
     @ObservationIgnored let tasks = TaskBag()
     @ObservationIgnored let activity: ActivityController
-    @ObservationIgnored var sources = TodaySources()
+    @ObservationIgnored var sources = TodaySources(requestsSettled: false)
     @ObservationIgnored private var local = TodayLocalState()
     @ObservationIgnored var now: Date
     @ObservationIgnored var connection: ConnectionBanner = .hidden
@@ -52,6 +52,9 @@ final class TodayModel {
     @ObservationIgnored var showsRequests = false
     @ObservationIgnored var waitingRequests: [ChangeRequest] = []
     @ObservationIgnored var requestsRefreshedAt: Date?
+    @ObservationIgnored var requestAccessLoaded = false
+    @ObservationIgnored var waitingLoaded = false
+    @ObservationIgnored var requestsAttempted = false
     /// Invitation answers inside their Undo window, by event id.
     @ObservationIgnored private var heldAnswers: [String: HeldAnswer] = [:]
     @ObservationIgnored private var answerToken = 0

@@ -10,6 +10,8 @@
         var onOpenParticipant: (Int) -> Void = { _ in }
 
         @Environment(\.openURL) private var openURL
+        /// The file whose View tap waits for the actions sheet to finish closing.
+        @State private var openingFile: FileRow?
 
         var body: some View {
             TaskDetailContent(
@@ -65,13 +67,19 @@
                 isPresented: Binding(
                     get: { model.fileActions.sheet != nil },
                     set: { if !$0 { model.fileActions.dismiss() } }
-                )
+                ),
+                // Pushing the viewer while the sheet is still sliding away lays the new page out
+                // mid-dismissal (its top bar lands halfway down); open it once the sheet is gone.
+                onDismiss: {
+                    guard let row = openingFile else { return }
+                    openingFile = nil
+                    show(model.open(file: row))
+                }
             ) {
                 if let sheet = model.fileActions.sheet {
                     TaskFileActionsSheet(sheet: sheet, model: model.fileActions) {
-                        let row = sheet.row
+                        openingFile = sheet.row
                         model.fileActions.dismiss()
-                        show(model.open(file: row))
                     }
                 }
             }

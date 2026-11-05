@@ -11,6 +11,8 @@
         var mode: RequestsMode = .waiting
 
         @Environment(\.openURL) private var openURL
+        /// The task "Open task" asked for, opened once the review sheet has closed.
+        @State private var openingTask: Int?
 
         var body: some View {
             RequestsContent(
@@ -40,7 +42,14 @@
                 isPresented: Binding(
                     get: { model.state.reviewing != nil },
                     set: { if !$0 { model.closeReview() } }
-                )
+                ),
+                // Push the task once the sheet is gone; pushing mid-dismissal lays the page out
+                // at the sheet's size and it slides in broken.
+                onDismiss: {
+                    guard let id = openingTask else { return }
+                    openingTask = nil
+                    onOpenTask(id)
+                }
             ) {
                 if let item = model.state.reviewing {
                     ReviewSheet(
@@ -55,8 +64,8 @@
                             reject: { model.ask(approve: false) },
                             openTask: item.request.taskId.map { id in
                                 {
+                                    openingTask = id
                                     model.closeReview()
-                                    onOpenTask(id)
                                 }
                             },
                             retry: { model.retryDetails() },

@@ -17,6 +17,16 @@ struct TodayAssemblerTests {
 
     // MARK: Needs you
 
+    /// A cold start never shows the caught-up reward while the pending list is still on its way.
+    @Test func notCaughtUpUntilThePendingListAnswers() {
+        var sources = Fixture.sources(activity: [Fixture.activity(1, isRead: true)])
+        sources.requestsSettled = false
+        #expect(!assemble(sources).needsYou.isReady)
+        #expect(!assemble(sources).isAllCaughtUp)
+        sources.requestsSettled = true
+        #expect(assemble(sources).isAllCaughtUp)
+    }
+
     @Test func unreadDirectsMentionsInvitationsAndTicketUpdatesNeedYou() {
         var group = Fixture.direct(11, unread: 4)
         group.kind = .group
