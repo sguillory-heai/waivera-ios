@@ -105,7 +105,7 @@
                     dismissesOnConfirm: false,
                     onConfirm: { model.confirm() }
                 )
-                .waiveraSheetPresentation()
+                .waiveraFittedSheetPresentation()
             }
         }
     }

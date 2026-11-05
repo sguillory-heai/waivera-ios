@@ -159,7 +159,7 @@
                     confirmTitle: ConversationStrings.text("delete.confirm"),
                     onConfirm: { Task { await interactions.confirmDelete(messageId: messageId) } }
                 )
-                .presentationDetents([.medium])
+                .waiveraFittedSheetPresentation()
             case .imagePreview:
                 EmptyView()
             }

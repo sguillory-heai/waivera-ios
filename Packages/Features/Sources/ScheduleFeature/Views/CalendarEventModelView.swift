@@ -55,7 +55,7 @@
                     cancelTitle: ScheduleStrings.text("schedule.cancel.keep"),
                     onConfirm: { model.cancelEvent() }
                 )
-                .waiveraSheetPresentation()
+                .waiveraFittedSheetPresentation()
             }
             .onChange(of: model.closeRequest) { _, request in
                 guard request != nil else { return }

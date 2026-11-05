@@ -84,7 +84,7 @@
                 ) {
                     if model.confirmSignOut() { actions.signOut() }
                 }
-                .waiveraSheetPresentation()
+                .waiveraFittedSheetPresentation()
             }
         }
     }
