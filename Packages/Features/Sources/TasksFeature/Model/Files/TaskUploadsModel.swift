@@ -33,7 +33,7 @@ struct RequiredRow: Identifiable, Hashable, Sendable {
 
 /// The Add a file sheet. An extra file on an employee task is filed under a category first, as
 /// the web's upload modal asks; a required file takes one file, extra files up to ten.
-struct UploadSheet: Hashable, Sendable {
+struct UploadSheet: Equatable, Sendable {
     var target: UploadTarget
     var title: String?
     var needsCategory: Bool

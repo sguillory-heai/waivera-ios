@@ -34,7 +34,8 @@ struct ReviewChain: Equatable {
 @MainActor
 @Observable
 final class TaskReviewModel {
-    private(set) var state = ReviewState()
+    /// Set only by this model and its extensions in the other Review files.
+    var state = ReviewState()
 
     /// Results for the task screen: its message, a reload, or a file or task to open.
     @ObservationIgnored var onEffect: ((ReviewEffect) -> Void)?

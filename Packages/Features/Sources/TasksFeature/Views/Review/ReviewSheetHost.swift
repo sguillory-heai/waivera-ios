@@ -1,5 +1,6 @@
 #if canImport(UIKit)
     import SwiftUI
+    import WaiveraAPI
     import WaiveraData
     import WaiveraDesign
 
