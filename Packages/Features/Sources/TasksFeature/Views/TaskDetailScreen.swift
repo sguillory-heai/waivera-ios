@@ -64,9 +64,12 @@
                 }
             }
             .sheet(
-                isPresented: Binding(
-                    get: { model.fileActions.sheet != nil },
-                    set: { if !$0 { model.fileActions.dismiss() } }
+                // `item:` keeps the sheet's last content while it slides away. With an `if let`
+                // body it went blank the moment it closed, lost its fitted height and jumped to
+                // full height mid-dismissal before the viewer pushed.
+                item: Binding(
+                    get: { model.fileActions.sheet },
+                    set: { if $0 == nil { model.fileActions.dismiss() } }
                 ),
                 // Pushing the viewer while the sheet is still sliding away lays the new page out
                 // mid-dismissal (its top bar lands halfway down); open it once the sheet is gone.
@@ -75,12 +78,10 @@
                     openingFile = nil
                     show(model.open(file: row))
                 }
-            ) {
-                if let sheet = model.fileActions.sheet {
-                    TaskFileActionsSheet(sheet: sheet, model: model.fileActions) {
-                        openingFile = sheet.row
-                        model.fileActions.dismiss()
-                    }
+            ) { sheet in
+                TaskFileActionsSheet(sheet: sheet, model: model.fileActions) {
+                    openingFile = sheet.row
+                    model.fileActions.dismiss()
                 }
             }
             .taskReviewSheets(model.review, today: model.state.today) {

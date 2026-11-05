@@ -48,14 +48,15 @@
         }
 
         private var actions: [TopBarAction] {
-            guard let model, model.bytes != nil else { return [] }
-            return [
+            // Always there (dimmed until the file is in), so the title never reflows when it arrives.
+            [
                 TopBarAction(
                     id: "share",
                     systemImage: "square.and.arrow.up",
-                    accessibilityLabel: TasksStrings.text("tasks.file.share")
+                    accessibilityLabel: TasksStrings.text("tasks.file.share"),
+                    isEnabled: model?.bytes != nil
                 ) {
-                    sharing = model.exportCopy().map(SharedFile.init)
+                    sharing = model?.exportCopy().map(SharedFile.init)
                 }
             ]
         }

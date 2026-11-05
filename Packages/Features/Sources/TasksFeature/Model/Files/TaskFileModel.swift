@@ -107,8 +107,12 @@ final class TaskFileModel {
         let tasks = environment.tasks
         let taskId = taskId
         let attachmentId = attachmentId
-        if webPath == nil { webPath = (try? await tasks.task(id: taskId))?.webPath }
+        // Side by side, so the file's name reaches the top bar after one round trip, not two. The
+        // web link is in before any failure below, which offers it.
+        let needsWebPath = webPath == nil
+        async let detail: TaskDetail? = needsWebPath ? (try? await tasks.task(id: taskId)) : nil
         let found = await attempt { try await tasks.attachments(taskId: taskId) }
+        if let path = await detail?.webPath { webPath = path }
         guard case .success(let files) = found, let file = files.first(where: { $0.attachmentId == attachmentId })
         else {
             phase = .failed

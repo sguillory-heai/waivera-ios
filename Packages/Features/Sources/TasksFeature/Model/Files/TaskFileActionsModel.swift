@@ -13,10 +13,12 @@ final class TaskFileActionsModel {
     enum Action: Sendable, Hashable { case save, share }
 
     /// The sheet a tapped file opens: what it is, and which action is running.
-    struct Sheet: Sendable, Hashable {
+    /// Identified by the file, so a running action updates the open sheet instead of replacing it.
+    struct Sheet: Identifiable, Sendable, Hashable {
         var row: FileRow
         var attachment: TaskAttachment
         var busy: Action?
+        var id: Int { row.id }
     }
 
     /// A downloaded copy waiting for the system: the Files picker to save it, or the share sheet.
