@@ -52,7 +52,10 @@ struct ForegroundPresentationTests {
     }
 
     @Test func nothingPlaysASoundInTheForeground() {
-        let meeting = ForegroundPresentationPolicy.decide(for: .meeting(eventID: "evt_1"), context: context(live: false))
+        let meeting = ForegroundPresentationPolicy.decide(
+            for: .meeting(eventID: "evt_1"),
+            context: context(live: false)
+        )
         #expect(meeting.showBanner)
         #expect(!meeting.playSound)
     }
