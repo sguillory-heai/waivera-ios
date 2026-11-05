@@ -9,6 +9,8 @@ public final class FakeTasksRepository: TasksRepository, @unchecked Sendable {
     public let logged = LockedValue<[NewActivity]>([])
     /// Every read, as "task:12", "activity:12" or "files:12".
     public let calls = CallLog()
+    /// More casework on top of the demo rows, for long sections.
+    public let extraCasework = LockedValue<[TaskSummary]>([])
     private let casework: [TaskSummary]
     private let mine: [TaskSummary]
     private let activityLog = LockedValue<[Int: [TaskActivity]]>([:])
@@ -20,9 +22,10 @@ public final class FakeTasksRepository: TasksRepository, @unchecked Sendable {
         activityLog.update { $0 = empty ? [:] : [12: Self.demoActivity(now: DemoData.now)] }
     }
 
-    public func tasks(_ query: TaskQuery, page: Int) async throws -> TaskPage {
+    public func tasks(_ query: TaskQuery, page: Int, pageSize: Int) async throws -> TaskPage {
         try check()
-        var rows = query.scope == .casework ? casework : mine
+        calls.record("tasks:\(query.slice.map(Self.describe) ?? "all"):\(page)x\(pageSize)")
+        var rows = query.scope == .casework ? casework + extraCasework.get() : mine
         if query.assignedToMe { rows = rows.filter { $0.assigneeId == DemoData.viewerId } }
         let today = DemoData.today
         switch query.window {
@@ -37,13 +40,17 @@ public final class FakeTasksRepository: TasksRepository, @unchecked Sendable {
             case .only: rows = rows.filter(\.delayed)
             }
         }
+        if let slice = query.slice { rows = rows.filter { slice.contains($0, casework: query.scope == .casework) } }
         let search = query.search.trimmingCharacters(in: .whitespaces).lowercased()
         if !search.isEmpty {
             rows = rows.filter { "\($0.key) \($0.title) \($0.about ?? "")".lowercased().contains(search) }
         }
-        let size = APIClient.taskPageSize
-        let start = max(0, (page - 1) * size)
-        return TaskPage(items: Array(rows.dropFirst(start).prefix(size)), totalCount: rows.count)
+        let start = max(0, (page - 1) * pageSize)
+        return TaskPage(items: Array(rows.dropFirst(start).prefix(pageSize)), totalCount: rows.count)
+    }
+
+    private static func describe(_ slice: TaskSlice) -> String {
+        slice.delayed ? "delayed" : "\(slice.dueFrom?.isoString ?? "")..\(slice.dueTo?.isoString ?? "")"
     }
 
     public func counts(scope: TaskScope, assignedToMe: Bool) async throws -> TaskCounts {

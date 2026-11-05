@@ -52,19 +52,50 @@ public struct TaskQuery: Sendable, Hashable {
     public var assignedToMe: Bool
     /// Casework only: the server applies delay filters to client tasks alone.
     public var delays: DelayFilter
+    /// One section of the list; nil asks for the whole list as `delays` says.
+    public var slice: TaskSlice?
 
     public init(
         scope: TaskScope,
         window: TaskWindow,
         search: String = "",
         assignedToMe: Bool = false,
-        delays: DelayFilter = .show
+        delays: DelayFilter = .show,
+        slice: TaskSlice? = nil
     ) {
         self.scope = scope
         self.window = window
         self.search = search
         self.assignedToMe = assignedToMe
         self.delays = delays
+        self.slice = slice
+    }
+}
+
+/// One section of a task list (Android `TaskSlice`), asked of the server on its own so it comes
+/// with its own total. `delayed` is casework under an approved delay; otherwise casework leaves
+/// delayed tasks out, as they have their own section. `dueFrom` and `dueTo` are inclusive due
+/// dates in the employee's saved zone; overdue is "due through yesterday", cut from the same day
+/// as the week sections so a task can never land in two of them.
+public struct TaskSlice: Sendable, Hashable {
+    public var delayed: Bool
+    public var dueFrom: CalendarDate?
+    public var dueTo: CalendarDate?
+
+    public init(delayed: Bool = false, dueFrom: CalendarDate? = nil, dueTo: CalendarDate? = nil) {
+        self.delayed = delayed
+        self.dueFrom = dueFrom
+        self.dueTo = dueTo
+    }
+
+    /// Whether a task falls in this slice, as the server cuts it (fakes and demo data).
+    /// An undated task, which the server never sends, sits with the open-ended later slice.
+    public func contains(_ task: TaskSummary, casework: Bool) -> Bool {
+        if casework, delayed != task.delayed { return false }
+        guard let due = task.due else { return dueTo == nil }
+        if let dueFrom, due < dueFrom { return false }
+        if let dueTo, due > dueTo { return false }
+        return true
     }
 }
 

@@ -11,8 +11,15 @@
         let onRefresh: @Sendable () async -> Void
 
         @State private var choosingDelays = false
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
         var body: some View {
+            ScrollViewReader { proxy in
+                list(proxy)
+            }
+        }
+
+        private func list(_ proxy: ScrollViewProxy) -> some View {
             List {
                 controls.tasksListRow()
                 if let meta = state.meta {
@@ -23,7 +30,7 @@
                         .padding(.vertical, Spacing.xxSmall)
                         .tasksListRow()
                 }
-                content
+                content(proxy)
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
@@ -85,7 +92,7 @@
             .padding(.vertical, Spacing.extraSmall)
         }
 
-        @ViewBuilder private var content: some View {
+        @ViewBuilder private func content(_ proxy: ScrollViewProxy) -> some View {
             switch state.phase {
             case .loading:
                 SkeletonList(rows: 6)
@@ -111,6 +118,7 @@
             case .content:
                 ForEach(state.sections) { section in
                     TaskGroupHeader(section: section)
+                        .id(SectionAnchor(group: section.group))
                         .padding(.horizontal, Spacing.gutter)
                         .padding(.top, Spacing.medium)
                         .padding(.bottom, Spacing.extraSmall)
@@ -120,19 +128,27 @@
                             .padding(.horizontal, Spacing.gutter)
                             .padding(.vertical, Spacing.extraSmall)
                             .tasksListRow()
-                            .onAppear {
-                                if row.id == state.sections.last?.rows.last?.id { actions.loadMore() }
+                    }
+                    if let more = section.more {
+                        SectionMoreButton(group: section.group, more: more) {
+                            actions.showMore(section.group)
+                        } onShowFewer: {
+                            actions.showFewer(section.group)
+                            // Folding a long section would leave the person far below it; bring its header back.
+                            withAnimation(Motion.animation(.layout, reduceMotion: reduceMotion)) {
+                                proxy.scrollTo(SectionAnchor(group: section.group), anchor: .top)
                             }
+                        }
+                        .padding(.horizontal, Spacing.gutter)
+                        .padding(.vertical, Spacing.extraSmall)
+                        .tasksListRow()
                     }
                 }
-                if state.isLoadingMore {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .padding(Spacing.medium)
-                        .accessibilityLabel(Text(TasksStrings.text("tasks.loadingMore")))
-                        .tasksListRow()
-                }
             }
+        }
+
+        private struct SectionAnchor: Hashable {
+            let group: DueGroup
         }
 
         private func windowTitle(_ window: TaskWindow) -> String {

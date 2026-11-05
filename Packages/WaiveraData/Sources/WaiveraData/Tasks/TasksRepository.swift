@@ -3,7 +3,7 @@ import WaiveraAPI
 
 /// Tasks straight from `api/tasks`; nothing is cached, so the web and the phone never disagree.
 public protocol TasksRepository: Sendable {
-    func tasks(_ query: TaskQuery, page: Int) async throws -> TaskPage
+    func tasks(_ query: TaskQuery, page: Int, pageSize: Int) async throws -> TaskPage
     /// How many open tasks a list holds, how many are overdue, and (casework) how many are delayed.
     func counts(scope: TaskScope, assignedToMe: Bool) async throws -> TaskCounts
     func task(id: Int) async throws -> TaskDetail
@@ -17,6 +17,13 @@ public protocol TasksRepository: Sendable {
     func fileData(taskId: Int, attachment: TaskAttachment) async throws -> Data
     /// The same bytes for a copy to save or share, up to `TaskAttachment.maxExportBytes`.
     func fileExport(taskId: Int, attachment: TaskAttachment) async throws -> Data
+}
+
+extension TasksRepository {
+    /// A page of the server's own size.
+    public func tasks(_ query: TaskQuery, page: Int) async throws -> TaskPage {
+        try await tasks(query, page: page, pageSize: APIClient.taskPageSize)
+    }
 }
 
 public struct LiveTasksRepository: TasksRepository {
@@ -33,15 +40,24 @@ public struct LiveTasksRepository: TasksRepository {
         self.requests = requests
     }
 
-    public func tasks(_ query: TaskQuery, page: Int) async throws -> TaskPage {
-        let filter = try await filter(
+    public func tasks(_ query: TaskQuery, page: Int, pageSize: Int) async throws -> TaskPage {
+        let delays: DelayFilter =
+            switch (query.scope, query.slice) {
+            case (.mine, _): .show
+            case (.casework, nil): query.delays
+            // Delayed casework has its own section, so every other section leaves it out.
+            case (.casework, let slice?): slice.delayed ? .only : .hide
+            }
+        var filter = try await filter(
             scope: query.scope,
             assignedToMe: query.assignedToMe,
             search: query.search,
             window: query.window,
-            delays: query.scope == .casework ? query.delays : .show
+            delays: delays
         )
-        let response = try await api.tasks(userId: try me(), filter: filter, page: page)
+        filter.dueFrom = query.slice?.dueFrom
+        filter.dueTo = query.slice?.dueTo
+        let response = try await api.tasks(userId: try me(), filter: filter, page: page, pageSize: pageSize)
         return TaskPage(items: response.tasks.map(TaskMapping.summary), totalCount: response.totalCount)
     }
 
@@ -153,7 +169,9 @@ public struct LiveTasksRepository: TasksRepository {
 public struct EmptyTasksRepository: TasksRepository {
     public init() {}
 
-    public func tasks(_ query: TaskQuery, page: Int) async throws -> TaskPage { TaskPage(items: [], totalCount: 0) }
+    public func tasks(_ query: TaskQuery, page: Int, pageSize: Int) async throws -> TaskPage {
+        TaskPage(items: [], totalCount: 0)
+    }
     public func counts(scope: TaskScope, assignedToMe: Bool) async throws -> TaskCounts {
         TaskCounts(open: 0, overdue: 0)
     }

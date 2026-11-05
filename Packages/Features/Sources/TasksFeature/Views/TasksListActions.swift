@@ -8,7 +8,8 @@
         var setWindow: (TaskWindow) -> Void = { _ in }
         var setAssignedToMe: (Bool) -> Void = { _ in }
         var setDelays: (DelayFilter) -> Void = { _ in }
-        var loadMore: () -> Void = {}
+        var showMore: (DueGroup) -> Void = { _ in }
+        var showFewer: (DueGroup) -> Void = { _ in }
         var retry: () -> Void = {}
     }
 #endif

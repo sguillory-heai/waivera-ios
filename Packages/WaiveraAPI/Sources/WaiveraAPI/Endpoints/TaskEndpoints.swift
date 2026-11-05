@@ -12,6 +12,9 @@ public struct TaskListFilter: Sendable, Hashable {
     public var date: [String]
     /// `without-delays` or `delayed`; nil lists both.
     public var taskDelayFilter: String?
+    /// Inclusive due-date bounds, ANDed with `date`.
+    public var dueFrom: CalendarDate?
+    public var dueTo: CalendarDate?
 
     public init(
         assignee: String?,
@@ -19,7 +22,9 @@ public struct TaskListFilter: Sendable, Hashable {
         includePendingApprovals: Bool? = nil,
         searchTerm: String = "",
         date: [String] = [],
-        taskDelayFilter: String? = nil
+        taskDelayFilter: String? = nil,
+        dueFrom: CalendarDate? = nil,
+        dueTo: CalendarDate? = nil
     ) {
         self.assignee = assignee
         self.taskContext = taskContext
@@ -27,6 +32,8 @@ public struct TaskListFilter: Sendable, Hashable {
         self.searchTerm = searchTerm
         self.date = date
         self.taskDelayFilter = taskDelayFilter
+        self.dueFrom = dueFrom
+        self.dueTo = dueTo
     }
 }
 
@@ -50,6 +57,8 @@ extension APIClient {
         query.append(URLQueryItem(name: "searchTerm", value: filter.searchTerm))
         query += filter.date.map { URLQueryItem(name: "date", value: $0) }
         if let delays = filter.taskDelayFilter { query.append(URLQueryItem(name: "taskDelayFilter", value: delays)) }
+        if let from = filter.dueFrom { query.append(URLQueryItem(name: "dateRangeStart", value: from.isoString)) }
+        if let to = filter.dueTo { query.append(URLQueryItem(name: "dateRangeEnd", value: to.isoString)) }
         // Closed tasks never show, and the soonest due comes first, as on the web.
         query.append(URLQueryItem(name: "excludeStatus", value: "CLOSED"))
         query.append(URLQueryItem(name: "sort", value: "due:asc"))

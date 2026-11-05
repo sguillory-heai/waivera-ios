@@ -78,10 +78,29 @@ struct TaskRow: Identifiable, Hashable, Sendable {
     }
 }
 
+/// One due group as the list shows it: the first `rows` of the server's `total` for that group.
+/// `more` is the button under it, or nil when the whole group fits in the first rows.
 struct TaskSection: Identifiable, Hashable, Sendable {
     var group: DueGroup
     var rows: [TaskRow]
+    var total: Int
+    var more: SectionMore?
     var id: DueGroup { group }
+
+    init(group: DueGroup, rows: [TaskRow], total: Int? = nil, more: SectionMore? = nil) {
+        self.group = group
+        self.rows = rows
+        self.total = total ?? rows.count
+        self.more = more
+    }
+}
+
+/// The button under a capped section (Android `SectionMore`).
+enum SectionMore: Hashable, Sendable {
+    /// `hidden` tasks are not shown yet; a tap shows up to `TasksRules.sectionStep` more.
+    case showMore(hidden: Int, loading: Bool = false, failed: Bool = false)
+    /// Everything is open; a tap folds the section back to its first rows.
+    case showFewer
 }
 
 enum TasksRules {
@@ -130,9 +149,38 @@ enum TasksRules {
         return .later
     }
 
-    static func sections(_ rows: [TaskRow]) -> [TaskSection] {
-        Dictionary(grouping: rows, by: \.group)
-            .sorted { $0.key < $1.key }
-            .map { TaskSection(group: $0.key, rows: $0.value) }
+    /// Rows each section opens with (Sheldon, 2026-11-05).
+    static let sectionFirst = 5
+    /// Rows each Show more adds.
+    static let sectionStep = 10
+
+    /// The sections a list asks the server for, in display order, with the same week edges as
+    /// `group`. Delayed casework is one section of its own; every other section leaves it out.
+    static func sectionPlan(_ query: TaskQuery, today: CalendarDate, firstWeekday: Int) -> [(DueGroup, TaskSlice)] {
+        let casework = query.scope == .casework
+        let delayed = casework && query.delays != .hide
+        let others = !(casework && query.delays == .only)
+        let back = (today.weekday - firstWeekday + 7) % 7
+        let nextWeek = today.adding(days: 7 - back)
+        var plan: [(DueGroup, TaskSlice)] = []
+        if others, query.window != .dueSoon { plan.append((.overdue, TaskSlice(dueTo: today.adding(days: -1)))) }
+        if delayed { plan.append((.delayed, TaskSlice(delayed: true))) }
+        if others, query.window != .overdue {
+            plan.append((.thisWeek, TaskSlice(dueFrom: today, dueTo: nextWeek.adding(days: -1))))
+            plan.append((.nextWeek, TaskSlice(dueFrom: nextWeek, dueTo: nextWeek.adding(days: 6))))
+            plan.append((.later, TaskSlice(dueFrom: nextWeek.adding(days: 7))))
+        }
+        return plan
+    }
+
+    /// A task in two sections at once (the server moved it between two section loads) shows only
+    /// in the first, as the list keys rows by task id.
+    static func distinctRows(_ sections: [TaskSection]) -> [TaskSection] {
+        var seen = Set<Int>()
+        return sections.map { section in
+            var copy = section
+            copy.rows = section.rows.filter { seen.insert($0.id).inserted }
+            return copy
+        }
     }
 }

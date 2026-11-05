@@ -151,7 +151,9 @@
         let row: ChatRow
 
         var body: some View {
-            HStack(alignment: .firstTextBaseline, spacing: Spacing.extraSmall) {
+            // Centered like Android's row: an image's baseline is its bottom edge, so baseline
+            // alignment sat the clip above the middle of the text.
+            HStack(alignment: .center, spacing: Spacing.extraSmall) {
                 if row.hasAttachment {
                     Image(waivera: "paperclip")
                         .resizable()

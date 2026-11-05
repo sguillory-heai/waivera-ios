@@ -72,6 +72,33 @@ struct TasksRulesTests {
         #expect(other.assignee == "Alex")
     }
 
+    @Test func sectionsCutWeeksLikeTheGroupsAcrossTheFallBackChange() {
+        // Wednesday Nov 4 2026, the week of the US fall-back day; Sunday-first weeks start Nov 1.
+        let wednesday = date(2026, 11, 4)
+        let plan = TasksRules.sectionPlan(
+            TaskQuery(scope: .casework, window: .allOpen),
+            today: wednesday,
+            firstWeekday: 1
+        )
+        #expect(plan.map(\.0) == [.overdue, .delayed, .thisWeek, .nextWeek, .later])
+        // Overdue ends the day before This week starts, so no task can sit in both.
+        #expect(plan[0].1 == TaskSlice(dueTo: date(2026, 11, 3)))
+        #expect(plan[2].1 == TaskSlice(dueFrom: wednesday, dueTo: date(2026, 11, 7)))
+        #expect(plan[3].1 == TaskSlice(dueFrom: date(2026, 11, 8), dueTo: date(2026, 11, 14)))
+        #expect(plan[4].1 == TaskSlice(dueFrom: date(2026, 11, 15)))
+        let allOpen = TaskQuery(scope: .casework, window: .allOpen)
+        let monday = TasksRules.sectionPlan(allOpen, today: wednesday, firstWeekday: 2)
+        #expect(monday[2].1.dueTo == date(2026, 11, 8))
+
+        func groups(_ query: TaskQuery) -> [DueGroup] {
+            TasksRules.sectionPlan(query, today: wednesday, firstWeekday: 1).map(\.0)
+        }
+        #expect(groups(TaskQuery(scope: .casework, window: .dueSoon)) == [.delayed, .thisWeek, .nextWeek, .later])
+        #expect(groups(TaskQuery(scope: .casework, window: .overdue, delays: .hide)) == [.overdue])
+        #expect(groups(TaskQuery(scope: .casework, window: .dueSoon, delays: .only)) == [.delayed])
+        #expect(groups(TaskQuery(scope: .mine, window: .overdue)) == [.overdue])
+    }
+
     @Test func dueTextAroundToday() {
         #expect(TaskFormat.due(today, today: today) == .today)
         #expect(TaskFormat.due(date(2026, 11, 2), today: today) == .tomorrow)
@@ -185,6 +212,47 @@ struct TasksModelTests {
         model.setQuery("Jordan")
         #expect(await eventually { model.state.phase == .content && model.state.rowCount == 2 })
         #expect(model.state.meta == "2 matches")
+    }
+
+    @Test func aSectionCountsTheServerTotalAndOpensTenMoreInPlace() async {
+        let fakes = FakeDataEnvironment.make()
+        let today = DemoData.today
+        fakes.tasks.extraCasework.update {
+            $0 = (1...17).map { index in
+                TaskSummary(
+                    id: 9000 + index,
+                    key: "HEA-\(9000 + index)",
+                    title: "Late \(index)",
+                    due: today.adding(days: -40 + index),
+                    state: .notStarted,
+                    about: nil
+                )
+            }
+        }
+        let model = TasksModel(environment: fakes.environment, firstWeekday: 1)
+        let run = Task { await model.run() }
+        defer { run.cancel() }
+        model.setWindow(.overdue)
+        #expect(await eventually { model.state.phase == .content && model.state.sections.first?.group == .overdue })
+        let overdue = model.state.sections.first
+        let total = overdue?.total ?? 0
+        #expect(total > 17)
+        #expect(overdue?.rows.count == 5)
+        #expect(overdue?.more == .showMore(hidden: total - 5))
+
+        model.showMore(.overdue)
+        #expect(await eventually { model.state.sections.first?.rows.count == 15 })
+        #expect(model.state.sections.first?.total == total)
+        // One read from the top for all fifteen, so a task closed elsewhere can't shift the pages.
+        #expect(fakes.tasks.calls.all.contains { $0.hasSuffix(":1x15") })
+
+        model.showFewer(.overdue)
+        #expect(model.state.sections.first?.rows.count == 5)
+        let calls = fakes.tasks.calls.all.count
+        model.showMore(.overdue)
+        // Rows already loaded open again without asking the server.
+        #expect(model.state.sections.first?.rows.count == 15)
+        #expect(fakes.tasks.calls.all.count == calls)
     }
 
     @Test func requestsHideWhenTheWebWouldHideThem() async {

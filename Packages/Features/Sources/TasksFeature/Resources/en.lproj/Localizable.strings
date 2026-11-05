@@ -20,7 +20,7 @@
 "tasks.meta.delaysHidden" = "delays hidden";
 "tasks.meta.matches.one" = "%@ match";
 "tasks.meta.matches.other" = "%@ matches";
-"tasks.refreshFailed" = "Couldn't refresh your tasks.";
+"tasks.refreshFailed" = "Couldn't load all of your tasks.";
 "tasks.tryAgain" = "Try again";
 "tasks.error.title" = "Couldn't load your tasks";
 "tasks.empty.dueSoon.title" = "Nothing due soon";
@@ -59,6 +59,14 @@
 "tasks.group.nextWeek" = "Next week";
 "tasks.group.later" = "Later";
 "tasks.group.noDue" = "No due date";
+"tasks.section.more.one" = "Show %@ more";
+"tasks.section.more.other" = "Show %@ more";
+"tasks.section.more.description.one" = "Show %1$@ more task in %2$@";
+"tasks.section.more.description.other" = "Show %1$@ more tasks in %2$@";
+"tasks.section.fewer" = "Show fewer";
+"tasks.section.fewer.description" = "Show fewer tasks in %@";
+"tasks.section.moreFailed" = "Try again";
+"tasks.section.moreFailed.description" = "Couldn't load more tasks in %@. Try again";
 "tasks.group.count.one" = "%@ task";
 "tasks.group.count.other" = "%@ tasks";
 "tasks.row.daysLate.one" = "%@ day late";

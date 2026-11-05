@@ -4,15 +4,16 @@
     import WaiveraDesign
 
     /// A due group's title with its count chip (Android `GroupHeader`): rose for Overdue, the
-    /// neutral chip for every other group.
+    /// neutral chip for every other group. The count is the server's total for the group, not the
+    /// rows shown, so it matches the line above the list.
     struct TaskGroupHeader: View {
         let section: TaskSection
 
         var body: some View {
             CountedSectionHeader(
                 section.group.title,
-                count: section.rows.count,
-                countLabel: TasksStrings.plural("tasks.group.count", section.rows.count),
+                count: section.total,
+                countLabel: TasksStrings.plural("tasks.group.count", section.total),
                 tone: section.group == .overdue ? .attention : .info
             )
         }

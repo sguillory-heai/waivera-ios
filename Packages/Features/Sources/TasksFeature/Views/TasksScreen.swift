@@ -28,7 +28,8 @@
                             setWindow: { model.setWindow($0) },
                             setAssignedToMe: { model.setAssignedToMe($0) },
                             setDelays: { model.setDelays($0) },
-                            loadMore: { model.loadMore() },
+                            showMore: { model.showMore($0) },
+                            showFewer: { model.showFewer($0) },
                             retry: { model.retry() }
                         ),
                         onRefresh: { [model] in await model.refresh() }
