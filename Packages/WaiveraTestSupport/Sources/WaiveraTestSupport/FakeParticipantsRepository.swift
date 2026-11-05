@@ -71,8 +71,14 @@ public final class FakeParticipantsRepository: ParticipantsRepository, @unchecke
             compliant: false,
             changePending: true
         )
-        let mia = ParticipantProfile(id: 503, name: "Mia Chen", initials: "MC", planEnd: today.adding(days: 12))
-        let ava = ParticipantProfile(id: 504, name: "Ava Patel", initials: "AP", deactivated: true)
+        let mia = ParticipantProfile(
+            id: 503,
+            name: "Mia Chen",
+            initials: "MC",
+            planEnd: today.adding(days: 12),
+            compliant: true
+        )
+        let ava = ParticipantProfile(id: 504, name: "Ava Patel", initials: "AP", deactivated: true, compliant: true)
         return [501: jordan, 502: sam, 503: mia, 504: ava]
     }
 }

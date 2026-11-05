@@ -20,6 +20,8 @@ struct ReviewChain: Equatable {
     var acknowledged = false
     /// The server changed what the stage needs; the refetched questions say so.
     var requirementsChanged = false
+    /// What was typed before the server turned the answers away, kept where the fields still match.
+    var keptAnswers: [Int: [String: String]] = [:]
     var idempotencyKey = UUID().uuidString.lowercased()
 }
 
@@ -152,11 +154,14 @@ final class TaskReviewModel {
                 .requirements(
                     RequirementsForm(
                         requirements: plan.requirements,
-                        values: RequirementChecks.initial(plan.requirements),
+                        values: Self.values(plan.requirements, keeping: current.keptAnswers),
                         changed: current.requirementsChanged
                     )
                 )
             )
+        } else if current.requirementsChanged, plan.requirements.isEmpty {
+            // Refused for its answers, yet the fresh plan asks nothing: sending again would loop.
+            stop(.changed, reload: true)
         } else {
             await send(current, plan)
         }
@@ -208,12 +213,21 @@ final class TaskReviewModel {
         let review = review
         let id = taskId
         let result = await attempt { try await review.approve(taskId: id, send: send) }
-        // An approval that went through is reported even if its sheet was closed meanwhile.
+        // An approval that went through is reported even if its sheet was closed meanwhile; a
+        // newer chain started since keeps its own sheet.
         if case .success(.approved(let completed)) = result {
+            guard isCurrent(current) else {
+                onEffect?(.done(current.action, completed: completed))
+                onEffect?(.reload)
+                return
+            }
             return stop(.done(current.action, completed: completed), reload: true)
         }
         guard isCurrent(current) else { return }
         switch result {
+        case .failure where state.step == nil:
+            // The server may have taken it before the answer was lost: show the task as it is now.
+            stop(.failed, reload: true)
         case .failure:
             setSaving(false)
             failInSheet()
@@ -230,6 +244,7 @@ final class TaskReviewModel {
     private func requirementsChanged(_ current: ReviewChain) {
         var next = current
         next.plan = nil
+        next.keptAnswers = current.answers ?? [:]
         next.answers = nil
         next.requirementsChanged = true
         next.idempotencyKey = UUID().uuidString.lowercased()
@@ -311,6 +326,21 @@ final class TaskReviewModel {
         guard case .sendBack(var form) = state.step else { return }
         edit(&form)
         state.step = .sendBack(form)
+    }
+
+    /// The server's defaults, with what was typed before kept for fields that are still asked.
+    static func values(
+        _ requirements: [StageRequirement],
+        keeping kept: [Int: [String: String]]
+    ) -> [Int: [String: String]] {
+        var values = RequirementChecks.initial(requirements)
+        for requirement in requirements {
+            for (key, value) in kept[requirement.actionId] ?? [:]
+            where requirement.fields.contains(where: { $0.key == key }) && !value.isEmpty {
+                values[requirement.actionId, default: [:]][key] = value
+            }
+        }
+        return values
     }
 
     static func problem(_ error: any Error) -> UploadProblem { (error as? UploadRefused)?.problem ?? .failed }

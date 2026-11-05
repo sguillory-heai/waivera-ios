@@ -144,7 +144,7 @@
                     name: TasksStrings.text("tasks.late.evidenceKept"),
                     note: TasksStrings.text("tasks.upload.done"),
                     kind: FileKind(name: "", mimeType: nil),
-                    onRemove: nil
+                    onRemove: form.uploadedEvidenceId == nil || form.isSaving ? nil : { model.removeEvidence() }
                 )
             } else {
                 ForEach(Array(UploadSource.available.enumerated()), id: \.element) { index, item in

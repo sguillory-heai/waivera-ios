@@ -146,10 +146,30 @@ struct TaskReviewModelTests {
         #expect(await eventually {
             if case .requirements(let form) = harness.model.state.step { form.changed } else { false }
         })
+        // What was typed stays where the field is still asked.
+        guard case .requirements(let again) = harness.model.state.step else { return #expect(Bool(false)) }
+        #expect(again.values[7]?[StageRequirement.planStart] == start)
         let sends = harness.fakes.review.sent.get()
         #expect(sends.count == 1)
         #expect(sends.first?.answers[7]?[StageRequirement.planStart] == start)
         #expect(sends.first?.acknowledgeWarnings == false)
+    }
+
+    @Test func aRefusalForAnswersThatAFreshPlanNoLongerAsksStopsInsteadOfLooping() async {
+        let harness = Harness()
+        harness.fakes.review.outcomes.update { $0 = [.requirementsChanged([], version: "r2")] }
+        harness.model.start(.approve, task: harness.task())
+        #expect(await eventually { harness.effects == [.changed, .reload] })
+        #expect(harness.fakes.review.sent.get().count == 1)
+    }
+
+    @Test func aLostAnswerWithNoSheetOpenReloadsTheTask() async {
+        let harness = Harness()
+        harness.fakes.review.outcomes.update { $0 = [nil] }
+        harness.model.start(.approveAll, task: harness.task())
+        #expect(await eventually { harness.model.state.step != nil })
+        harness.model.confirmAll()
+        #expect(await eventually { harness.effects == [.failed, .reload] })
     }
 
     @Test func aRelatedWarningCanBeAcknowledgedButABlockerCannot() async {

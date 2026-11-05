@@ -37,7 +37,7 @@ public struct ParticipantProfile: Sendable, Hashable {
         birthDate: CalendarDate? = nil,
         intake: String? = nil,
         deactivated: Bool = false,
-        compliant: Bool = true,
+        compliant: Bool = false,
         changePending: Bool = false
     ) {
         self.id = id

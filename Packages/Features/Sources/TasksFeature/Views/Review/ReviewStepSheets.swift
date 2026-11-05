@@ -68,13 +68,14 @@
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.press(.card))
-                        .disabled(isSaving)
+                        // A dependency the server sent without its task id has nothing to open.
+                        .disabled(isSaving || task.id <= 0)
                     }
                 }
             } bar: {
                 if blocked {
                     WaiveraButton(TasksStrings.text("tasks.review.openRelated"), size: .large, fillsWidth: true) {
-                        if let first = tasks.first { model.openRelated(first.id) }
+                        if let first = tasks.first(where: { $0.id > 0 }) { model.openRelated(first.id) }
                     }
                     .disabled(tasks.isEmpty)
                     WaiveraButton(TasksStrings.text("tasks.review.close"), variant: .secondary, size: .large) {

@@ -76,6 +76,7 @@ extension TaskReviewModel {
         if let old = form.evidence { discardLater(old) }
         updateLate { form in
             form.evidence = nil
+            form.uploadedEvidenceId = nil
             form.evidenceChecking = true
             form.evidenceProblem = nil
             form.failed = false
@@ -100,6 +101,7 @@ extension TaskReviewModel {
         if let file = form.evidence { discardLater(file) }
         updateLate { form in
             form.evidence = nil
+            form.uploadedEvidenceId = nil
             form.evidenceProblem = nil
         }
     }
@@ -150,11 +152,9 @@ extension TaskReviewModel {
         let result = await attempt { try await uploads.sendEvidence(taskId: id, file: file) }
         switch result {
         case .success(let attachmentId):
-            // The reported delay stays linked; its evidence is now this upload.
             updateLate { form in
                 form.evidence = nil
-                form.existingEvidenceId = attachmentId
-                form.delayEvidenceId = attachmentId
+                form.uploadedEvidenceId = attachmentId
             }
             return EvidenceRef(value: attachmentId)
         case .failure(let error):

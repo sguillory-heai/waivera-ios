@@ -29,7 +29,7 @@ extension TaskReviewModel {
     }
 
     func openRelated(_ taskId: Int) {
-        guard !state.stepSaving else { return }
+        guard !state.stepSaving, taskId > 0 else { return }
         dismiss()
         onEffect?(.openTask(taskId: taskId))
     }

@@ -27,6 +27,8 @@ struct LateForm: Sendable, Equatable {
     /// Evidence already on the reason being corrected.
     var existingEvidenceId: Int?
     var evidence: PreparedFile?
+    /// The picked file once uploaded, so a retry after a failed send reuses it; removable like the pick.
+    var uploadedEvidenceId: Int?
     var evidenceChecking = false
     var evidenceProblem: UploadProblem?
     /// Returned for correction: the reviewer's feedback, shown above the fields.
@@ -40,7 +42,7 @@ struct LateForm: Sendable, Equatable {
     var failed = false
 
     var reason: ChangeReason? { reasons.value?.first { $0.id == reasonId } }
-    var keptEvidenceId: Int? { delayId != nil ? delayEvidenceId : existingEvidenceId }
+    var keptEvidenceId: Int? { uploadedEvidenceId ?? (delayId != nil ? delayEvidenceId : existingEvidenceId) }
     var evidenceMissing: Bool { reason?.requiresEvidence == true && evidence == nil && keptEvidenceId == nil }
     var reasonMissing: Bool { reasonId == nil }
     var explanationMissing: Bool { explanation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
