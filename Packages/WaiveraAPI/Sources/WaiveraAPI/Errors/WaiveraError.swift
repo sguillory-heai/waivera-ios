@@ -90,6 +90,7 @@ public enum WaiveraError: Error, Equatable, Hashable, Sendable, Codable {
     /// rather than leaking their description.
     public static func from(_ error: any Error) -> WaiveraError {
         if let error = error as? WaiveraError { return error }
+        if let refusal = error as? CodedRefusal { return refusal.error }
         if error is DecodingError { return .invalidResponse }
         if error is CancellationError { return .offline }
         if let urlError = error as? URLError { return from(urlError) }
@@ -108,5 +109,16 @@ public enum WaiveraError: Error, Equatable, Hashable, Sendable, Codable {
 
     private func localized(_ key: String) -> String {
         NSLocalizedString(key, bundle: .module, comment: "")
+    }
+}
+
+/// A refused request with the server's machine-readable `errorCode`, never its message.
+public struct CodedRefusal: Error, Equatable, Sendable {
+    public let error: WaiveraError
+    public let code: String?
+
+    public init(error: WaiveraError, code: String?) {
+        self.error = error
+        self.code = code
     }
 }

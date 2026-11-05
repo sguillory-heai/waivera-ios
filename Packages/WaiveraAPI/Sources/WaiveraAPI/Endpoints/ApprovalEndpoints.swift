@@ -27,8 +27,16 @@ extension APIClient {
         try await enveloped(try .json(.post, "api/leave-management/requests/preview", body: body))
     }
 
+    /// A refusal throws `CodedRefusal`, so the app can word the ones the person can fix.
     public func requestTimeOff(_ body: TimeOffBody) async throws {
-        try await checkEnvelope(try .json(.post, "api/TimeOff/add-update-timeOff", body: body))
+        let data = try await sendKeepingCode(try .json(.post, "api/TimeOff/add-update-timeOff", body: body))
+        guard !data.isEmpty, let envelope = try? WaiveraJSON.decoder().decode(JSONValue.self, from: data) else {
+            return
+        }
+        if case .bool(false) = envelope["success"] {
+            let code: String? = if case .string(let value) = envelope["errorCode"] { value } else { nil }
+            throw CodedRefusal(error: .invalidRequest, code: code)
+        }
     }
 
     public func leaveSettings() async throws -> LeaveSettingsResponse {

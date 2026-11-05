@@ -110,6 +110,27 @@ public struct APIClient: Sendable {
     }
 
     public func sendWithResponse(_ request: APIRequest) async throws -> (Data, HTTPURLResponse) {
+        let (data, response) = try await deliver(request)
+        guard (200..<300).contains(response.statusCode) else {
+            throw APIErrorMapper.map(statusCode: response.statusCode, body: data)
+        }
+        return (data, response)
+    }
+
+    /// Like `send`, but a refusal keeps the server's `errorCode`, for the few screens that word
+    /// specific refusals themselves. The server's message is still never shown.
+    public func sendKeepingCode(_ request: APIRequest) async throws -> Data {
+        let (data, response) = try await deliver(request)
+        guard (200..<300).contains(response.statusCode) else {
+            throw CodedRefusal(
+                error: APIErrorMapper.map(statusCode: response.statusCode, body: data),
+                code: APIErrorBody(data: data).errorCode
+            )
+        }
+        return data
+    }
+
+    private func deliver(_ request: APIRequest) async throws -> (Data, HTTPURLResponse) {
         let urlRequest = makeURLRequest(request)
         var token: String?
         if request.requiresAuth {
@@ -123,9 +144,6 @@ public struct APIClient: Sendable {
             }
             (data, response) = try await perform(urlRequest.withBearer(refreshed))
             if response.statusCode == 401 { rejections.send() }
-        }
-        guard (200..<300).contains(response.statusCode) else {
-            throw APIErrorMapper.map(statusCode: response.statusCode, body: data)
         }
         return (data, response)
     }

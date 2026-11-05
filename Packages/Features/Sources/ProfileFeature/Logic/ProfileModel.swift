@@ -28,11 +28,16 @@ public final class ProfileModel {
     public private(set) var refreshError: WaiveraError?
     public private(set) var isRefreshing = false
     public private(set) var celebration: Celebration?
+    /// Request time off shows only when the person may ask (web `admin_request:create:time_off`).
+    public private(set) var canRequestTimeOff = false
 
     @ObservationIgnored private let session: any SessionRepository
     @ObservationIgnored private let profiles: any ProfileRepository
     @ObservationIgnored private let calendar: any CalendarRepository
     @ObservationIgnored private let realtime: any RealtimeStatusRepository
+    @ObservationIgnored private let requests: (any RequestsRepository)?
+    /// A request just sent, shown as pending until the time-off section reloads.
+    @ObservationIgnored private var sentTimeOff: TimeOffEntry?
     @ObservationIgnored private var resource = Resource<OwnProfile>()
     @ObservationIgnored private var milestones = MilestoneIndex.empty
     @ObservationIgnored private var refreshInFlight = false
@@ -41,8 +46,10 @@ public final class ProfileModel {
         session: any SessionRepository,
         profiles: any ProfileRepository,
         calendar: any CalendarRepository,
-        realtime: any RealtimeStatusRepository
+        realtime: any RealtimeStatusRepository,
+        requests: (any RequestsRepository)? = nil
     ) {
+        self.requests = requests
         self.session = session
         self.profiles = profiles
         self.calendar = calendar
@@ -57,7 +64,8 @@ public final class ProfileModel {
             session: environment.session,
             profiles: environment.profile,
             calendar: environment.calendar,
-            realtime: environment.realtimeStatus
+            realtime: environment.realtimeStatus,
+            requests: environment.requests
         )
     }
 
@@ -72,8 +80,25 @@ public final class ProfileModel {
         async let profile: Void = observeProfile()
         async let milestones: Void = observeMilestones()
         async let reconnects: Void = onReconnect(realtime) { await self.refresh() }
+        async let access: Void = observeAccess()
         await refresh()
-        _ = await (sessions, profile, milestones, reconnects)
+        _ = await (sessions, profile, milestones, reconnects, access)
+    }
+
+    private func observeAccess() async {
+        guard let requests else { return }
+        // Access normally loads at sign-in; the button waits for it rather than guessing.
+        await requests.ensureAccess()
+        for await access in requests.access() { canRequestTimeOff = access.canRequestTimeOff }
+    }
+
+    /// Shows the request just sent at once, then reloads the time-off section behind it.
+    public func timeOffSent(_ entry: TimeOffEntry) async {
+        sentTimeOff = entry
+        derive()
+        await profiles.refresh(section: .timeOff)
+        sentTimeOff = nil
+        derive()
     }
 
     private func observeSession() async {
@@ -132,6 +157,12 @@ public final class ProfileModel {
 
     private func derive() {
         content = resource.value
+        if let sent = sentTimeOff, var shown = content {
+            var timeOff = shown.timeOff ?? TimeOffOverview()
+            timeOff.entries.insert(sent, at: 0)
+            shown.timeOff = timeOff
+            content = shown
+        }
         guard user != nil else {
             phase = .unavailable
             celebration = nil

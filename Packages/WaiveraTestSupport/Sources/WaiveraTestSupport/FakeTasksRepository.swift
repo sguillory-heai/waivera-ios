@@ -409,6 +409,40 @@ public final class FakeRequestsRepository: RequestsRepository, @unchecked Sendab
         return DownloadedFile(data: Data("%PDF-1.4\n".utf8), name: "Certificate.pdf", mimeType: "application/pdf")
     }
 
+    public let leaveSends = LockedValue<[LeaveDraft]>([])
+    public let leaveRefusal = LockedValue<LeaveSendProblem?>(nil)
+    /// What the next preview answers; demo dates otherwise take 8 hours a day from 40.
+    public let nextPreview = LockedValue<LeavePreview?>(nil)
+
+    public func leaveTypes() async throws -> [LeaveType] {
+        try check()
+        return [
+            LeaveType(id: 1, name: "Vacation", tracksBalance: true, availableMinutes: 2_400),
+            LeaveType(id: 2, name: "Sick leave", tracksBalance: true, availableMinutes: 600),
+            LeaveType(id: 3, name: "Unpaid leave", tracksBalance: false, availableMinutes: nil),
+        ]
+    }
+
+    public func previewLeave(_ draft: LeaveDraft) async throws -> LeavePreview {
+        try check()
+        if let preview = nextPreview.get() { return preview }
+        let minutes = draft.partialDay ? Int(draft.end.timeIntervalSince(draft.start) / 60) : 480
+        return LeavePreview(
+            requestedMinutes: minutes,
+            tracksBalance: true,
+            beforeMinutes: 2_400,
+            afterMinutes: 2_400 - minutes,
+            block: nil,
+            impact: LeaveImpact(dueBefore: 0, dueDuring: 1, shortNotice: false)
+        )
+    }
+
+    public func requestTimeOff(_ draft: LeaveDraft) async throws {
+        try check()
+        if let problem = leaveRefusal.get() { throw LeaveSendError(problem: problem) }
+        leaveSends.update { $0.append(draft) }
+    }
+
     public func decide(_ request: ChangeRequest, approve: Bool, training: TrainingDecision?) async throws {
         let before = waitingCell.current
         waitingCell.update { $0 = $0?.filter { $0.id != request.id } }

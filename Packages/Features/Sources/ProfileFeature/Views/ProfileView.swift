@@ -23,6 +23,7 @@
                 if let data {
                     ProfileScreen(
                         model: ProfileModel(environment: data),
+                        timeOffForm: TimeOffFormModel(environment: data),
                         onOpenOrganization: onOpenOrganization,
                         onOpenSettings: onOpenSettings
                     )
@@ -47,12 +48,22 @@
 
     private struct ProfileScreen: View {
         @State private var model: ProfileModel
+        /// One form per profile, so a send that finishes after the sheet closes still lands.
+        @State private var timeOffForm: TimeOffFormModel
+        @State private var showsTimeOffForm = false
         @State private var refreshRequest = 0
+        @State private var sentNotice: String?
         let onOpenOrganization: () -> Void
         let onOpenSettings: () -> Void
 
-        init(model: ProfileModel, onOpenOrganization: @escaping () -> Void, onOpenSettings: @escaping () -> Void) {
+        init(
+            model: ProfileModel,
+            timeOffForm: TimeOffFormModel,
+            onOpenOrganization: @escaping () -> Void,
+            onOpenSettings: @escaping () -> Void
+        ) {
             _model = State(initialValue: model)
+            _timeOffForm = State(initialValue: timeOffForm)
             self.onOpenOrganization = onOpenOrganization
             self.onOpenSettings = onOpenSettings
         }
@@ -63,8 +74,30 @@
                 onRetry: { refreshRequest += 1 },
                 onRetrySection: { section in Task { await model.retry(section: section) } },
                 onOpenOrganization: onOpenOrganization,
-                onOpenSettings: onOpenSettings
+                onOpenSettings: onOpenSettings,
+                onRequestTimeOff: requestTimeOff
             )
+            .sheet(isPresented: $showsTimeOffForm) {
+                TimeOffFormSheet(model: timeOffForm, zone: timeOffForm.zone)
+                    .waiveraSheetPresentation()
+            }
+            .overlay(alignment: .bottom) {
+                if let sentNotice {
+                    SnackbarView(message: sentNotice)
+                        .padding(Spacing.gutter)
+                        .task {
+                            try? await Task.sleep(for: .seconds(3))
+                            self.sentNotice = nil
+                        }
+                }
+            }
+            .onAppear {
+                timeOffForm.onSent = { [model] entry in
+                    showsTimeOffForm = false
+                    sentNotice = TimeOffStrings.text("profile.leave.sent")
+                    Task { await model.timeOffSent(entry) }
+                }
+            }
             // Pull to refresh, as on Android; no refresh button in the bar, so an error shows one
             // button, Try again (Sheldon, 2026-11-02).
             .refreshable { await model.refresh() }
@@ -76,6 +109,14 @@
             .task(id: refreshRequest) {
                 guard refreshRequest > 0 else { return }
                 await model.refresh()
+            }
+        }
+
+        private var requestTimeOff: (() -> Void)? {
+            guard model.canRequestTimeOff else { return nil }
+            return {
+                timeOffForm.reset()
+                showsTimeOffForm = true
             }
         }
     }
@@ -130,6 +171,8 @@
         var onRetrySection: (ProfileSection) -> Void = { _ in }
         let onOpenOrganization: () -> Void
         let onOpenSettings: () -> Void
+        /// Nil when the person may not ask for time off.
+        var onRequestTimeOff: (() -> Void)?
 
         var body: some View {
             switch state.phase {
@@ -170,6 +213,12 @@
             }
         }
 
+        /// A person who may ask for time off always sees the section, even with nothing in it yet.
+        private var timeOffDisplay: ProfileSections.Display {
+            let display = ProfileSections.timeOff(state.content)
+            return display == .hidden && onRequestTimeOff != nil && state.content != nil ? .content : display
+        }
+
         private var loaded: some View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
@@ -184,11 +233,17 @@
                         ProfilePersonalSection(state: state)
                         ProfileProfessionalSection(profile: state.content?.profile)
                         ProfileSectionSlot(
-                            display: ProfileSections.timeOff(state.content),
+                            display: timeOffDisplay,
                             title: ProfileStrings.timeOffTitle,
                             onRetry: { onRetrySection(.timeOff) },
                             content: {
-                                if let timeOff = state.content?.timeOff { TimeOffCard(overview: timeOff) }
+                                if let timeOff = state.content?.timeOff, TimeOffRules.hasContent(timeOff) {
+                                    TimeOffCard(overview: timeOff, onRequest: onRequestTimeOff)
+                                } else if let onRequestTimeOff {
+                                    SectionCard(title: ProfileStrings.timeOffTitle) {
+                                        RequestTimeOffButton(action: onRequestTimeOff)
+                                    }
+                                }
                             }
                         )
                         ProfileSectionSlot(

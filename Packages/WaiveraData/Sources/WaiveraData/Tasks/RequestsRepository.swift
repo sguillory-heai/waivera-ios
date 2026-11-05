@@ -26,6 +26,11 @@ public protocol RequestsRepository: Sendable {
     func trainingCredit(requestId: Int) async throws -> TrainingCredit
     /// The certificate's bytes and file name, for the file sheet.
     func trainingCertificate(requestId: Int) async throws -> DownloadedFile
+    /// The agency's leave types, each with the person's own balance when it can be read.
+    func leaveTypes() async throws -> [LeaveType]
+    func previewLeave(_ draft: LeaveDraft) async throws -> LeavePreview
+    /// Sends `draft` for approval; a refusal the app can word throws `LeaveSendError`.
+    func requestTimeOff(_ draft: LeaveDraft) async throws
     func options(taskId: Int) async throws -> ChangeOptions
     func moreTimeReasons() async throws -> [ChangeReason]
     func delayReasons() async throws -> [ChangeReason]
@@ -231,6 +236,53 @@ public actor LiveRequestsRepository: RequestsRepository {
         )
     }
 
+    public func leaveTypes() async throws -> [LeaveType] {
+        guard let me = context.currentUser?.id else { throw WaiveraError.signedOut }
+        async let types = api.leaveTypes()
+        // A person may always read their own balances; without them the types still list.
+        async let balances = try? api.leaveBalances(employeeId: me).balances
+        return LeaveMapping.leaveTypes(try await types, balances: await balances ?? nil)
+    }
+
+    public func previewLeave(_ draft: LeaveDraft) async throws -> LeavePreview {
+        guard let me = context.currentUser?.id else { throw WaiveraError.signedOut }
+        let body = LeavePreviewBody(
+            employeeId: me,
+            leaveTypeId: draft.leaveTypeId,
+            startTime: LeaveMapping.iso(draft.start),
+            endTime: LeaveMapping.iso(draft.end),
+            requestType: draft.partialDay ? Self.partialDay : Self.fullDay
+        )
+        return LeaveMapping.preview(try await api.previewLeave(body))
+    }
+
+    public func requestTimeOff(_ draft: LeaveDraft) async throws {
+        guard let me = context.currentUser?.id else { throw WaiveraError.signedOut }
+        let note = draft.note?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let body = TimeOffBody(
+            userId: me,
+            typeOfLeave: draft.leaveTypeId,
+            comment: note?.isEmpty == false ? note : nil,
+            timeOffStartTime: LeaveMapping.iso(draft.start),
+            timeOffEndTime: LeaveMapping.iso(draft.end),
+            requestType: draft.partialDay ? Self.partialDay : Self.fullDay
+        )
+        do {
+            try await api.requestTimeOff(body)
+        } catch let refusal as CodedRefusal {
+            // Refusals the person can fix get the app's own words; everything else stays a WaiveraError.
+            if let problem = LeaveMapping.sendProblem(refusal.error, code: refusal.code) {
+                throw LeaveSendError(problem: problem)
+            }
+            throw refusal.error
+        } catch {
+            throw WaiveraError.from(error)
+        }
+    }
+
+    private static let fullDay = "FULL_DAY"
+    private static let partialDay = "PARTIAL_DAY"
+
     public func options(taskId: Int) async throws -> ChangeOptions {
         RequestMapping.options(try await api.complianceEligibility(taskId: taskId), taskId: taskId)
     }
@@ -339,6 +391,9 @@ public struct EmptyRequestsRepository: RequestsRepository {
     public func leaveZone() async -> TimeZone? { nil }
     public func trainingCredit(requestId: Int) async throws -> TrainingCredit { throw WaiveraError.notFound }
     public func trainingCertificate(requestId: Int) async throws -> DownloadedFile { throw WaiveraError.notFound }
+    public func leaveTypes() async throws -> [LeaveType] { [] }
+    public func previewLeave(_ draft: LeaveDraft) async throws -> LeavePreview { throw WaiveraError.notFound }
+    public func requestTimeOff(_ draft: LeaveDraft) async throws { throw WaiveraError.notFound }
     public func options(taskId: Int) async throws -> ChangeOptions {
         ChangeOptions(taskId: taskId, currentDue: nil, canAskMoreTime: false, delay: nil, hasPendingRequest: false)
     }

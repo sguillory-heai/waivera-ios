@@ -11,6 +11,7 @@
     /// first three requests and how many more exist (08 §3).
     struct TimeOffCard: View {
         let overview: TimeOffOverview
+        var onRequest: (() -> Void)?
 
         var body: some View {
             let fraction = TimeOffRules.remainingFraction(overview)
@@ -49,6 +50,10 @@
                         .foregroundStyle(Palette.textSecondary)
                         .padding(Spacing.medium)
                 }
+                if let onRequest {
+                    RowDivider()
+                    RequestTimeOffButton(action: onRequest)
+                }
             }
         }
 
@@ -70,6 +75,22 @@
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(label))
             .accessibilityValue(Text(value.map { ProfileFormat.days($0) } ?? ProfileStrings.missingSpoken))
+        }
+    }
+
+    /// Opens the Request time off form.
+    struct RequestTimeOffButton: View {
+        let action: () -> Void
+
+        var body: some View {
+            WaiveraButton(
+                TimeOffStrings.text("profile.leave.request"),
+                variant: .tonal,
+                systemImage: "plus",
+                fillsWidth: true,
+                action: action
+            )
+            .padding(Spacing.medium)
         }
     }
 
