@@ -153,3 +153,27 @@ struct ProdShapeResilienceTests {
 extension Array {
     fileprivate var single: Element? { count == 1 ? first : nil }
 }
+
+@Suite("Broken characters")
+struct BrokenCharacterTests {
+    @Test func halfAnEmojiInOneTaskKeepsTheWholePage() throws {
+        let body = #"""
+            {"tasks":[
+              {"id":1,"title":"Plan of Care \ud83d","currentTaskDelay":{"explanation":"Hospital \udc4d stay"}},
+              {"id":2,"title":"Whole \ud83d\ude00 emoji","currentTaskDelay":{"explanation":"Path C:\\ud83d"}}
+            ],"totalCount":87}
+            """#
+        let page = try APIClient.decodeBody(TaskPageResponse.self, from: Data(body.utf8))
+        #expect(page.totalCount == 87)
+        #expect(page.tasks.map(\.id) == [1, 2])
+        #expect(page.tasks[0].title == "Plan of Care \u{FFFD}")
+        #expect(page.tasks[0].currentTaskDelay?.explanation == "Hospital \u{FFFD} stay")
+        #expect(page.tasks[1].title == "Whole 😀 emoji")
+        // An escaped backslash before "ud83d" is plain text, not an escape.
+        #expect(page.tasks[1].currentTaskDelay?.explanation == #"Path C:\ud83d"#)
+    }
+
+    @Test func cleanJSONIsLeftAlone() {
+        #expect(WaiveraJSON.repairingSurrogates(Data(#"{"a":"\ud83d\ude00 \\ud83d"}"#.utf8)) == nil)
+    }
+}

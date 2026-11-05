@@ -201,8 +201,11 @@ public struct APIClient: Sendable {
     }
 
     static func decodeBody<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
+        // Half an emoji in one task's text must not cost the whole page. Repaired before the
+        // first decode, as Foundation can stall on such a document instead of throwing.
+        let input = WaiveraJSON.repairingSurrogates(data) ?? data
         do {
-            return try WaiveraJSON.decoder().decode(type, from: data)
+            return try WaiveraJSON.decoder().decode(type, from: input)
         } catch {
             throw WaiveraError.invalidResponse
         }
