@@ -34,6 +34,43 @@ extension TodayModel {
         }
     }
 
+    /// Requests waiting on the person, only while the web would show them Admin Requests.
+    func observeRequests() async {
+        let requests = environment.requests
+        let stale = isStale(requestsRefreshedAt, freshFor: Self.chatsFreshFor)
+        await withDiscardingTaskGroup { group in
+            group.addTask {
+                for await access in requests.access() {
+                    await self.setRequests(showing: access.showsRequests)
+                }
+            }
+            group.addTask {
+                for await waiting in requests.waiting() {
+                    await self.setRequests(waiting: waiting ?? [])
+                }
+            }
+            if stale { group.addTask { await self.refreshRequests() } }
+        }
+    }
+
+    /// Loads the pending list once access is known; a failure keeps the last list.
+    func refreshRequests() async {
+        requestsRefreshedAt = clock.now
+        let requests = environment.requests
+        await requests.ensureAccess()
+        guard await requests.currentAccess().showsRequests else { return }
+        try? await requests.refreshWaiting()
+    }
+
+    private func setRequests(showing: Bool? = nil, waiting: [ChangeRequest]? = nil) {
+        if let showing { showsRequests = showing }
+        if let waiting { waitingRequests = waiting }
+        let shown = showsRequests ? waitingRequests : []
+        guard shown != sources.requests else { return }
+        sources.requests = shown
+        rebuild()
+    }
+
     func observeMilestones() async {
         for await value in environment.calendar.milestones() {
             sources.milestones = value

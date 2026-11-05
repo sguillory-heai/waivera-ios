@@ -171,7 +171,8 @@ struct TodayHarness {
         conversations: [Conversation]? = nil,
         activity: (any ActivityRepository)? = nil,
         events: [CalendarEvent]? = nil,
-        milestones: [Milestone]? = nil
+        milestones: [Milestone]? = nil,
+        requests: (any RequestsRepository)? = nil
     ) {
         let fakes = FakeDataEnvironment.make(scenario, clock: clock)
         var calendar = fakes.calendar
@@ -200,6 +201,7 @@ struct TodayHarness {
             push: fakes.push,
             realtimeStatus: fakes.realtimeStatus,
             alerts: fakes.alerts,
+            requests: requests ?? EmptyRequestsRepository(),
             callURL: { _ in throw WaiveraError.configurationMissing },
             foreground: { _ in },
             start: {}

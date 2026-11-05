@@ -14,6 +14,10 @@ struct TodaySources: Sendable {
     var failedSends: Set<Int> = []
     /// The web bell's notifications; unread ones that ask for something join Needs you.
     var notices = Resource<NoticeFeed>()
+    /// Requests waiting on the person's decision, from the live pending list. Empty for someone
+    /// the web does not show Admin Requests to. Their notifications never update when another
+    /// approver decides, so Needs you takes requests from here and not from the bell.
+    var requests: [ChangeRequest] = []
     var webBase: URL?
 }
 
@@ -224,8 +228,10 @@ enum TodayAssembler {
             now: context.now,
             zone: context.zone
         ).map(NeedsYouItem.notice)
+        let requests = NoticeRules.requests(sources.requests, now: context.now, zone: context.zone)
+            .map(NeedsYouItem.request)
         return notSent(sources) + messages(sources, pinned: pinned, context: context) + invitations
-            + tickets(sources, context: context) + notices
+            + tickets(sources, context: context) + requests + notices
     }
 
     private static func needsYou(

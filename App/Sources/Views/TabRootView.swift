@@ -47,7 +47,10 @@ struct TabRootView: View {
                 onFocusHandled: { model.scheduleFocusHandled() }
             )
         case .tasks:
-            TasksView(onOpenTask: { model.push(.task(taskID: $0)) })
+            TasksView(
+                onOpenTask: { model.push(.task(taskID: $0)) },
+                onOpenMyRequests: { model.push(.myRequests) }
+            )
         }
     }
 }

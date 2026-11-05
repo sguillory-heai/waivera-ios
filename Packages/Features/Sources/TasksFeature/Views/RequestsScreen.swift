@@ -7,6 +7,8 @@
     struct RequestsScreen: View {
         let model: RequestsModel
         let onOpenTask: (Int) -> Void
+        var onOpenMine: () -> Void = {}
+        var mode: RequestsMode = .waiting
 
         @Environment(\.openURL) private var openURL
 
@@ -17,12 +19,21 @@
                     review: { item in
                         if let url = model.review(item) { openURL(url) }
                     },
+                    openOwn: { item in
+                        if let id = item.request.taskId {
+                            onOpenTask(id)
+                        } else if let url = model.webURL() {
+                            openURL(url)
+                        }
+                    },
+                    openMine: onOpenMine,
                     openWeb: {
                         if let url = model.webURL() { openURL(url) }
                     },
                     retryWaiting: { model.retryWaiting() },
                     retryMine: { model.retryMine() }
                 ),
+                mode: mode,
                 onRefresh: { [model] in await model.refresh() }
             )
             .sheet(

@@ -27,8 +27,10 @@ public enum AppRoute: Codable, Hashable, Sendable {
     case task(taskID: Int)
     /// One of a task's files in the read-only viewer.
     case taskFile(taskID: Int, attachmentID: Int)
-    /// Change requests waiting on the person and their own.
+    /// Change requests waiting on the person.
     case requests
+    /// The person's own change requests: pending, then decided.
+    case myRequests
     /// A participant's read-only profile; `participantID` is the server's participant id.
     case participant(participantID: Int)
     // Avatar menu

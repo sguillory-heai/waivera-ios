@@ -115,10 +115,28 @@ enum NoticeRules {
         return groups.keys.sorted().map { NoticeGroup(day: $0, rows: groups[$0] ?? []) }
     }
 
-    /// Unread notifications that ask the person to act, newest first.
+    /// Unread notifications that ask the person to act, newest first. Request notifications stay
+    /// in the inbox only: Needs you lists requests from the live pending list instead (`requests`).
     static func needsYou(_ notices: [Notice], links: NoticeLinks, now: Date, zone: TimeZone) -> [NoticeRow] {
-        notices.filter { !$0.isRead && $0.asksForAction }.sorted(by: newestFirst).map {
+        notices.filter { !$0.isRead && $0.asksForAction && !$0.opensRequests }.sorted(by: newestFirst).map {
             row($0, links: links, now: now, zone: zone)
+        }
+    }
+
+    /// Requests still waiting on the person, in the server's order, as approval cards.
+    static func requests(_ requests: [ChangeRequest], now: Date, zone: TimeZone) -> [NoticeRow] {
+        requests.map { request in
+            NoticeRow(
+                id: "request-\(request.id)",
+                kind: .approval,
+                title: request.typeName,
+                message: request.taskTitle.map {
+                    TodayStrings.format("today.request.fromTask", request.requesterName, $0)
+                } ?? TodayStrings.format("today.request.from", request.requesterName),
+                at: request.requestedAt.map { TimeLabels.past($0, now: now, zone: zone) },
+                isUnread: true,
+                opensOutside: false
+            )
         }
     }
 

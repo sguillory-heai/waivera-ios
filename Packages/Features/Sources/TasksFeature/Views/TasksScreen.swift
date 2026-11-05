@@ -7,6 +7,7 @@
         @Bindable var model: TasksModel
         let requests: RequestsModel
         let onOpenTask: (Int) -> Void
+        var onOpenMyRequests: () -> Void = {}
 
         var body: some View {
             VStack(spacing: 0) {
@@ -17,7 +18,7 @@
                 }
                 segments
                 if model.state.segment == .requests {
-                    RequestsScreen(model: requests, onOpenTask: onOpenTask)
+                    RequestsScreen(model: requests, onOpenTask: onOpenTask, onOpenMine: onOpenMyRequests)
                 } else {
                     TasksListContent(
                         state: model.state,

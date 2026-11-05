@@ -95,4 +95,56 @@ struct NoticeRulesTests {
         )
         #expect(rows.map(\.id) == ["assigned"])
     }
+
+    /// Request notifications never update when another approver decides, so Needs you leaves
+    /// them to the live pending list; the inbox still shows them.
+    @Test func needsYouLeavesRequestNotificationsToThePendingList() {
+        var request = notice("request", .approval, at: "2026-11-01T16:00:00Z")
+        request.opensRequests = true
+        let notices = [notice("assigned", .taskAssigned, at: "2026-11-01T15:00:00Z"), request]
+        let rows = NoticeRules.needsYou(notices, links: links, now: Fixture.now, zone: Fixture.chicago)
+        #expect(rows.map(\.id) == ["assigned"])
+        let inbox = NoticeRules.groups(
+            notices,
+            filter: .all,
+            links: links,
+            now: Fixture.now,
+            zone: Fixture.chicago
+        )
+        #expect(inbox.flatMap(\.rows).map(\.id).contains("request"))
+    }
+
+    @Test func pendingRequestsBecomeApprovalCards() {
+        let rows = NoticeRules.requests(
+            [
+                ChangeRequest(
+                    id: 81,
+                    kind: .profileChange,
+                    typeName: "Profile Change",
+                    status: .pending,
+                    requesterId: "u1",
+                    requesterName: "Jordan Lee",
+                    requestedAt: Fixture.instant("2026-11-01T15:00:00Z")
+                ),
+                ChangeRequest(
+                    id: 82,
+                    kind: .moreTime,
+                    typeName: "Task Extension Request",
+                    status: .pending,
+                    requesterId: "u2",
+                    requesterName: "Sam Ortiz",
+                    taskId: 16,
+                    taskTitle: "Monthly contact"
+                ),
+            ],
+            now: Fixture.now,
+            zone: Fixture.chicago
+        )
+        #expect(rows.map(\.id) == ["request-81", "request-82"])
+        #expect(rows.allSatisfy { $0.kind == .approval && $0.isUnread && !$0.opensOutside })
+        #expect(rows.map(\.title) == ["Profile Change", "Task Extension Request"])
+        #expect(rows.map(\.message) == ["From Jordan Lee", "From Sam Ortiz · Monthly contact"])
+        #expect(rows[0].at != nil)
+        #expect(rows[1].at == nil)
+    }
 }

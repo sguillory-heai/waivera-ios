@@ -20,6 +20,8 @@
                 InvitationRow(item: invitation, formatter: formatter, onOpen: onOpen, onRespond: onRespond)
             case .ticket(let ticket): self.ticket(ticket)
             case .notice(let notice): self.notice(notice)
+            case .request(let request):
+                NoticeRowView(row: request, formatter: formatter, onOpen: { onOpen(.notice(.requests), nil) })
             }
         }
 

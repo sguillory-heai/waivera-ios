@@ -104,7 +104,12 @@ struct RouteDestinationView: View {
         case .participant(let participantID):
             ParticipantView(participantID: participantID, onOpenTask: { model.push(.task(taskID: $0)) })
         case .requests:
-            RequestsView(onOpenTask: { model.push(.task(taskID: $0)) })
+            RequestsView(
+                onOpenTask: { model.push(.task(taskID: $0)) },
+                onOpenMine: { model.push(.myRequests) }
+            )
+        case .myRequests:
+            RequestsView(mine: true, onOpenTask: { model.push(.task(taskID: $0)) })
         case .taskFile(let taskID, let attachmentID):
             TaskFileView(taskID: taskID, attachmentID: attachmentID)
         }

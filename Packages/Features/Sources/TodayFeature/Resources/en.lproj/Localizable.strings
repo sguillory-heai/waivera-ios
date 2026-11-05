@@ -255,6 +255,8 @@
 "today.notices.filter.all" = "All";
 "today.notices.filter.tasks" = "Tasks";
 "today.notices.filter.approvals" = "Approvals";
+"today.request.from" = "From %1$@";
+"today.request.fromTask" = "From %1$@ · %2$@";
 "today.notices.filter.meetings" = "Meetings";
 "today.notices.day.today" = "Today";
 "today.notices.day.yesterday" = "Yesterday";

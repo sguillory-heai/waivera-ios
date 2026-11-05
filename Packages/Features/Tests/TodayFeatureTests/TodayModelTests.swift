@@ -338,6 +338,34 @@ extension TodayModelTests {
         #expect(model.navigate(to: .event(id: "evt_1")) == .event(id: "evt_1"))
     }
 
+    // MARK: Requests
+
+    /// Needs you follows the live pending list, so a request someone else decided leaves it.
+    @Test func requestsComeFromThePendingListAndLeaveWhenDecidedElsewhere() async {
+        let requests = FakeRequestsRepository()
+        let harness = TodayHarness(.empty, requests: requests)
+        let model = harness.todayModel()
+        await running(model) {
+            #expect(await eventually { model.state.needsYou.items.map(\.id) == ["request-81", "request-82"] })
+            #expect(model.state.needsYou.kinds == [.update: 2])
+            let remaining = (await latest(requests.waiting()) ?? nil)?.filter { $0.id != 81 }
+            requests.setWaiting(remaining)
+            #expect(await eventually { model.state.needsYou.items.map(\.id) == ["request-82"] })
+        }
+    }
+
+    @Test func requestsStayOutForSomeoneWhoMayNotReviewThem() async {
+        let requests = FakeRequestsRepository(access: RequestAccess(loaded: true))
+        let harness = TodayHarness(.empty, requests: requests)
+        let model = harness.todayModel()
+        await running(model) {
+            #expect(await eventually { model.state.isAllCaughtUp })
+            #expect(model.state.needsYou.items.isEmpty)
+            requests.setAccess(RequestAccess(showsRequests: true, loaded: true))
+            #expect(await eventually { model.state.needsYou.items.count == 2 })
+        }
+    }
+
     @Test func needsYouExpandsAndCollapses() async {
         let conversations = (1...7).map { Fixture.direct($0) }
         let harness = TodayHarness(conversations: conversations)

@@ -12,20 +12,30 @@
     /// window, search, Assigned to me and the Delays choice; Requests reviews change requests.
     public struct TasksView: View {
         let onOpenTask: (_ taskID: Int) -> Void
+        let onOpenMyRequests: () -> Void
 
         @Environment(\.dataEnvironment) private var data
         @State private var model: TasksModel?
         @State private var requests: RequestsModel?
 
-        public init(onOpenTask: @escaping (_ taskID: Int) -> Void) {
+        public init(
+            onOpenTask: @escaping (_ taskID: Int) -> Void,
+            onOpenMyRequests: @escaping () -> Void = {}
+        ) {
             self.onOpenTask = onOpenTask
+            self.onOpenMyRequests = onOpenMyRequests
         }
 
         public var body: some View {
             ZStack {
                 Palette.background.ignoresSafeArea()
                 if let model, let requests {
-                    TasksScreen(model: model, requests: requests, onOpenTask: onOpenTask)
+                    TasksScreen(
+                        model: model,
+                        requests: requests,
+                        onOpenTask: onOpenTask,
+                        onOpenMyRequests: onOpenMyRequests
+                    )
                 }
             }
             .navigationTitle(TasksStrings.text("tasks.title"))

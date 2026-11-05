@@ -48,6 +48,10 @@ final class TodayModel {
     @ObservationIgnored private let handledStore: any HandledTallyStore
     @ObservationIgnored private var handled: HandledTally?
     @ObservationIgnored var user: CurrentUser?
+    /// The web's Admin Requests rule and the pending list, combined into `sources.requests`.
+    @ObservationIgnored var showsRequests = false
+    @ObservationIgnored var waitingRequests: [ChangeRequest] = []
+    @ObservationIgnored var requestsRefreshedAt: Date?
     /// Invitation answers inside their Undo window, by event id.
     @ObservationIgnored private var heldAnswers: [String: HeldAnswer] = [:]
     @ObservationIgnored private var answerToken = 0
@@ -86,6 +90,7 @@ final class TodayModel {
             group.addTask { await self.activity.observe() }
             group.addTask { await self.observeMilestones() }
             group.addTask { await self.observeNotices() }
+            group.addTask { await self.observeRequests() }
             group.addTask { await self.observeConnection() }
             group.addTask { await self.observeSession() }
             group.addTask { await self.tick() }
@@ -107,7 +112,8 @@ final class TodayModel {
         async let weeks: Void = refreshSchedule()
         async let milestones: Void = calendar.refreshMilestones()
         async let inbox: Void = environment.notices.refresh()
-        _ = await (chats, feed, weeks, milestones, inbox)
+        async let requests: Void = refreshRequests()
+        _ = await (chats, feed, weeks, milestones, inbox, requests)
         sources.conversations = await latest(conversations.conversations()) ?? sources.conversations
         local.isRefreshing = false
         rebuild()

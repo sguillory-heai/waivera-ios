@@ -158,6 +158,8 @@ enum NeedsYouItem: Hashable, Sendable, Identifiable {
     case ticket(TicketItem)
     /// An unread inbox notification that asks for something (a task, an approval, a signature).
     case notice(NoticeRow)
+    /// A request waiting on the person's decision, from the live pending list.
+    case request(NoticeRow)
 
     var id: String {
         switch self {
@@ -167,6 +169,7 @@ enum NeedsYouItem: Hashable, Sendable, Identifiable {
         case .invitation(let item): "invite-\(item.eventId)"
         case .ticket(let item): "ticket-\(item.conversationId)"
         case .notice(let item): "notice-\(item.id)"
+        case .request(let item): item.id
         }
     }
 
@@ -178,7 +181,7 @@ enum NeedsYouItem: Hashable, Sendable, Identifiable {
         case .mention: .mention
         case .invitation: .invitation
         case .ticket: .ticket
-        case .notice: .update
+        case .notice, .request: .update
         }
     }
 

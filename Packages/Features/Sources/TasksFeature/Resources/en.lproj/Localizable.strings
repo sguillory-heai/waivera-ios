@@ -254,8 +254,20 @@
 /* Requests */
 "tasks.requests.waiting" = "Waiting on you";
 "tasks.requests.mine" = "Your requests";
-"tasks.requests.noneWaiting" = "Nothing is waiting on you.";
-"tasks.requests.noneMine" = "You haven't asked for any changes yet.";
+"tasks.requests.caughtUpTitle" = "You’re all caught up";
+"tasks.requests.caughtUpMessage" = "Requests that need your decision show up here.";
+"tasks.requests.viewMine" = "View your requests";
+"tasks.requests.mineNone" = "None yet";
+"tasks.requests.mineSummary" = "%1$@ · %2$@";
+"tasks.requests.minePending.one" = "%@ pending";
+"tasks.requests.minePending.other" = "%@ pending";
+"tasks.requests.mineTotal.one" = "%@ in all";
+"tasks.requests.mineTotal.other" = "%@ in all";
+"tasks.requests.pending" = "Pending";
+"tasks.requests.decided" = "Decided";
+"tasks.requests.mineEmptyTitle" = "No requests yet";
+"tasks.requests.mineEmptyMessage" = "When you ask for more time, a delay, a closure or time off, you can follow it here.";
+"tasks.requests.mineNote" = "Ask for a change from the task itself, or for time off from your profile.";
 "tasks.requests.waitingError" = "Couldn't load requests waiting on you.";
 "tasks.requests.mineError" = "Couldn't load your requests.";
 "tasks.requests.webNote" = "Time off, profile changes and other requests open on the web.";
