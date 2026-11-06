@@ -114,14 +114,19 @@ public enum WaiveraError: Error, Equatable, Hashable, Sendable, Codable {
         if let urlError = error as? URLError { return from(urlError) }
         let nsError = error as NSError
         if nsError.domain == NSURLErrorDomain { return .offline }
+        APIDiagnostics.record("x \(type(of: error)) \(nsError.code)")
         return .invalidResponse
     }
 
     private static func from(_ error: URLError) -> WaiveraError {
         switch error.code {
-        case .userAuthenticationRequired: .unauthorized
-        case .badServerResponse, .cannotParseResponse, .cannotDecodeContentData: .invalidResponse
-        default: .offline
+        case .userAuthenticationRequired:
+            return .unauthorized
+        case .badServerResponse, .cannotParseResponse, .cannotDecodeContentData:
+            APIDiagnostics.record("u \(error.code.rawValue)")
+            return .invalidResponse
+        default:
+            return .offline
         }
     }
 

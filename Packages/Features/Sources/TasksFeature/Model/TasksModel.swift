@@ -353,22 +353,27 @@ final class TasksModel {
         }
         let first = TasksRules.sectionFirst
         // Each answer comes back with its own group, so nothing depends on the order they arrive in.
-        let answers = await withTaskGroup(of: (DueGroup, Result<TaskPage, any Error>).self) { taskGroup in
-            for (group, slice) in plan {
-                let sliced = request.sliced(slice)
-                // Whole pages of `sectionFirst`, as open as the section was before.
-                let size = ((previous[group] ?? first) + first - 1) / first * first
-                taskGroup.addTask {
-                    do {
-                        return (group, .success(try await tasks.tasks(sliced, page: 1, pageSize: size)))
-                    } catch {
-                        return (group, .failure(error))
-                    }
+        // One task per section, started together and read back in plan order. The section a
+        // result belongs to is held here, never carried through a child task: on the phone a task
+        // group's results reached the wrong sections (Overdue showed Delayed, then Delayed went
+        // missing), which never happened in tests.
+        let calls = plan.map { section -> (DueGroup, Task<TaskPage, any Error>) in
+            let sliced = request.sliced(section.1)
+            // Whole pages of `sectionFirst`, as open as the section was before.
+            let size = ((previous[section.0] ?? first) + first - 1) / first * first
+            return (section.0, Task { try await tasks.tasks(sliced, page: 1, pageSize: size) })
+        }
+        var answers: [DueGroup: Result<TaskPage, any Error>] = [:]
+        await withTaskCancellationHandler {
+            for (group, call) in calls {
+                do {
+                    answers[group] = .success(try await call.value)
+                } catch {
+                    answers[group] = .failure(error)
                 }
             }
-            var collected: [DueGroup: Result<TaskPage, any Error>] = [:]
-            for await (group, result) in taskGroup { collected[group] = result }
-            return collected
+        } onCancel: {
+            for (_, call) in calls { call.cancel() }
         }
         guard !Task.isCancelled, local.request == request else { return }
         apply(answers, plan: plan, previous: previous)
@@ -385,7 +390,7 @@ final class TasksModel {
         var failure: (any Error)?
         var sections: [SectionLoad] = []
         for (group, slice) in plan {
-            switch answers[group] ?? .failure(WaiveraError.invalidResponse) {
+            switch answers[group] ?? .failure(WaiveraError.server(statusCode: 0)) {
             case .success(let page):
                 var seen = Set<Int>()
                 let items = page.items.filter { seen.insert($0.id).inserted }

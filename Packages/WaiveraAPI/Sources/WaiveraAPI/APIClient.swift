@@ -256,6 +256,13 @@ public enum APIDiagnostics {
 
     public static var lastDecodePath: String? { lastDecodeFailure.get() }
 
+    /// Notes a non-decoding cause (an unexpected error type, a URL loading code).
+    @discardableResult
+    static func record(_ note: String) -> String? {
+        lastDecodeFailure.update { $0 = note }
+        return note
+    }
+
     static func recordDecodeFailure(_ error: any Error) {
         guard let decoding = error as? DecodingError else {
             lastDecodeFailure.update { $0 = "?" }
